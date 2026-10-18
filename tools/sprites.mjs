@@ -63,7 +63,7 @@ const ARTE = {
   saco0: {i: 2101}, saco1: {i: 2099}, saco2: {i: 2102},
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},
   it_espada: {i: 1712}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
-  it_gema: {i: 2211}, it_coroa: {i: 1984}, pocao: {i: 2129},
+  it_gema: {i: 2211}, it_coroa: {i: 1984}, it_couraca: {i: 1998}, it_cota: {i: 2034}, pocao: {i: 2129},
   /* efeitos de impacto por elemento */
   ef_fisico: {e: 1}, ef_fogo: {e: 6}, ef_gelo: {e: 7}, ef_cura: {e: 2},
   ef_energia: {e: 2, tom: 120}, ef_sagrado: {e: 2, tom: -140}, ef_terra: {e: 3, tom: -170},

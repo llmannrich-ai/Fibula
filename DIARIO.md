@@ -32,13 +32,13 @@ execução precisa saber e não vai descobrir lendo o código.
 **Roadmap:** "Equipamento persistente com três slots" saiu do `Depois` para `Concluído`. `Agora` (gerador com semente) não mudou.
 
 **Pendências e riscos:**
-- **Couraça de couro e cota de malha não têm sprite**: o atlas não tem os ícones e as fontes do OTSP (`otsp.dat`/`otsp.spr`) não estavam nesta execução de nuvem. Aparecem só com texto na tela de equipamento e na tela final. Falta adicionar `it_couraca` e `it_cota` na tabela `ARTE` do `tools/sprites.mjs` e regerar o atlas numa sessão local.
+- **Sprites das armaduras:** resolvidos na mesma sessão (`it_couraca` = id 1998, `it_cota` = id 2034 do OTSP). A primeira versão desta entrada dizia que a nuvem não tinha o pacote, e estava errada: o `tools/sprites.mjs` baixa o OTSP sozinho do GitHub, e isso funciona na nuvem. Para achar sprite novo, rode `node tools/sprites.mjs --catalogo` e procure em `itens.png` (id = 100 + 16 × linha + coluna).
 - **Sem exigência de nível nem de classe** para vestir: um Feiticeiro nível 1 veste o machado. Aceitável com bônus pequenos; se entrarem peças fortes, precisa de `lvl` mínimo no item.
 - **Balanceamento a observar:** +10% de dano no machado é mais que um nível de Poder arcano (+8%, 150 de ouro). A cota cai em 35% das mortes do Guardião; se sobrar cota no cofre, ela só vira ouro.
 - A coroa e a gema continuam sendo só valor (viram ouro). O amuleto tribal, que antes valia 60 de ouro direto, agora pede uma venda manual.
 - O cliente ainda grava o save inteiro: editar `itens` no JSON trapaceia, como já era com o cofre.
 
-**Próximo passo recomendado:** sprites das duas armaduras numa sessão local; depois, avaliar se a Escolha de risco (profundidades) deve multiplicar a chance de peça, que é o que dá motivo para descer mais fundo.
+**Próximo passo recomendado:** avaliar se a Escolha de risco (profundidades) deve multiplicar a chance de peça, que é o que dá motivo para descer mais fundo.
 
 ## 2026-10-18 22:40 UTC — sessão manual (nuvem)
 
