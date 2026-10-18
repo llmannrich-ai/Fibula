@@ -2,7 +2,7 @@
 
 Protótipo jogável (Etapa 1) de um RPG de extração para celular.
 
-**Jogar:** https://llmannrich-ai.github.io/fibula/
+**Jogar:** https://llmannrich-ai.github.io/Fibula/
 
 - Arraste o lado esquerdo da tela para andar.
 - Segure **Faísca** para atacar o monstro mais próximo; **Runa** causa dano em área; **Poção** cura.
