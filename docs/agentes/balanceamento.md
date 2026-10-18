@@ -18,9 +18,12 @@ erradas, e propor ajustes. Você não muda o jogo diretamente.
    incursão, incursões para comprar cada melhoria, dano por segundo por classe,
    tempo para matar cada monstro. Use também `data/mechanics/` e
    `docs/analise-tibia-habilidades.md` como referência.
-   - Enquanto não houver simulação com semente (F0 do PRD), calcule pelas
-     fórmulas e valores médios.
-   - Quando houver, rode 1.000 incursões simuladas por cenário.
+   - A simulação roda no Node: importe os módulos de `src/sim/` (sem DOM),
+     chame `carrega()` com o `content.json`, monte o save com `setSave()` e
+     rode `newRun()` e `update(dt, ent)` em laço — o passo "simulação no Node"
+     do `tools/testar.mjs` é o exemplo. Semeie o `Math.random` até o gerador
+     com semente existir. Rode centenas de incursões por cenário; para o que a
+     simulação ainda não modela (decisão do jogador), use fórmulas e médias.
 
 3. **Compare com os pilares do `VISAO.md`** (morte que dói 1 a 2 incursões,
    incursão de 5 a 7 min, cofre sempre com uso) e com as metas do PRD.

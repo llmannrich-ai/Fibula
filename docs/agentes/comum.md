@@ -36,11 +36,14 @@ Leia, nesta ordem:
   abra PR, não edite o `ROADMAP.md` nem o `DIARIO.md`, não responda issues.
   Diga em uma linha que o ciclo está pausado e pare. Não leia isto como
   "trabalhe sem publicar": é não trabalhar. O Leonardo usa quando está mexendo
-  no repositório à mão e não quer disputar os mesmos arquivos. É o modo atual.
-- **`direto`** — não existe CI, ou ela não é portão. Código vai direto na
-  `main`, com os portões do `CLAUDE.md` (checagem de sintaxe e teste headless).
-- **`pr`** — a CI existe e a `main` está protegida. Código entra só por PR
-  com CI verde; o Revisor mescla.
+  no repositório à mão e não quer disputar os mesmos arquivos.
+- **`direto`** — código vai direto na `main`, com os portões do `CLAUDE.md`
+  (sintaxe e `node tools/testar.mjs`). A CI roda depois de cada push e é o
+  alarme: **CI vermelha na `main` é a primeira coisa a resolver**, antes de
+  qualquer item do roadmap — conserte ou reverta. **É o modo escolhido pelo
+  Leonardo (18/10/2026) para quando o ciclo estiver ligado.**
+- **`pr`** — a `main` está protegida e só aceita PR com CI verde; o Revisor
+  mescla. Fica descrito para o caso de o Leonardo mudar de ideia.
 
 Só o dono muda esse arquivo. Se ele parecer errado (ex.: existe CI e a `main`
 está protegida, mas o modo ainda é `direto`), abra issue `decisao-do-dono`.

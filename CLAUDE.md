@@ -423,7 +423,11 @@ contra outra cópia do jogo (com o `src/` ao lado). `FIBULA_SAIDA` muda a pasta 
 
 **Há um só harness, e é este.** Se você for escrever outro, estenda a tabela
 `CASOS` em vez disso — dois portões para o mesmo item significam que um dos dois
-não roda e ninguém percebe.
+não roda e ninguém percebe. Pelo mesmo motivo não há `package.json`,
+TypeScript, `node --test` nem Playwright como biblioteca (decisão de
+18/10/2026, seção 15 do PRD): o script usa só o Node e o Chromium que já
+existem, e a simulação no Node cobre o que um teste de unidade cobriria.
+Reavaliar quando existir o servidor da F2.
 
 ### 3. O que olhar antes de dizer que está pronto
 
@@ -440,10 +444,28 @@ Se mexeu em regra, o script basta.
 
 ## Git e o ciclo automático
 
-Existe uma rotina de nuvem que roda de duas em duas horas, desenvolve **um**
-item do roadmap e **comita direto na `main`**. A rede de segurança é o histórico
-do git (`git revert`), não revisão prévia — foi decisão do Leonardo. Por isso a
-checagem de sintaxe acima não é recomendação, é portão.
+Quatro agentes agendados desenvolvem o jogo — Produto, Desenvolvedor, Revisor e
+Balanceamento —, cada um com as instruções em
+[`docs/agentes/`](docs/agentes/README.md), e sessões manuais do Leonardo
+trabalham em paralelo na mesma `main`. Quem decide se o ciclo roda e como o
+código entra é o arquivo [`docs/agentes/modo.txt`](docs/agentes/modo.txt):
+`pausado`, `direto` ou `pr` (o que cada um quer dizer está na seção 2 do
+[`comum.md`](docs/agentes/comum.md)). Decisão do Leonardo em 18/10/2026:
+**quando o ciclo estiver ligado, o modo é `direto`** — código vai direto na
+`main`, e a rede de segurança é o histórico do git (`git revert`), não
+revisão prévia. Por isso os portões locais acima não são recomendação, são
+obrigação.
+
+A CI ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) roda o
+`tools/testar.mjs` em todo push. No modo `direto` ela não impede o push: é o
+**alarme**. CI vermelha na `main` é a primeira coisa a resolver em qualquer
+execução, antes de qualquer item do roadmap — ela já pegou, em máquina mais
+lenta, um erro que o teste local não pegou.
+
+Quando dois documentos discordarem, vale a ordem do [PRD](docs/PRD.md):
+PRD (o quê e em que fase) > [VISAO.md](VISAO.md) (por quê) > este arquivo
+(como) > `ROADMAP.md` e `DIARIO.md`. As decisões do dono ficam numa tabela só,
+na seção 15 do PRD.
 
 Proibido: `push --force`, `rebase`, reescrever histórico.
 

@@ -127,9 +127,10 @@ multiplayer definida no [PRD](docs/PRD.md), que decide escopo e fase.
   interface de 2002, nem o tempo de viagem. Queremos a sensação, não a cópia.
 - **Dependência externa nova.** Nenhuma biblioteca, nenhum build. O motivo
   técnico está no [CLAUDE.md](CLAUDE.md); o motivo de design é que o jogo tem
-  que abrir em dois segundos num 3G ruim. Existe hoje exatamente uma exceção
-  herdada — a folha de fontes do Google — e ela é dívida a pagar, não licença
-  para a segunda.
+  que abrir em dois segundos num 3G ruim. Hoje o jogo não baixa nada de
+  terceiro: a folha de fontes do Google, a única exceção herdada, saiu em
+  18/10/2026. O Supabase (contas e save, só com conta) é serviço do produto,
+  decidido no [PRD](docs/PRD.md), não biblioteca no navegador.
 - **Rastreamento invasivo.** Sem cookie de terceiro, sem SDK de anúncio, sem
   vender dado. A partir da F1 existe telemetria própria e mínima (eventos de
   jogo da seção 12 do PRD), dentro da LGPD.

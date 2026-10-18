@@ -1,13 +1,14 @@
 # Roadmap do Fibula
 
-Contrato entre execuções do ciclo automático. `Agora` tem **um** item por vez.
+Fila única de trabalho dos agentes e das sessões manuais (decisão de
+18/10/2026). As decisões do dono ficam na seção 15 do [PRD](docs/PRD.md). `Agora` tem **um** item por vez.
 Ao concluir, mova para `Concluído` com a data e o commit, e promova o primeiro
 de `Próximo`.
 
 Todo item aqui precisa ter passado pelas quatro perguntas de
 [VISAO.md](VISAO.md), e cada um declara o pilar que serve. Item sem pilar não
-entra na lista. Cada item também diz **quando está pronto** — sem isso o ciclo
-automático não tem como saber que terminou.
+entra na lista. Cada item também diz **quando está pronto** — sem isso o agente
+não tem como saber que terminou.
 
 ---
 
@@ -28,20 +29,12 @@ mesma semente dá o mesmo resultado (hoje semeando o `Math.random` por fora).
 
 ## Próximo
 
-Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
-quando o Desenvolvedor julgar que cabe numa execução.
+Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
+("razoável"): primeiro o que faz a **decisão de extrair** existir (morte que
+custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
+da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
 
-### 1. Tela de créditos no jogo
-
-**Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
-`assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
-conteúdo. Botão discreto no acampamento abrindo uma tela com origem, licença e
-autores.
-
-**Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
-licença e link para os autores, e há caso no `tools/testar.mjs`.
-
-### 2. Peso de verdade na morte: perder parte do XP, não só o saco
+### 1. Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
 experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
@@ -71,7 +64,72 @@ recarregamento com o valor reduzido.
 
 **Fase:** jogo, em paralelo à F0.
 
-### 3. Revisar a economia do Selo de resguardo
+### 2. Curva de nível rápida demais
+
+**Pilar 5** (e princípio 3 do PRD: progressão lenta e visível). No playtest de
+18/10 o Cavaleiro chegou ao nível 7 em poucas incursões. A conta confirma:
+`xpNeed()` pede só 1.286 de XP do nível 1 ao 6, e um Guardião sozinho dá cerca
+de 300 (220 × 1,4 da profundidade). Nível que sobe em uma tarde esvazia o
+grind que o Tibia tinha de bom e abre o grimório rápido demais.
+
+O que fazer: medir com a simulação no Node quanto XP uma incursão típica dá em
+cada nível, definir um alvo (candidato: nível 8, o terceiro espaço, depois de
+~15 incursões) e ajustar. A curva `40·nível^1,6` está no código
+(`src/sim/progresso.js`); se for mexer nela, leve o coeficiente e o expoente
+para `progression` no `content.json`, como os outros números de balanceamento.
+
+**Pronto quando:** o diário registra o XP por incursão medido antes e depois,
+a curva (ou o XP dos monstros) foi ajustada no `content.json`, e o caso
+`nivel-na-incursao` do harness continua passando (ajustado se o número mudou).
+
+**Fase:** jogo, em paralelo à F0.
+
+### 3. Sair cedo precisa ser uma jogada válida
+
+**Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
+ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
+testar: o portal custar uma fatia do saco se usado cedo, ou o valor do loot
+crescer com o tempo de permanência, ou o portal ter uma janela que fecha e
+reabre. Precisa de teste de jogo, não só de implementação.
+
+**Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
+sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
+
+**Fase:** jogo, em paralelo à F0.
+
+### 4. Passo fixo na simulação
+
+**Pilar 4** (base técnica da F2). O `update()` roda no `dt` de cada quadro, até
+50 ms. O servidor da F2 precisa do mesmo resultado em qualquer máquina: a
+simulação passa a andar em passos fixos (candidato: 1/30 s), com o laço do
+cliente acumulando tempo e chamando quantos passos couberem. Fazer depois do
+gerador com semente.
+
+**Fase:** F0 (2). **Pronto quando:** a simulação no Node dá o mesmo resultado
+com passos de quadro diferentes (por exemplo, 16 ms e 50 ms) para a mesma
+semente, e o jogo no navegador continua igual.
+
+### 5. Tela de créditos no jogo
+
+**Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
+`assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
+conteúdo. Botão discreto no acampamento abrindo uma tela com origem, licença e
+autores.
+
+**Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
+licença e link para os autores, e há caso no `tools/testar.mjs`.
+
+### 6. PWA instalável
+
+**Pilar 3.** Manifesto e service worker para instalar na tela inicial e abrir
+offline, com o último conteúdo baixado. As fontes já são do sistema, então não
+há folha externa para embutir. Sem biblioteca.
+
+**Fase:** F0 (6). **Pronto quando:** o Chrome do Android oferece "Instalar",
+o jogo abre sem rede depois da primeira visita, e um caso no harness confere
+que o manifesto e o service worker carregam.
+
+### 7. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -100,17 +158,6 @@ e transforma cada incursão numa decisão antes mesmo de começar.
 **Pronto quando:** as três opções aparecem no menu, afetam `spawn()` e a tabela
 de loot, e a escolha some do caminho de quem só quer jogar (uma fica como
 padrão).
-
-### Sair cedo precisa ser uma jogada válida
-
-**Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
-ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
-testar: o portal custar uma fatia do saco se usado cedo, ou o valor do loot
-crescer com o tempo de permanência, ou o portal ter uma janela que fecha e
-reabre. Precisa de teste de jogo, não só de implementação.
-
-**Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
-sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
 
 ### Lugares com nome em vez de uma masmorra genérica
 
@@ -154,9 +201,7 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
   sem rede (pilar 2).
 - **Som** — efeitos curtos de golpe, de dano e de extração, mais um fundo sóbrio.
   Nada que precise de arquivo externo grande; de preferência síntese via
-  WebAudio para manter o arquivo único.
-- **PWA** *(F0 item 6)* — manifesto e service worker para instalar na tela inicial e abrir
-  offline. Reforça o pilar 3 sem contrariar o "zero dependências".
+  WebAudio, sem biblioteca.
 - **Mercado com preço móvel** — o valor dos itens oscila entre incursões, dando
   motivo para guardar loot em vez de vender na hora (pilar 5).
 

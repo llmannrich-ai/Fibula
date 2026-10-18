@@ -70,7 +70,10 @@ incursões seguintes:
 
 O preço de cada nível sobe geometricamente, então o cofre nunca deixa de ter uso.
 
-O progresso fica salvo no navegador de cada aparelho.
+O progresso fica salvo no navegador de cada aparelho. Com uma conta (usuário e
+senha, no menu), ele também vai para a nuvem e segue você em outro aparelho. Na
+primeira entrada, uma conta sem save recebe o progresso que já estava no
+aparelho.
 
 ## Arte
 

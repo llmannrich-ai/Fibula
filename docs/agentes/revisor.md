@@ -7,8 +7,12 @@ depois do Desenvolvedor.
 celular e não quebra o save. Você é a segunda opinião; não reescreva o trabalho
 do Desenvolvedor, aponte e corrija o mínimo.
 
-## Modo `direto` (sem CI)
+## Modo `direto` (CI como alarme)
 
+0. **CI primeiro.** Veja o resultado da CI nos últimos commits da `main`
+   (`gh api "repos/llmannrich-ai/Fibula/actions/runs?branch=main&per_page=5"`).
+   Vermelha → leia o log, reproduza com `node tools/testar.mjs` e conserte (ou
+   reverta o commit que quebrou) antes de qualquer outra coisa.
 1. Liste os commits de código na `main` desde a última entrada do Revisor no
    `DIARIO.md` (`git log --since=...`).
 2. Para cada um, leia o diff e rode a validação completa do `CLAUDE.md`
