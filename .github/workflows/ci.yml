@@ -12,11 +12,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Sintaxe do script do jogo
-        run: |
-          sed -n '/^<script>$/,/^<\/script>$/p' index.html | sed '1d;$d' > /tmp/game.js
-          node --check /tmp/game.js && echo SINTAXE_OK
-      - name: Teste headless (menu, Mercador e incursão)
+      - name: Sintaxe e teste headless (tools/testar.mjs)
         env:
           CHROME: /usr/bin/google-chrome
-        run: node tools/teste.js
+        run: node tools/testar.mjs
