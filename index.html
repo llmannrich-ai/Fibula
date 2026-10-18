@@ -223,6 +223,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rnd=n=>Math.floor(Math.random()*n),rr=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>a+rnd(b-a+1);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,hyp=Math.hypot;
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const fmtEl=s=>fmt(Math.floor(Math.max(0,s)));
 let W=0,H=0,DPR=1,MS=96;
 function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1);
@@ -331,7 +332,7 @@ function newRun(){
   const st=stats();
   const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,cdA:0,cdB:0,cdC:0,pot:3+save.up.bolsa,flash:0,walk:0};
   G={g,rooms,seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],
-     t:0,bag:{},bagVal:0,kills:0,xpGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null};
+     t:0,bag:{},bagVal:0,kills:0,xpGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0};
   for(const r of rooms){
     if(r===s)continue;
     const d=r.d/md,n=ri(2,3)+(r.w*r.h>50?1:0);
@@ -545,7 +546,7 @@ function updateProj(dt){
   }
 }
 function finish(kind){
-  if(G.over)return;G.over=true;G.end=kind;fireHeld=false;
+  if(G.over)return;G.over=true;G.end=kind;G.dur=G.t;fireHeld=false;
   G.sealed=0;
   if(kind==='extraiu'){save.cofre+=G.bagVal;save.ext++;save.best=Math.max(save.best,G.bagVal)}
   else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed}
@@ -755,7 +756,7 @@ function showEnd(){
   $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;
   if(sealOn){sl.textContent=`+${G.sealed} ouro (${Math.round(sealPct()*100)}%)`;sl.className='ok'}
   $('#eKills').textContent=G.kills;$('#eXp').textContent=`+${G.xpGain} (nível ${save.lvl})`;
-  $('#eTime').textContent=fmt(G.t);$('#eCofre').textContent=`${save.cofre} ouro`;
+  $('#eTime').textContent=fmtEl(G.dur);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
   const rows=Object.entries(G.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
   if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}
