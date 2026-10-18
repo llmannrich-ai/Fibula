@@ -1,2 +1,8 @@
 # Mapa codigo -> nome de origem: referencia de projeto, nunca versionado nem publicado.
 data/mechanics/.local/
+
+# Chaves do Supabase e outros segredos: só na máquina local, nunca no repositório público.
+api key supabase.txt
+*.secret.txt
+.env
+.env.*

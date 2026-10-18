@@ -126,6 +126,15 @@ Feiticeiro. **Esse é o padrão a seguir** — subir a versão da `KEY` sem escr
 a migração zera o progresso de todos os jogadores, e isso é decisão do Leonardo,
 não sua.
 
+**O save também vai para a nuvem quando há conta.** A seção `conta e save na
+nuvem` fala com o Supabase por `fetch` puro (sem biblioteca), só com a chave
+pública `SB_KEY`; as regras de acesso (RLS) estão em
+[tools/supabase/001_saves.sql](tools/supabase/001_saves.sql). Com `SB_KEY`
+vazia ou sem sessão, nada vai para a rede. `persist()` grava `save.em`
+(horário) e agenda o envio; `save.dono` marca a conta a que o aparelho está
+ligado; a sessão fica em `masmorra-runas-v2-sessao`. **Nunca ponha no
+`index.html` a senha do banco nem a chave `service_role`**: o arquivo é público.
+
 Toda escrita em `save` precisa de `persist()` depois. Todo atributo derivado
 (vida máxima, mana máxima, poder) passa por `stats()`, que lê a classe atual via
 `ch()` e `KL()` — nunca leia `save.chars` direto.
