@@ -106,16 +106,8 @@ const P = {
     'portal:{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false,ch:0}', 'portal na entrada'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
-  /* rato letal: mata o jogador num golpe, para exercitar finish("morreu").
-     Os monstros moram no content.json, então este mexe no conteúdo servido
-     (marcado com .conteudo) e não no html */
-  ratoLetal: Object.assign((c) => {
-    if (!c.enemies || !c.enemies.rato) throw new Error('patch "rato letal" não casou: content.json sem enemies.rato');
-    Object.assign(c.enemies.rato, {spd: 150, dmg: 200, atk: .3});
-    return c;
-  }, {conteudo: true}),
-  /* liga a conta com uma chave falsa e põe um Supabase de mentira na frente do
-     fetch: a tabela saves vive em window.__nuvem (dados = a linha do jogador,
+  /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
+     mas nada sai para a rede): a tabela saves vive em window.__nuvem (dados = a linha do jogador,
      null = sem linha), e cada GET e POST fica contado para o roteiro conferir */
   nuvem: (remoto) => (h) => patch(h,
     "'use strict';",
@@ -128,6 +120,26 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},gets:0,posts:0,auth:'',o
     N.posts++;N.dados=JSON.parse(o.body).dados;return r(201,null)}
   if(u.indexOf('/auth/v1/otp')>=0){N.otp=JSON.parse(o.body).email;return r(200,{})}
   return r(404,{})}}`, 'Supabase falso'),
+};
+
+/* Ajustes no conteúdo que o prelúdio entrega à cópia. As tabelas saíram do
+   index.html para o content.json, então o que antes era patch de texto agora
+   muda o objeto — e estoura do mesmo jeito se o campo esperado não estiver lá. */
+function ajusta(c, caminho, esperado, novo, nome) {
+  const ch = caminho.split('.'), k = ch.pop();
+  const o = ch.reduce((a, p) => a && a[p], c);
+  if (!o || JSON.stringify(o[k]) !== JSON.stringify(esperado))
+    throw new Error(`ajuste "${nome}" não casou em ${caminho}: o content.json mudou, ajuste tools/testar.mjs`);
+  o[k] = novo;
+}
+
+const A = {
+  /* rato letal: mata o jogador num golpe, para exercitar finish("morreu") */
+  ratoLetal: (c) => {
+    ajusta(c, 'enemies.rato.spd', 72, 150, 'rato letal');
+    ajusta(c, 'enemies.rato.dmg', 4, 200, 'rato letal');
+    ajusta(c, 'enemies.rato.atk', 0.9, 0.3, 'rato letal');
+  },
 };
 /* sessão já aberta, com validade longe o bastante para nunca pedir renovação */
 const SESSAO = {at: 'x.eyJzdWIiOiJ1MSJ9.y', rt: 'r1', exp: 9e15, uid: 'u1', email: 'jogador@exemplo.com'};
@@ -157,15 +169,6 @@ const CONTEUDO = (() => {
   console.error(`FALHA: não achei data/game/content.json (tentei ${tentativas.join(' e ')})`);
   process.exit(2);
 })();
-
-/* patches marcados com .conteudo mexem no content.json servido ao caso */
-function conteudoDo(caso) {
-  const ps = (caso.patches || []).filter((p) => p.conteudo);
-  if (!ps.length) return CONTEUDO;
-  let c = JSON.parse(CONTEUDO);
-  for (const p of ps) c = p(c);
-  return JSON.stringify(c);
-}
 
 function prelude(caso) {
   const semeadura = Object.entries(caso.save || {})
@@ -201,17 +204,25 @@ function prelude(caso) {
   try{localStorage.clear();${semeadura}}catch(e){anota('localStorage: '+e.message)}
   ${caso.bloqueiaSave ? "Storage.prototype.setItem=function(){throw new DOMException('bloqueado pelo teste','QuotaExceededError')};" : ''}
   /* conteúdo do jogo: fetch não funciona em file://, então devolvemos o
-     data/game/content.json real, embutido por tools/testar.mjs. Só a URL do
-     conteúdo é interceptada: o POST do resultado para o coletor precisa passar */
-  var CT=${conteudoDo(caso)},f0=window.fetch;
-  window.fetch=function(u){
+     data/game/content.json real, embutido por tools/testar.mjs. Só essa URL é
+     interceptada: o POST do resultado para o coletor precisa do fetch real */
+  var CT=${conteudoDoCaso(caso)};
+  var fr=window.fetch.bind(window);
+  window.fetch=function(u,o){
     /* nenhum caso fala com o Supabase de verdade; quem quer nuvem usa P.nuvem */
-    if(String(u).indexOf('supabase.co')>=0)return Promise.reject(new Error('rede real bloqueada no teste'));
-    if(String(u).indexOf('content.json')<0)return f0.apply(window,arguments);
+    if(/supabase.co/.test(String(u)))return Promise.reject(new Error('rede real bloqueada no teste'));
+    if(!/content\.json/.test(String(u)))return fr(u,o);
     return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(CT)}})};
 })();
 </script>
 `;
+}
+
+function conteudoDoCaso(caso) {
+  if (!caso.conteudo) return CONTEUDO;
+  const c = JSON.parse(CONTEUDO);
+  for (const a of caso.conteudo) a(c);
+  return JSON.stringify(c);
 }
 
 function epilogo(caso, alvo) {
@@ -248,7 +259,7 @@ ${caso.roteiro}
 
 function monta(caso, html, alvo) {
   let h = html;
-  for (const p of caso.patches || []) if (!p.conteudo) h = p(h);
+  for (const p of caso.patches || []) h = p(h);
   const {ini, fim} = corpoDoScript(h);
   return h.slice(0, ini) + prelude(caso) + h.slice(ini, fim) + epilogo(caso, alvo) + h.slice(fim);
 }
@@ -422,7 +433,8 @@ const CASOS = [
     nome: 'morte',
     o_que: 'morte: tela final, perda do saco e Selo de resguardo devolvendo 40%',
     semente: 3,
-    patches: [P.tempo(12, 3), P.saco, P.spawnNaEntrada, P.ratoLetal],
+    patches: [P.tempo(12, 3), P.saco, P.spawnNaEntrada],
+    conteudo: [A.ratoLetal],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 2},

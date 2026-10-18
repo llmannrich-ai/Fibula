@@ -74,8 +74,8 @@ O progresso fica salvo no navegador de cada aparelho.
 
 ## Desenvolvimento
 
-O jogo inteiro é o `index.html` — sem build e sem biblioteca, servido cru pelo
-GitHub Pages.
+Todo o código do jogo é o `index.html` — sem build e sem biblioteca, servido cru
+pelo GitHub Pages. O conteúdo fica fora dele, num arquivo de dados.
 
 A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
 convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os

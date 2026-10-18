@@ -18,46 +18,78 @@ os não-objetivos estão em [VISAO.md](VISAO.md).
 Ao vivo em https://llmannrich-ai.github.io/Fibula/ (GitHub Pages, branch `main`,
 raiz do repositório).
 
-## Regra número um: um arquivo, uma dependência
+## Regra número um: nada de build, nada de biblioteca
 
-Todo o jogo é o [index.html](index.html) — hoje ~1380 linhas. Não há build, não
-há `package.json`, não há import, não há arquivo `.js` ou `.css` separado. O
+Todo o **código** do jogo é o [index.html](index.html) — hoje 1361 linhas. Não
+há build, não há `package.json`, não há import, não há arquivo `.js` ou `.css`
+separado. O
 GitHub Pages serve o arquivo cru, e o `.nojekyll` existe para ele não ser
 processado. A pasta `docs/` guarda análise de design, e a `tools/` ferramenta de
 desenvolvimento (teste, servidor local, extração de dados) — nada em nenhuma das
 duas vai para o navegador do jogador. A regra vale para o que é **servido**: o
 `tools/testar.mjs` roda no Node e pode ter o tamanho que precisar.
 
-Isso é uma escolha, não uma dívida: o jogo abre instantâneo no celular e
-qualquer agente consegue ler o programa inteiro de uma vez. **Não quebre isso.**
-Nenhuma biblioteca, nenhum bundler, nenhum arquivo separado — nem "só para
+Isso é uma escolha, não uma dívida: o jogo abre rápido no celular e qualquer
+agente consegue ler o programa inteiro de uma vez. **Não quebre isso.** Nenhuma
+biblioteca, nenhum bundler, nenhum arquivo `.js` separado — nem "só para
 organizar".
 
-A única exceção hoje é uma folha de estilo externa do Google Fonts (Pixelify
-Sans e Barlow Semi Condensed), nas linhas 13–15. Ela é um resto conhecido, não
-um precedente: degrada para `system-ui`/`sans-serif` se não carregar, mas é a
-única coisa no jogo que depende de rede. Está no [ROADMAP.md](ROADMAP.md) para
-ser embutida ou removida. **Não adicione outras.**
+Fora o `index.html`, o jogador baixa **duas** coisas. As duas são conhecidas e
+estão aqui para não serem confundidas com precedente:
 
-Se o arquivo passar de ~2000 linhas, aí sim vale discutir a separação com o
-Leonardo antes de fazer.
+| O quê | De onde | Se não carregar |
+|---|---|---|
+| [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot e progressão | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
+| Folha de estilo do Google Fonts (Pixelify Sans, Barlow Semi Condensed), linhas 13–15 | servidor de terceiro | degrada para `system-ui`/`sans-serif` |
+
+A diferença entre as duas é o critério para julgar qualquer dependência nova. O
+`content.json` é arquivo do próprio repositório, servido pelo mesmo Pages, e
+existe por um motivo que o código não resolve: **ajustar o jogo sem editar
+programa.** Mudar o preço de uma melhoria, o dano de uma habilidade ou a vida de
+um monstro é mexer em dado, e quem balanceia não precisa encostar no motor — o
+carregamento valida o arquivo antes de liberar o jogo. A fonte do Google é a
+dependência frágil de verdade: é de terceiro e, num celular com rede ruim, é ela
+que atrasa a primeira tela. Está no [ROADMAP.md](ROADMAP.md) para ser embutida ou
+removida.
+
+**Não adicione dependência de terceiro nenhuma.** Para dado do próprio
+repositório, o teste é se ele serve para alguém ajustar o jogo sem programar —
+se for só para "organizar o código", não entra.
+
+Duas consequências de o jogo buscar o `content.json`, que já pegaram gente
+desprevenida:
+
+- **O `index.html` não abre direto do disco.** O navegador bloqueia `fetch` em
+  `file://` e o menu avisa. Para rodar local, use
+  [`tools/serve.ps1`](tools/serve.ps1) e abra pelo `localhost`.
+- O `tools/testar.mjs` embute o `content.json` na cópia de teste e o devolve por
+  um `fetch` falso, porque abre as cópias em `file://`.
+
+Se o `index.html` passar de ~2000 linhas, aí sim vale discutir separar **código**
+com o Leonardo antes de fazer.
 
 ## Mapa do index.html
 
-O arquivo tem 1382 linhas em 18/10/2026. Os quatro blocos são `<head>` (3–190,
-com o estilo crítico inline na 11 e as fontes externas em 13–15), o `<style>`
-principal (16–188), o markup (191–302) e o `<script>` (303–1379).
+O arquivo tem 1361 linhas em 18/10/2026. Os quatro blocos são o `<head>` (com o
+estilo crítico inline e as fontes externas nas linhas 13–15), o `<style>`
+principal, o markup e o `<script>`.
 
 Esses números envelhecem a cada commit. **Para achar as coisas, use os
 marcadores de seção `/* ---------- nome ---------- */`**, que são estáveis.
 Mantenha a divisão e ponha código novo na seção certa:
 
-- **classes** — tabela `CLASSES` e `SPELLS`, o coração da Etapa 3
+- **conteúdo do jogo** — `DATA_URL`, `validaConteudo()`, `conteudoFalhou()` e o
+  `await` que carrega o `data/game/content.json`. É a primeira coisa que roda,
+  porque a migração de save chama `slotsIniciais()` e já precisa de `SPELLS`;
+  por isso o IIFE é `async`. As tabelas abaixo são **leituras** desse arquivo,
+  não literais: para mudar valor, edite o JSON
+- **classes** — `CLASSES` e `CL_ORDEM`, o coração da Etapa 3
+- **habilidades** — `SPELLS`, `SLOT_LVL`, `listaDaClasse()`, `slotsIniciais()`
 - **progresso salvo** — `KEY`, `KEY1`, `save`, `persist()`, a migração v1→v2
 - **personagem e progressão** — `novoChar()`, `ch()`, `KL()`, `stats()`,
   `xpNeed()`, `manaPraMag()`, `golpesPraPer()`, `nSlots()`, `desbloqueadas()`
-- **melhorias permanentes** — tabela `UP`, `upCost()`, `sealPct()`
-- **dados do jogo** — tabelas `MT` (monstros), `ITEMS`, `LOOT`
+- **melhorias permanentes** — `UP`, `upCost()`, `sealPct()`
+- **dados do jogo** — `MT` (monstros), `ITEMS`, `LOOT`, `PROG` (progressão)
 - **mapa** — `genMap()`, `carveRooms()`, `corridor()`, `carve()`
 - **estado da incursão** — `newRun()`, `spawn()`, `pickType()`
 - **física** — `solid()`, `blocked()`, `move()`, `buildFlow()`, `reveal()`
@@ -191,7 +223,9 @@ no nível 18, o nível subindo no meio da incursão, o save corrompido e a
 migração `v1`→`v2`.
 
 Caso novo entra na tabela `CASOS` no fim do
-[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches e um roteiro
+[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto no
+`index.html`, ajustes no `content.json` (campo `conteudo`, para mexer em
+monstro, item ou classe — as tabelas não moram mais no código) e um roteiro
 que clica nos botões e chama `ok(nome, condição, o_que_leu)`. Uma asserção
 falha imprime o que ela leu, e a cópia e o DOM final ficam na pasta de trabalho
 para inspeção.
