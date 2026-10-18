@@ -271,6 +271,27 @@ function prelude(caso) {
   window.fetch=function(u,o){
     if(/supabase.co/.test(String(u)))return Promise.reject(new Error('rede real bloqueada no teste'));
     return fr(u,o)};
+  /* o Realtime da cidade (src/rede.js) também não sai daqui: um WebSocket falso
+     imita o canal do Supabase (entrar, presença, broadcast). O roteiro faz o
+     papel dos outros jogadores com __rt.entra(), __rt.pos() e __rt.sai(), e lê
+     o que o jogo mandou em __rt.enviadas */
+  var RT={abertos:0,fechados:0,enviadas:[],vivos:[]};window.__rt=RT;
+  function FakeWS(url){var w=this;w.url=String(url);w.readyState=0;RT.abertos++;RT.vivos.push(w);
+    setTimeout(function(){if(w.readyState!==0)return;w.readyState=1;w.onopen&&w.onopen()},0)}
+  FakeWS.prototype.send=function(t){var d=JSON.parse(t),w=this;RT.enviadas.push(d);w.topico=w.topico||d.topic;
+    if(d.event==='phx_join'){w.chave=d.payload.config.presence.key;w.diz({event:'phx_reply',ref:d.ref,payload:{status:'ok',response:{}}});
+      w.diz({event:'presence_state',payload:RT.estado()})}
+    else if(d.event==='presence'&&d.payload.event==='track'){RT.meus=RT.meus||{};RT.meus[w.chave]=d.payload.payload}};
+  FakeWS.prototype.diz=function(m){var w=this;m.topic=m.topic||w.topico;setTimeout(function(){if(w.readyState===1&&w.onmessage)w.onmessage({data:JSON.stringify(m)})},0)};
+  FakeWS.prototype.close=function(){if(this.readyState===3)return;this.readyState=3;RT.fechados++;RT.vivos=RT.vivos.filter(function(v){return v.readyState===1||v.readyState===0});var w=this;setTimeout(function(){w.onclose&&w.onclose({})},0)};
+  RT.outros={};
+  RT.estado=function(){var e={};for(var k in RT.outros)e[k]={metas:[RT.outros[k]]};return e};
+  RT.todos=function(m){RT.vivos.forEach(function(w){if(w.readyState===1)w.diz(JSON.parse(JSON.stringify(m)))})};
+  RT.entra=function(id,meta){RT.outros[id]=meta;var j={};j[id]={metas:[meta]};RT.todos({event:'presence_diff',payload:{joins:j,leaves:{}}})};
+  RT.sai=function(id){var m=RT.outros[id];delete RT.outros[id];var l={};l[id]={metas:[m]};RT.todos({event:'presence_diff',payload:{joins:{},leaves:l}})};
+  RT.pos=function(id,x,y){RT.todos({event:'broadcast',payload:{type:'broadcast',event:'pos',payload:{id:id,x:x,y:y,f:0}}})};
+  RT.posMandadas=function(){return RT.enviadas.filter(function(d){return d.event==='broadcast'&&d.payload.event==='pos'})};
+  window.WebSocket=FakeWS;
 })();
 </script>
 `;
@@ -691,6 +712,71 @@ const CASOS = [
     ok('a volta da incursão é pelo portão, ao lado do Guia', $('#app').classList.contains('cidade')&&Cd.C.perto==='guia', Cd.C.perto+' em '+Math.round(Cd.C.p.x)+','+Math.round(Cd.C.p.y)+' / guia '+g.x+','+g.y);
     clica($('#cMenu'));
     ok('o botão Menu da cidade volta ao acampamento', visivel('#menu')&&!$('#app').classList.contains('cidade'));
+`,
+  },
+  {
+    nome: 'cidade-compartilhada',
+    o_que: 'multiplayer na cidade: liga ao entrar, vê quem chega, anda e sai, confere dado de fora, e desliga ao ir caçar ou ao menu',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 3, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt;
+    ok('no acampamento não há conexão', RT.abertos===0, RT.abertos);
+    clica($('#play'));
+    var ligou=await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    ok('entrar na cidade liga ao canal da cidade', ligou&&RT.abertos===1&&RT.vivos[0].url.indexOf('/realtime/v1/websocket')>0, RT.abertos+' / '+txt('#cRede'));
+    var join=RT.enviadas.filter(function(d){return d.event==='phx_join'})[0];
+    ok('o canal é o da versão do jogo', join&&join.topic==='realtime:cidade-'+document.querySelector('script[src*="main.js"]').src.split('v=')[1].split('.').slice(0,2).join('.'), join&&join.topic);
+    var tr=RT.enviadas.filter(function(d){return d.event==='presence'})[0];
+    ok('anuncia nome, classe e nível (sem conta, o nome da classe)', tr&&tr.payload.payload.nome==='Feiticeiro'&&tr.payload.payload.classe==='feiticeiro'&&tr.payload.payload.lvl===3, tr&&JSON.stringify(tr.payload.payload));
+    ok('conta onde está ao chegar', RT.posMandadas().length===1, RT.posMandadas().length);
+    RT.entra('ana1',{nome:'Ana',classe:'cavaleiro',lvl:7});RT.pos('ana1',300,300);
+    await quadros(4);
+    var a=Cd.OUTROS.get('ana1');
+    ok('quem chega aparece, com o nome e a classe dela', a&&a.vis&&a.nome==='Ana'&&a.classe==='cavaleiro'&&a.x===300, a&&JSON.stringify({n:a.nome,c:a.classe,x:a.x,v:a.vis}));
+    ok('o HUD conta duas pessoas', txt('#cRede')==='2 na cidade', txt('#cRede'));
+    ok('o registro avisa a chegada', /Ana chegou à cidade/.test(txt('#log')||''), txt('#log'));
+    ok('quem chega fica sabendo onde estou', RT.posMandadas().length===2, RT.posMandadas().length);
+    RT.pos('ana1',360,300);await ate(function(){return a.ax===360},10);await quadros(1);
+    var meio=a.x;await quadros(12);
+    ok('o boneco dela anda até a posição nova, sem saltar', meio>300&&meio<360&&Math.abs(a.x-360)<1, meio+' → '+a.x);
+    /* dado de fora: posição fora do mapa, classe que não existe, nome comprido com controle */
+    RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50);
+    await quadros(3);
+    var m=Cd.OUTROS.get('mal');
+    ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.x===Cd.C.w*32&&m.y===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
+    RT.sai('mal');
+    var n0=RT.posMandadas().length;
+    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await quadros(2);
+    var n1=RT.posMandadas().length-n0;
+    ok('andando, manda a posição no máximo 8 vezes por segundo', n1>=3&&n1<=6, n1+' em 0,6 s');
+    var ult=RT.posMandadas()[RT.posMandadas().length-1].payload.payload;
+    ok('a última posição mandada é onde parei', Math.abs(ult.x-Math.round(Cd.C.p.x))<=1, ult.x+' / '+Cd.C.p.x);
+    RT.sai('ana1');await quadros(3);
+    ok('quem sai some, e o registro avisa', !Cd.OUTROS.has('ana1')&&/Ana saiu da cidade/.test(txt('#log')||''), Cd.OUTROS.size);
+    ok('sem ninguém, o HUD volta a só você', txt('#cRede')==='Só você na cidade', txt('#cRede'));
+    Tl.abreNpc('mercador');await quadros(3);
+    ok('numa loja da cidade continua conectado', RT.fechados===0, RT.fechados);
+    clica($('#shopBack'));
+    RT.entra('bia',{nome:'Bia',classe:'druida',lvl:2});RT.pos('bia',200,200);await quadros(3);
+    Tl.abreNpc('guia');clica($('#huntList button'));await quadros(4);
+    ok('ir caçar sai da cidade: desliga e esquece os outros', RT.fechados===1&&Cd.OUTROS.size===0, RT.fechados+' / '+Cd.OUTROS.size);
+    ok('a caçada é sozinha: nada de rede na masmorra', RT.vivos.length===0, RT.vivos.length);
+    clica($('#toMenu'));
+    var religou=await ate(function(){return RT.abertos===2&&Cd.OUTROS.has('bia')},40);
+    ok('voltar à cidade religa e recebe quem já estava lá', religou, RT.abertos+' / '+Cd.OUTROS.size);
+    RT.pos('bia',210,200);await quadros(2);
+    RT.vivos[0].close();await quadros(2);
+    ok('se a conexão cai, avisa e esquece os outros', txt('#cRede')==='Sem rede: só você'&&Cd.OUTROS.size===0, txt('#cRede'));
+    var voltou=await ate(function(){return RT.abertos===3&&txt('#cRede')==='2 na cidade'},60);
+    ok('e religa sozinha', voltou, RT.abertos+' / '+txt('#cRede'));
+    clica($('#cMenu'));await quadros(3);
+    ok('o menu sai da cidade e desliga', RT.vivos.length===0, RT.vivos.length);
 `,
   },
   {

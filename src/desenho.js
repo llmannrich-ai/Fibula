@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.7.1';
-import {CITY} from './sim/dados.js?v=0.7.1';
-import {save,KL} from './sim/progresso.js?v=0.7.1';
-import {G,solid} from './sim/incursao.js?v=0.7.1';
-import {C} from './sim/cidade.js?v=0.7.1';
-import {bf} from './sim/combate.js?v=0.7.1';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.7.1';
-import {$,app,RM} from './dom.js?v=0.7.1';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.8.0';
+import {CITY,CLASSES} from './sim/dados.js?v=0.8.0';
+import {save,KL} from './sim/progresso.js?v=0.8.0';
+import {G,solid} from './sim/incursao.js?v=0.8.0';
+import {C} from './sim/cidade.js?v=0.8.0';
+import {bf} from './sim/combate.js?v=0.8.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.8.0';
+import {$,app,RM} from './dom.js?v=0.8.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -66,19 +66,20 @@ function sprCriatura(n,face,mv,fase,flash,x,y){
   return true;
 }
 /* dead: caído no fim da incursão; arm: o escudo de apoio ativo */
+/* p.classe só existe nos outros jogadores da cidade; o próprio é o do save */
 function drawPlayer(p,dead,arm){
-  const x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2);
+  const x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2),cl=p.classe||save.classe;
   if(ART.ok){
-    if(dead){if(spr('cad_'+save.classe,0,0,p.x,p.y))return}
+    if(dead){if(spr('cad_'+cl,0,0,p.x,p.y))return}
     else{
       if(p.swing>0){const a=1-p.swing/.24,sw=p.swingA-.9+a*1.8;ctx.strokeStyle=`rgba(255,236,190,${.9-a*.7})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y-2,p.swingR*.8,sw-.5,sw+.5);ctx.stroke()}
       if(arm){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y-4,19,0,TAU);ctx.stroke()}
-      if(sprCriatura('cls_'+save.classe,p.face,p.mv,p.walk/3,p.flash>0,p.x,p.y))return;
+      if(sprCriatura('cls_'+cl,p.face,p.mv,p.walk/3,p.flash>0,p.x,p.y))return;
     }
   }
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(p.x,p.y+11,12,4,0,0,TAU);ctx.fill();
   if(dead){ctx.fillStyle='#4a4658';ctx.beginPath();ctx.ellipse(x,y+4,16,7,0,0,TAU);ctx.fill();ctx.fillStyle='#8f8a7e';circle(ctx,x+12,y+2,5);return}
-  const f=p.flash>0,K=KL(),C=K.cor;
+  const f=p.flash>0,K=p.classe?CLASSES[p.classe]:KL(),C=K.cor;
   const s=Math.cos(p.face)>=0?1:-1;
   if(p.swing>0){ // arco do golpe corpo a corpo
     const a=1-p.swing/.24,sw=p.swingA-.9+a*1.8;
@@ -320,6 +321,10 @@ function drawNpc(n,p){
   ctx.fillStyle=NPC_COR[n.k]||'#77726a';ctx.beginPath();ctx.moveTo(x-11,y+11);ctx.lineTo(x+11,y+11);ctx.lineTo(x+7,y-5);ctx.lineTo(x-7,y-5);ctx.closePath();ctx.fill();
   ctx.fillStyle='#e4c39d';circle(ctx,x,y-9,6);
 }
+/* os outros jogadores da cidade (src/sim/cidade.js), sem criar função por quadro */
+let linhaC=0;
+const outroNaLinha=o=>{if(o.vis&&(o.y/T|0)===linhaC)drawPlayer(o,false,false)};
+const nomeDoOutro=o=>{if(o.vis)outText(o.nome,o.x-(ART.ok?desl('cls_'+o.classe):0),o.y-(ART.ok?36:30),'#c8e6a0')};
 export function renderCidade(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0a0910';ctx.fillRect(0,0,W,H);
   if(!C)return;
@@ -349,11 +354,13 @@ export function renderCidade(){
         ctx.strokeStyle='#ffd68a';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(mx,my,13,9,0,0,TAU);ctx.stroke()}
     }
     for(const n of C.npcs)if((n.y/T|0)===y)drawNpc(n,p);
+    linhaC=y;C.outros.forEach(outroNaLinha);
     if((p.y/T|0)===y)drawPlayer(p,false,false);
   }
   /* nomes por cima de tudo, como no mapa da masmorra */
   ctx.font=FONTE_MAPA;
   for(const n of C.npcs)outText(CITY.npcs[n.k].nome,n.x-(A?desl('npc_'+n.k):0),n.y-(A?36:30),'#8fd0ff');
+  C.outros.forEach(nomeDoOutro);
   outText('Você',p.x-(A?desl('cls_'+save.classe):0),p.y-(A?36:30),'#00c000');
 }
 export function drawMini(){

@@ -381,6 +381,7 @@ a partir de issue `decisao-do-dono` respondida).
 | 2026-10-18 | `ROADMAP.md` é a fila única; issues só para decisão, bug e feedback | Seção 13.1 |
 | 2026-10-18 | Uma tarefa agendada por papel; as duplicadas foram apagadas | Seção 13.4 |
 | 2026-10-18 | Cidade andável antecipada da F3, ainda sem rede: casas do Mercador, Banco e Guia de caça; o mapa e os NPCs ficam em `city` e `hunts` do `content.json` | Seção 7.4, `CLAUDE.md` |
+| 2026-10-19 | Primeiro teste do multiplayer **só na cidade**, pelo Realtime do Supabase (sem servidor próprio, sem gasto): ver quem está lá e andar junto. As caçadas continuam sozinhas; o co-op da incursão segue na F2 com servidor autoritativo | `CLAUDE.md` (Realtime), `docs/plano-multiplayer.md` |
 
 ### 15.2 Pendentes (com padrão)
 

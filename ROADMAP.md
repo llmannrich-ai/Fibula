@@ -158,6 +158,17 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — A cidade compartilhada (0.8.0)** *(primeiro teste do
+  multiplayer, a pedido do Leonardo: só na cidade, caçadas sozinhas; pilar 2)*.
+  Quem está na cidade vê os outros andando, com nome (o da conta, ou o da
+  classe) e a classe de cada um, e o HUD conta quantos são; o registro avisa
+  quem chega e quem sai. Sem servidor próprio: presença e broadcast do
+  Supabase Realtime pelo `WebSocket` nativo (`src/rede.js`), posição só
+  quando mexe e no máximo 8 por segundo; liga ao entrar na cidade, desliga ao
+  caçar, ao ir ao menu e com a aba no fundo, religa sozinho se cair. Dado de
+  fora conferido em `poeOutro()`. Caso `cidade-compartilhada` no harness, com
+  um Realtime falso; testado também com dois navegadores no Realtime de
+  verdade (um viu o outro andar até a posição exata e sair para caçar).
 - **2026-10-18 — A Cidade (0.7.0)** *(antecipado da F3 a pedido do Leonardo,
   sem rede; pilares 2 e 3)*. Entre incursões o jogador anda por um mapa de
   24×17 com as casas do Mercador (melhorias) e do Banco (cofre, vestir e

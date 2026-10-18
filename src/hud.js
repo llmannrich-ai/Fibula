@@ -1,12 +1,13 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.7.1';
-import {SPELLS,CITY} from './sim/dados.js?v=0.7.1';
-import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.7.1';
-import {G} from './sim/incursao.js?v=0.7.1';
-import {C} from './sim/cidade.js?v=0.7.1';
-import {ART,icone} from './arte.js?v=0.7.1';
-import {$} from './dom.js?v=0.7.1';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.8.0';
+import {SPELLS,CITY} from './sim/dados.js?v=0.8.0';
+import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.8.0';
+import {G} from './sim/incursao.js?v=0.8.0';
+import {C} from './sim/cidade.js?v=0.8.0';
+import {ART,icone} from './arte.js?v=0.8.0';
+import {rede} from './rede.js?v=0.8.0';
+import {$} from './dom.js?v=0.8.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -65,11 +66,12 @@ export function hud(){
 /* ---------- HUD da cidade ----------
    Quem você é, o cofre, e o botão de falar quando há um NPC ao alcance. Ao
    chegar perto, o NPC diz a frase dele no registro, como no Tibia. */
-const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),falar:$('#bFalar'),quem:$('#falarT')};
+const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT')};
 let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
   setT(EC.cls,KL().nome);setT(EC.lvl,'Nv '+c.lvl);setT(EC.cofre,String(save.cofre));
+  setT(EC.rede,rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…');
   if(C.perto===pertoAntes)return;
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
   if(!C.perto)return;

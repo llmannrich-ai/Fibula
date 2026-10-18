@@ -71,7 +71,8 @@ confundidas com precedente:
 | [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~250 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
-Supabase, e só quando há conta. A folha do Google Fonts que existia saiu em
+Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada,
+ver abaixo) só enquanto o jogador está na cidade. A folha do Google Fonts que existia saiu em
 18/10/2026 junto com a arte do Tibia — as fontes agora são do sistema (Verdana,
 como o cliente do Tibia, e uma serifa Palatino nos títulos).
 
@@ -138,7 +139,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`), a física da grade da cidade e `updateCidade(dt,ent)`, que
   anda e devolve o NPC ao alcance (`C.perto`). É regra, não tela: na F3 é o
-  estado que o servidor da cidade compartilhada roda
+  estado que o servidor da cidade compartilhada roda, e **os outros jogadores**
+  (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
+  e faz o boneco de cada um correr atrás da última posição recebida
 - `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
   `spawn()`, `pickType()`), **física** (`solid()`, `blocked()`, `move()`,
   `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
@@ -156,7 +159,14 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `salvar.js` — **progresso salvo**: `KEY`, `KEY1`, `carregaSave()` com a
   migração v1→v2, `persist()`, `saveFalhou`
 - `nuvem.js` — **conta e save na nuvem** (Supabase); registra-se em
-  `aoGravar()` para subir cada gravação
+  `aoGravar()` para subir cada gravação; exporta `SB_URL`, `SB_KEY` e
+  `quemSou()` para a rede
+- `rede.js` — **a cidade compartilhada**: o canal `realtime:cidade-<x.y>` do
+  Supabase Realtime, por `WebSocket` nativo. `quadro(dt,naCidade)`, chamado
+  pelo laço, liga ao entrar na cidade e desliga ao sair dela (caçar, menu) ou
+  com a aba no fundo, e religa sozinho. Presença (nome, classe, nível) e
+  broadcast da posição, no máximo 8 por segundo e só quando mexe. Não decide
+  regra nenhuma: a caçada é sozinha, e o co-op da incursão é o servidor da F2
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -377,6 +387,23 @@ Limites conhecidos de acesso:
 - Os testes (`tools/testar.mjs`) nunca falam com o Supabase de verdade: o
   prelúdio bloqueia `supabase.co` e o caso que precisa de nuvem usa `P.nuvem`,
   um Supabase falso em memória que imita as cinco funções do login simples.
+  O `WebSocket` também é falso em todo caso: `window.__rt` imita o canal do
+  Realtime, e o roteiro faz os outros jogadores com `__rt.entra()`,
+  `__rt.pos()` e `__rt.sai()` (caso `cidade-compartilhada`).
+
+### Realtime — a cidade compartilhada
+
+Primeiro teste do multiplayer, decisão do Leonardo em 19/10/2026: **só na
+cidade**; as caçadas continuam sozinhas. Usa o Realtime do mesmo projeto, com
+a chave publicável, sem tabela nem servidor próprio, e por isso não custa nada
+no plano Free (limites dele: 200 conexões simultâneas e 2 milhões de mensagens
+por mês, contando cada entrega). Cada aparelho conta a própria posição e
+desenha a dos outros: quem tem a chave pode mandar posição falsa, e tudo bem,
+porque na cidade não se ganha nem se perde nada. O que chega de fora passa por
+`poeOutro()` em `src/sim/cidade.js`, que prende a posição ao mapa, só aceita
+classe que existe e corta o nome. **Nada que valha ouro, XP ou item pode
+passar por esse canal**: isso é o servidor autoritativo da F2
+([docs/plano-multiplayer.md](docs/plano-multiplayer.md)).
 
 ## Convenções de código
 

@@ -34,6 +34,16 @@ testadores reais antes de investir no multiplayer.
 
 "Sessão" = uma execução de agente ou sessão manual com teste e commit.
 
+## 1.1 Antes da F2: a cidade compartilhada (19/10/2026)
+
+O Leonardo decidiu testar o multiplayer primeiro **só na cidade**, com as
+caçadas sozinhas. Entrou na 0.8.0 sem servidor próprio: o Realtime do
+Supabase (presença e broadcast), pelo `WebSocket` nativo, em `src/rede.js`.
+Serve porque na cidade não há regra a proteger; não serve para a incursão,
+onde dano, loot e XP precisam de servidor autoritativo (M2 a M4 abaixo). O que
+o teste ensina sobre a rede de celular (queda, aba no fundo, reconexão) vale
+para a M2.
+
 ## 2. Onde o código está hoje (o que impede o multiplayer)
 
 O que já ajuda muito:

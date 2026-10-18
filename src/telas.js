@@ -1,16 +1,16 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final e Mercador. */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.7.1';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.7.1';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.7.1';
-import {G,setG,newRun} from './sim/incursao.js?v=0.7.1';
-import {C,entraCidade} from './sim/cidade.js?v=0.7.1';
-import {persist,saveFalhou} from './salvar.js?v=0.7.1';
-import {desenhaConta} from './nuvem.js?v=0.7.1';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade} from './hud.js?v=0.7.1';
-import {icone} from './arte.js?v=0.7.1';
-import {$,app} from './dom.js?v=0.7.1';
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.8.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.8.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.8.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.8.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.8.0';
+import {persist,saveFalhou} from './salvar.js?v=0.8.0';
+import {desenhaConta} from './nuvem.js?v=0.8.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade} from './hud.js?v=0.8.0';
+import {icone} from './arte.js?v=0.8.0';
+import {$,app} from './dom.js?v=0.8.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS];

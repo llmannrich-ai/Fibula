@@ -9,13 +9,13 @@
    por último (save.em); no primeiro login de um aparelho vence o que tem mais
    incursões, para um save novo nunca apagar um antigo; num aparelho que era de
    outra conta vence sempre a nuvem, para uma conta não herdar a outra. */
-import {normaliza,save,setSave} from './sim/progresso.js?v=0.7.1';
-import {G} from './sim/incursao.js?v=0.7.1';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.7.1';
-import {menu,showMenu} from './telas.js?v=0.7.1';
-import {$} from './dom.js?v=0.7.1';
+import {normaliza,save,setSave} from './sim/progresso.js?v=0.8.0';
+import {G} from './sim/incursao.js?v=0.8.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.8.0';
+import {menu,showMenu} from './telas.js?v=0.8.0';
+import {$} from './dom.js?v=0.8.0';
 
-const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
+export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
 let sessao=null;try{sessao=JSON.parse(localStorage.getItem(KEYS)||'null')}catch(e){}
 /* sessão do login por e-mail, que saiu: some do aparelho */
@@ -62,6 +62,8 @@ export async function puxa(){
     if(!menu.hidden)showMenu();else desenhaConta();
   }catch(e){nuvem.erro=true;desenhaConta();setTimeout(puxa,30000)}
 }
+/* o nome de usuário da conta ligada, ou null: é o nome que os outros veem na cidade */
+export const quemSou=()=>sessao?sessao.usuario||null:null;
 export function desenhaConta(){
   const box=$('#mConta');box.hidden=!SB_KEY;if(!SB_KEY)return;
   $('#contaF').hidden=!!sessao;$('#contaSair').hidden=!sessao;

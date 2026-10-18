@@ -18,6 +18,30 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 01:10 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a cidade compartilhada (0.8.0), a pedido do Leonardo ("testar o multiplayer apenas no cenário base de cidade, deixando as caçadas individuais, rodando com o que temos"). Branch `claude/cidade-multiplayer`: parte do `claude/cidade` (0.7.0, ainda fora da `main`), mescla a `main` (passo fixo, 0.6.1) e acrescenta `src/rede.js` (Supabase Realtime por `WebSocket` nativo: presença + broadcast de posição), os outros jogadores em `src/sim/cidade.js` (`OUTROS`, `poeOutro()`, `tiraOutro()`, boneco que corre atrás da posição recebida), o desenho deles com nome em `renderCidade()` (`drawPlayer()` aceita `p.classe`), o contador no HUD da cidade (`#cRede`) e um Realtime falso no prelúdio do harness.
+
+**Validação:** `node tools/testar.mjs` — 22/22. Caso novo `cidade-compartilhada` (22 asserções): liga só na cidade, canal da versão, presença com nome/classe/nível, quem chega aparece e é avisado, boneco anda sem saltar, dado hostil conferido (posição 1e9, classe inexistente, nome de 51 caracteres com controle), no máximo 8 posições por segundo, quem sai some, loja mantém a conexão, caçar desliga e esquece os outros, a volta religa e recebe quem já estava, queda avisa e religa sozinha, menu desliga. Fora do harness: dois Chromium (Playwright de scratch, fora do repositório) no Realtime **de verdade**, 360×640: cada um viu o outro (`2 na cidade`), o B viu o A andar até a posição exata (485,368), e o A viu o B sair ao ir caçar; nenhum erro de página. Screenshot conferido.
+
+**Análise:**
+- Realtime com a chave publicável funciona sem configurar nada: canal público, broadcast e presença. Medido antes de escrever código, com dois clientes no Node.
+- A mesclagem `claude/cidade` × `main` teve conflito em todos os `?v=`; os imports novos do passo fixo (`TICK`, `passo`) se perderam na primeira resolução e o harness pegou (`TICK is not defined`).
+- A identidade é por aba, não por conta: duas abas da mesma conta são dois bonecos. Nome sem conta = nome da classe.
+
+**Roadmap:** a cidade compartilhada entrou em `Concluído`, fora da fila (decisão do dono, registrada na 15.1 do PRD).
+
+**Pendências e riscos:**
+- **A `main` ainda não tem a cidade.** Este branch leva a 0.7.0 junto; mesclar na `main` publica as duas coisas. Se a sessão da cidade mesclar a dela antes, este branch precisa de outra mesclagem da `main`.
+- Cota do plano Free: 2 milhões de mensagens por mês, contando cada entrega. 4 pessoas andando sem parar a 8/s gastam ~350 mil por hora; para teste com amigos sobra, para abrir ao público não.
+- Sem antitrapaça, de propósito: qualquer um com a chave publicável manda posição e nome falsos no canal. Aceitável porque a cidade não tem regra; **nada que valha ouro, XP ou item pode passar por esse canal**.
+- Nome de conta aparece para todos na cidade: nome de usuário é público a partir de agora.
+- No celular de verdade, falta ver a troca de 4G para Wi-Fi e a tela apagando (o código desliga com a aba no fundo e religa ao voltar).
+
+**Próximo passo recomendado:** o Leonardo testar com duas ou três pessoas no ar (depois de mesclar na `main`) e dizer o que sentiu falta (chat, emote, ver o nível); depois, seguir o `Agora` (sair cedo).
+
+---
+
 ## 2026-10-19 00:30 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a Cidade (0.7.0), a pedido do Leonardo ("um mapa compartilhado geral chamado Cidade, com casas dos NPCs de mercado, banco e acesso aos mapas de caça"). O menu agora leva à cidade; nela o jogador anda com o mesmo joystick até a casa do Mercador, a do Banco (a antiga tela de Equipamento, que é o cofre da conta) e o Guia de caça no portão sul, que abre a lista de mapas de caça. Mapa em texto (`city.mapa`, uma letra por tile), NPCs e mapas de caça no `content.json`; regra em `src/sim/cidade.js`; `renderCidade()` em `src/desenho.js`; HUD e botão Falar em `src/hud.js`; fluxo em `src/telas.js`. Mesclado sobre a 0.6.0 (morte custando XP), que entrou na `main` em paralelo.
@@ -561,86 +585,3 @@ roadmap.
 - O carimbo da entrada anterior (22:00 UTC) está à frente do relógio real (20:00 UTC nesta execução), o que embaralha a ordenação por horário.
 
 **Próximo passo recomendado:** rodar `node tools/teste.js` e conferir o ajuste do SHIM que eu não pude executar. Depois, cobrir os três casos que ficaram sem teste: incursão de 6 minutos inteira, troca de habilidade no Grimório e recarga da página para conferir persistência do save.
-
-## 2026-10-18 19:10 UTC
-
-**Item desenvolvido:** Base de orientação para IA — commit `e13649f`.
-`CLAUDE.md` (arquitetura do `index.html`, convenções de código, roteiro de teste
-headless, regras de git), `VISAO.md` (a frase, os cinco pilares, os
-não-objetivos, o teste de quatro perguntas), `AGENTS.md` como ponteiro, e
-formato para este diário e para o roadmap. Nenhuma linha de jogo alterada.
-
-**Validação:** `SINTAXE_OK` no `index.html` depois dos merges (o código é de
-outras execuções; esta entrada não alterou nenhuma linha de jogo). Conferido que
-os links internos dos documentos resolvem, que todos os arquivos estão em UTF-8,
-que não sobrou marcador de conflito, e que os marcos de seção citados no
-`CLAUDE.md` batem com o `index.html` de 1376 linhas depois do merge.
-
-**Análise:**
-- O repositório não tinha nenhum arquivo de orientação até agora: sem
-  `CLAUDE.md`, sem `AGENTS.md`, sem `.cursorrules`. O ciclo automático começava
-  cada execução sem saber a arquitetura, as convenções nem como testar.
-- Ao conferir o `<head>` para montar a tabela de linhas, apareceu uma
-  dependência de rede que eu havia dado como inexistente: o `index.html` busca
-  Pixelify Sans e Barlow Semi Condensed no Google Fonts (linhas 13–15). A
-  documentação foi corrigida para registrar a exceção em vez de afirmar "zero
-  dependências". **Lição:** conferir o `<head>` antes de repetir que o jogo não
-  faz chamada externa.
-- A base filosófica foi definida pelo Leonardo nesta sessão e virou o
-  `VISAO.md`: Tibia raiz num celular — a morte custa, o mundo parece maior que o
-  jogador, incursão abaixo de dez minutos. Daí saíram os cinco pilares, e todo
-  item do roadmap agora declara qual deles serve.
-- As duas execuções anteriores do ciclo criaram um `ROADMAP.md` e um `DIARIO.md`
-  próprios enquanto esta sessão escrevia os seus, em paralelo. Os dois conjuntos
-  foram mesclados à mão: os itens e a análise da rotina foram preservados
-  integralmente, e o formato de entrada **dela** foi adotado como contrato aqui,
-  porque é mais rico que o que eu havia proposto e é o que a automação já emite.
-- No meio do trabalho a `main` recebeu a **Etapa 3** (`1639d2d`), que levou o
-  `index.html` de 871 para 1376 linhas: quatro classes, grimório com slots, as
-  três moedas de progressão do Tibia e save `v2` com migração da Etapa 2. O
-  `CLAUDE.md` foi refeito em cima disso — mapa de seções, as três moedas, o
-  formato novo do save e o padrão de migração — e a coluna de números de linha
-  deu lugar aos marcadores de seção, que não envelhecem. O `VISAO.md` ganhou
-  ponteiro para `docs/analise-tibia-habilidades.md`, que é a fonte das fórmulas.
-  A Etapa 3 entregou de uma vez os dois itens que estavam em `Depois`, vocações
-  e habilidade que sobe com uso, e ambos saíram da lista.
-
-**Roadmap:** reescrito na estrutura por pilares, com critério de "pronto quando"
-em cada item. "Peso de XP na morte" entrou em `Agora` (pilar 1, o item-cabeça da
-direção nova). O item que a rotina havia promovido a `Agora`, "aviso quando o
-save não persiste", **desceu para `Próximo` #1** — nada estava em andamento, e a
-direção que o Leonardo deu nesta sessão tem precedência; continua sendo um bug
-real e é o próximo da fila. Os quatro itens de `Próximo` e as quatro ideias de
-`Depois` da rotina foram todos mantidos, agora com pilar declarado. "Revisar a
-economia do Selo de resguardo" ganhou urgência: a 60% ele briga diretamente com
-o pilar 1, e piora quando a morte passar a custar XP. Dois itens novos em
-`Depois`: cortar a dependência de fontes externas, e pôr um harness de teste no
-repositório.
-
-**Pendências e riscos:**
-- **Não existe harness de teste no repositório.** O `CLAUDE.md` descreve o
-  procedimento headless em detalhe, mas cada execução ainda monta o `test.html`
-  do zero. Isso é desperdício e convida a pular o teste. Está em `Depois`.
-- **Referências a linha envelhecem rápido.** A Etapa 3 deslocou tudo de uma vez.
-  O `CLAUDE.md` já foi convertido para citar marcadores de seção em vez de
-  faixas de linha, mas as referências `index.html:NNN` das entradas antigas
-  deste diário apontam para o arquivo de 871 linhas e não valem mais.
-- **A `main` se move durante a sessão.** Esta entrada precisou de dois merges:
-  a rotina commitou duas vezes, e a Etapa 3 entrou depois disso. Deu para
-  mesclar sem perda nenhuma, mas o risco de sobrescrever é real. Antes de
-  escrever `ROADMAP.md` ou `DIARIO.md`, e antes de qualquer push, faça
-  `git fetch` e leia a versão da `main`.
-- **A Etapa 3 chegou sem passar pelo roadmap nem pelo diário.** Ela foi
-  registrada aqui retroativamente, nesta entrada. O `index.html` dela não foi
-  exercitado por esta sessão além do portão de sintaxe — classes, grimório e a
-  migração `v1`→`v2` nunca passaram pelo harness headless.
-
-**Próximo passo recomendado:** implementar o item de `Agora` (peso de XP na
-morte). Ler o `VISAO.md` antes, porque a decisão de quanto cobrar é de
-balanceamento de pilar, não de código. Mexe em `gainXp()`, `finish()`,
-`showEnd()` e `hud()`, e agora escreve em `ch().xp` em vez de `save.xp`, por
-causa do save `v2` por classe. Começar só pelo nível, deixando magia e perícia
-intactas. Antes disso, se sobrar execução, vale rodar o harness headless contra
-a Etapa 3 — ela nunca foi exercitada além da sintaxe.
-
----

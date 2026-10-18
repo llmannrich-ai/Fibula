@@ -5,9 +5,9 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp} from './base.js?v=0.7.1';
-import {CITY,LEGENDA} from './dados.js?v=0.7.1';
-import {pecas} from './mapa.js?v=0.7.1';
+import {T,hyp} from './base.js?v=0.8.0';
+import {CITY,LEGENDA,CLASSES} from './dados.js?v=0.8.0';
+import {pecas} from './mapa.js?v=0.8.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
@@ -32,7 +32,7 @@ export function entraCidade(dePortao){
      fazendo o papel do chão: o que não é assoalho conta como rocha */
   for(let i=0;i<w*h;i++)fora[i]=t[i]===3?0:1;
   if(dePortao){const g=npcs.find(n=>CITY.npcs[n.k].abre==='cacadas');if(g){sx=g.x/T|0;sy=(g.y/T|0)-1}}
-  C={w,h,t,sol,par:pecas(fora,w,h),npcs,p:{x:(sx+.5)*T,y:(sy+.5)*T,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
+  C={w,h,t,sol,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:(sx+.5)*T,y:(sy+.5)*T,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
   return C;
 }
 export const npcDaLetra=c=>{for(const k in CITY.npcs)if(CITY.npcs[k].letra===c)return k;return null};
@@ -54,5 +54,46 @@ export function updateCidade(dt,ent){
   let melhor=null,md=T*1.75;
   for(const n of C.npcs){const d=hyp(n.x-p.x,n.y-p.y);if(d<md){md=d;melhor=n.k}}
   C.perto=melhor;
+  dtS=dt;OUTROS.forEach(segue1);
   return melhor;
+}
+
+/* ---------- os outros ----------
+   Quem mais está na cidade chega pela rede (src/rede.js), que só escreve aqui,
+   por poeOutro() e tiraOutro(). É dado de fora, então tudo é conferido: número
+   preso ao mapa, classe que existe, nome curto e sem caractere de controle.
+   Cada outro guarda o alvo (ax, ay), a última posição recebida, e a posição
+   desenhada (x, y), que corre atrás dele: as mensagens chegam a no máximo 8
+   por segundo e a tela anda a 60. Nada daqui é regra de jogo: na cidade não se
+   ganha nem se perde nada, e é por isso que ela pode ser o primeiro teste do
+   multiplayer sem servidor próprio. */
+export const OUTROS=new Map(),MAX_OUTROS=40;
+const num=(v,a,b,pad)=>typeof v==='number'&&isFinite(v)?Math.min(b,Math.max(a,v)):pad;
+export function poeOutro(id,d){
+  if(typeof id!=='string'||!id||id.length>40)return null;
+  let o=OUTROS.get(id);
+  if(!o){if(OUTROS.size>=MAX_OUTROS)return null;
+    o={id,nome:'…',classe:'feiticeiro',lvl:1,x:0,y:0,ax:0,ay:0,vis:false,r:11,face:Math.PI/2,walk:0,mv:false,flash:0,swing:0};OUTROS.set(id,o)}
+  if(typeof d.nome==='string'){const n=d.nome.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,16);if(n)o.nome=n}
+  if(typeof d.classe==='string'&&CLASSES[d.classe])o.classe=d.classe;
+  o.lvl=Math.round(num(d.lvl,1,999,o.lvl));
+  if(d.x!==undefined&&d.y!==undefined&&C){
+    const LW=C.w*T,LH=C.h*T;o.ax=num(d.x,0,LW,o.ax);o.ay=num(d.y,0,LH,o.ay);
+    if(!o.vis){o.x=o.ax;o.y=o.ay;o.vis=true}
+    o.face=num(d.f,-4,4,o.face);
+  }
+  return o;
+}
+export const tiraOutro=id=>OUTROS.delete(id);
+let dtS=0;const segue1=o=>segue(o,dtS);
+/* corre atrás do alvo um pouco mais rápido que se anda (128), e salta se ficou
+   longe demais (mensagem perdida, aba que voltou do fundo) */
+function segue(o,dt){
+  if(!o.vis)return;
+  const dx=o.ax-o.x,dy=o.ay-o.y,d=hyp(dx,dy);
+  if(d>T*4){o.x=o.ax;o.y=o.ay;o.mv=false;return}
+  o.mv=d>1.5;
+  if(!o.mv)return;
+  const s=Math.min(d,Math.max(150,d*8)*dt);o.x+=dx/d*s;o.y+=dy/d*s;
+  o.face=Math.atan2(dy,dx);o.walk+=dt*12;
 }
