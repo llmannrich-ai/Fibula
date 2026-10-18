@@ -1,0 +1,22 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  teste:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Sintaxe do script do jogo
+        run: |
+          sed -n '/^<script>$/,/^<\/script>$/p' index.html | sed '1d;$d' > /tmp/game.js
+          node --check /tmp/game.js && echo SINTAXE_OK
+      - name: Teste headless (menu, Mercador e incursão)
+        env:
+          CHROME: /usr/bin/google-chrome
+        run: node tools/teste.js
