@@ -42,8 +42,9 @@ quando o Desenvolvedor julgar que cabe numa execução.
 
 **Pilar 5.** `.github/workflows/ci.yml` rodando a checagem de sintaxe e
 `tools/teste.js` em todo push e PR. Depende do item de Agora e da configuração
-C4 do dono (permissão para criar workflows; ver issue `precisa-do-dono`). Sem
-C4, o Desenvolvedor prepara o arquivo, abre PR e aguarda o dono mesclar.
+C4 do dono (permissão para criar workflows; ver issue `precisa-do-dono`). Tudo
+vai direto na `main`, sem PR. Se o push do workflow for recusado por falta de C4,
+deixe o arquivo pronto em `docs/` e siga para outro item.
 
 **Fase:** F0 (3). **Pronto quando:** o workflow roda verde na `main` e falha num
 PR de teste com erro de sintaxe proposital; o resultado está no diário.
