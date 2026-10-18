@@ -139,6 +139,14 @@ Se não houve nada a fazer, registre isso em uma entrada curta. Execução vazia
 - `node` está disponível. `npm install` só se o projeto já tiver
   `package.json`; não crie um sem item no ROADMAP que peça isso.
 - Arquivos temporários vão para `/tmp`, nunca para o repositório.
+- **O jogo tem base de dados no Supabase** (contas e `public.saves`). Tudo
+  sobre ela — projeto, chaves, o que pode e o que não pode — está na seção
+  "Supabase" do `CLAUDE.md`. Na máquina do Leonardo as chaves ficam num
+  arquivo local fora do git e os agentes usam sem pedir; **na nuvem esse
+  arquivo não existe**: use `SUPABASE_URL`, `SUPABASE_ANON_KEY` e
+  `SUPABASE_ACCESS_TOKEN` do ambiente se estiverem cadastradas (item C5 do
+  PRD). Sem elas, não mexa no banco e registre a pendência no diário. Segredo
+  nenhum vai para commit, diário, issue ou log.
 
 ## 8. Limites
 

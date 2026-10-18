@@ -67,6 +67,7 @@ const NOMES_NO_PATH = ['chromium', 'chromium-browser', 'google-chrome', 'chrome'
    Um erro de sintaxe aqui derruba o jogo inteiro, porque é um arquivo só. */
 function corpoDoScript(html) {
   /* o index.html é salvo com CRLF, então o marcador tolera os dois finais */
+  /* o laço virou (async()=>{ quando o conteúdo passou a vir por fetch */
   const m = /<script>\r?\n\((?:async)?\(\)=>\{/.exec(html);
   if (!m) throw new Error('não achei o <script> do jogo no index.html');
   const ini = m.index;
@@ -105,6 +106,20 @@ const P = {
     'portal:{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false,ch:0}', 'portal na entrada'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
+  /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
+     mas nada sai para a rede): a tabela saves vive em window.__nuvem (dados = a linha do jogador,
+     null = sem linha), e cada GET e POST fica contado para o roteiro conferir */
+  nuvem: (remoto) => (h) => patch(h,
+    "'use strict';",
+    `'use strict';
+window.__nuvem={dados:${JSON.stringify(remoto ?? null)},gets:0,posts:0,auth:'',otp:''};
+{const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
+  const N=window.__nuvem,r=(st,b)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(b)});
+  if(u.indexOf('/rest/v1/saves')>=0){N.auth=(o.headers||{}).Authorization||'';
+    if((o.method||'GET')==='GET'){N.gets++;return r(200,N.dados?[{dados:N.dados}]:[])}
+    N.posts++;N.dados=JSON.parse(o.body).dados;return r(201,null)}
+  if(u.indexOf('/auth/v1/otp')>=0){N.otp=JSON.parse(o.body).email;return r(200,{})}
+  return r(404,{})}}`, 'Supabase falso'),
 };
 
 /* Ajustes no conteúdo que o prelúdio entrega à cópia. As tabelas saíram do
@@ -126,6 +141,9 @@ const A = {
     ajusta(c, 'enemies.rato.atk', 0.9, 0.3, 'rato letal');
   },
 };
+/* sessão já aberta, com validade longe o bastante para nunca pedir renovação */
+const SESSAO = {at: 'x.eyJzdWIiOiJ1MSJ9.y', rt: 'r1', exp: 9e15, uid: 'u1', email: 'jogador@exemplo.com'};
+const espera = (ms) => `await new Promise(function(r){setTimeout(r,${ms})});`;
 
 /* ---------- injeção ---------- */
 /* O jogo carrega data/game/content.json por fetch, e fetch é bloqueado em
@@ -190,7 +208,10 @@ function prelude(caso) {
      interceptada: o POST do resultado para o coletor precisa do fetch real */
   var CT=${conteudoDoCaso(caso)};
   var fr=window.fetch.bind(window);
-  window.fetch=function(u,o){if(!/content\.json/.test(String(u)))return fr(u,o);
+  window.fetch=function(u,o){
+    /* nenhum caso fala com o Supabase de verdade; quem quer nuvem usa P.nuvem */
+    if(/supabase.co/.test(String(u)))return Promise.reject(new Error('rede real bloqueada no teste'));
+    if(!/content\.json/.test(String(u)))return fr(u,o);
     return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(CT)}})};
 })();
 </script>
@@ -632,6 +653,7 @@ const CASOS = [
     roteiro: `
     ok('o acampamento abriu', visivel('#menu'));
     ok('o aviso de save não aparece', !visivel('#mAviso'));
+    ok('a caixa de conta aparece, com o formulário de e-mail', visivel('#mConta')&&visivel('#contaF'));
     clica($('#play'));
     await quadros(3);
     ok('a incursão gravou no save', sv()&&sv().runs===1, sv()&&sv().runs);
@@ -669,6 +691,127 @@ const CASOS = [
     ok('a mana soma classe, nível e Foco: 95+64+10', txt('#mpT')==='169/169', txt('#mpT'));
     ok('a Bolsa de poções migrada vale na incursão', txt('#potN')==='×4', txt('#potN'));
     ok('a incursão nova contou sobre as sete antigas', sv()&&sv().runs===8, sv()&&sv().runs);
+`,
+  },
+  {
+    nome: 'nuvem-entrar',
+    o_que: 'sem sessão a caixa de conta aparece e pede o link mágico por e-mail',
+    semente: 41,
+    patches: [P.nuvem(null)],
+    save: {'masmorra-runas-v2': {
+      cofre: 10, runs: 1, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    await quadros(4);
+    ok('a caixa de conta aparece', visivel('#mConta'));
+    ok('o formulário de e-mail aparece', visivel('#contaF'));
+    ok('o botão de sair fica escondido', !visivel('#contaSair'));
+    ok('sem sessão nada é lido da nuvem', window.__nuvem.gets===0, window.__nuvem.gets);
+    $('#contaE').value='jogador@exemplo.com';
+    $('#contaF').dispatchEvent(new Event('submit',{cancelable:true}));
+    var pediu=await ate(function(){return /Enviamos um link/.test(txt('#contaT')||'')},200);
+    ok('o pedido de link chegou ao Supabase', window.__nuvem.otp==='jogador@exemplo.com', window.__nuvem.otp);
+    ok('o jogador vê que o link foi enviado', pediu, txt('#contaT'));
+    clica($('#play'));
+    ${espera(1800)}
+    ok('sem sessão nada é gravado na nuvem', window.__nuvem.posts===0, window.__nuvem.posts);
+`,
+  },
+  {
+    nome: 'nuvem-adota',
+    o_que: 'primeiro login num aparelho: o save da nuvem com mais incursões substitui o local e recebe as novas',
+    semente: 42,
+    patches: [P.nuvem({
+      cofre: 900, runs: 5, ext: 3, deaths: 1, best: 400, em: 1000,
+      up: {vigor: 1, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 4, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    })],
+    save: {
+      'masmorra-runas-v2': {
+        cofre: 50, runs: 2, ext: 0, deaths: 0, best: 0, em: 5000,
+        up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+        classe: 'feiticeiro',
+        chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+      },
+      'masmorra-runas-v2-sessao': SESSAO,
+    },
+    roteiro: `
+    var leu=await ate(function(){return txt('#sCofre')==='900'},200);
+    ok('o save da nuvem foi lido', window.__nuvem.gets===1, window.__nuvem.gets);
+    ok('o acampamento mostra o cofre da nuvem', leu, txt('#sCofre'));
+    ok('o nível da nuvem chegou', txt('#sLvl')==='4', txt('#sLvl'));
+    ok('o save local foi substituído', sv()&&sv().cofre===900&&sv().runs===5, sv()&&[sv().cofre,sv().runs].join(','));
+    ok('o aparelho ficou ligado à conta', sv()&&sv().dono==='u1', sv()&&sv().dono);
+    ok('a caixa mostra a conta', /salvo na nuvem · jogador@exemplo\\.com/.test(txt('#contaT')||''), txt('#contaT'));
+    ok('o formulário some com a sessão aberta', !visivel('#contaF')&&visivel('#contaSair'));
+    clica($('#play'));
+    ${espera(1800)}
+    ok('a incursão nova foi gravada na nuvem', window.__nuvem.posts>=1&&window.__nuvem.dados.runs===6, window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.runs));
+    ok('a gravação foi com o token da sessão', window.__nuvem.auth==='Bearer x.eyJzdWIiOiJ1MSJ9.y', window.__nuvem.auth);
+    ok('o cofre gravado é o da nuvem', window.__nuvem.dados.cofre===900, window.__nuvem.dados.cofre);
+`,
+  },
+  {
+    nome: 'nuvem-importa',
+    o_que: 'conta nova sem save na nuvem recebe o save deste aparelho; aparelho ligado mantém o mais recente',
+    semente: 43,
+    patches: [P.nuvem({
+      cofre: 1, runs: 99, ext: 0, deaths: 0, best: 0, em: 1000, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    })],
+    save: {
+      'masmorra-runas-v2': {
+        cofre: 120, runs: 3, ext: 1, deaths: 0, best: 120, em: 2000, dono: 'u1',
+        up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+        classe: 'feiticeiro',
+        chars: {feiticeiro: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+      },
+      'masmorra-runas-v2-sessao': SESSAO,
+    },
+    roteiro: `
+    await ate(function(){return window.__nuvem.gets>0},200);
+    ${espera(1800)}
+    ok('o save local, mais recente, não foi trocado', sv()&&sv().cofre===120&&sv().runs===3, sv()&&[sv().cofre,sv().runs].join(','));
+    ok('o acampamento mostra o cofre local', txt('#sCofre')==='120', txt('#sCofre'));
+    ok('o save local subiu para a nuvem', window.__nuvem.posts>=1&&window.__nuvem.dados.cofre===120, window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.cofre));
+    clica($('#contaSair'));
+    await quadros(4);
+    ok('sair da conta mostra o formulário de novo', visivel('#contaF')&&!visivel('#contaSair'));
+    ok('a sessão foi apagada do aparelho', !localStorage.getItem('masmorra-runas-v2-sessao'));
+    ok('sair da conta não apaga o progresso local', sv()&&sv().cofre===120, sv()&&sv().cofre);
+`,
+  },
+  {
+    nome: 'nuvem-outra-conta',
+    o_que: 'aparelho que era de outra conta: entrar com a segunda não sobrescreve o save dela com o da primeira',
+    semente: 44,
+    patches: [P.nuvem({
+      cofre: 30, runs: 2, ext: 1, deaths: 0, best: 30, em: 1000, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'druida',
+      chars: {druida: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: [null, null, null, null]}},
+    })],
+    save: {
+      'masmorra-runas-v2': {
+        cofre: 777, runs: 10, ext: 4, deaths: 2, best: 300, em: 9000, dono: 'u0',
+        up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+        classe: 'feiticeiro',
+        chars: {feiticeiro: {lvl: 5, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+      },
+      'masmorra-runas-v2-sessao': SESSAO,
+    },
+    roteiro: `
+    await ate(function(){return window.__nuvem.gets>0},200);
+    ${espera(1800)}
+    ok('o save da nuvem da conta nova não foi sobrescrito', window.__nuvem.dados&&window.__nuvem.dados.cofre===30, window.__nuvem.dados&&window.__nuvem.dados.cofre);
+    ok('o aparelho passou a mostrar o save da conta nova', sv()&&sv().cofre===30&&sv().dono==='u1', sv()&&[sv().cofre,sv().dono].join(','));
+    ok('o acampamento mostra o cofre da conta nova', txt('#sCofre')==='30', txt('#sCofre'));
 `,
   },
 ];
