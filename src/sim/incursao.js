@@ -1,7 +1,7 @@
 /* ---------- estado da incursão ---------- */
 import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,hyp,DIRS,saida} from './base.js';
 import {EL_COR,MT,PROG} from './dados.js';
-import {save,ch,KL,stats,sealPct} from './progresso.js';
+import {save,ch,KL,stats,sealPct,guardaSaco} from './progresso.js';
 import {genMap,pecas} from './mapa.js';
 import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js';
 
@@ -185,8 +185,8 @@ function updateProj(dt){
 }
 export function finish(kind){
   if(G.over)return;G.over=true;G.end=kind;G.dur=G.t;
-  G.sealed=0;
-  if(kind==='extraiu'){save.cofre+=G.bagVal;save.ext++;save.best=Math.max(save.best,G.bagVal)}
+  G.sealed=0;G.ouroExt=0;G.pecas=0;
+  if(kind==='extraiu'){const r=guardaSaco(G.bag);G.ouroExt=r.ouro;G.pecas=r.pecas;save.ext++;save.best=Math.max(save.best,G.bagVal)}
   else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed}
   saida.persist();
   if(kind!=='extraiu')shake(8);

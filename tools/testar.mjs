@@ -122,6 +122,8 @@ const P = {
   tempo: (run, portal) => (h) => patch(h, 'RUN=360,PORTAL_AT=90', `RUN=${run},PORTAL_AT=${portal}`, 'tempo da incursão'),
   /* o saco entra semeado para a aritmética do cofre ficar determinística */
   saco: (h) => patch(h, 't:0,bag:{},bagVal:0,', 't:0,bag:{ouro:200},bagVal:200,', 'saco semeado'),
+  /* o mesmo saco com uma espada (20): equipamento vai para o cofre como peça */
+  sacoEquip: (h) => patch(h, 't:0,bag:{},bagVal:0,', 't:0,bag:{ouro:200,espada:1},bagVal:220,', 'saco semeado com espada'),
   /* portal na sala de entrada: no headless não há quem arraste o joystick até
      a sala do Guardião, e o que está sob teste é a extração, não a caminhada */
   portalNaEntrada: (h) => patch(h, 'portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0}',
@@ -445,6 +447,15 @@ async function testaSimulacao() {
   let a, b;
   try { a = roda(7); b = roda(7); } catch (e) { falhas.push('a incursão quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
+  try {
+    const sv = P.SAVE0(); sv.classe = 'cavaleiro'; sv.chars.cavaleiro = P.novoChar('cavaleiro'); P.setSave(sv);
+    const r = P.guardaSaco({ouro: 50, dente: 2, cota: 1});
+    if (r.ouro !== 56 || r.pecas !== 1 || sv.cofre !== 56 || sv.itens.cota !== 1) falhas.push(`guardaSaco: ${JSON.stringify(r)} / ${JSON.stringify(sv)}`);
+    const red0 = P.eqBonus('red');
+    if (!P.equipar('cota') || sv.chars.cavaleiro.equip.armadura !== 'cota' || sv.itens.cota || P.eqBonus('red') - red0 !== 0.08) falhas.push('equipar a cota não vestiu nem somou a defesa');
+    if (P.vender('cota')) falhas.push('vendeu uma peça que não estava no cofre');
+    if (!P.desequipar('armadura') || !P.vender('cota') || sv.cofre !== 146) falhas.push(`devolver e vender a cota: cofre ${sv.cofre}`);
+  } catch (e) { falhas.push('o cofre quebrou no Node: ' + e.message); }
   if (a) {
     if (a.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.fim} após ${a.q} quadros`);
     if (!(a.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a)})`);
@@ -498,11 +509,71 @@ const CASOS = [
 `,
   },
   {
+    nome: 'equipamento',
+    o_que: 'cofre da conta com peças: vestir, trocar, devolver e vender; cada personagem com o seu equipamento; bônus em stats()',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 100, itens: {espada: 1, machado: 1, amuleto: 1, cota: 1, sumiu: 2}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      /* saves de antes do equipamento não têm equip: o cavaleiro prova a mescla */
+      chars: {
+        feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]},
+        cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]},
+      },
+    }},
+    roteiro: `
+    var linha=function(nome){return todos('#eqList li.sp').filter(function(li){return li.querySelector('h3').textContent.indexOf(nome)===0})[0]};
+    var bt=function(nome,i){return linha(nome).querySelectorAll('.btns button')[i]};
+    var espaco=function(i){return todos('#eqSlots button')[i]};
+    clica($('#toEquip'));
+    ok('a tela de equipamento abriu', visivel('#equip'));
+    ok('três espaços, todos vazios', todos('#eqSlots button').length===3&&todos('#eqSlots button.full').length===0, todos('#eqSlots button').length);
+    ok('o cofre lista as quatro peças (o item que não existe mais sumiu)', todos('#eqList li.sp').length===4, todos('#eqList li.sp').length);
+    ok('o ouro do cofre aparece', txt('#eqGold')==='100', txt('#eqGold'));
+    ok('a peça diz o espaço e o bônus', linha('machado').querySelector('p').textContent==='Arma · +10% de dano', linha('machado').querySelector('p').textContent);
+    clica(bt('espada',0));
+    ok('a espada foi vestida', espaco(0).classList.contains('full')&&espaco(0).textContent.indexOf('espada enferrujada')>=0, espaco(0).textContent);
+    ok('a espada saiu do cofre', !linha('espada'), todos('#eqList li.sp').length);
+    ok('o machado agora oferece troca', bt('machado',0).textContent==='trocar', bt('machado',0).textContent);
+    clica(bt('machado',0));
+    ok('o machado entrou no lugar da espada', sv().chars.feiticeiro.equip.arma==='machado', JSON.stringify(sv().chars.feiticeiro.equip));
+    ok('a espada voltou ao cofre', sv().itens.espada===1&&!!linha('espada'), JSON.stringify(sv().itens));
+    clica(bt('amuleto',0));
+    ok('o total vestido aparece', txt('#eqTot')==='Vestido: +10% de dano, +15 de vida, +15 de mana. Vida 100 · Mana 110', txt('#eqTot'));
+    clica(bt('cota',1));
+    ok('vender a cota creditou 90 de ouro', txt('#eqGold')==='190'&&sv().cofre===190, txt('#eqGold'));
+    ok('a cota saiu do cofre', !sv().itens.cota, JSON.stringify(sv().itens));
+    clica(espaco(2));
+    ok('tocar no espaço devolve o amuleto ao cofre', sv().chars.feiticeiro.equip.amuleto===null&&sv().itens.amuleto===1, JSON.stringify(sv().chars.feiticeiro.equip));
+    clica(bt('amuleto',0));
+    clica($('#eqBack'));
+    clica($('#toPick'));
+    var cav=todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Cavaleiro'})[0];
+    clica(cav);
+    clica($('#toEquip'));
+    ok('o Cavaleiro tem os próprios espaços, vazios', todos('#eqSlots button.full').length===0, todos('#eqSlots button.full').length);
+    ok('o cofre é o mesmo da conta', !!linha('espada')&&txt('#eqGold')==='190', todos('#eqList li.sp').length+' / '+txt('#eqGold'));
+    clica(bt('espada',0));
+    ok('a espada foi para o Cavaleiro', sv().chars.cavaleiro.equip.arma==='espada', JSON.stringify(sv().chars.cavaleiro.equip));
+    ok('o cofre ficou vazio e diz isso', todos('#eqList li.vazio').length===1, todos('#eqList li').length);
+    clica($('#eqBack'));
+    clica($('#toPick'));
+    var fei=todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Feiticeiro'})[0];
+    clica(fei);
+    ok('o Feiticeiro manteve o que vestia', sv().chars.feiticeiro.equip.arma==='machado'&&sv().chars.feiticeiro.equip.amuleto==='amuleto', JSON.stringify(sv().chars.feiticeiro.equip));
+    clica($('#play'));
+    await quadros(4);
+    ok('o amuleto chegou em stats(): 85+15 de vida', txt('#hpT')==='100/100', txt('#hpT'));
+    ok('o amuleto chegou em stats(): 95+15 de mana', txt('#mpT')==='110/110', txt('#mpT'));
+`,
+  },
+  {
     nome: 'incursao-extracao',
-    o_que: 'incursão de ponta a ponta: combate, portal, extração e cofre creditado',
+    o_que: 'incursão de ponta a ponta: combate, portal, extração, cofre creditado e equipamento guardado como peça',
     semente: 11,
     limite: 90000,
-    patches: [P.tempo(20, 10), P.saco, P.portalNaEntrada, P.spawnNaEntrada],
+    patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.spawnNaEntrada],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
@@ -514,7 +585,7 @@ const CASOS = [
     await quadros(2);
     ok('a incursão começou', $('#app').classList.contains('playing'));
     ok('o relógio foi encurtado para 20 s', txt('#timeT')==='0:20', txt('#timeT'));
-    ok('o saco entrou semeado', txt('#bagT')==='200', txt('#bagT'));
+    ok('o saco entrou semeado', txt('#bagT')==='220', txt('#bagT'));
     ok('o portal ainda está fechado', (txt('#portalT')||'').indexOf('Portal em')===0, txt('#portalT'));
     tecla('keydown','KeyJ');
     var abriu=await ate(function(){return txt('#portalT')==='Portal aberto'},600);
@@ -527,9 +598,14 @@ const CASOS = [
     var m=/^([0-9]+) ouro · (\\S+)$/.exec(txt('#eLoot')||'');
     ok('o saco foi guardado', !!m&&m[2]==='guardado', txt('#eLoot'));
     var loot=m?+m[1]:-1;
-    ok('o saco semeado veio junto', loot>=200, loot);
-    ok('o cofre foi creditado com o saco', sv()&&sv().cofre===loot, sv()&&sv().cofre);
-    ok('a tela final mostra o mesmo cofre', txt('#eCofre')===loot+' ouro', txt('#eCofre'));
+    ok('o saco semeado veio junto', loot>=220, loot);
+    var VAL={espada:20,machado:28,amuleto:60,couraca:30,cota:90},pecas=0;
+    for(var k in (sv()&&sv().itens)||{})pecas+=VAL[k]*sv().itens[k];
+    ok('a espada foi para o cofre como peça, não como ouro', sv()&&sv().itens&&sv().itens.espada>=1, sv()&&JSON.stringify(sv().itens));
+    ok('ouro no cofre + peças no cofre = valor do saco', sv()&&sv().cofre+pecas===loot, sv()&&(sv().cofre+' + '+pecas+' de '+loot));
+    ok('a tela final mostra o mesmo cofre', txt('#eCofre')===sv().cofre+' ouro', txt('#eCofre'));
+    ok('a tela final avisa das peças no cofre', /peças? de equipamento/.test(txt('#endText')||''), txt('#endText'));
+    ok('a espada aparece marcada como arma', todos('#endItems li small').some(function(x){return x.textContent==='arma'}), todos('#endItems li small').length);
     ok('o recorde foi atualizado', sv()&&sv().best===loot, sv()&&sv().best);
     ok('uma saída foi contada', sv()&&sv().ext===1, sv()&&sv().ext);
     ok('uma incursão foi contada', sv()&&sv().runs===1, sv()&&sv().runs);
@@ -607,7 +683,7 @@ const CASOS = [
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 2},
       classe: 'feiticeiro',
-      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], equip: {arma: 'machado', armadura: null, amuleto: null}}},
     }},
     roteiro: `
     clica($('#play'));
@@ -626,6 +702,7 @@ const CASOS = [
     ok('o selo devolveu 40% de 200', txt('#eSeal')==='+80 ouro (40%)', txt('#eSeal'));
     ok('só o resguardado entrou no cofre', sv()&&sv().cofre===80, sv()&&sv().cofre);
     ok('a tela final mostra o cofre com o resguardo', txt('#eCofre')==='80 ouro', txt('#eCofre'));
+    ok('o equipamento vestido não cai na morte', sv()&&sv().chars.feiticeiro.equip.arma==='machado', sv()&&JSON.stringify(sv().chars.feiticeiro.equip));
 `,
   },
   {

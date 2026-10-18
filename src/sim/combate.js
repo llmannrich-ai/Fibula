@@ -1,7 +1,7 @@
 /* ---------- combate ---------- */
 import {T,TAU,rr,ri,hyp,saida} from './base.js';
 import {EL_COR,SPELLS,ITEMS,LOOT,fmtItem} from './dados.js';
-import {ch,KL,stats,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js';
+import {ch,KL,stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js';
 import {G,flowAt,num,shake,finish} from './incursao.js';
 
 function target(range){
@@ -190,7 +190,7 @@ function gainXp(x){
 export function hurtPlayer(d){
   if(G.over)return;const p=G.p;
   /* armadura da classe (o shielding/armor do Tibia) somada ao buff de Provocar */
-  d=Math.max(1,Math.round(d*(1-Math.min(.75,KL().red+bf('arm')))));
+  d=Math.max(1,Math.round(d*(1-Math.min(.75,KL().red+eqBonus('red')+bf('arm')))));
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;finish('morreu')}
 }

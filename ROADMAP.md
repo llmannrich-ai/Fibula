@@ -101,18 +101,6 @@ e transforma cada incursão numa decisão antes mesmo de começar.
 de loot, e a escolha some do caminho de quem só quer jogar (uma fica como
 padrão).
 
-### Equipamento persistente com três slots
-
-**Pilares 2 e 5.** Arma, armadura e amuleto. O loot raro que hoje é só número
-(espada enferrujada, amuleto tribal, gema rubra) passa a ter uso: equipar em vez
-de vender. Isso dá ao jogador o momento Tibia de encontrar algo que muda o
-personagem, e cria um segundo ralo para o cofre.
-
-Atenção ao pilar 3: no máximo três slots, tela própria, nenhum arrastar e soltar.
-
-**Pronto quando:** os três slots persistem no save, afetam `stats()`, e dá para
-equipar e desequipar numa tela só, com o dedo.
-
 ### Sair cedo precisa ser uma jogada válida
 
 **Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
@@ -176,6 +164,18 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Equipamento persistente com três espaços e cofre de peças da
+  conta** *(pedido do Leonardo, adiantado do `Depois`; pilares 2 e 5)*. Arma,
+  armadura e amuleto, uma tela própria (`Equipamento`, no acampamento) com
+  toque, sem arrastar. Na extração, item com `slot` no `content.json` vai para
+  o cofre como **peça** (`save.itens`, da conta, serve a todos os personagens);
+  o resto vira ouro como antes. Cada personagem veste o seu (`chars.<classe>.equip`),
+  e o vestido não cai na morte. Peça no cofre se veste, troca ou vende pelo
+  mesmo valor de antes — a economia do ouro não mudou para quem só vende.
+  Bônus (`dano`, `red`, `vida`, `mana`) entram em `stats()` e em
+  `hurtPlayer()`. Itens novos: couraça de couro (orc) e cota de malha
+  (esqueleto e Guardião). Caso `equipamento` novo no `tools/testar.mjs`,
+  extração e morte ampliados, e a regra do cofre testada no Node.
 - **2026-10-18 — Código dividido em módulos ES, com a regra do jogo separada da
   tela** *(F0 item 1)*. O `<script>` de 1.290 linhas saiu do `index.html` para
   `src/` (cliente) e `src/sim/` (simulação: conteúdo, progressão, mapa,

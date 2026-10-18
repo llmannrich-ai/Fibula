@@ -19,6 +19,12 @@ export function validaConteudo(c){
   for(const[k,u]of Object.entries(c.upgrades))
     if(typeof u.base!=='number'||typeof u.mult!=='number'||typeof u.max!=='number')
       throw new Error(`melhoria ${k} sem base/mult/max numéricos`);
+  for(const[k,it]of Object.entries(c.items)){
+    if(it.slot===undefined)continue;
+    if(!SLOTS_EQ.includes(it.slot))throw new Error(`item ${k} com slot desconhecido: ${it.slot}`);
+    for(const[b,v]of Object.entries(it.bonus||{}))
+      if(!(b in BONUS)||typeof v!=='number')throw new Error(`item ${k} com bônus inválido: ${b}`);
+  }
   for(const k of Object.keys(c.enemies))if(!c.loot[k])throw new Error(`inimigo sem tabela de loot: ${k}`);
   for(const[k,tbl]of Object.entries(c.loot)){
     if(!tem(c.enemies,k))throw new Error(`loot de inimigo inexistente: ${k}`);
@@ -63,6 +69,14 @@ export const slotsIniciais=(c,lvl)=>{
 /* ---------- melhorias permanentes e dados do jogo ---------- */
 export let UP,MT,ITEMS,LOOT,PROG;
 export const fmtItem=([k,q])=>k==='ouro'?`${q} de ouro`:(q>1?`${q} × ${ITEMS[k].nome}`:ITEMS[k].nome);
+
+/* ---------- equipamento ----------
+   Três espaços, nenhum a mais (pilar 3). Item com slot no content.json é
+   equipável: na extração vai para o cofre da conta em vez de virar ouro. */
+export const SLOTS_EQ=['arma','armadura','amuleto'];
+export const SLOT_NOME={arma:'Arma',armadura:'Armadura',amuleto:'Amuleto'};
+const BONUS={dano:v=>`+${Math.round(v*100)}% de dano`,red:v=>`−${Math.round(v*100)}% de dano sofrido`,vida:v=>`+${v} de vida`,mana:v=>`+${v} de mana`};
+export const fmtBonus=it=>Object.entries(it.bonus||{}).map(([b,v])=>BONUS[b](v)).join(', ');
 
 /* valida e liga as tabelas; estoura com a mensagem que o menu mostra */
 export function carrega(c){

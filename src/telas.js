@@ -1,8 +1,8 @@
 /* ---------- telas ----------
-   Acampamento, personagens, grimório, tela final e Mercador. */
+   Acampamento, personagens, grimório, equipamento, tela final e Mercador. */
 import {clamp,fmtEl} from './sim/base.js';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem} from './sim/dados.js';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct} from './sim/progresso.js';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus} from './sim/dados.js';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender} from './sim/progresso.js';
 import {G,setG,newRun} from './sim/incursao.js';
 import {persist,saveFalhou} from './salvar.js';
 import {desenhaConta} from './nuvem.js';
@@ -10,8 +10,8 @@ import {logEl,log,montaBotoes,setT} from './hud.js';
 import {icone} from './arte.js';
 import {$,app} from './dom.js';
 
-export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim');
-const TELAS=[menu,endS,shopS,pickS,grimS];
+export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip');
+const TELAS=[menu,endS,shopS,pickS,grimS,equipS];
 const soTela=el=>{for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing')};
 export function showMenu(){
   if(!save.classe)return showPick();
@@ -125,11 +125,65 @@ function drawGrim(){
   }
   soTela(grimS);
 }
+/* ---------- equipamento ----------
+   Uma tela, três espaços, botões grandes: nada de arrastar (pilar 3). O cofre
+   embaixo é o da conta; os espaços em cima são do personagem atual. */
+const icoItem=k=>{const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');return icone(ic,'it_'+k)?ic:null};
+function drawEquip(){
+  const c=ch(),K=KL(),e=c.equip;
+  $('#eqEye').textContent=`${K.nome} · Nível ${c.lvl}`;
+  setT($('#eqGold'),String(save.cofre));
+  const sl=$('#eqSlots');sl.textContent='';
+  for(const s of SLOTS_EQ){
+    const k=e[s],it=k&&ITEMS[k];
+    const b=document.createElement('button');b.type='button';b.className=it?'full':'';
+    const sm=document.createElement('small');sm.textContent=SLOT_NOME[s];b.appendChild(sm);
+    const ic=it&&icoItem(k);if(ic)b.appendChild(ic);
+    const sp=document.createElement('span');sp.textContent=it?it.nome:'vazio';b.appendChild(sp);
+    if(it){const em=document.createElement('em');em.textContent=fmtBonus(it);b.appendChild(em);
+      b.setAttribute('aria-label',`${SLOT_NOME[s]}: ${it.nome}, ${fmtBonus(it)}. Toque para devolver ao cofre.`);
+      b.addEventListener('click',()=>{if(desequipar(s)){persist();drawEquip()}})}
+    else b.setAttribute('aria-label',`${SLOT_NOME[s]} vazio`);
+    sl.appendChild(b);
+  }
+  /* o total vestido, para o jogador ver o efeito sem fazer conta */
+  const st=stats(),tot=[eqBonus('dano')&&`+${Math.round(eqBonus('dano')*100)}% de dano`,eqBonus('red')&&`−${Math.round(eqBonus('red')*100)}% de dano sofrido`,
+    eqBonus('vida')&&`+${eqBonus('vida')} de vida`,eqBonus('mana')&&`+${eqBonus('mana')} de mana`].filter(Boolean);
+  $('#eqTot').textContent=(tot.length?'Vestido: '+tot.join(', ')+'. ':'Nada vestido. ')+`Vida ${st.mhp} · Mana ${st.mmp}`;
+  const ul=$('#eqList');ul.textContent='';
+  const rows=Object.entries(save.itens).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a[0]].slot)-SLOTS_EQ.indexOf(ITEMS[b[0]].slot)||ITEMS[b[0]].val-ITEMS[a[0]].val);
+  if(!rows.length){const li=document.createElement('li');li.className='vazio';
+    li.textContent='O cofre não tem peças. Armas, armaduras e amuletos que você extrair aparecem aqui.';ul.appendChild(li)}
+  for(const[k,q]of rows){
+    const it=ITEMS[k],atual=e[it.slot];
+    const li=document.createElement('li');li.className='sp r'+it.rar;
+    const ic=icoItem(k);if(ic)li.appendChild(ic);
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=q>1?`${it.nome} ×${q}`:it.nome;
+    const p=document.createElement('p');p.textContent=`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`;
+    const meta=document.createElement('div');meta.className='meta';
+    meta.textContent=atual===k?'igual à que está vestida':atual?`no lugar de: ${ITEMS[atual].nome} (${fmtBonus(ITEMS[atual])})`:'espaço livre';
+    info.append(h,p,meta);
+    const bt=document.createElement('div');bt.className='btns';
+    const b1=document.createElement('button');b1.type='button';b1.textContent=atual?'trocar':'vestir';
+    b1.setAttribute('aria-label',`Vestir ${it.nome}`+(atual?` no lugar de ${ITEMS[atual].nome}`:''));
+    if(atual===k)b1.disabled=true;
+    else b1.addEventListener('click',()=>{if(equipar(k)){persist();drawEquip()}});
+    const b2=document.createElement('button');b2.type='button';b2.className='rm';b2.textContent=`vender ${it.val}`;
+    b2.setAttribute('aria-label',`Vender ${it.nome} por ${it.val} de ouro`);
+    b2.addEventListener('click',()=>{if(vender(k)){persist();drawEquip()}});
+    bt.append(b1,b2);li.append(info,bt);ul.appendChild(li);
+  }
+  soTela(equipS);
+}
+
 export function showEnd(){
   const k=G.end,ok=k==='extraiu';
   $('#endEye').textContent=ok?'Incursão concluída':'Fim da incursão';
   const t=$('#endTitle');t.textContent=ok?'Extraído!':k==='morreu'?'Você morreu':'Soterrado';t.classList.toggle('lost',!ok);
-  $('#endText').textContent=ok?`Você saiu pelo portal com ${G.bagVal} de ouro em loot. Tudo foi para o cofre.`
+  $('#endText').textContent=ok?(G.pecas
+      ?`Você saiu pelo portal com ${G.bagVal} de ouro em loot. ${G.ouroExt} viraram ouro no cofre, e ${G.pecas} peça${G.pecas>1?'s':''} de equipamento ${G.pecas>1?'esperam':'espera'} lá para vestir ou vender.`
+      :`Você saiu pelo portal com ${G.bagVal} de ouro em loot. Tudo foi para o cofre.`)
     :k==='morreu'?'O loot que você carregava ficou na masmorra. A experiência ganha foi mantida.'
     :'A masmorra desabou antes de você chegar ao portal. O loot ficou para trás. A experiência foi mantida.';
   const l=$('#eLoot');l.textContent=`${G.bagVal} ouro · ${ok?'guardado':'perdido'}`;l.className=ok?'ok':'bad';
@@ -147,7 +201,9 @@ export function showEnd(){
   if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}
   for(const[k,q]of rows){const li=document.createElement('li');li.className='r'+ITEMS[k].rar;
     const a=document.createElement('span'),ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');
-    if(icone(ic,'it_'+k))a.appendChild(ic);a.append(fmtItem([k,q]));const b=document.createElement('span');b.textContent=ITEMS[k].val*q;li.append(a,b);ul.appendChild(li)}
+    if(icone(ic,'it_'+k))a.appendChild(ic);a.append(fmtItem([k,q]));
+    if(ITEMS[k].slot){const sm=document.createElement('small');sm.textContent=SLOT_NOME[ITEMS[k].slot].toLowerCase();a.appendChild(sm)}
+    const b=document.createElement('span');b.textContent=ITEMS[k].val*q;li.append(a,b);ul.appendChild(li)}
   soTela(endS);
 }
 /* ---------- mercador ---------- */
@@ -182,6 +238,8 @@ $('#toShop').addEventListener('click',showShop);
 $('#shopBack').addEventListener('click',showMenu);
 $('#toGrim').addEventListener('click',drawGrim);
 $('#grimBack').addEventListener('click',showMenu);
+$('#toEquip').addEventListener('click',drawEquip);
+$('#eqBack').addEventListener('click',showMenu);
 $('#toPick').addEventListener('click',showPick);
 $('#pickBack').addEventListener('click',showMenu);
 $('#play').addEventListener('click',start);

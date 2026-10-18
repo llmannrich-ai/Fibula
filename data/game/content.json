@@ -5,7 +5,8 @@
     "aviso": "Gerado a partir dos literais que estavam no index.html. Ajuste de balanceamento se faz aqui, sem tocar no motor.",
     "tierReference": "O campo tier de cada inimigo aponta a banda equivalente em ../mechanics/tiers.json (por HP).",
     "lootFormat": "[chaveDoItem, probabilidade, quantidadeMin, quantidadeMax]",
-    "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)"
+    "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)",
+    "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)"
   },
   "classes": {
     "feiticeiro": {
@@ -745,12 +746,20 @@
     "espada": {
       "nome": "espada enferrujada",
       "val": 20,
-      "rar": 0
+      "rar": 0,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.06
+      }
     },
     "machado": {
       "nome": "machado rachado",
       "val": 28,
-      "rar": 0
+      "rar": 0,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.1
+      }
     },
     "erva": {
       "nome": "erva rara",
@@ -760,7 +769,12 @@
     "amuleto": {
       "nome": "amuleto tribal",
       "val": 60,
-      "rar": 1
+      "rar": 1,
+      "slot": "amuleto",
+      "bonus": {
+        "vida": 15,
+        "mana": 15
+      }
     },
     "gema": {
       "nome": "gema rubra",
@@ -771,6 +785,24 @@
       "nome": "coroa do guardião",
       "val": 500,
       "rar": 2
+    },
+    "couraca": {
+      "nome": "couraça de couro",
+      "val": 30,
+      "rar": 0,
+      "slot": "armadura",
+      "bonus": {
+        "red": 0.04
+      }
+    },
+    "cota": {
+      "nome": "cota de malha",
+      "val": 90,
+      "rar": 1,
+      "slot": "armadura",
+      "bonus": {
+        "red": 0.08
+      }
     }
   },
   "loot": {
@@ -826,6 +858,12 @@
         0.15,
         1,
         1
+      ],
+      [
+        "cota",
+        0.04,
+        1,
+        1
       ]
     ],
     "orc": [
@@ -844,6 +882,12 @@
       [
         "amuleto",
         0.06,
+        1,
+        1
+      ],
+      [
+        "couraca",
+        0.12,
         1,
         1
       ]
@@ -892,6 +936,12 @@
         0.6,
         1,
         2
+      ],
+      [
+        "cota",
+        0.35,
+        1,
+        1
       ]
     ]
   },

@@ -121,7 +121,7 @@ principal, o markup das telas e do HUD, e a linha que carrega `src/main.js`.
 - `dados.js` — **conteúdo do jogo**, **classes**, **habilidades**, **melhorias
   e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
-  `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()`. As tabelas
+  `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`. As tabelas
   são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
   valor, edite o JSON
 - `progresso.js` — **personagem e progressão**: o `save` em memória
@@ -160,7 +160,7 @@ principal, o markup das telas e do HUD, e a linha que carrega `src/main.js`.
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()` e
   o cache de elementos `E`
 - `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`),
-  **personagens** (`showPick()`), **grimório**, **mercador** (`drawShop()`,
+  **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`
 - `controles.js` — joystick por ponteiro, `bindHold()`, teclado, `held` e
   `leEntrada()`
@@ -213,9 +213,13 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots}}}`.
-O que é da conta (cofre, melhorias, estatísticas) fica na raiz; o que é do
-personagem fica em `chars`, um por classe.
+`{cofre,itens:{<item>:qtd},runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+O que é da conta (cofre de ouro, peças guardadas em `itens`, melhorias,
+estatísticas) fica na raiz; o que é do personagem (inclusive o equipamento
+vestido) fica em `chars`, um por classe. As operações do cofre de peças
+(`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
+em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save
+antigo e descarta peça que saiu do `content.json`.
 
 A leitura faz `Object.assign` sobre os padrões, então **adicionar** campo novo é
 seguro e não apaga o progresso de ninguém. Se a `KEY` não existir, o código
@@ -371,7 +375,8 @@ Node roda sempre). O jogo de verdade nunca é tocado. Os casos cobrem o menu com
 ponta a ponta até a extração, a incursão desenhada com os sprites (`arte`) e
 sem eles (`sem-arte`, campo `semArte` do caso), a morte com o selo, as quatro
 classes, o grimório no nível 18, o nível subindo no meio da incursão, o save
-corrompido e bloqueado, a migração `v1`→`v2` e a conta na nuvem.
+corrompido e bloqueado, a migração `v1`→`v2`, a conta na nuvem e o
+equipamento (cofre de peças da conta, espaços de cada personagem).
 
 Caso novo entra na tabela `CASOS` no fim do
 [tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto

@@ -207,6 +207,19 @@ h2.lost{color:var(--hp)}
 .sp button.rm{color:var(--muted)}
 .sp button:disabled{color:#7d786d;cursor:default;background:#34322d}
 .sp button:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+.slots.eqs{grid-template-columns:repeat(3,1fr)}
+.slots.eqs button{min-height:76px;justify-items:center}
+.slots.eqs button.full{box-shadow:inset 0 0 0 2px var(--torch)}
+.slots.eqs .ico{display:block}
+.slots.eqs em{font:normal 9px/1.2 var(--f-body);color:var(--loot)}
+.eqtot{margin:0;font:11px/1.4 var(--f-body);color:var(--muted);text-align:center}
+.sub{margin:4px 0 0;font:700 12px var(--f-body);color:var(--bone)}
+#eqList{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
+#eqList .sp{border-left-color:var(--torch)}
+#eqList .sp.r1{border-left-color:var(--rare)} #eqList .sp.r2{border-left-color:var(--epic)}
+#eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+#eqList .btns{display:grid;gap:5px;flex:0 0 auto}
+#endItems small{color:var(--muted);font-size:10px}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
 </style>
 
@@ -272,9 +285,11 @@ h2.lost{color:var(--hp)}
         <li>Aos 1:30 abre o portal de saída na sala mais distante, guardada pelo Guardião.</li>
         <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde o saco.</li>
         <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b> em melhorias permanentes.</li>
+        <li>Armas, armaduras e amuletos extraídos também vão para o cofre. Vista ou venda em <b>Equipamento</b>.</li>
       </ol>
       <div class="row"><button class="cta" id="play">Entrar na masmorra</button><button class="ghost" id="toShop">Mercador</button></div>
-      <div class="row2"><button class="ghost" id="toGrim">Grimório</button><button class="ghost" id="toPick">Personagens</button></div>
+      <div class="row2"><button class="ghost" id="toGrim">Grimório</button><button class="ghost" id="toEquip">Equipamento</button></div>
+      <button class="ghost" id="toPick">Personagens</button>
       <p class="keys">Arraste o lado esquerdo da tela para andar. Segure o botão grande para usar a primeira habilidade sem parar. No teclado: <b>WASD</b> anda, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção.</p>
     </div>
   </div>
@@ -283,7 +298,7 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Personagens</p>
       <h2>Escolha a classe</h2>
-      <p class="lede">Nenhuma classe ganha poder de graça: o que muda é a <b>velocidade com que cada coisa cresce</b>. O cofre e as melhorias do Mercador são da conta e valem para todos.</p>
+      <p class="lede">Nenhuma classe ganha poder de graça: o que muda é a <b>velocidade com que cada coisa cresce</b>. O cofre e as melhorias do Mercador são da conta e valem para todos; o equipamento vestido é de cada personagem.</p>
       <ul id="pickList"></ul>
       <button class="ghost" id="pickBack" hidden>Voltar ao acampamento</button>
     </div>
@@ -305,10 +320,24 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Entre incursões</p>
       <h2>Mercador</h2>
-      <p class="lede">O cofre só serve para isto. As melhorias são permanentes e valem para todas as incursões seguintes.</p>
+      <p class="lede">O ouro do cofre é da conta e serve a todos os personagens. As melhorias são permanentes e valem para todas as incursões seguintes.</p>
       <div class="vault"><span>No cofre</span><b id="shopGold">0</b></div>
       <ul id="shopList"></ul>
       <button class="ghost" id="shopBack">Voltar ao acampamento</button>
+    </div>
+  </div>
+
+  <div class="screen" id="equip" hidden>
+    <div class="panel">
+      <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
+      <h2>Equipamento</h2>
+      <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
+      <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
+      <div class="slots eqs" id="eqSlots"></div>
+      <p class="eqtot" id="eqTot"></p>
+      <h3 class="sub">Peças no cofre</h3>
+      <ul id="eqList"></ul>
+      <button class="ghost" id="eqBack">Voltar ao acampamento</button>
     </div>
   </div>
 
