@@ -143,6 +143,7 @@ function prelude(caso) {
   var s=${(caso.semente || 1) >>> 0};
   Math.random=function(){s=(s+0x6D2B79F5)|0;var t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
   try{localStorage.clear();${semeadura}}catch(e){anota('localStorage: '+e.message)}
+  ${caso.bloqueiaSave ? "Storage.prototype.setItem=function(){throw new DOMException('bloqueado pelo teste','QuotaExceededError')};" : ''}
 })();
 </script>
 `;
@@ -538,6 +539,46 @@ const CASOS = [
     await quadros(3);
     ok('a incursão roda depois de recuperado', $('#app').classList.contains('playing'));
     ok('a vida saiu da classe do save', txt('#hpT')==='92/92', txt('#hpT'));
+`,
+  },
+  {
+    nome: 'save-bloqueado',
+    o_que: 'navegador que recusa gravar (aba anônima): o menu avisa; com o save normal, não avisa',
+    semente: 31,
+    bloqueiaSave: true,
+    save: {'masmorra-runas-v2': {
+      cofre: 40, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    ok('o acampamento abriu mesmo sem poder gravar', visivel('#menu'));
+    ok('o aviso de save aparece', visivel('#mAviso'), $('#mAviso')&&$('#mAviso').hidden);
+    ok('o aviso é lido por leitor de tela (role=status)', $('#mAviso').getAttribute('role')==='status');
+    ok('o aviso diz que o progresso não é salvo', /não está sendo salvo/.test(txt('#mAviso')), txt('#mAviso'));
+    ok('o cofre carregado continua aparecendo', txt('#sCofre')==='40', txt('#sCofre'));
+    clica($('#play'));
+    await quadros(3);
+    ok('dá para jogar mesmo sem gravar', $('#app').classList.contains('playing'));
+`,
+  },
+  {
+    nome: 'save-normal-sem-aviso',
+    o_que: 'com o armazenamento funcionando o aviso de save não aparece',
+    semente: 32,
+    save: {'masmorra-runas-v2': {
+      cofre: 40, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    ok('o acampamento abriu', visivel('#menu'));
+    ok('o aviso de save não aparece', !visivel('#mAviso'));
+    clica($('#play'));
+    await quadros(3);
+    ok('a incursão gravou no save', sv()&&sv().runs===1, sv()&&sv().runs);
 `,
   },
   {

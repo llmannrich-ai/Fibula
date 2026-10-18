@@ -13,27 +13,7 @@ automático não tem como saber que terminou.
 
 ## Agora
 
-### Aviso de falha do save em modo privado
-
-**Pilar 5.** Em modo privado, ou com `localStorage` bloqueado, o progresso não é
-salvo e o jogador não é avisado (o `catch` de `persist()` está vazio). A outra
-metade deste item — o teste automatizado da migração `v1`→`v2` — já está feita:
-é o caso `migracao-save` do `tools/testar.mjs`, que semeia um save da Etapa 2 e
-confere cofre, melhorias, estatísticas, nível, experiência e espaços. Nenhuma
-alteração no formato do save.
-
-**Fase:** F0 (4). **Pronto quando:** aviso no menu aparece se `persist()` falhou
-ao menos uma vez, e um caso novo no `tools/testar.mjs` prova isso com o
-`localStorage` sabotado.
-
----
-
-## Próximo
-
-Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
-quando o Desenvolvedor julgar que cabe numa execução.
-
-### 1. Pipeline dos sprites OTSP (sem trocar o desenho)
+### Pipeline dos sprites OTSP (sem trocar o desenho)
 
 **Pilar 2.** `tools/` com script que recorta as folhas usadas do OTSP, converte
 o magenta em transparência e monta o atlas; `assets/otsp/` com as folhas usadas,
@@ -44,7 +24,14 @@ do PRD. O jogo continua desenhando as formas atuais.
 forma reproduzível, `assets/CREDITOS.md` lista origem, licença e alterações, e
 o `index.html` não mudou.
 
-### 2. Gerador aleatório com semente
+---
+
+## Próximo
+
+Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
+quando o Desenvolvedor julgar que cabe numa execução.
+
+### 1. Gerador aleatório com semente
 
 **Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
 semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
@@ -54,7 +41,7 @@ semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
 **Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
 `tools/`) e partidas sem semente continuam variando.
 
-### 3. Peso de verdade na morte: perder parte do XP, não só o saco
+### 2. Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
 experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
@@ -84,7 +71,7 @@ recarregamento com o valor reduzido.
 
 **Fase:** jogo, em paralelo à F0.
 
-### 4. Revisar a economia do Selo de resguardo
+### 3. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -196,6 +183,11 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Aviso de falha do save**. O menu mostra uma faixa quando o
+  navegador recusa gravar (aba anônima, armazenamento bloqueado), detectada por
+  uma sonda na carga e por qualquer `persist()` que falhe. Formato do save
+  intacto. Dois casos novos em `tools/testar.mjs` (`save-bloqueado`,
+  `save-normal-sem-aviso`); a migração v1→v2 já tinha caso (`migracao-save`).
 - **2026-10-18 — CI no GitHub Actions** (`.github/workflows/ci.yml`). Todo push
   e PR roda `node tools/testar.mjs` (sintaxe + os casos headless) no Ubuntu com
   `google-chrome`. Verde na `main`; um branch com erro de sintaxe proposital
