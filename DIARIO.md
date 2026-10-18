@@ -26,11 +26,11 @@ headless, regras de git), `VISAO.md` (a frase, os cinco pilares, os
 não-objetivos, o teste de quatro perguntas), `AGENTS.md` como ponteiro, e
 formato para este diário e para o roadmap. Nenhuma linha de jogo alterada.
 
-**Validação:** nada de execução — a mudança é só de documentação e o
-`index.html` não foi tocado nesta entrada. Conferido que os links internos dos
-quatro documentos resolvem, que todos os arquivos estão em UTF-8, e que os
-marcos de linha citados no `CLAUDE.md` batem com o `index.html` de 871 linhas
-depois do merge.
+**Validação:** `SINTAXE_OK` no `index.html` depois dos merges (o código é de
+outras execuções; esta entrada não alterou nenhuma linha de jogo). Conferido que
+os links internos dos documentos resolvem, que todos os arquivos estão em UTF-8,
+que não sobrou marcador de conflito, e que os marcos de seção citados no
+`CLAUDE.md` batem com o `index.html` de 1376 linhas depois do merge.
 
 **Análise:**
 - O repositório não tinha nenhum arquivo de orientação até agora: sem
@@ -51,6 +51,15 @@ depois do merge.
   foram mesclados à mão: os itens e a análise da rotina foram preservados
   integralmente, e o formato de entrada **dela** foi adotado como contrato aqui,
   porque é mais rico que o que eu havia proposto e é o que a automação já emite.
+- No meio do trabalho a `main` recebeu a **Etapa 3** (`1639d2d`), que levou o
+  `index.html` de 871 para 1376 linhas: quatro classes, grimório com slots, as
+  três moedas de progressão do Tibia e save `v2` com migração da Etapa 2. O
+  `CLAUDE.md` foi refeito em cima disso — mapa de seções, as três moedas, o
+  formato novo do save e o padrão de migração — e a coluna de números de linha
+  deu lugar aos marcadores de seção, que não envelhecem. O `VISAO.md` ganhou
+  ponteiro para `docs/analise-tibia-habilidades.md`, que é a fonte das fórmulas.
+  A Etapa 3 entregou de uma vez os dois itens que estavam em `Depois`, vocações
+  e habilidade que sobe com uso, e ambos saíram da lista.
 
 **Roadmap:** reescrito na estrutura por pilares, com critério de "pronto quando"
 em cada item. "Peso de XP na morte" entrou em `Agora` (pilar 1, o item-cabeça da
@@ -68,20 +77,27 @@ repositório.
 - **Não existe harness de teste no repositório.** O `CLAUDE.md` descreve o
   procedimento headless em detalhe, mas cada execução ainda monta o `test.html`
   do zero. Isso é desperdício e convida a pular o teste. Está em `Depois`.
-- **Os números de linha do `CLAUDE.md` envelhecem a cada commit.** Eles valem
-  para o `index.html` de 871 linhas de hoje. Se a divergência incomodar, troque
-  a coluna de linhas pelos marcadores de seção `/* ---------- */`, que são
-  estáveis. O mesmo vale para as referências `index.html:NNN` deste diário.
-- **Duas bases concorrentes quase viraram três.** Enquanto esta sessão
-  trabalhava num worktree, a rotina commitou duas vezes na `main`. Deu para
-  mesclar sem perda, mas o risco é real: antes de escrever `ROADMAP.md` ou
-  `DIARIO.md`, faça `git fetch` e leia a versão da `main`.
+- **Referências a linha envelhecem rápido.** A Etapa 3 deslocou tudo de uma vez.
+  O `CLAUDE.md` já foi convertido para citar marcadores de seção em vez de
+  faixas de linha, mas as referências `index.html:NNN` das entradas antigas
+  deste diário apontam para o arquivo de 871 linhas e não valem mais.
+- **A `main` se move durante a sessão.** Esta entrada precisou de dois merges:
+  a rotina commitou duas vezes, e a Etapa 3 entrou depois disso. Deu para
+  mesclar sem perda nenhuma, mas o risco de sobrescrever é real. Antes de
+  escrever `ROADMAP.md` ou `DIARIO.md`, e antes de qualquer push, faça
+  `git fetch` e leia a versão da `main`.
+- **A Etapa 3 chegou sem passar pelo roadmap nem pelo diário.** Ela foi
+  registrada aqui retroativamente, nesta entrada. O `index.html` dela não foi
+  exercitado por esta sessão além do portão de sintaxe — classes, grimório e a
+  migração `v1`→`v2` nunca passaram pelo harness headless.
 
 **Próximo passo recomendado:** implementar o item de `Agora` (peso de XP na
 morte). Ler o `VISAO.md` antes, porque a decisão de quanto cobrar é de
 balanceamento de pilar, não de código. Mexe em `gainXp()`, `finish()`,
-`showEnd()` e `hud()` — não toca em `genMap()` nem no save além de reduzir
-`save.xp`, então não conflita com nada pendente.
+`showEnd()` e `hud()`, e agora escreve em `ch().xp` em vez de `save.xp`, por
+causa do save `v2` por classe. Começar só pelo nível, deixando magia e perícia
+intactas. Antes disso, se sobrar execução, vale rodar o harness headless contra
+a Etapa 3 — ela nunca foi exercitada além da sintaxe.
 
 ---
 

@@ -24,6 +24,13 @@ justamente a pressa que recria a tensão da volta para o depósito: você está 
 o saco cheio, o tempo está acabando, e cada monstro entre você e o portal é uma
 aposta.
 
+Quando a inspiração virar número — curva de nível, custo de magia, diferença
+entre classes — a fonte é
+[docs/analise-tibia-habilidades.md](docs/analise-tibia-habilidades.md), que
+destrincha as fórmulas reais do Tibia e explica por que classe aqui é **taxa de
+crescimento, não lista de poderes**. Este documento diz para onde o jogo vai;
+aquele diz como o Tibia fazia a conta.
+
 ## Os cinco pilares
 
 ### 1. A morte custa, e o jogador sabe o preço antes de arriscar

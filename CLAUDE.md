@@ -20,10 +20,10 @@ raiz do repositório).
 
 ## Regra número um: um arquivo, uma dependência
 
-Todo o jogo é o [index.html](index.html) — hoje ~870 linhas. Não há build, não
+Todo o jogo é o [index.html](index.html) — hoje ~1380 linhas. Não há build, não
 há `package.json`, não há import, não há arquivo `.js` ou `.css` separado. O
 GitHub Pages serve o arquivo cru, e o `.nojekyll` existe para ele não ser
-processado.
+processado. A pasta `docs/` guarda análise de design, não código.
 
 Isso é uma escolha, não uma dívida: o jogo abre instantâneo no celular e
 qualquer agente consegue ler o programa inteiro de uma vez. **Não quebre isso.**
@@ -41,32 +41,32 @@ Leonardo antes de fazer.
 
 ## Mapa do index.html
 
-Os números abaixo valem para o arquivo de 871 linhas de 18/10/2026 e envelhecem
-a cada commit — se divergirem, confie nos marcadores de seção, que são estáveis.
+O arquivo tem 1376 linhas em 18/10/2026. Os quatro blocos são `<head>` (3–190,
+com o estilo crítico inline na 11 e as fontes externas em 13–15), o `<style>`
+principal (16–188), o markup (191–302) e o `<script>` (303–1373).
 
-| Linhas | Bloco | Conteúdo |
-|---|---|---|
-| 3–134 | `<head>` | meta de viewport e de app móvel, estilo crítico inline (11), título, fontes externas (13–15) |
-| 16–132 | `<style>` | todo o CSS: HUD, telas, botões, joystick, bússola |
-| 135–216 | markup | `#app`, canvas, HUD, `#compass`, `#menu`, `#end`, `#shop`, `#joy` |
-| 217–868 | `<script>` | o jogo, numa IIFE em modo estrito |
+Esses números envelhecem a cada commit. **Para achar as coisas, use os
+marcadores de seção `/* ---------- nome ---------- */`**, que são estáveis.
+Mantenha a divisão e ponha código novo na seção certa:
 
-O script é dividido por comentários de seção `/* ---------- nome ---------- */`.
-**Mantenha essa divisão** e coloque código novo na seção certa:
-
-- **progresso salvo** — `KEY`, `save`, `persist()`, `xpNeed()`, `stats()`
+- **classes** — tabela `CLASSES` e `SPELLS`, o coração da Etapa 3
+- **progresso salvo** — `KEY`, `KEY1`, `save`, `persist()`, a migração v1→v2
+- **personagem e progressão** — `novoChar()`, `ch()`, `KL()`, `stats()`,
+  `xpNeed()`, `manaPraMag()`, `golpesPraPer()`, `nSlots()`, `desbloqueadas()`
 - **melhorias permanentes** — tabela `UP`, `upCost()`, `sealPct()`
 - **dados do jogo** — tabelas `MT` (monstros), `ITEMS`, `LOOT`
 - **mapa** — `genMap()`, `carveRooms()`, `corridor()`, `carve()`
 - **estado da incursão** — `newRun()`, `spawn()`, `pickType()`
 - **física** — `solid()`, `blocked()`, `move()`, `buildFlow()`, `reveal()`
 - **efeitos e mensagens** — `log()`, `banner()`, `num()`, `shake()`, `spark()`
-- **combate** — `castBolt()`, `castRune()`, `drinkPot()`, `hitMon()`, `kill()`,
-  `gainXp()`, `hurtPlayer()`, `pickup()`
+- **combate** — conjuração, `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`,
+  `pickup()`
 - **atualização** — `update()`, `updateMons()`, `updateProj()`, `finish()`
 - **desenho** — `render()`, `drawPlayer()`, `drawMon()`, `drawMini()`
 - **HUD** — `hud()` e o cache de elementos `E`
 - **telas** — `showMenu()`, `start()`, `showEnd()`
+- **personagens** — escolha de classe, `showPick()`
+- **grimório** — habilidades desbloqueadas e os slots de ação
 - **mercador** — `drawShop()`, `buy()`, `showShop()`
 - **controles** — joystick por ponteiro, `bindHold()`, teclado
 - **laço** — `frame()`, `onResize()`
@@ -77,10 +77,29 @@ Constantes no topo do script: `T=32` (lado do tile), `MW=MH=64` (mapa),
 `RUN=360` (duração da incursão em segundos), `PORTAL_AT=90` (quando o portal
 abre), `EXT=2.5` (segundos parado no portal para extrair).
 
-Balanceamento vive nas tabelas `MT`, `LOOT`, `ITEMS` e `UP`, não espalhado pelo
-código. Ajuste de dificuldade é edição de tabela. Se você se pegar escrevendo um
-número mágico dentro de `updateMons()`, ele provavelmente devia ser um campo em
-`MT`.
+Balanceamento vive nas tabelas `CLASSES`, `SPELLS`, `MT`, `LOOT`, `ITEMS` e
+`UP`, não espalhado pelo código. Ajuste de dificuldade é edição de tabela. Se
+você se pegar escrevendo um número mágico dentro de `updateMons()`, ele
+provavelmente devia ser um campo em `MT`.
+
+### As três moedas de progressão
+
+A Etapa 3 trouxe o modelo do Tibia, e ele é a coisa mais importante de entender
+antes de mexer em progressão: **classe não é lista de poderes, é taxa de
+crescimento.** As mesmas coisas custam preços diferentes para cada classe.
+
+- **Nível** (`ch().lvl`, `xp`) — sobe matando, custo em `xpNeed()`. Define vida,
+  mana e quais habilidades e slots estão liberados.
+- **Magia** (`mag`, `manaG`) — sobe **gastando mana**, custo exponencial em
+  `manaPraMag()` com o `mMult` da classe.
+- **Perícia** (`per`, `golpes`) — sobe **acertando golpes**, custo em
+  `golpesPraPer()` com o `pMult` da classe.
+
+As duas últimas são o que faz dois personagens de mesmo nível não serem iguais.
+O raciocínio completo, com as fórmulas originais do Forgotten Server de onde
+isso saiu, está em
+[docs/analise-tibia-habilidades.md](docs/analise-tibia-habilidades.md) — leia
+antes de tocar em qualquer curva.
 
 ### Duas coisas sutis que já custaram tempo
 
@@ -91,16 +110,22 @@ monstros só leem esse campo. Por isso aggro é medido em distância de fluxo
 (`fd<=9`, chefe `fd<=7`, desiste em `fd>18`) e não em linha reta — um monstro do
 outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
-**O save é mesclado, não substituído.** `localStorage` na chave
-`masmorra-runas-v1`, formato
-`{lvl,xp,cofre,runs,ext,deaths,best,up:{vigor,foco,poder,bolsa,seguro}}`. A
-leitura faz `Object.assign` sobre os padrões, então **adicionar** campo novo é
-seguro e não apaga o progresso de ninguém. Só suba a versão da `KEY` se o
-significado de um campo existente mudar — e isso zera o save de todos os
-jogadores, então é decisão do Leonardo, não sua.
+**O save é mesclado, e migrado quando preciso.** `localStorage` na chave
+`masmorra-runas-v2`, formato
+`{cofre,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots}}}`.
+O que é da conta (cofre, melhorias, estatísticas) fica na raiz; o que é do
+personagem fica em `chars`, um por classe.
+
+A leitura faz `Object.assign` sobre os padrões, então **adicionar** campo novo é
+seguro e não apaga o progresso de ninguém. Se a `KEY` não existir, o código
+procura a `masmorra-runas-v1` e migra: cofre, melhorias e nível antigos viram um
+Feiticeiro. **Esse é o padrão a seguir** — subir a versão da `KEY` sem escrever
+a migração zera o progresso de todos os jogadores, e isso é decisão do Leonardo,
+não sua.
 
 Toda escrita em `save` precisa de `persist()` depois. Todo atributo derivado
-(vida máxima, mana máxima, poder) passa por `stats()`.
+(vida máxima, mana máxima, poder) passa por `stats()`, que lê a classe atual via
+`ch()` e `KL()` — nunca leia `save.chars` direto.
 
 ## Convenções de código
 

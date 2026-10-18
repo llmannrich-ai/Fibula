@@ -32,6 +32,11 @@ recuar mais de duas incursões, está alta demais. Comece em 25%, jogue, ajuste.
 Não implemente proteção contra isso no Mercador nesta etapa — o Selo de
 resguardo cobre loot, e misturar as duas coisas confunde a leitura.
 
+Depois da Etapa 3 existem **três** moedas de progressão (nível, magia e
+perícia), e no Tibia a morte mordia todas. Comece só pelo XP do nível: é a mais
+legível das três e já cria a hesitação que falta. Magia e perícia ficam para
+uma revisão posterior, com o diário registrando a decisão.
+
 **Pronto quando:** morrer reduz o XP do nível atual, a tela final mostra a perda
 em linha própria, o menu avisa a regra antes de entrar, e o save sobrevive a um
 recarregamento com o valor reduzido.
@@ -148,15 +153,11 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 - **Rastro assíncrono de outros jogadores** — placar local, marca de morte no
   mapa onde a última incursão terminou, recorde a ser batido. Sensação de MMO
   sem rede (pilar 2).
-- **Habilidade que sobe com uso** — Faísca e Runa ganham nível conforme são
-  usadas, à moda das skills do Tibia (pilares 1 e 5).
 - **Som** — efeitos curtos de golpe, de dano e de extração, mais um fundo sóbrio.
   Nada que precise de arquivo externo grande; de preferência síntese via
   WebAudio para manter o arquivo único.
 - **PWA** — manifesto e service worker para instalar na tela inicial e abrir
   offline. Reforça o pilar 3 sem contrariar o "zero dependências".
-- **Vocações** — quatro estilos de jogo com habilidades distintas, no lugar do
-  conjunto único Faísca/Runa/Poção.
 - **Mercado com preço móvel** — o valor dos itens oscila entre incursões, dando
   motivo para guardar loot em vez de vender na hora (pilar 5).
 
@@ -164,6 +165,15 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Etapa 3: classes, habilidades e evolução** (`1639d2d`).
+  Quatro classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por taxa de
+  crescimento e não por lista de poderes, grimório com slots de habilidade
+  liberados por nível, e as três moedas de progressão do Tibia — nível por
+  abate, magia por mana gasta, perícia por golpe acertado. Save migrado para
+  `v2` com conversão do progresso da Etapa 2 em um Feiticeiro. O raciocínio
+  está em [docs/analise-tibia-habilidades.md](docs/analise-tibia-habilidades.md).
+  Entrega de uma vez os dois itens que estavam em `Depois`: vocações e
+  habilidade que sobe com uso.
 - **2026-10-18 — Base de orientação para IA** (`e13649f`). `CLAUDE.md`,
   `VISAO.md`, `AGENTS.md`, e formato para `ROADMAP.md` e `DIARIO.md`.
 - **2026-10-18 — Guarda contra loop infinito em `genMap()`** (`f6c53ef`).
