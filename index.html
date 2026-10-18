@@ -58,7 +58,7 @@ body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bon
 .compass{font-size:20px;color:var(--torch);line-height:1;text-align:center}
 .compass b{display:inline-block;transition:transform .15s linear}
 
-#log{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:182px;width:min(66vw,330px);display:flex;flex-direction:column;gap:2px;font:600 13px/1.25 var(--f-body)}
+#log{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:200px;width:min(66vw,330px);display:flex;flex-direction:column;gap:2px;font:600 13px/1.25 var(--f-body)}
 .ln{color:var(--loot);animation:fadeout 8s forwards}
 .ln.rare{color:var(--rare)} .ln.epic{color:var(--epic)} .ln.warn{color:var(--warn)} .ln.info{color:var(--bone)}
 @keyframes fadeout{0%,75%{opacity:1}100%{opacity:0}}
@@ -76,10 +76,23 @@ body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bon
 .act .ct{font:600 11px var(--f-body);color:var(--muted);position:relative;z-index:1;font-variant-numeric:tabular-nums}
 .act .cd{position:absolute;inset:0;background:conic-gradient(rgba(6,5,10,.75) calc(var(--cd,0) * 1turn),transparent 0)}
 .act.dim{filter:saturate(.25) brightness(.65)}
-#bFire{width:88px;height:88px;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:30px;border-color:var(--mana);box-shadow:0 0 18px rgba(79,130,227,.35)}
-#bFire .nm{font-size:16px}
-#bRune{width:64px;height:64px;right:max(124px,calc(env(safe-area-inset-right,0px) + 124px));bottom:28px;border-color:var(--torch)}
-#bPot{width:58px;height:58px;right:max(34px,calc(env(safe-area-inset-right,0px) + 34px));bottom:134px;border-color:var(--hp)}
+.act .nm{line-height:1.05;text-wrap:balance;padding:0 4px}
+.act.sl{border-color:var(--mana)}
+.act.sl .nm{font-size:10px}
+#s3 .nm{font-size:9px}
+#s0{width:88px;height:88px;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:30px;box-shadow:0 0 18px rgba(79,130,227,.3)}
+#s0 .nm{font-size:13px}
+#s1{width:66px;height:66px;right:max(122px,calc(env(safe-area-inset-right,0px) + 122px));bottom:32px}
+#s2{width:62px;height:62px;right:max(32px,calc(env(safe-area-inset-right,0px) + 32px));bottom:130px}
+#s3{width:58px;height:58px;right:max(128px,calc(env(safe-area-inset-right,0px) + 128px));bottom:110px}
+#bPot{width:54px;height:54px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:28px;border-color:var(--hp)}
+#bPot .nm{font-size:12px}
+/* a cor da borda conta o elemento da habilidade equipada */
+.act.sl[data-el="fogo"]{border-color:#ff9a3c} .act.sl[data-el="energia"]{border-color:#9db8ff}
+.act.sl[data-el="gelo"]{border-color:#8fe3ff} .act.sl[data-el="terra"]{border-color:#9fd36b}
+.act.sl[data-el="sagrado"]{border-color:#ffe7a8} .act.sl[data-el="fisico"]{border-color:#e8e0cf}
+.act.sl[data-el="cura"]{border-color:var(--loot)} .act.sl[data-el="apoio"]{border-color:var(--torch)}
+.skl{display:flex;justify-content:space-between;gap:6px;font:600 11px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
 
 /* Telas */
 .screen{position:absolute;inset:0;z-index:5;display:grid;place-items:center;overflow:auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:radial-gradient(ellipse at 50% 30%,rgba(14,12,21,.5),rgba(14,12,21,.95) 70%)}
@@ -128,6 +141,49 @@ h2.lost{color:var(--hp)}
 .buy:disabled{color:var(--muted);border-color:var(--line);cursor:default}
 .buy.max{color:var(--loot);border-color:transparent}
 .buy:focus-visible{outline:2px solid var(--bone);outline-offset:3px}
+
+/* Personagens e Grimório */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+#pickList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:58vh;overflow:auto}
+.cls{width:100%;text-align:left;display:grid;gap:5px;background:var(--void);border:1px solid var(--line);border-radius:4px;padding:11px 12px;cursor:pointer;color:var(--bone);font-family:var(--f-body)}
+.cls.on{border-color:var(--torch);box-shadow:inset 0 0 0 1px rgba(242,163,58,.35)}
+.cls:focus-visible{outline:2px solid var(--bone);outline-offset:3px}
+.cls .hd{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.cls h3{margin:0;font:500 17px/1.1 var(--f-display);color:var(--torch)}
+.cls .lv{font:600 12px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
+.cls p{margin:0;font:500 13px/1.35 var(--f-body);color:var(--muted)}
+.cls .bars{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-top:3px}
+.cls .bars div{display:grid;gap:2px}
+.cls .bars b{font:600 9px var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.cls .bars i{height:4px;border-radius:1px;background:var(--line);display:block}
+.cls .bars i::after{content:'';display:block;height:100%;background:var(--torch);width:var(--v,0%)}
+.prog{display:grid;gap:7px;padding:10px 12px;background:var(--void);border:1px solid var(--line);border-radius:4px}
+.prog .pr{display:grid;gap:3px}
+.prog .pr .t{display:flex;justify-content:space-between;gap:8px;font:600 12px var(--f-body);font-variant-numeric:tabular-nums}
+.prog .pr .t span{color:var(--muted)}
+.prog .pr .t b{font-weight:600}
+.prog .pr i{display:block;height:5px;background:rgba(0,0,0,.5);border:1px solid rgba(236,228,210,.14);border-radius:2px;overflow:hidden}
+.prog .pr i::after{content:'';display:block;height:100%;background:var(--xp);width:var(--v,0%)}
+.slots{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.slots button{min-height:58px;display:grid;gap:2px;place-content:center;text-align:center;padding:6px 4px;background:var(--void);border:1px dashed var(--line);border-radius:4px;color:var(--bone);font-family:var(--f-body);cursor:pointer}
+.slots button.full{border-style:solid;border-color:var(--mana)}
+.slots button.lock{opacity:.45;cursor:default;border-style:dotted}
+.slots button:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+.slots small{font:600 9px var(--f-body);text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.slots span{font:500 12px/1.15 var(--f-display)}
+#grimList{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:40vh;overflow:auto}
+.sp{display:flex;align-items:center;gap:10px;background:var(--void);border:1px solid var(--line);border-left-width:3px;border-radius:4px;padding:9px 11px}
+.sp.eq{border-color:var(--mana);background:rgba(79,130,227,.08)}
+.sp.locked{opacity:.5}
+.sp .info{flex:1;min-width:0;display:grid;gap:2px}
+.sp h3{margin:0;font:500 15px/1.1 var(--f-display);color:var(--bone)}
+.sp .w{font:italic 600 11px var(--f-body);color:var(--torch);letter-spacing:.02em}
+.sp p{margin:0;font:500 12px/1.3 var(--f-body);color:var(--muted)}
+.sp .meta{font:600 11px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
+.sp button{flex:0 0 auto;min-width:64px;font:600 13px var(--f-body);background:transparent;color:var(--torch);border:1px solid var(--torch);border-radius:4px;padding:9px 6px;cursor:pointer}
+.sp button.rm{color:var(--muted);border-color:var(--line)}
+.sp button:disabled{color:var(--muted);border-color:var(--line);cursor:default}
+.sp button:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
 </style>
 
@@ -139,10 +195,11 @@ h2.lost{color:var(--hp)}
   <div class="hud" id="hud">
     <div class="top">
       <div class="vitals">
-        <div class="who out"><span>Feiticeiro</span><b id="lvlT">Nv 1</b></div>
+        <div class="who out"><span id="clsT">Feiticeiro</span><b id="lvlT">Nv 1</b></div>
         <div class="bar hp"><i id="hpI"></i><span id="hpT">100/100</span></div>
         <div class="bar mp"><i id="mpI"></i><span id="mpT">60/60</span></div>
         <div class="bar xp"><i id="xpI"></i></div>
+        <div class="skl out"><span id="magT">Magia 0</span><span id="perT">Perícia 10</span></div>
         <div class="bag out">Saco: <span id="bagT">0</span> <small>ouro</small></div>
       </div>
       <div class="map">
@@ -155,20 +212,25 @@ h2.lost{color:var(--hp)}
     <div id="log"></div>
     <div id="banner" class="out"></div>
     <div id="joy" class="idle"><div id="knob"></div></div>
-    <button class="act" id="bPot" aria-label="Beber poção (L)"><span class="cd"></span><span class="nm out">Poção</span><span class="ct" id="potN">×3</span></button>
-    <button class="act" id="bRune" aria-label="Runa de chamas (K)"><span class="cd"></span><span class="nm out">Runa</span><span class="ct">28 mana</span></button>
-    <button class="act" id="bFire" aria-label="Faísca, segure para atacar (J ou espaço)"><span class="cd"></span><span class="nm out">Faísca</span><span class="ct">5 mana</span></button>
+    <button class="act pot" id="bPot" aria-label="Beber poção (P)"><span class="cd"></span><span class="nm out">Poção</span><span class="ct" id="potN">×3</span></button>
+    <button class="act sl" id="s3" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
+    <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
+    <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
+    <button class="act sl main" id="s0"><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
   </div>
 
   <div class="screen" id="menu">
     <div class="panel">
-      <p class="eyebrow">Protótipo · Etapa 1 · Feiticeiro</p>
+      <p class="eyebrow" id="mEye">Protótipo · Etapa 3</p>
       <h1>Masmorra de Runas</h1>
       <p class="lede">Entre, cace, encha o saco de loot e saia vivo pelo portal. Se morrer, o loot que você carrega fica para trás.</p>
       <dl class="stats">
         <div><dt>Nível</dt><dd id="sLvl">1</dd></div>
+        <div><dt>Magia</dt><dd id="sMag">0</dd></div>
+        <div><dt>Perícia</dt><dd id="sPer">10</dd></div>
         <div><dt>Cofre</dt><dd id="sCofre">0</dd></div>
         <div><dt>Recorde</dt><dd id="sBest">0</dd></div>
+        <div><dt>Espaços</dt><dd id="sSlots">2</dd></div>
         <div><dt>Incursões</dt><dd id="sRuns">0</dd></div>
         <div><dt>Saídas</dt><dd id="sExt">0</dd></div>
         <div><dt>Mortes</dt><dd id="sDead">0</dd></div>
@@ -180,7 +242,30 @@ h2.lost{color:var(--hp)}
         <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b> em melhorias permanentes.</li>
       </ol>
       <div class="row"><button class="cta" id="play">Entrar na masmorra</button><button class="ghost" id="toShop">Mercador</button></div>
-      <p class="keys">Arraste o lado esquerdo da tela para andar. Segure <b>Faísca</b> para atacar o monstro mais próximo. No teclado: <b>WASD</b> anda, <b>J</b> Faísca, <b>K</b> Runa, <b>L</b> Poção.</p>
+      <div class="row2"><button class="ghost" id="toGrim">Grimório</button><button class="ghost" id="toPick">Personagens</button></div>
+      <p class="keys">Arraste o lado esquerdo da tela para andar. Segure o botão grande para usar a primeira habilidade sem parar. No teclado: <b>WASD</b> anda, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="pick" hidden>
+    <div class="panel">
+      <p class="eyebrow">Personagens</p>
+      <h2>Escolha a classe</h2>
+      <p class="lede">Nenhuma classe ganha poder de graça: o que muda é a <b>velocidade com que cada coisa cresce</b>. O cofre e as melhorias do Mercador são da conta e valem para todos.</p>
+      <ul id="pickList"></ul>
+      <button class="ghost" id="pickBack" hidden>Voltar ao acampamento</button>
+    </div>
+  </div>
+
+  <div class="screen" id="grim" hidden>
+    <div class="panel">
+      <p class="eyebrow" id="grimEye">Feiticeiro · Nível 1</p>
+      <h2>Grimório</h2>
+      <p class="lede">Você aprende mais habilidades do que consegue levar. Os espaços abrem nos níveis 1, 8 e 18 — toque numa habilidade para equipar ou guardar.</p>
+      <div class="prog" id="grimProg"></div>
+      <div class="slots" id="grimSlots"></div>
+      <ul id="grimList"></ul>
+      <button class="ghost" id="grimBack">Voltar ao acampamento</button>
     </div>
   </div>
 
@@ -205,6 +290,7 @@ h2.lost{color:var(--hp)}
         <dt id="eSealDt" hidden>Resguardado pelo selo</dt><dd id="eSeal" hidden></dd>
         <dt>Monstros abatidos</dt><dd id="eKills"></dd>
         <dt>Experiência</dt><dd id="eXp"></dd>
+        <dt>Treino</dt><dd id="eTrain"></dd>
         <dt>Tempo na masmorra</dt><dd id="eTime"></dd>
         <dt>Cofre total</dt><dd id="eCofre"></dd>
       </dl>
@@ -236,74 +322,173 @@ function resize(){
 }
 
 /* ---------- progresso salvo neste navegador ---------- */
-const KEY='masmorra-runas-v1';
+/* ---------- classes ----------
+   Adaptação das vocações do Tibia: a identidade não vem de poderes exclusivos,
+   vem das TAXAS DE CRESCIMENTO. ghp/gmp espelham gainhp/gainmana do
+   vocations.xml; mMult espelha manamultiplier (custo exponencial de magia);
+   pMult espelha o skill multiplier das armas; rhp/rmp espelham os ticks de
+   regeneração. Quem é de mana regenera mana; quem é de vida regenera vida. */
+const CLASSES={
+  feiticeiro:{nome:'Feiticeiro',tag:'Fogo e energia',hp:85,mp:95,ghp:6,gmp:16,rhp:1.0,rmp:8.5,mMult:1.09,pMult:2.0,red:0,
+    desc:'Pouca vida, muita mana. Dano bruto e área. Cresce em Magia mais rápido que qualquer um.',
+    sil:'mago',cor:{manto:'#3a3f8f',gola:'#2a2d6e',arma:'#8a6640',orbe:'#ffd27a'}},
+  druida:{nome:'Druida',tag:'Gelo e terra',hp:92,mp:88,ghp:7,gmp:15,rhp:1.1,rmp:8.0,mMult:1.09,pMult:1.8,red:.06,
+    desc:'A única classe que se cura sozinha. Controla o campo com lentidão e veneno.',
+    sil:'mago',cor:{manto:'#2f6b46',gola:'#215033',arma:'#6f5a3a',orbe:'#9cf0c0'}},
+  cacador:{nome:'Caçador',tag:'Distância',hp:110,mp:70,ghp:11,gmp:10,rhp:1.6,rmp:5.5,mMult:1.22,pMult:1.2,red:.14,
+    desc:'Alcance longo e pés rápidos. Escala em Perícia, mas precisa de Magia para os golpes sagrados.',
+    sil:'arqueiro',cor:{manto:'#4a6b2f',gola:'#35501f',arma:'#7a5a36',orbe:'#d9c7a0'}},
+  cavaleiro:{nome:'Cavaleiro',tag:'Corpo a corpo',hp:135,mp:45,ghp:17,gmp:4,rhp:2.6,rmp:2.6,mMult:1.9,pMult:1.1,red:.28,
+    desc:'Bate de graça e aguenta pancada. Mana curta: as técnicas são raras e pesadas.',
+    sil:'guerreiro',cor:{manto:'#6b6577',gola:'#4e4958',arma:'#b9b3a4',orbe:'#ffb84d'}}
+};
+const CL_ORDEM=['feiticeiro','druida','cacador','cavaleiro'];
+
+/* ---------- habilidades ----------
+   Campos espelham o Spell do Forgotten Server: grupo, nível, mana, cooldown
+   próprio (cd) e cooldown de grupo (gcd), escala (magia ou perícia) e a
+   fórmula de dano no formato nivel/2 + poder*a + b, que é a tradução direta de
+   "level/5 + magicLevel*a + b" das spells em data/scripts/spells. */
+const SPELLS={
+  /* Feiticeiro */
+  faisca:{c:'feiticeiro',n:'Faísca',k:'Faísca',w:'adori flam',lvl:1,mana:5,cd:.45,g:'ataque',gcd:.35,esc:'mag',t:'proj',el:'fogo',
+    a1:2.0,a2:3.2,b1:6,b2:10,alc:7,d:'Dardo de fogo que persegue o alvo mais próximo.'},
+  flam:{c:'feiticeiro',n:'Golpe Flamejante',k:'Chamas',w:'exori flam',lvl:4,mana:22,cd:2,g:'ataque',gcd:1.2,esc:'mag',t:'proj',el:'fogo',
+    a1:4.0,a2:6.0,b1:10,b2:16,alc:7,dot:{dur:4,f:.14},d:'Impacto de fogo que deixa o alvo queimando por 4 s.'},
+  ondafogo:{c:'feiticeiro',n:'Onda de Fogo',k:'Onda',w:'exevo flam hur',lvl:9,mana:42,cd:4,g:'ataque',gcd:1.6,esc:'mag',t:'cone',el:'fogo',
+    a1:3.2,a2:4.8,b1:8,b2:12,raio:118,ang:1.15,d:'Leque de chamas na direção em que você olha.'},
+  bolaenergia:{c:'feiticeiro',n:'Bola de Energia',k:'Bola',w:'adevo mas vis',lvl:15,mana:55,cd:5,g:'ataque',gcd:1.6,esc:'mag',t:'bomba',el:'energia',
+    a1:5.0,a2:7.5,b1:14,b2:22,alc:6.5,raio:76,d:'Esfera arremessada que explode em área.'},
+  relampago:{c:'feiticeiro',n:'Relâmpago',k:'Raio',w:'exori vis',lvl:22,mana:70,cd:7,g:'ataque',gcd:1.6,esc:'mag',t:'feixe',el:'energia',
+    a1:6.0,a2:9.0,b1:18,b2:26,raio:300,d:'Raio reto que atravessa tudo na linha de visão.'},
+  nucleo:{c:'feiticeiro',n:'Núcleo Infernal',k:'Núcleo',w:'exevo gran mas flam',lvl:32,mana:170,cd:26,g:'ataque',gcd:2,esc:'mag',t:'aura',el:'fogo',
+    a1:9.0,a2:13.0,b1:30,b2:45,raio:152,dot:{dur:5,f:.1},d:'Erupção ao seu redor. Tudo que sobrevive sai queimando.'},
+
+  /* Druida */
+  gelo:{c:'druida',n:'Fagulha Gélida',k:'Fagulha',w:'adori frigo',lvl:1,mana:5,cd:.45,g:'ataque',gcd:.35,esc:'mag',t:'proj',el:'gelo',
+    a1:1.8,a2:2.9,b1:5,b2:9,alc:7,lento:{dur:1.2,f:.72},d:'Estilhaço de gelo que ainda por cima retarda o alvo.'},
+  exura:{c:'druida',n:'Cura Leve',k:'Cura',w:'exura',lvl:3,mana:24,cd:1.6,g:'cura',gcd:1,esc:'mag',t:'cura',
+    a1:3.0,a2:4.0,b1:14,b2:20,d:'Fecha ferimentos. Escala com Magia, não com poções.'},
+  tera:{c:'druida',n:'Golpe de Terra',k:'Terra',w:'exori tera',lvl:7,mana:22,cd:2,g:'ataque',gcd:1.2,esc:'mag',t:'proj',el:'terra',
+    a1:3.6,a2:5.4,b1:9,b2:14,alc:7,dot:{dur:6,f:.1},d:'Lama venenosa: dano menor, mas corrói por 6 s.'},
+  avalanche:{c:'druida',n:'Avalanche',k:'Avalanche',w:'adevo mas frigo',lvl:13,mana:50,cd:4.5,g:'ataque',gcd:1.6,esc:'mag',t:'bomba',el:'gelo',
+    a1:4.4,a2:6.6,b1:12,b2:18,alc:6.5,raio:78,lento:{dur:2.5,f:.5},d:'Queda de gelo em área que deixa tudo lento.'},
+  raizes:{c:'druida',n:'Raízes Vorazes',k:'Raízes',w:'exevo tera hur',lvl:20,mana:62,cd:8,g:'ataque',gcd:1.6,esc:'mag',t:'aura',el:'terra',
+    a1:5.2,a2:7.8,b1:15,b2:22,raio:124,lento:{dur:3,f:.28},d:'Raízes prendem quase no lugar tudo ao seu redor.'},
+  inverno:{c:'druida',n:'Inverno Eterno',k:'Inverno',w:'exevo gran mas frigo',lvl:32,mana:165,cd:26,g:'ataque',gcd:2,esc:'mag',t:'aura',el:'gelo',
+    a1:8.4,a2:12.2,b1:28,b2:42,raio:152,lento:{dur:4,f:.45},d:'O chão congela num raio enorme.'},
+
+  /* Caçador */
+  flecha:{c:'cacador',n:'Flecha Conjurada',k:'Flecha',w:'exevo con',lvl:1,mana:3,cd:.42,g:'ataque',gcd:.32,esc:'per',t:'proj',el:'fisico',
+    a1:.9,a2:1.5,b1:3,b2:6,alc:9,d:'Alcance maior que o de qualquer magia. Escala com Perícia.'},
+  lanca:{c:'cacador',n:'Lança Etérea',k:'Lança',w:'exori con',lvl:5,mana:26,cd:2,g:'ataque',gcd:1.2,esc:'per',t:'feixe',el:'fisico',
+    a1:1.8,a2:2.9,b1:8,b2:13,raio:210,max:3,d:'Perfura até três inimigos em linha.'},
+  missil:{c:'cacador',n:'Míssil Divino',k:'Míssil',w:'exori san',lvl:11,mana:24,cd:2.2,g:'ataque',gcd:1.2,esc:'mag',t:'proj',el:'sagrado',
+    a1:3.0,a2:4.6,b1:8,b2:13,alc:8,d:'Escala com Magia: o motivo de um caçador também treinar magia.'},
+  pes:{c:'cacador',n:'Pés Ligeiros',k:'Pés',w:'utani tempo hur',lvl:17,mana:55,cd:14,g:'apoio',gcd:1,t:'buff',
+    buff:{velo:.5,dur:8},d:'+50% de velocidade por 8 s. Serve para chegar ao portal.'},
+  caldeira:{c:'cacador',n:'Caldeira Divina',k:'Caldeira',w:'exevo mas san',lvl:24,mana:95,cd:5,g:'ataque',gcd:1.6,esc:'mag',t:'aura',el:'sagrado',
+    a1:4.6,a2:6.8,b1:14,b2:20,raio:124,d:'Explosão sagrada ao seu redor, para quando cercarem você.'},
+  atirador:{c:'cacador',n:'Atirador de Elite',k:'Atirador',w:'utito tempo san',lvl:32,mana:130,cd:24,g:'apoio',gcd:1,t:'buff',
+    buff:{dano:.6,alc:3,dur:10},d:'+60% de dano e +3 de alcance por 10 s.'},
+
+  /* Cavaleiro */
+  golpe:{c:'cavaleiro',n:'Golpe',k:'Golpe',w:'',lvl:1,mana:0,cd:.55,g:'ataque',gcd:.4,esc:'per',t:'melee',el:'fisico',
+    a1:.8,a2:1.3,b1:2,b2:4,raio:48,ang:1.1,d:'Não custa mana. O cavaleiro luta de graça; a mana é só para técnicas.'},
+  brutal:{c:'cavaleiro',n:'Golpe Brutal',k:'Brutal',w:'exori ico',lvl:4,mana:24,cd:5,g:'ataque',gcd:1.2,esc:'per',t:'melee',el:'fisico',
+    a1:1.8,a2:3.0,b1:6,b2:12,raio:54,ang:.8,unico:true,d:'Um golpe só, no alvo da frente, com peso de três.'},
+  furia:{c:'cavaleiro',n:'Fúria',k:'Fúria',w:'exori',lvl:10,mana:34,cd:4,g:'ataque',gcd:1.4,esc:'per',t:'aura',el:'fisico',
+    a1:1.3,a2:2.1,b1:5,b2:9,raio:64,d:'Gira a arma e atinge tudo colado em você.'},
+  provocar:{c:'cavaleiro',n:'Provocar',k:'Provocar',w:'exeta res',lvl:16,mana:30,cd:13,g:'apoio',gcd:1,t:'buff',
+    taunt:200,buff:{arm:.4,dur:6},d:'Puxa a atenção de tudo por perto e reduz em 40% o dano que você recebe por 6 s.'},
+  abalo:{c:'cavaleiro',n:'Abalo Sísmico',k:'Abalo',w:'exori mas',lvl:22,mana:52,cd:8,g:'ataque',gcd:1.6,esc:'per',t:'aura',el:'fisico',
+    a1:1.6,a2:2.6,b1:8,b2:14,raio:112,lento:{dur:2.5,f:.45},d:'O chão treme: dano em volta e tudo sai mancando.'},
+  anulacao:{c:'cavaleiro',n:'Aniquilação',k:'Aniquilar',w:'exori gran ico',lvl:32,mana:75,cd:26,g:'ataque',gcd:2,esc:'per',t:'melee',el:'fisico',
+    a1:1.5,a2:2.4,b1:7,b2:12,raio:56,ang:.9,unico:true,multi:4,d:'Quatro golpes encadeados no mesmo alvo.'}
+};
+const EL_COR={fogo:'#ff9a3c',energia:'#9db8ff',gelo:'#8fe3ff',terra:'#9fd36b',sagrado:'#ffe7a8',fisico:'#e8e0cf'};
+const listaDaClasse=c=>Object.keys(SPELLS).filter(k=>SPELLS[k].c===c);
+/* espaços de habilidade: dois de saída, o terceiro no nível 8, o quarto no 18 */
+const SLOT_LVL=[1,1,8,18];
+const slotsIniciais=(c,lvl)=>{
+  const n=SLOT_LVL.filter(l=>lvl>=l).length,libs=listaDaClasse(c).filter(k=>SPELLS[k].lvl<=lvl);
+  return [0,1,2,3].map(i=>i<n?(libs[i]||null):null);
+};
+
+/* ---------- personagem e progressão ---------- */
+const KEY='masmorra-runas-v2';
+const KEY1='masmorra-runas-v1';
 const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
-let save={lvl:1,xp:0,cofre:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0)};
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');
-  if(s){const up=Object.assign({},UP0,s.up||{});save=Object.assign(save,s);save.up=up}}catch(e){}
+const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl)});
+let save={cofre:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{}};
+try{
+  const s=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(s){save=Object.assign(save,s);save.up=Object.assign({},UP0,s.up||{});save.chars=s.chars||{}}
+  else{ // migra o save da Etapa 2: cofre, melhorias e o nível viram um Feiticeiro
+    const v1=JSON.parse(localStorage.getItem(KEY1)||'null');
+    if(v1){
+      save.cofre=v1.cofre|0;save.runs=v1.runs|0;save.ext=v1.ext|0;save.deaths=v1.deaths|0;save.best=v1.best|0;
+      save.up=Object.assign({},UP0,v1.up||{});
+      save.classe='feiticeiro';
+      save.chars.feiticeiro=novoChar('feiticeiro',Math.max(1,v1.lvl|0));
+      save.chars.feiticeiro.xp=v1.xp|0;
+      localStorage.setItem(KEY,JSON.stringify(save));
+    }
+  }
+}catch(e){}
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}};
+const ch=()=>save.chars[save.classe];
+const KL=()=>CLASSES[save.classe];
+
 const xpNeed=l=>Math.round(40*Math.pow(l,1.6));
-const stats=()=>{const l=save.lvl,u=save.up;return{
-  mhp:100+12*(l-1)+15*u.vigor,
-  mmp:60+8*(l-1)+10*u.foco,
-  pow:1+.07*(l-1)+.08*u.poder
+/* custo exponencial de Magia e Perícia — mesma forma das fórmulas de
+   vocation.cpp (1600*manaMultiplier^(ml-1) e skillBase*mult^(nivel-11)),
+   com as bases encolhidas para a escala de uma incursão de 6 minutos */
+const manaPraMag=n=>Math.round(240*Math.pow(KL().mMult,n));
+const golpesPraPer=n=>Math.round(12*Math.pow(KL().pMult,n-10));
+const nSlots=()=>SLOT_LVL.filter(l=>ch().lvl>=l).length;
+const desbloqueadas=()=>listaDaClasse(save.classe).filter(k=>ch().lvl>=SPELLS[k].lvl);
+
+const stats=()=>{const c=ch(),K=KL(),u=save.up,l=c.lvl;return{
+  mhp:Math.round(K.hp+K.ghp*(l-1)+15*u.vigor),
+  mmp:Math.round(K.mp+K.gmp*(l-1)+10*u.foco),
+  pow:1+.08*u.poder
 }};
 
 /* ---------- melhorias permanentes (ralo do cofre) ---------- */
 const UP={
   vigor:{nome:'Vigor',desc:'+15 de vida máxima',max:8,base:120,mult:1.55},
   foco:{nome:'Foco',desc:'+10 de mana máxima',max:8,base:100,mult:1.55},
-  poder:{nome:'Poder arcano',desc:'+8% de dano na Faísca e na Runa',max:8,base:150,mult:1.65},
+  poder:{nome:'Poder arcano',desc:'+8% de dano em todas as habilidades',max:8,base:150,mult:1.65},
   bolsa:{nome:'Bolsa de poções',desc:'+1 poção em cada incursão',max:4,base:180,mult:1.8},
   seguro:{nome:'Selo de resguardo',desc:'guarda 20% do loot do saco se você morrer',max:3,base:300,mult:2}
 };
 const upCost=(k,n)=>Math.round(UP[k].base*Math.pow(UP[k].mult,n)/5)*5;
 const sealPct=()=>.2*save.up.seguro;
 
-/* ---------- dados do jogo (data/game/content.json) ---------- */
-const DATA_URL='data/game/content.json';
-let MT=null,ITEMS=null,LOOT=null,PROG=null;
-async function loadContent(){
-  const res=await fetch(DATA_URL,{cache:'no-cache'});
-  if(!res.ok)throw new Error(`HTTP ${res.status} em ${DATA_URL}`);
-  const c=await res.json();
-  for(const k of ['enemies','items','loot','progression'])
-    if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
-  const p=c.progression;
-  if(!Array.isArray(p.bands)||!p.bands.length)throw new Error('progression.bands vazio');
-  if(!p.scaling||!p.boss||!p.perRoom)throw new Error('progression incompleta');
-  /* integridade: nenhuma referência pode apontar para chave inexistente, senão
-     o erro só apareceria no meio de uma incursão */
-  const hasE=k=>Object.prototype.hasOwnProperty.call(c.enemies,k);
-  const hasI=k=>Object.prototype.hasOwnProperty.call(c.items,k);
-  for(const b of p.bands){
-    if(typeof b.untilDepth!=='number')throw new Error('banda sem untilDepth numérico');
-    const w=Object.values(b.weights||{}).reduce((a,v)=>a+v,0);
-    if(Math.abs(w-1)>.001)throw new Error(`pesos da banda ${b.untilDepth} somam ${w}, não 1`);
-    for(const k of Object.keys(b.weights))if(!hasE(k))throw new Error(`banda cita inimigo inexistente: ${k}`);
-  }
-  for(const k of [p.boss.type,...(p.boss.escort||[])])if(!hasE(k))throw new Error(`chefe cita inimigo inexistente: ${k}`);
-  for(const k of Object.keys(c.enemies))if(!c.loot[k])throw new Error(`inimigo sem tabela de loot: ${k}`);
-  for(const [k,tbl] of Object.entries(c.loot)){
-    if(!hasE(k))throw new Error(`loot de inimigo inexistente: ${k}`);
-    for(const row of tbl)if(!hasI(row[0]))throw new Error(`loot cita item inexistente: ${row[0]}`);
-  }
-  MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=p;
-}
-function contentFailure(err){
-  console.error('[Fibula] conteúdo não carregado:',err);
-  const play=$('#play');
-  if(play){play.disabled=true;play.textContent='Conteúdo não carregado'}
-  const box=document.createElement('p');
-  box.style.cssText='margin:12px 0 0;padding:10px 12px;border:1px solid #7a2b2b;border-radius:10px;'+
-    'background:#2a1414;color:#f0c7c7;font-size:13px;line-height:1.45;text-align:left';
-  box.textContent=location.protocol==='file:'
-    ? 'Os dados do jogo são carregados por rede, e o navegador bloqueia isso em arquivo aberto do disco. '+
-      'Sirva a pasta por HTTP e abra pelo localhost.'
-    : `Falha ao carregar ${DATA_URL} — ${err.message}`;
-  (play&&play.parentNode||menu).appendChild(box);
-  menu.hidden=false;
-}
+/* ---------- dados do jogo ---------- */
+const MT={
+  rato:{nome:'Rato',hp:22,spd:72,dmg:4,xp:6,r:9,atk:.9},
+  aranha:{nome:'Aranha',hp:34,spd:106,dmg:6,xp:12,r:10,atk:.8},
+  esqueleto:{nome:'Esqueleto',hp:62,spd:62,dmg:10,xp:24,r:11,atk:1.1},
+  orc:{nome:'Orc',hp:95,spd:74,dmg:14,xp:40,r:13,atk:1.2},
+  xama:{nome:'Xamã Orc',hp:58,spd:58,dmg:12,xp:46,r:12,atk:1.9,ranged:true},
+  guardiao:{nome:'Guardião do Portal',hp:520,spd:54,dmg:24,xp:220,r:20,atk:1.4,boss:true}
+};
+const ITEMS={
+  ouro:{nome:'ouro',val:1,rar:0},dente:{nome:'dente de rato',val:3,rar:0},seda:{nome:'seda de aranha',val:8,rar:0},
+  osso:{nome:'osso antigo',val:10,rar:0},espada:{nome:'espada enferrujada',val:20,rar:0},machado:{nome:'machado rachado',val:28,rar:0},
+  erva:{nome:'erva rara',val:15,rar:0},amuleto:{nome:'amuleto tribal',val:60,rar:1},gema:{nome:'gema rubra',val:120,rar:1},
+  coroa:{nome:'coroa do guardião',val:500,rar:2}
+};
+const LOOT={
+  rato:[['ouro',.9,1,4],['dente',.5,1,1]],
+  aranha:[['ouro',.85,2,8],['seda',.4,1,2],['gema',.03,1,1]],
+  esqueleto:[['ouro',.9,5,14],['osso',.5,1,2],['espada',.15,1,1]],
+  orc:[['ouro',.9,8,24],['machado',.25,1,1],['amuleto',.06,1,1]],
+  xama:[['ouro',.9,10,25],['erva',.35,1,2],['amuleto',.1,1,1],['gema',.05,1,1]],
+  guardiao:[['ouro',1,80,150],['coroa',1,1,1],['gema',.6,1,2]]
+};
 const fmtItem=([k,q])=>k==='ouro'?`${q} de ouro`:(q>1?`${q} × ${ITEMS[k].nome}`:ITEMS[k].nome);
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 
@@ -316,61 +501,61 @@ function corridor(g,a,b){
   if(Math.random()<.5){sx();sy()}else{sy();sx()}
   carve(g,x,y);carve(g,x+1,y);carve(g,x,y+1);
 }
+function carveRooms(g,rooms){
+  for(const r of rooms)for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++)g[j*MW+i]=0;
+  for(let i=1;i<rooms.length;i++){
+    let best=0,bd=1e9;
+    for(let j=0;j<i;j++){const d=hyp(rooms[i].cx-rooms[j].cx,rooms[i].cy-rooms[j].cy);if(d<bd){bd=d;best=j}}
+    corridor(g,rooms[best],rooms[i]);
+  }
+  for(let k=0;k<3;k++)corridor(g,rooms[rnd(rooms.length)],rooms[rnd(rooms.length)]);
+}
 function genMap(){
-  for(;;){
+  let fallback=null;
+  for(let attempt=0;attempt<50;attempt++){
     const g=new Uint8Array(MW*MH).fill(1),rooms=[];
     for(let t=0;t<600&&rooms.length<15;t++){
       const w=ri(5,10),h=ri(5,9),x=ri(2,MW-w-3),y=ri(2,MH-h-3);
       if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y))continue;
       rooms.push({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)});
     }
-    if(rooms.length<9)continue;
-    for(const r of rooms)for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++)g[j*MW+i]=0;
-    for(let i=1;i<rooms.length;i++){
-      let best=0,bd=1e9;
-      for(let j=0;j<i;j++){const d=hyp(rooms[i].cx-rooms[j].cx,rooms[i].cy-rooms[j].cy);if(d<bd){bd=d;best=j}}
-      corridor(g,rooms[best],rooms[i]);
-    }
-    for(let k=0;k<3;k++)corridor(g,rooms[rnd(rooms.length)],rooms[rnd(rooms.length)]);
+    if(rooms.length<9){if(!fallback||rooms.length>fallback.rooms.length)fallback={g,rooms};continue}
+    carveRooms(g,rooms);
     return{g,rooms};
   }
+  const{g,rooms}=fallback;carveRooms(g,rooms);return{g,rooms};
 }
 const hash=(x,y)=>{let h=(Math.imul(x,73856093)^Math.imul(y,19349663))>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return h^(h>>>16)};
 
 /* ---------- estado da incursão ---------- */
-let G=null,fireHeld=false;
-function pickType(d){
-  const bands=PROG.bands,b=bands.find(b=>d<b.untilDepth)||bands[bands.length-1];
-  const rows=Object.entries(b.weights);
-  let r=Math.random();
-  for(const[k,w]of rows){if(r<w)return k;r-=w}
-  return rows[rows.length-1][0];
-}
+let G=null;const held=[false,false,false,false];
+const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};
+function pickType(d){const r=Math.random();
+  if(d<.35)return r<.6?'rato':'aranha';
+  if(d<.7)return r<.35?'aranha':r<.7?'esqueleto':'orc';
+  return r<.35?'esqueleto':r<.7?'orc':'xama';}
 function spawn(k,r,d,boss){
-  const t=MT[k],sc=PROG.scaling,lv=sc.hpPerPlayerLevel*(save.lvl-1),
-    hpm=boss?1+lv*sc.bossLevelFactor:1+sc.hpPerDepth*d+lv;
+  const t=MT[k],lv=.05*(ch().lvl-1),hpm=boss?1+lv*1.5:1+.35*d+lv;
   const x=boss?(r.cx+.5)*T:(r.x+1+rnd(r.w-2)+.5)*T,y=boss?(r.cy-.5)*T:(r.y+1+rnd(r.h-2)+.5)*T;
   const hp=Math.round(t.hp*hpm);
-  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:rr(0,9),mv:0});
+  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+.25*d)),xpm:1+.4*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:rr(0,9),mv:0,slow:0,slowF:1,dot:null});
 }
 function newRun(){
   const {g,rooms}=genMap(),s=rooms[0];
   let pr=s,md=1;
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const st=stats();
-  const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,cdA:0,cdB:0,cdC:0,pot:3+save.up.bolsa,flash:0,walk:0};
-  G={g,rooms,seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],
-     t:0,bag:{},bagVal:0,kills:0,xpGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0};
-  const perRoom=PROG.perRoom;
+  const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
+    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+save.up.bolsa,flash:0,walk:0,swing:0,swingA:0,swingR:0};
+  G={g,rooms,seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
+     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0};
   for(const r of rooms){
     if(r===s)continue;
-    const d=r.d/md,
-      n=ri(perRoom.min,perRoom.max)+(r.w*r.h>perRoom.largeRoomArea?perRoom.largeRoomBonus:0);
+    const d=r.d/md,n=ri(2,3)+(r.w*r.h>50?1:0);
     for(let k=0;k<n;k++)spawn(pickType(d),r,d,false);
   }
-  const bs=PROG.boss;
-  spawn(bs.type,pr,1,true);
-  spawn(bs.escort[rnd(bs.escort.length)],pr,1,false);
+  spawn('guardiao',pr,1,true);
+  spawn(Math.random()<.5?'xama':'orc',pr,1,false);
   reveal();
 }
 
@@ -422,36 +607,145 @@ function target(range){
   for(const m of G.mons){const fd=flowAt(m);if(fd<0||fd>11)continue;const d=hyp(m.x-G.p.x,m.y-G.p.y);if(d<bd){bd=d;best=m}}
   return best;
 }
-function castBolt(){
-  const p=G.p,tg=target(T*7);if(!tg)return;
-  if(p.mp<5){p.cdA=.4;return}
-  p.mp-=5;p.cdA=.42;p.face=Math.atan2(tg.y-p.y,tg.x-p.x);
-  G.proj.push({k:'b',x:p.x+Math.cos(p.face)*12,y:p.y-14,tg,vx:0,vy:0,dmg:Math.round(ri(14,22)*stats().pow),life:1.4});
+const bf=k=>{const b=G.p.buffs[k];return b?b.v:0};
+const poderDe=s=>s.esc==='per'?ch().per:ch().mag;
+function rolaDano(s){
+  const l=ch().lvl,P=poderDe(s),mn=l/2+P*s.a1+s.b1,mx=l/2+P*s.a2+s.b2;
+  return Math.max(1,Math.round(rr(mn,mx)*stats().pow*(1+bf('dano'))));
 }
-function castRune(){
-  if(!G||!G.active||G.over)return;const p=G.p;
-  if(p.cdB>0)return;
-  if(p.mp<28){log('Mana insuficiente para a runa.','warn');return}
-  const tg=target(T*6.5);let tx,ty;
-  if(tg){tx=tg.x;ty=tg.y}else{tx=p.x+Math.cos(p.face)*80;ty=p.y+Math.sin(p.face)*80}
-  p.mp-=28;p.cdB=4;
-  G.proj.push({k:'r',x:p.x,y:p.y-14,tx,ty,dmg:Math.round(ri(34,50)*stats().pow),life:2});
+const alcanceDe=s=>((s.alc||0)+bf('alc'))*T;
+/* Magia sobe gastando mana; Perícia sobe acertando golpes — é assim no Tibia,
+   e é o que faz dois personagens do mesmo nível não serem iguais. */
+function gastaMana(n){
+  if(n<=0)return;const c=ch();c.manaG+=n;
+  while(c.manaG>=manaPraMag(c.mag)){c.manaG-=manaPraMag(c.mag);c.mag++;G.magGain++;
+    banner('Magia '+c.mag);log(`Sua Magia subiu para ${c.mag}.`,'info')}
 }
+function registraGolpe(){
+  const c=ch();c.golpes++;
+  while(c.golpes>=golpesPraPer(c.per)){c.golpes-=golpesPraPer(c.per);c.per++;G.perGain++;
+    banner('Perícia '+c.per);log(`Sua Perícia subiu para ${c.per}.`,'info')}
+}
+function aplicaEfeitos(m,s){
+  if(s.lento){const f=s.lento.f;if(m.slow<=0||f<m.slowF)m.slowF=f;m.slow=Math.max(m.slow,s.lento.dur)}
+  if(s.dot)m.dot={left:s.dot.dur,dps:Math.max(1,rolaDano(s)*s.dot.f),el:s.el,tick:0};
+}
+function atingir(m,s,mult){
+  hitMon(m,Math.round(rolaDano(s)*(mult||1)),EL_COR[s.el]);
+  if(m.hp>0)aplicaEfeitos(m,s);
+  if(s.esc==='per')registraGolpe();
+}
+function emCone(cx,cy,ang,raio,abertura,lim){
+  const out=[];
+  for(const m of G.mons){
+    const dx=m.x-cx,dy=m.y-cy,d=hyp(dx,dy);
+    if(d>raio+m.r)continue;
+    if(abertura<Math.PI){let a=Math.atan2(dy,dx)-ang;while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;if(Math.abs(a)>abertura)continue}
+    out.push({m,d});
+  }
+  out.sort((a,b)=>a.d-b.d);
+  return (lim?out.slice(0,lim):out).map(o=>o.m);
+}
+function emLinha(cx,cy,ang,comp,lim){
+  const ux=Math.cos(ang),uy=Math.sin(ang),out=[];
+  for(const m of G.mons){
+    const dx=m.x-cx,dy=m.y-cy,t=dx*ux+dy*uy;
+    if(t<0||t>comp)continue;
+    if(Math.abs(-dx*uy+dy*ux)>18+m.r*.6)continue;
+    out.push({m,t});
+  }
+  out.sort((a,b)=>a.t-b.t);
+  return (lim?out.slice(0,lim):out).map(o=>o.m);
+}
+function miraEm(s){
+  const p=G.p,tg=target(s.raio?s.raio+40:alcanceDe(s)||T*7);
+  if(tg)p.face=Math.atan2(tg.y-p.y,tg.x-p.x);
+  return tg;
+}
+function podeLancar(id){
+  const s=SPELLS[id],p=G.p;
+  if(!s||ch().lvl<s.lvl)return false;
+  return (p.cds[id]||0)<=0&&(p.gcd[s.g]||0)<=0&&p.mp>=s.mana;
+}
+function lancar(id){
+  if(!G||!G.active||G.over)return;
+  const s=SPELLS[id],p=G.p;
+  if(!s||ch().lvl<s.lvl)return;
+  if((p.cds[id]||0)>0||(p.gcd[s.g]||0)>0)return;
+  if(p.mp<s.mana){if(s.cd>1)log(`Mana insuficiente para ${s.n}.`,'warn');p.gcd[s.g]=.25;return}
+  if(s.t==='cura'&&p.hp>=p.mhp)return;
+  let usou=true;
+  switch(s.t){
+    case'proj':{
+      const tg=target(alcanceDe(s));if(!tg){usou=false;break}
+      p.face=Math.atan2(tg.y-p.y,tg.x-p.x);
+      G.proj.push({k:'b',s,x:p.x+Math.cos(p.face)*12,y:p.y-14,tg,vx:0,vy:0,col:EL_COR[s.el],life:1.6});
+      break}
+    case'bomba':{
+      const tg=miraEm(s);let tx,ty;
+      if(tg){tx=tg.x;ty=tg.y}else{tx=p.x+Math.cos(p.face)*90;ty=p.y+Math.sin(p.face)*90}
+      G.proj.push({k:'r',s,x:p.x,y:p.y-14,tx,ty,col:EL_COR[s.el],life:2.2});
+      break}
+    case'cone':{
+      miraEm(s);
+      G.fx.push({k:'cone',x:p.x,y:p.y,ang:p.face,raio:s.raio,ab:s.ang,col:EL_COR[s.el],t:0,life:.4});
+      for(const m of emCone(p.x,p.y,p.face,s.raio,s.ang))atingir(m,s);
+      shake(4);break}
+    case'aura':{
+      G.fx.push({k:'anel',x:p.x,y:p.y,raio:s.raio,col:EL_COR[s.el],t:0,life:.45});
+      for(const m of emCone(p.x,p.y,0,s.raio,Math.PI))atingir(m,s);
+      shake(s.raio>120?7:4);break}
+    case'feixe':{
+      miraEm(s);
+      G.fx.push({k:'feixe',x:p.x,y:p.y-8,ang:p.face,comp:s.raio,col:EL_COR[s.el],t:0,life:.3});
+      for(const m of emLinha(p.x,p.y,p.face,s.raio,s.max))atingir(m,s);
+      shake(3);break}
+    case'melee':{
+      const tg=miraEm(s);
+      if(s.unico&&!tg){usou=false;break}
+      p.swing=.24;p.swingA=p.face;p.swingR=s.raio;
+      const alvos=emCone(p.x,p.y,p.face,s.raio,s.ang,s.unico?1:0);
+      if(s.unico&&!alvos.length){usou=false;break}
+      for(const m of alvos)atingir(m,s);
+      if(s.multi)for(let i=1;i<s.multi;i++)G.pend.push({t:i*.16,fn:()=>{
+        const vivos=emCone(p.x,p.y,p.face,s.raio+8,s.ang,1);
+        p.swing=.2;p.swingA=p.face;p.swingR=s.raio;
+        for(const m of vivos)atingir(m,s);shake(5);
+      }});
+      shake(s.unico?5:3);break}
+    case'cura':{
+      const h=rolaDano(s);p.hp=Math.min(p.mhp,p.hp+h);
+      num(p.x,p.y-30,'+'+h,'#7ee07a',true);
+      G.fx.push({k:'anel',x:p.x,y:p.y,raio:34,col:'#9cf0c0',t:0,life:.4});
+      break}
+    case'buff':{
+      if(s.buff)for(const k of['velo','dano','arm','alc'])if(s.buff[k])p.buffs[k]={v:s.buff[k],left:s.buff.dur};
+      if(s.taunt){let n=0;for(const m of G.mons)if(hyp(m.x-p.x,m.y-p.y)<s.taunt){m.aggro=true;n++}
+        if(n)log(`${n} inimigo${n>1?'s':''} voltou a atenção para você.`,'info')}
+      G.fx.push({k:'anel',x:p.x,y:p.y,raio:46,col:'#ffd68a',t:0,life:.5});
+      break}
+  }
+  if(!usou){p.gcd[s.g]=.2;return}
+  p.mp-=s.mana;gastaMana(s.mana);
+  p.cds[id]=s.cd;p.gcd[s.g]=Math.max(p.gcd[s.g]||0,s.gcd||s.cd);
+}
+function lancarSlot(i){const id=ch().slots[i];if(id)lancar(id)}
 function drinkPot(){
   if(!G||!G.active||G.over)return;const p=G.p;
   if(p.cdC>0)return;
   if(p.pot<=0){log('Sem poções.','warn');return}
   if(p.hp>=p.mhp)return;
-  const h=45+5*(save.lvl-1);p.hp=Math.min(p.mhp,p.hp+h);p.pot--;p.cdC=1;
+  const h=45+5*(ch().lvl-1);p.hp=Math.min(p.mhp,p.hp+h);p.pot--;p.cdC=1;
   num(p.x,p.y-30,'+'+h,'#7ee07a',true);
 }
-function explode(x,y,dmg){
-  G.fx.push({k:'boom',x,y,t:0,life:.5});shake(6);
-  for(const m of G.mons.slice())if(hyp(m.x-x,m.y-y)<74+m.r)hitMon(m,dmg);
+function explode(x,y,s){
+  const raio=s.raio||76;
+  G.fx.push({k:'boom',x,y,raio,col:EL_COR[s.el],t:0,life:.5});shake(6);
+  for(const m of G.mons.slice())if(hyp(m.x-x,m.y-y)<raio+m.r)atingir(m,s);
 }
-function hitMon(m,d){
+function hitMon(m,d,col){
   if(m.hp<=0)return;
-  m.hp-=d;m.flash=.12;m.aggro=true;num(m.x,m.y-m.r-8,d,'#ff6b5b');
+  m.hp-=d;m.flash=.12;m.aggro=true;num(m.x,m.y-m.r-8,d,col||'#ff6b5b');
   if(m.hp<=0)kill(m);
 }
 function kill(m){
@@ -467,18 +761,28 @@ function kill(m){
   if(m.t.boss){banner('Guardião derrotado');}
 }
 function gainXp(x){
-  save.xp+=x;G.xpGain+=x;num(G.p.x,G.p.y-40,x+' xp','#f3ead6');
-  while(save.xp>=xpNeed(save.lvl)){
-    save.xp-=xpNeed(save.lvl);save.lvl++;
+  const c=ch();c.xp+=x;G.xpGain+=x;num(G.p.x,G.p.y-40,x+' xp','#f3ead6');
+  while(c.xp>=xpNeed(c.lvl)){
+    const slotsAntes=nSlots(),tinha=desbloqueadas().length;
+    c.xp-=xpNeed(c.lvl);c.lvl++;
     const st=stats(),p=G.p,dh=st.mhp-p.mhp,dm=st.mmp-p.mmp;
     p.mhp=st.mhp;p.mmp=st.mmp;
     p.hp=Math.min(p.mhp,p.hp+dh);p.mp=Math.min(p.mmp,p.mp+dm);
-    banner(`Nível ${save.lvl}`);log(`Você subiu para o nível ${save.lvl}. Vida e mana máximas aumentaram.`,'info');
+    banner(`Nível ${c.lvl}`);log(`Você subiu para o nível ${c.lvl}. Vida e mana máximas aumentaram.`,'info');
+    if(nSlots()>slotsAntes)log(`Novo espaço de habilidade liberado: agora você leva ${nSlots()} para a masmorra.`,'rare');
+    const novas=desbloqueadas();
+    if(novas.length>tinha)for(const k of novas.slice(tinha)){
+      log(`Habilidade aprendida: ${SPELLS[k].n}. Equipe no Grimório.`,'epic');
+      const vago=c.slots.indexOf(null);
+      if(vago>=0&&vago<nSlots()){c.slots[vago]=k;log(`${SPELLS[k].n} foi para o espaço ${vago+1}.`,'info')}
+    }
   }
   persist();
 }
 function hurtPlayer(d){
   if(G.over)return;const p=G.p;
+  /* armadura da classe (o shielding/armor do Tibia) somada ao buff de Provocar */
+  d=Math.max(1,Math.round(d*(1-Math.min(.75,KL().red+bf('arm')))));
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);
   if(p.hp<=0){p.hp=0;finish('morreu')}
 }
@@ -500,10 +804,16 @@ function update(dt){
   if(keys.KeyA||keys.ArrowLeft)mx-=1;if(keys.KeyD||keys.ArrowRight)mx+=1;
   if(keys.KeyW||keys.ArrowUp)my-=1;if(keys.KeyS||keys.ArrowDown)my+=1;
   const ml=hyp(mx,my);if(ml>1){mx/=ml;my/=ml}
-  if(ml>.08){move(p,mx*128*dt,my*128*dt);p.face=Math.atan2(my,mx);p.walk+=dt*Math.min(1,ml)*12}
-  p.mp=Math.min(p.mmp,p.mp+6.5*dt);p.hp=Math.min(p.mhp,p.hp+1.2*dt);
-  p.cdA-=dt;p.cdB-=dt;p.cdC-=dt;p.flash-=dt;
-  if((fireHeld||keys.Space||keys.KeyJ)&&p.cdA<=0)castBolt();
+  const vel=128*(1+bf('velo'));
+  if(ml>.08){move(p,mx*vel*dt,my*vel*dt);p.face=Math.atan2(my,mx);p.walk+=dt*Math.min(1,ml)*12}
+  const K=KL();
+  p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
+  p.cdC-=dt;p.flash-=dt;p.swing-=dt;
+  for(const k in p.cds)if(p.cds[k]>0)p.cds[k]-=dt;
+  for(const k in p.gcd)if(p.gcd[k]>0)p.gcd[k]-=dt;
+  for(const k in p.buffs){p.buffs[k].left-=dt;if(p.buffs[k].left<=0)delete p.buffs[k]}
+  for(let i=G.pend.length-1;i>=0;i--){const q=G.pend[i];q.t-=dt;if(q.t<=0){G.pend.splice(i,1);q.fn();if(G.over)return}}
+  for(let i=0;i<4;i++)if(held[i])lancarSlot(i);
   reveal();
   updateMons(dt);if(G.over)return;
   updateProj(dt);if(G.over)return;
@@ -522,8 +832,16 @@ function update(dt){
 }
 function updateMons(dt){
   const p=G.p,f=G.flow;
-  for(const m of G.mons){
+  for(const m of G.mons.slice()){
+    if(m.hp<=0)continue;
     m.atkCd-=dt;m.flash-=dt;m.anim+=dt;m.mv=0;
+    if(m.slow>0){m.slow-=dt;if(m.slow<=0)m.slowF=1}
+    if(m.dot){m.dot.left-=dt;m.dot.tick+=dt;
+      if(m.dot.tick>=.5){m.dot.tick=0;hitMon(m,Math.max(1,Math.round(m.dot.dps*.5)),EL_COR[m.dot.el]);
+        G.fx.push({k:'sp',x:m.x+rr(-6,6),y:m.y+rr(-6,6),vx:0,vy:-24,col:EL_COR[m.dot.el],t:0,life:.4});
+        if(m.hp<=0)continue}
+      if(m.dot.left<=0)m.dot=null}
+    const spd=m.spd*m.slowF;
     const tx=m.x/T|0,ty=m.y/T|0,fd=f[ty*MW+tx],dx=p.x-m.x,dy=p.y-m.y,dist=hyp(dx,dy)||1;
     if(fd>=0&&fd<=(m.t.boss?7:9))m.aggro=true;else if(fd<0||fd>18)m.aggro=false;
     let vx=0,vy=0;
@@ -544,10 +862,10 @@ function updateMons(dt){
         }
         if(best<fd){const cx=(bx+.5)*T-m.x,cy=(by+.5)*T-m.y,l=hyp(cx,cy)||1;vx=cx/l;vy=cy/l}
       }
-      if(vx||vy){move(m,vx*m.spd*dt,vy*m.spd*dt);m.mv=1}
+      if(vx||vy){move(m,vx*spd*dt,vy*spd*dt);m.mv=1}
     }else{
       m.wt-=dt;if(m.wt<=0){m.wt=rr(1,3);m.wa=rr(0,TAU);m.wm=Math.random()<.45}
-      if(m.wm){move(m,Math.cos(m.wa)*m.spd*.3*dt,Math.sin(m.wa)*m.spd*.3*dt);m.mv=1}
+      if(m.wm){move(m,Math.cos(m.wa)*spd*.3*dt,Math.sin(m.wa)*spd*.3*dt);m.mv=1}
     }
   }
   const ms=G.mons;
@@ -562,12 +880,12 @@ function updateProj(dt){
     if(q.k==='b'){
       if(q.tg&&q.tg.hp>0){
         const dx=q.tg.x-q.x,dy=q.tg.y-q.y,d=hyp(dx,dy)||1;q.vx=dx/d*560;q.vy=dy/d*560;
-        if(d<q.tg.r+6){hitMon(q.tg,q.dmg);spark(q.x,q.y,'#bcd6ff');dead=true}
+        if(d<q.tg.r+6){atingir(q.tg,q.s);spark(q.x,q.y,q.col);dead=true}
       }else if(!q.vx&&!q.vy)dead=true;
       q.x+=q.vx*dt;q.y+=q.vy*dt;
     }else if(q.k==='r'){
-      const dx=q.tx-q.x,dy=q.ty-q.y,d=hyp(dx,dy),s=430*dt;
-      if(d<=s){explode(q.tx,q.ty,q.dmg);dead=true}else{q.x+=dx/d*s;q.y+=dy/d*s}
+      const dx=q.tx-q.x,dy=q.ty-q.y,d=hyp(dx,dy),pa=430*dt;
+      if(d<=pa){explode(q.tx,q.ty,q.s);dead=true}else{q.x+=dx/d*pa;q.y+=dy/d*pa}
     }else{
       q.x+=q.vx*dt;q.y+=q.vy*dt;
       if(solid(q.x/T|0,q.y/T|0)){spark(q.x,q.y,'#9fd36b');dead=true}
@@ -577,7 +895,7 @@ function updateProj(dt){
   }
 }
 function finish(kind){
-  if(G.over)return;G.over=true;G.end=kind;G.dur=G.t;fireHeld=false;
+  if(G.over)return;G.over=true;G.end=kind;G.dur=G.t;soltaTudo();
   G.sealed=0;
   if(kind==='extraiu'){save.cofre+=G.bagVal;save.ext++;save.best=Math.max(save.best,G.bagVal)}
   else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed}
@@ -588,6 +906,7 @@ function finish(kind){
 
 /* ---------- desenho ---------- */
 function circle(c,x,y,r){c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}
+const rgba=(h,a)=>{const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
 function nearFloor(x,y){for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const a=x+i,b=y+j;if(a>=0&&b>=0&&a<MW&&b<MH&&G.g[b*MW+a]===0)return true}return false}
 function outText(t,x,y,col){ctx.lineWidth=3;ctx.strokeStyle='rgba(0,0,0,.9)';ctx.strokeText(t,x,y);ctx.fillStyle=col;ctx.fillText(t,x,y)}
 
@@ -595,14 +914,33 @@ function drawPlayer(p){
   const dead=G.over&&G.end!=='extraiu',x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2);
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(p.x,p.y+11,12,4,0,0,TAU);ctx.fill();
   if(dead){ctx.fillStyle='#4a4658';ctx.beginPath();ctx.ellipse(x,y+4,16,7,0,0,TAU);ctx.fill();ctx.fillStyle='#8f8a7e';circle(ctx,x+12,y+2,5);return}
-  const f=p.flash>0;
+  const f=p.flash>0,K=KL(),C=K.cor;
   const s=Math.cos(p.face)>=0?1:-1;
-  ctx.strokeStyle='#8a6640';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x+13*s,y+12);ctx.lineTo(x+13*s,y-16);ctx.stroke();
-  ctx.fillStyle=f?'#fff':'#3a3f8f';ctx.beginPath();ctx.moveTo(x-11,y+11);ctx.lineTo(x+11,y+11);ctx.lineTo(x+7,y-5);ctx.lineTo(x-7,y-5);ctx.closePath();ctx.fill();
+  if(p.swing>0){ // arco do golpe corpo a corpo
+    const a=1-p.swing/.24,sw=p.swingA-.9+a*1.8;
+    ctx.strokeStyle=`rgba(255,236,190,${.9-a*.7})`;ctx.lineWidth=4;
+    ctx.beginPath();ctx.arc(x,y-2,p.swingR*.8,sw-.5,sw+.5);ctx.stroke();
+  }
+  if(bf('arm')){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,19,0,TAU);ctx.stroke()}
+  if(K.sil==='mago'){
+    ctx.strokeStyle=C.arma;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x+13*s,y+12);ctx.lineTo(x+13*s,y-16);ctx.stroke();
+  }else if(K.sil==='arqueiro'){
+    ctx.strokeStyle=C.arma;ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(x+12*s,y-4,13,-1.1,1.1);ctx.stroke();
+    ctx.strokeStyle='rgba(236,228,210,.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x+12*s+Math.cos(-1.1)*13,y-4+Math.sin(-1.1)*13);ctx.lineTo(x+12*s+Math.cos(1.1)*13,y-4+Math.sin(1.1)*13);ctx.stroke();
+  }else{
+    ctx.strokeStyle=C.arma;ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+13*s,y+10);ctx.lineTo(x+13*s,y-18);ctx.stroke();
+    ctx.strokeStyle='#6b4a2a';ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x+8*s,y+6);ctx.lineTo(x+18*s,y+6);ctx.stroke();
+  }
+  ctx.fillStyle=f?'#fff':C.manto;ctx.beginPath();ctx.moveTo(x-11,y+11);ctx.lineTo(x+11,y+11);ctx.lineTo(x+7,y-5);ctx.lineTo(x-7,y-5);ctx.closePath();ctx.fill();
   ctx.fillStyle='#f2a33a';ctx.fillRect(x-11,y+9,22,2);
   ctx.fillStyle=f?'#fff':'#e4c39d';circle(ctx,x,y-9,6);
-  ctx.fillStyle=f?'#fff':'#2a2d6e';ctx.beginPath();ctx.moveTo(x-11,y-11);ctx.lineTo(x+11,y-11);ctx.lineTo(x+4*s,y-29);ctx.closePath();ctx.fill();
-  ctx.fillStyle='#ffd27a';circle(ctx,x+13*s,y-18,3.5);
+  if(K.sil==='guerreiro'){
+    ctx.fillStyle=f?'#fff':C.gola;ctx.beginPath();ctx.moveTo(x-9,y-8);ctx.lineTo(x-9,y-14);ctx.quadraticCurveTo(x,y-21,x+9,y-14);ctx.lineTo(x+9,y-8);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#16131b';ctx.fillRect(x-6,y-12,12,3);
+  }else{
+    ctx.fillStyle=f?'#fff':C.gola;ctx.beginPath();ctx.moveTo(x-11,y-11);ctx.lineTo(x+11,y-11);ctx.lineTo(x+4*s,y-29);ctx.closePath();ctx.fill();
+  }
+  if(K.sil!=='guerreiro'){ctx.fillStyle=C.orbe;circle(ctx,x+13*s,K.sil==='mago'?y-18:y-17,3.5)}
 }
 function drawMon(m){
   const x=m.x,y=m.y+(m.mv?Math.sin(m.anim*12)*1:0),w=m.flash>0,c=(col)=>w?'#ffffff':col;
@@ -700,13 +1038,17 @@ function render(){
   for(const e of ents)e.pl?drawPlayer(p):drawMon(e.m);
   // projéteis
   for(const q of G.proj){
-    if(q.k==='b'){ctx.fillStyle='rgba(140,180,255,.35)';circle(ctx,q.x,q.y,7);ctx.fillStyle='#e6efff';circle(ctx,q.x,q.y,3.5)}
-    else if(q.k==='r'){ctx.fillStyle='rgba(242,163,58,.4)';circle(ctx,q.x,q.y,9);ctx.fillStyle='#ffd68a';circle(ctx,q.x,q.y,5)}
+    const col=q.col||'#c6ffbf';
+    if(q.k==='b'){ctx.fillStyle=rgba(col,.35);circle(ctx,q.x,q.y,7);ctx.fillStyle=col;circle(ctx,q.x,q.y,3.5)}
+    else if(q.k==='r'){ctx.fillStyle=rgba(col,.4);circle(ctx,q.x,q.y,9);ctx.fillStyle=col;circle(ctx,q.x,q.y,5)}
     else{ctx.fillStyle='rgba(124,255,138,.35)';circle(ctx,q.x,q.y,7);ctx.fillStyle='#c6ffbf';circle(ctx,q.x,q.y,3.5)}
   }
   for(const f of G.fx){
     const a=1-f.t/f.life;
-    if(f.k==='boom'){ctx.fillStyle=`rgba(242,120,40,${a*.45})`;circle(ctx,f.x,f.y,74*(.5+.5*(1-a)));ctx.strokeStyle=`rgba(255,214,138,${a})`;ctx.lineWidth=3;ctx.beginPath();ctx.arc(f.x,f.y,74*(1-a*.6),0,TAU);ctx.stroke()}
+    if(f.k==='boom'){const R=f.raio||74;ctx.fillStyle=rgba(f.col||'#f27828',a*.45);circle(ctx,f.x,f.y,R*(.5+.5*(1-a)));ctx.strokeStyle=rgba(f.col||'#ffd68a',a);ctx.lineWidth=3;ctx.beginPath();ctx.arc(f.x,f.y,R*(1-a*.6),0,TAU);ctx.stroke()}
+    else if(f.k==='anel'){ctx.strokeStyle=rgba(f.col,a);ctx.lineWidth=4*a+1;ctx.beginPath();ctx.arc(f.x,f.y,f.raio*(1-a*.75),0,TAU);ctx.stroke();ctx.fillStyle=rgba(f.col,a*.16);circle(ctx,f.x,f.y,f.raio*(1-a*.75))}
+    else if(f.k==='cone'){ctx.fillStyle=rgba(f.col,a*.35);ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.arc(f.x,f.y,f.raio*(1-a*.5),f.ang-f.ab,f.ang+f.ab);ctx.closePath();ctx.fill()}
+    else if(f.k==='feixe'){const ux=Math.cos(f.ang),uy=Math.sin(f.ang);ctx.strokeStyle=rgba(f.col,a);ctx.lineWidth=9*a+2;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(f.x,f.y);ctx.lineTo(f.x+ux*f.comp,f.y+uy*f.comp);ctx.stroke();ctx.lineCap='butt'}
     else if(f.k==='puff'){ctx.fillStyle=`rgba(120,110,130,${a*.6})`;circle(ctx,f.x,f.y,f.r*(1.5-a*.5))}
     else if(f.k==='sp'){ctx.fillStyle=f.col;ctx.globalAlpha=a;ctx.fillRect(f.x-1.5,f.y-1.5,3,3);ctx.globalAlpha=1}
   }
@@ -718,7 +1060,11 @@ function render(){
   if(po.open)light(po.x,po.y,180,.9);
   for(const t of G.torches)light(t.x,t.y,120,.75);
   for(const q of G.proj)light(q.x,q.y,q.k==='r'?90:55,.8);
-  for(const f of G.fx)if(f.k==='boom')light(f.x,f.y,150*(1-f.t/f.life),1);
+  for(const f of G.fx){const a=1-f.t/f.life;
+    if(f.k==='boom')light(f.x,f.y,(f.raio||74)*2*a,1);
+    else if(f.k==='anel'||f.k==='cone')light(f.x,f.y,f.raio*1.3*a,.9);
+    else if(f.k==='feixe')light(f.x+Math.cos(f.ang)*f.comp*.5,f.y+Math.sin(f.ang)*f.comp*.5,f.comp*.6*a,.9);
+  }
   ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(dark,0,0);
   ctx.setTransform(DPR,0,0,DPR,0,0);
   if(G.active&&RUN-G.t<=60&&!G.over){const a=.18+.1*Math.sin(G.t*4);const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(216,72,63,0)');g.addColorStop(1,`rgba(216,72,63,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
@@ -749,33 +1095,156 @@ function drawMini(){
 }
 
 /* ---------- HUD ---------- */
-const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bFire:$('#bFire'),bRune:$('#bRune'),bPot:$('#bPot'),potN:$('#potN'),compass:$('#compass'),compassArrow:$('#compassArrow')};
+const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),clsT:$('#clsT'),magT:$('#magT'),perT:$('#perT'),
+  bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bPot:$('#bPot'),potN:$('#potN'),
+  compass:$('#compass'),compassArrow:$('#compassArrow'),
+  slots:[$('#s0'),$('#s1'),$('#s2'),$('#s3')]};
 const setT=(el,v)=>{if(el.textContent!==v)el.textContent=v};
+function montaBotoes(){ // chamado ao entrar na incursão: os espaços mudam com o nível
+  const c=ch(),n=nSlots();
+  for(let i=0;i<4;i++){
+    const b=E.slots[i],id=i<n?c.slots[i]:null,s=id&&SPELLS[id];
+    b.hidden=!s;
+    if(!s)continue;
+    b.querySelector('.nm').textContent=s.k;
+    b.querySelector('.ct').textContent=s.mana?s.mana+' mana':'grátis';
+    b.dataset.el=s.t==='cura'?'cura':s.t==='buff'?'apoio':s.el;
+    b.setAttribute('aria-label',`${s.n} — ${s.mana} de mana (${['J','K','L','I'][i]})`);
+  }
+}
 function hud(){
-  const p=G.p,left=Math.max(0,RUN-G.t);
+  const p=G.p,c=ch(),left=Math.max(0,RUN-G.t);
   E.hpI.style.width=(p.hp/p.mhp*100)+'%';setT(E.hpT,`${Math.ceil(p.hp)}/${p.mhp}`);
   E.mpI.style.width=(p.mp/p.mmp*100)+'%';setT(E.mpT,`${Math.floor(p.mp)}/${p.mmp}`);
-  E.xpI.style.width=(save.xp/xpNeed(save.lvl)*100)+'%';setT(E.lvlT,'Nv '+save.lvl);
+  E.xpI.style.width=(c.xp/xpNeed(c.lvl)*100)+'%';setT(E.lvlT,'Nv '+c.lvl);
+  setT(E.clsT,KL().nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
   setT(E.bagT,String(G.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
   const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
   if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
-  E.bFire.style.setProperty('--cd',clamp(p.cdA/.42,0,1));E.bRune.style.setProperty('--cd',clamp(p.cdB/4,0,1));E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));
-  E.bFire.classList.toggle('dim',p.mp<5);E.bRune.classList.toggle('dim',p.mp<28);E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
+  E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
+  for(let i=0;i<4;i++){
+    const b=E.slots[i];if(b.hidden)continue;
+    const id=c.slots[i],s=SPELLS[id];
+    const esp=Math.max(p.cds[id]||0,p.gcd[s.g]||0);
+    b.style.setProperty('--cd',clamp(esp/Math.max(s.cd,s.gcd||.4),0,1));
+    b.classList.toggle('dim',p.mp<s.mana);
+  }
 }
 
 /* ---------- telas ---------- */
-const menu=$('#menu'),endS=$('#end'),shopS=$('#shop');
+const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim');
+const TELAS=[menu,endS,shopS,pickS,grimS];
+const soTela=el=>{for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing')};
 function showMenu(){
-  $('#sLvl').textContent=save.lvl;$('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;
+  if(!save.classe)return showPick();
+  const c=ch();
+  $('#mEye').textContent=`Protótipo · Etapa 3 · ${KL().nome}`;
+  $('#sLvl').textContent=c.lvl;$('#sMag').textContent=c.mag;$('#sPer').textContent=c.per;
+  $('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;$('#sSlots').textContent=nSlots();
   $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
-  endS.hidden=true;shopS.hidden=true;menu.hidden=false;app.classList.remove('playing');
+  soTela(menu);
   if(!G||G.active){newRun()}
 }
 function start(){
-  newRun();G.active=true;save.runs++;persist();
-  menu.hidden=true;endS.hidden=true;app.classList.add('playing');logEl.textContent='';
+  newRun();G.active=true;save.runs++;persist();montaBotoes();
+  for(const t of TELAS)t.hidden=true;app.classList.add('playing');logEl.textContent='';
   log('Você entrou na masmorra. O portal abre em 1:30.','info');
+}
+
+/* ---------- personagens ---------- */
+const BARRAS=[['Vida','ghp',17],['Mana','gmp',16],['Magia',null,0],['Perícia',null,0]];
+function showPick(){
+  const ul=$('#pickList');ul.textContent='';
+  for(const k of CL_ORDEM){
+    const K=CLASSES[k],c=save.chars[k];
+    const li=document.createElement('li');
+    const b=document.createElement('button');b.className='cls'+(save.classe===k?' on':'');b.type='button';
+    const hd=document.createElement('div');hd.className='hd';
+    const h=document.createElement('h3');h.textContent=K.nome;
+    const lv=document.createElement('span');lv.className='lv';
+    lv.textContent=c?`Nível ${c.lvl} · Magia ${c.mag} · Perícia ${c.per}`:'novo · '+K.tag;
+    hd.append(h,lv);
+    const p=document.createElement('p');p.textContent=K.desc;
+    const bars=document.createElement('div');bars.className='bars';
+    /* as quatro barras são as taxas de crescimento, não o poder atual */
+    const vals=[['Vida',K.ghp/17],['Mana',K.gmp/16],['Magia',Math.min(1,(1.95-K.mMult)/0.9)],['Perícia',Math.min(1,(2.05-K.pMult)/0.95)],['Armadura',K.red/0.28]];
+    for(const[nome,v]of vals){
+      const d=document.createElement('div');const t=document.createElement('b');t.textContent=nome;
+      const i=document.createElement('i');i.style.setProperty('--v',Math.round(v*100)+'%');
+      d.append(t,i);bars.appendChild(d);
+    }
+    b.append(hd,p,bars);
+    b.addEventListener('click',()=>escolher(k));
+    li.appendChild(b);ul.appendChild(li);
+  }
+  $('#pickBack').hidden=!save.classe;
+  soTela(pickS);
+}
+function escolher(k){
+  if(!save.chars[k])save.chars[k]=novoChar(k);
+  save.classe=k;persist();G=null;showMenu();
+}
+
+/* ---------- grimório ---------- */
+function barraProg(rot,atual,falta,alvo,nota){
+  const d=document.createElement('div');d.className='pr';
+  const t=document.createElement('div');t.className='t';
+  const a=document.createElement('b');a.textContent=`${rot} ${atual}`;
+  const s=document.createElement('span');s.textContent=nota;
+  t.append(a,s);
+  const i=document.createElement('i');i.style.setProperty('--v',Math.round(clamp(falta/alvo,0,1)*100)+'%');
+  d.append(t,i);return d;
+}
+function drawGrim(){
+  const c=ch(),K=KL();
+  $('#grimEye').textContent=`${K.nome} · Nível ${c.lvl} · ${nSlots()} espaço${nSlots()>1?'s':''}`;
+  const pg=$('#grimProg');pg.textContent='';
+  pg.append(
+    barraProg('Nível',c.lvl,c.xp,xpNeed(c.lvl),`${c.xp} / ${xpNeed(c.lvl)} xp`),
+    barraProg('Magia',c.mag,c.manaG,manaPraMag(c.mag),`${Math.round(c.manaG)} / ${manaPraMag(c.mag)} de mana gasta`),
+    barraProg('Perícia',c.per,c.golpes,golpesPraPer(c.per),`${c.golpes} / ${golpesPraPer(c.per)} golpes acertados`)
+  );
+  const sl=$('#grimSlots');sl.textContent='';
+  for(let i=0;i<4;i++){
+    const aberto=i<nSlots(),id=aberto?c.slots[i]:null,s=id&&SPELLS[id];
+    const b=document.createElement('button');b.type='button';
+    b.className=!aberto?'lock':(s?'full':'');
+    const sm=document.createElement('small');sm.textContent=`Espaço ${i+1}`;
+    const sp=document.createElement('span');
+    sp.textContent=!aberto?`nível ${SLOT_LVL[i]}`:(s?s.n:'vazio');
+    b.append(sm,sp);
+    if(aberto){
+      b.setAttribute('aria-label',s?`Espaço ${i+1}: ${s.n}. Toque para esvaziar.`:`Espaço ${i+1} vazio`);
+      if(s)b.addEventListener('click',()=>{c.slots[i]=null;persist();drawGrim()});
+    }else{b.disabled=true;b.setAttribute('aria-label',`Espaço ${i+1} abre no nível ${SLOT_LVL[i]}`)}
+    sl.appendChild(b);
+  }
+  const ul=$('#grimList');ul.textContent='';
+  for(const k of listaDaClasse(save.classe)){
+    const s=SPELLS[k],liberada=c.lvl>=s.lvl,eq=c.slots.indexOf(k);
+    const li=document.createElement('li');
+    li.className='sp'+(eq>=0&&eq<nSlots()?' eq':'')+(liberada?'':' locked');
+    li.style.borderLeftColor=s.t==='cura'?'#8ad872':s.t==='buff'?'#f2a33a':EL_COR[s.el];
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=s.n;
+    if(s.w){const w=document.createElement('span');w.className='w';w.textContent=' “'+s.w+'”';h.appendChild(w)}
+    const p=document.createElement('p');p.textContent=s.d;
+    const meta=document.createElement('div');meta.className='meta';
+    const esc=s.esc==='per'?'Perícia':s.esc==='mag'?'Magia':null;
+    meta.textContent=[`nível ${s.lvl}`,s.mana?`${s.mana} mana`:'sem mana',`${s.cd}s`,esc&&`escala em ${esc}`].filter(Boolean).join(' · ');
+    info.append(h,p,meta);
+    const b=document.createElement('button');b.type='button';
+    if(!liberada){b.disabled=true;b.textContent='nível '+s.lvl}
+    else if(eq>=0&&eq<nSlots()){b.className='rm';b.textContent='guardar';b.addEventListener('click',()=>{c.slots[eq]=null;persist();drawGrim()})}
+    else{
+      const vago=c.slots.findIndex((v,i)=>i<nSlots()&&!v);
+      if(vago<0){b.disabled=true;b.textContent='sem espaço'}
+      else{b.textContent='equipar';b.addEventListener('click',()=>{c.slots[vago]=k;persist();drawGrim()})}
+    }
+    li.append(info,b);ul.appendChild(li);
+  }
+  soTela(grimS);
 }
 function showEnd(){
   const k=G.end,ok=k==='extraiu';
@@ -788,14 +1257,18 @@ function showEnd(){
   const sealOn=!ok&&G.sealed>0,sl=$('#eSeal');
   $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;
   if(sealOn){sl.textContent=`+${G.sealed} ouro (${Math.round(sealPct()*100)}%)`;sl.className='ok'}
-  $('#eKills').textContent=G.kills;$('#eXp').textContent=`+${G.xpGain} (nível ${save.lvl})`;
+  const c=ch();
+  $('#eKills').textContent=G.kills;$('#eXp').textContent=`+${G.xpGain} (nível ${c.lvl})`;
+  $('#eTrain').textContent=(G.magGain||G.perGain)
+    ? [G.magGain&&`+${G.magGain} de Magia`,G.perGain&&`+${G.perGain} de Perícia`].filter(Boolean).join(' · ')
+    : `Magia ${c.mag} · Perícia ${c.per}`;
   $('#eTime').textContent=fmtEl(G.dur);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
   const rows=Object.entries(G.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
   if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}
   for(const[k,q]of rows){const li=document.createElement('li');li.className='r'+ITEMS[k].rar;
     const a=document.createElement('span');a.textContent=fmtItem([k,q]);const b=document.createElement('span');b.textContent=ITEMS[k].val*q;li.append(a,b);ul.appendChild(li)}
-  app.classList.remove('playing');endS.hidden=false;
+  soTela(endS);
 }
 /* ---------- mercador ---------- */
 function drawShop(){
@@ -823,10 +1296,14 @@ function buy(k){
   const cost=upCost(k,n);if(save.cofre<cost)return;
   save.cofre-=cost;save.up[k]=n+1;persist();drawShop();
 }
-function showShop(){menu.hidden=true;endS.hidden=true;shopS.hidden=false;app.classList.remove('playing');drawShop()}
+function showShop(){drawShop();soTela(shopS)}
 
 $('#toShop').addEventListener('click',showShop);
 $('#shopBack').addEventListener('click',showMenu);
+$('#toGrim').addEventListener('click',drawGrim);
+$('#grimBack').addEventListener('click',showMenu);
+$('#toPick').addEventListener('click',showPick);
+$('#pickBack').addEventListener('click',showMenu);
 $('#play').addEventListener('click',start);
 $('#again').addEventListener('click',start);
 $('#toMenu').addEventListener('click',showMenu);
@@ -855,19 +1332,24 @@ function bindHold(el,down,up){
   el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{el.setPointerCapture(e.pointerId)}catch(_){}down()});
   for(const ev of['pointerup','pointercancel','lostpointercapture'])el.addEventListener(ev,()=>{if(up)up()});
 }
-bindHold(E.bFire,()=>{fireHeld=true},()=>{fireHeld=false});
-bindHold(E.bRune,castRune);
+/* segurar qualquer espaço repete a habilidade quando ela sai do cooldown */
+for(let i=0;i<4;i++)bindHold(E.slots[i],()=>{held[i]=true},()=>{held[i]=false});
 bindHold(E.bPot,drinkPot);
+const TECLAS=['KeyJ','KeyK','KeyL','KeyI'];
 addEventListener('keydown',e=>{
   keys[e.code]=true;
   if(G&&G.active&&!G.over){
     if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
-    if(e.code==='KeyK'&&!e.repeat)castRune();
-    if(e.code==='KeyL'&&!e.repeat)drinkPot();
+    const i=TECLAS.indexOf(e.code);
+    if(i>=0||e.code==='Space')held[i<0?0:i]=true;
+    if(e.code==='KeyP'&&!e.repeat)drinkPot();
   }
 });
-addEventListener('keyup',e=>{keys[e.code]=false});
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;fireHeld=false});
+addEventListener('keyup',e=>{keys[e.code]=false;
+  const i=TECLAS.indexOf(e.code);if(i>=0)held[i]=false;
+  if(e.code==='Space')held[0]=false;
+});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;soltaTudo()});
 
 /* ---------- laço ---------- */
 let last=performance.now();
@@ -885,10 +1367,8 @@ function frame(now){
 function onResize(){resize();if(joy.id===null)joyIdle()}
 addEventListener('resize',onResize);
 onResize();
-loadContent().then(()=>{
-  showMenu();
-  requestAnimationFrame(frame);
-}).catch(contentFailure);
+showMenu();
+requestAnimationFrame(frame);
 })();
 </script>
 
