@@ -221,6 +221,23 @@ h2.lost{color:var(--hp)}
 #eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
 #eqList .btns{display:grid;gap:5px;flex:0 0 auto}
 #endItems small{color:var(--muted);font-size:10px}
+
+/* Cidade: o mesmo joystick da incursão, o HUD de cima trocado pelo da cidade */
+#app.cidade .hud{opacity:1}
+#app.cidade .hud .top,#app.cidade .hud .act{display:none}
+.chud{position:absolute;inset:0;pointer-events:none;display:none}
+#app.cidade .chud{display:block}
+.chud .top{align-items:center}
+.chud .vitals{width:auto;flex:0 0 auto}
+.chud .who{gap:8px;white-space:nowrap}
+.cbts{display:flex;gap:4px;pointer-events:auto}
+.cbts .ghost{padding:6px 7px;font-size:10px;min-height:44px}
+#bFalar{width:96px;height:72px;right:max(22px,calc(env(safe-area-inset-right,0px) + 22px));bottom:30px;--el:var(--torch)}
+#bFalar .nm{font-size:13px;color:var(--torch)}
+#bFalar .ct{font-size:10px;color:var(--bone);text-wrap:balance;padding:0 4px}
+#huntList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
+#huntList .sp{border-left-color:var(--torch)}
+#huntList .sp .meta.alto{color:var(--warn)}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
 </style>
 
@@ -256,6 +273,17 @@ h2.lost{color:var(--hp)}
     <button class="act sl main" id="s0"><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
   </div>
 
+  <div class="chud" id="chud">
+    <div class="top">
+      <div class="vitals">
+        <div class="who out"><span id="cCls">Feiticeiro</span><b id="cLvl">Nv 1</b></div>
+        <div class="bag out">Cofre: <span id="cCofre">0</span> <small>ouro</small></div>
+      </div>
+      <div class="cbts"><button class="ghost" id="cGrim">Grimório</button><button class="ghost" id="cPick">Personagens</button><button class="ghost" id="cMenu">Menu</button></div>
+    </div>
+    <button class="act" id="bFalar" hidden><span class="nm out">Falar</span><span class="ct" id="falarT"></span></button>
+  </div>
+
   <div class="screen" id="menu">
     <div class="panel">
       <p class="eyebrow" id="mEye">Protótipo</p>
@@ -286,13 +314,13 @@ h2.lost{color:var(--hp)}
         <li>Cace monstros. Cada um deixa um saco de loot no chão.</li>
         <li>Aos 1:30 abre o portal de saída na sala mais distante, guardada pelo Guardião.</li>
         <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde o saco e parte da experiência do nível.</li>
-        <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b> em melhorias permanentes.</li>
-        <li>Armas, armaduras e amuletos extraídos também vão para o cofre. Vista ou venda em <b>Equipamento</b>.</li>
+        <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b>, na cidade, em melhorias permanentes.</li>
+        <li>Armas, armaduras e amuletos extraídos também vão para o cofre. Vista ou venda no <b>Banco</b>.</li>
+        <li>Na cidade, ande até uma casa e fale com quem está lá. O <b>Guia de caça</b>, no portão sul, leva às masmorras.</li>
       </ol>
-      <div class="row"><button class="cta" id="play">Entrar na masmorra</button><button class="ghost" id="toShop">Mercador</button></div>
-      <div class="row2"><button class="ghost" id="toGrim">Grimório</button><button class="ghost" id="toEquip">Equipamento</button></div>
-      <button class="ghost" id="toPick">Personagens</button>
-      <p class="keys">Arraste o lado esquerdo da tela para andar. Segure o botão grande para usar a primeira habilidade sem parar. No teclado: <b>WASD</b> anda, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção.</p>
+      <button class="cta" id="play">Entrar na cidade</button>
+      <div class="row2"><button class="ghost" id="toGrim">Grimório</button><button class="ghost" id="toPick">Personagens</button></div>
+      <p class="keys">Arraste o lado esquerdo da tela para andar. Segure o botão grande para usar a primeira habilidade sem parar. No teclado: <b>WASD</b> anda, <b>Enter</b> fala com o NPC ao lado, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção.</p>
     </div>
   </div>
 
@@ -302,7 +330,7 @@ h2.lost{color:var(--hp)}
       <h2>Escolha a classe</h2>
       <p class="lede">Nenhuma classe ganha poder de graça: o que muda é a <b>velocidade com que cada coisa cresce</b>. O cofre e as melhorias do Mercador são da conta e valem para todos; o equipamento vestido é de cada personagem.</p>
       <ul id="pickList"></ul>
-      <button class="ghost" id="pickBack" hidden>Voltar ao acampamento</button>
+      <button class="ghost voltar" id="pickBack" hidden>Voltar ao acampamento</button>
     </div>
   </div>
 
@@ -314,32 +342,43 @@ h2.lost{color:var(--hp)}
       <div class="prog" id="grimProg"></div>
       <div class="slots" id="grimSlots"></div>
       <ul id="grimList"></ul>
-      <button class="ghost" id="grimBack">Voltar ao acampamento</button>
+      <button class="ghost voltar" id="grimBack">Voltar ao acampamento</button>
     </div>
   </div>
 
   <div class="screen" id="shop" hidden>
     <div class="panel">
-      <p class="eyebrow">Entre incursões</p>
+      <p class="eyebrow">Mercado</p>
       <h2>Mercador</h2>
       <p class="lede">O ouro do cofre é da conta e serve a todos os personagens. As melhorias são permanentes e valem para todas as incursões seguintes.</p>
       <div class="vault"><span>No cofre</span><b id="shopGold">0</b></div>
       <ul id="shopList"></ul>
-      <button class="ghost" id="shopBack">Voltar ao acampamento</button>
+      <button class="ghost voltar" id="shopBack">Voltar ao acampamento</button>
     </div>
   </div>
 
   <div class="screen" id="equip" hidden>
     <div class="panel">
       <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
-      <h2>Equipamento</h2>
+      <h2>Banco</h2>
       <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
       <h3 class="sub">Peças no cofre</h3>
       <ul id="eqList"></ul>
-      <button class="ghost" id="eqBack">Voltar ao acampamento</button>
+      <button class="ghost voltar" id="eqBack">Voltar ao acampamento</button>
+    </div>
+  </div>
+
+  <div class="screen" id="hunts" hidden>
+    <div class="panel">
+      <p class="eyebrow">Portão da cidade</p>
+      <h2>Guia de caça</h2>
+      <p class="lede">Cada lugar tem o perigo dele, e ele não muda para você. Entrar acima do seu nível é permitido.</p>
+      <p class="risco" id="hRisco"></p>
+      <ul id="huntList"></ul>
+      <button class="ghost voltar" id="huntBack">Voltar à cidade</button>
     </div>
   </div>
 
@@ -360,13 +399,13 @@ h2.lost{color:var(--hp)}
         <dt>Cofre total</dt><dd id="eCofre"></dd>
       </dl>
       <ul id="endItems"></ul>
-      <div class="row"><button class="cta" id="again">Nova incursão</button><button class="ghost" id="toMenu">Menu</button></div>
+      <div class="row"><button class="cta" id="again">Nova incursão</button><button class="ghost" id="toMenu">Voltar à cidade</button></div>
     </div>
   </div>
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.6.0"></script>
+<script type="module" src="src/main.js?v=0.7.0"></script>
 
 </body>
 </html>

@@ -1002,5 +1002,58 @@
       "largeRoomArea": 50,
       "largeRoomBonus": 1
     }
+  },
+  "city": {
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) ou cacadas (mapas de caca). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
+    "nome": "Cidade",
+    "mapa": [
+      "AAAAAAAAAAAAAAAAAAAAAAAA",
+      "A,,,,,,,,,,,,,,,,,,,,,,A",
+      "A,#######,,,,,,#######,A",
+      "A,#_____#,,A,,,#_____#,A",
+      "A,#__M__#,,,,,,#__B__#,A",
+      "A,#_____#,,,,,,#_____#,A",
+      "A,###_###,,,,,,###_###,A",
+      "A,,,,.,,,,,,,,,,,,.,,,,A",
+      "A,,,,..............,,,,A",
+      "A,A,,.,,,,,~~,,,,,.,,A,A",
+      "A,,,,.,,,,,~~,,,,,.,,,,A",
+      "A,,,,......@.......,,,,A",
+      "A,,,,,,,,,,.,,,,,,,,,,,A",
+      "A,,A,,,,,,,.,,,,,,,A,,,A",
+      "A,,,,,,,,,,.,,,,,,,,,,,A",
+      "A,,,,,,,,,,.G,,,,,,,,,,A",
+      "A##########P###########A"
+    ],
+    "npcs": {
+      "mercador": {
+        "letra": "M",
+        "nome": "Mercador",
+        "casa": "Mercado",
+        "abre": "mercador",
+        "fala": "Melhorias permanentes, pagas com o ouro do cofre."
+      },
+      "banqueiro": {
+        "letra": "B",
+        "nome": "Banqueiro",
+        "casa": "Banco",
+        "abre": "banco",
+        "fala": "O cofre é da conta. Vista, guarde ou venda o que trouxe."
+      },
+      "guia": {
+        "letra": "G",
+        "nome": "Guia de caça",
+        "casa": "Portão da cidade",
+        "abre": "cacadas",
+        "fala": "Escolha onde caçar. O portal abre em 1:30."
+      }
+    }
+  },
+  "hunts": {
+    "runas": {
+      "nome": "Masmorra de Runas",
+      "desc": "Corredores de pedra sob a cidade. Ratos e aranhas na entrada, orcs e o Guardião do Portal no fundo.",
+      "nivel": 1
+    }
   }
 }

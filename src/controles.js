@@ -1,12 +1,13 @@
 /* ---------- controles ----------
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
-   nada daqui direto: o laço pede leEntrada() e passa o resultado a update(). */
-import {hyp} from './sim/base.js?v=0.6.0';
-import {G} from './sim/incursao.js?v=0.6.0';
-import {drinkPot} from './sim/combate.js?v=0.6.0';
-import {W,H} from './desenho.js?v=0.6.0';
-import {E} from './hud.js?v=0.6.0';
-import {$,app} from './dom.js?v=0.6.0';
+   nada daqui direto: o laço pede leEntrada() e passa o resultado a update(),
+   ou a updateCidade() quando se anda na cidade. */
+import {hyp} from './sim/base.js?v=0.7.0';
+import {G} from './sim/incursao.js?v=0.7.0';
+import {drinkPot} from './sim/combate.js?v=0.7.0';
+import {W,H} from './desenho.js?v=0.7.0';
+import {E} from './hud.js?v=0.7.0';
+import {$,app} from './dom.js?v=0.7.0';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};
@@ -23,7 +24,7 @@ export function leEntrada(){
 const joyEl=$('#joy'),knob=$('#knob');
 export function joyIdle(){joyEl.classList.add('idle');joyEl.style.left='80px';joyEl.style.top=(H-96)+'px';knob.style.transform=''}
 app.addEventListener('pointerdown',e=>{
-  if(!G||!G.active||G.over||joy.id!==null)return;
+  if(!(G&&G.active&&!G.over)&&!app.classList.contains('cidade')||joy.id!==null)return;
   if(e.target.closest('button,.screen'))return;
   const r=app.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
   if(x>W*.6)return;

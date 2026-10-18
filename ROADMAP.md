@@ -131,9 +131,10 @@ padrão).
 ### Lugares com nome em vez de uma masmorra genérica
 
 **Pilar 2.** Três mapas com tema, paleta e lista de monstros próprios — Esgoto,
-Cripta, Acampamento Orc — escolhidos no menu. Reaproveita `genMap()` com
-parâmetros diferentes e troca a tabela de spawn. O jogador passa a dizer para
-onde vai.
+Cripta, Acampamento Orc — escolhidos no Guia de caça da cidade (0.7.0), que
+já lista os `hunts` do `content.json`; hoje há só a Masmorra de Runas.
+Reaproveita `genMap()` com parâmetros diferentes e troca a tabela de spawn. O
+jogador passa a dizer para onde vai.
 
 **Pronto quando:** os três lugares têm nome no menu, monstros distintos e paleta
 distinta.
@@ -177,6 +178,18 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 ---
 
 ## Concluído
+
+- **2026-10-18 — A Cidade (0.7.0)** *(antecipado da F3 a pedido do Leonardo,
+  sem rede; pilares 2 e 3)*. Entre incursões o jogador anda por um mapa de
+  24×17 com as casas do Mercador (melhorias) e do Banco (cofre, vestir e
+  vender) e o Guia de caça no portão sul, que lista os mapas de caça com o
+  nível recomendado e o preço da morte. Chegar perto de um NPC mostra o botão
+  Falar (ou Enter) e a frase dele no registro; a volta de cada incursão é pelo
+  portão. Mapa, NPCs e mapas de caça moram em `city` e `hunts` do
+  `content.json`, validados na carga; a regra fica em `src/sim/cidade.js`,
+  sem DOM, pronta para o servidor da cidade compartilhada. Sprites novos do
+  OTSP (grama, rua, assoalho, água, árvores e três NPCs). Caso `cidade` novo
+  no harness e a cidade na simulação no Node.
 
 - **2026-10-18 — A morte custa XP, e a curva de nível ficou lenta (0.6.0)**
   *(os itens "Peso de verdade na morte" e "Curva de nível rápida demais",

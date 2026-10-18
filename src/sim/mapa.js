@@ -1,5 +1,5 @@
 /* ---------- mapa ---------- */
-import {MW,MH,rnd,ri,hyp,sorte} from './base.js?v=0.6.0';
+import {MW,MH,rnd,ri,hyp,sorte} from './base.js?v=0.7.0';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
 function corridor(g,a,b){
@@ -36,13 +36,14 @@ export function genMap(){
 /* peça de parede de cada bloco sólido que encosta no chão, como o Tibia monta
    uma sala: 1 vertical, 2 horizontal, 3 poste (canto de cima à esquerda),
    4 canto (onde a horizontal que vem do oeste encontra a vertical que vem do
-   norte). Bloco sem chão em volta fica 0 e é só escuridão. */
-export function pecas(g){
-  const P=new Uint8Array(MW*MH),ch=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&g[y*MW+x]===0;
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){
-    if(g[y*MW+x]===0)continue;
-    const h=ch(x,y-1)||ch(x,y+1),v=ch(x+1,y)||ch(x-1,y);
-    P[y*MW+x]=h&&v?4:h?2:v?1:ch(x+1,y+1)?3:ch(x-1,y+1)?2:ch(x+1,y-1)?1:ch(x-1,y-1)?4:0;
+   norte). Bloco sem chão em volta fica 0 e é só escuridão. A cidade usa a
+   mesma montagem na grade dela (w×h). */
+export function pecas(g,w=MW,h=MH){
+  const P=new Uint8Array(w*h),ch=(x,y)=>x>=0&&y>=0&&x<w&&y<h&&g[y*w+x]===0;
+  for(let y=0;y<h;y++)for(let x=0;x<w;x++){
+    if(g[y*w+x]===0)continue;
+    const hz=ch(x,y-1)||ch(x,y+1),v=ch(x+1,y)||ch(x-1,y);
+    P[y*w+x]=hz&&v?4:hz?2:v?1:ch(x+1,y+1)?3:ch(x-1,y+1)?2:ch(x+1,y-1)?1:ch(x-1,y-1)?4:0;
   }
   return P;
 }

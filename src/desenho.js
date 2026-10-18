@@ -1,12 +1,15 @@
 /* ---------- desenho ----------
-   Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e nunca o altera,
-   a não ser pela lista de tochas visíveis, que é cache do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,frr,hyp} from './sim/base.js?v=0.6.0';
-import {save,KL} from './sim/progresso.js?v=0.6.0';
-import {G,solid} from './sim/incursao.js?v=0.6.0';
-import {bf} from './sim/combate.js?v=0.6.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.6.0';
-import {$,app,RM} from './dom.js?v=0.6.0';
+   Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
+   (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
+   do próprio desenho. */
+import {T,MW,MH,RUN,EXT,TAU,frr,hyp,clamp} from './sim/base.js?v=0.7.0';
+import {CITY} from './sim/dados.js?v=0.7.0';
+import {save,KL} from './sim/progresso.js?v=0.7.0';
+import {G,solid} from './sim/incursao.js?v=0.7.0';
+import {C} from './sim/cidade.js?v=0.7.0';
+import {bf} from './sim/combate.js?v=0.7.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.7.0';
+import {$,app,RM} from './dom.js?v=0.7.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -62,13 +65,14 @@ function sprCriatura(n,face,mv,fase,flash,x,y){
   if(flash){ctx.globalAlpha=.6;ctx.globalCompositeOperation='lighter';spr(n,d,f,x,y);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1}
   return true;
 }
-function drawPlayer(p){
-  const dead=G.over&&G.end!=='extraiu',x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2);
+/* dead: caído no fim da incursão; arm: o escudo de apoio ativo */
+function drawPlayer(p,dead,arm){
+  const x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2);
   if(ART.ok){
     if(dead){if(spr('cad_'+save.classe,0,0,p.x,p.y))return}
     else{
       if(p.swing>0){const a=1-p.swing/.24,sw=p.swingA-.9+a*1.8;ctx.strokeStyle=`rgba(255,236,190,${.9-a*.7})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y-2,p.swingR*.8,sw-.5,sw+.5);ctx.stroke()}
-      if(bf('arm')){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y-4,19,0,TAU);ctx.stroke()}
+      if(arm){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y-4,19,0,TAU);ctx.stroke()}
       if(sprCriatura('cls_'+save.classe,p.face,p.mv,p.walk/3,p.flash>0,p.x,p.y))return;
     }
   }
@@ -81,7 +85,7 @@ function drawPlayer(p){
     ctx.strokeStyle=`rgba(255,236,190,${.9-a*.7})`;ctx.lineWidth=4;
     ctx.beginPath();ctx.arc(x,y-2,p.swingR*.8,sw-.5,sw+.5);ctx.stroke();
   }
-  if(bf('arm')){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,19,0,TAU);ctx.stroke()}
+  if(arm){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(x,y-4,19,0,TAU);ctx.stroke()}
   if(K.sil==='mago'){
     ctx.strokeStyle=C.arma;ctx.lineWidth=2.5;ctx.beginPath();ctx.moveTo(x+13*s,y+12);ctx.lineTo(x+13*s,y-16);ctx.stroke();
   }else if(K.sil==='arqueiro'){
@@ -152,7 +156,7 @@ export function render(){
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(MW-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(MH-1,Math.ceil((cy+H)/T)+1);
   G.torches.length=0;
-  const A=ART.ok;ctx.imageSmoothingEnabled=false;
+  const A=ART.ok,pDead=G.over&&G.end!=='extraiu',pArm=bf('arm');ctx.imageSmoothingEnabled=false;
   if(A)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     /* com os sprites: o chão aqui, as paredes depois, linha a linha junto com as criaturas */
     const h=hash(x,y),cx=x*T+T/2,cy=y*T+T/2;
@@ -220,10 +224,10 @@ export function render(){
     for(let y=y0;y<=y1;y++){
       for(let x=x0;x<=x1;x++){const q=G.par[y*MW+x];if(q)spr(PECA[q],0,0,x*T+T/2,y*T+T/2)}
       for(const t of G.torches)if((t.y/T|0)===y)spr('tocha',0,0,t.x+6,t.y+14);
-      while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?drawPlayer(p):drawMon(e.m)}
+      while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m)}
     }
-    while(k<ents.length){const e=ents[k++];e.pl?drawPlayer(p):drawMon(e.m)}
-  }else for(const e of ents)e.pl?drawPlayer(p):drawMon(e.m);
+    while(k<ents.length){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m)}
+  }else for(const e of ents)e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m);
   // projéteis
   for(const q of G.proj){
     if(A){
@@ -279,6 +283,58 @@ export function render(){
   }
   if(po.ch>0){ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y,24,0,TAU);ctx.stroke();ctx.strokeStyle='#ffd68a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,24,-Math.PI/2,-Math.PI/2+TAU*po.ch/EXT);ctx.stroke();outText('Extraindo…',p.x,p.y+40,'#ffd68a')}
   for(const f of G.fx){if(f.k!=='num')continue;const a=1-f.t/f.life;ctx.globalAlpha=Math.min(1,a*1.6);ctx.font=`700 ${f.big?13:11}px Verdana,Tahoma,sans-serif`;outText(f.txt,f.x,f.y-f.t*32,f.col);ctx.globalAlpha=1}
+}
+/* ---------- cidade ----------
+   Dia claro, sem escuridão nem minimapa: a cidade é o lugar seguro. Mesma
+   ordem de desenho da masmorra (chão, depois linha a linha as paredes, as
+   árvores e quem está na linha). Sem a arte, cores chapadas. */
+const CHAO_C=['grama','','rua','assoalho','grama','agua','rua'],COR_C=['#3e6b2b','#5a5650','#6d675d','#6b4a2a','#3e6b2b','#2b5f93','#6d675d'];
+const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33'};
+function drawNpc(n,p){
+  /* o NPC vira para quem chega perto, como no Tibia */
+  const perto=hyp(p.x-n.x,p.y-n.y)<T*3,face=perto?Math.atan2(p.y-n.y,p.x-n.x):Math.PI/2;
+  if(C.perto===n.k){ctx.strokeStyle='rgba(232,194,90,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(n.x,n.y+10,15,6,0,0,TAU);ctx.stroke()}
+  if(ART.ok&&sprCriatura('npc_'+n.k,face,false,0,false,n.x,n.y))return;
+  const x=n.x,y=n.y;
+  ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(x,y+11,12,4,0,0,TAU);ctx.fill();
+  ctx.fillStyle=NPC_COR[n.k]||'#77726a';ctx.beginPath();ctx.moveTo(x-11,y+11);ctx.lineTo(x+11,y+11);ctx.lineTo(x+7,y-5);ctx.lineTo(x-7,y-5);ctx.closePath();ctx.fill();
+  ctx.fillStyle='#e4c39d';circle(ctx,x,y-9,6);
+}
+export function renderCidade(){
+  ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0a0910';ctx.fillRect(0,0,W,H);
+  if(!C)return;
+  const p=C.p,w=C.w,h=C.h,LW=w*T,LH=h*T;
+  /* câmera no jogador, presa às bordas; mapa menor que a tela fica no meio */
+  const cx=LW<=W?Math.round((LW-W)/2):Math.round(clamp(p.x-W/2,0,LW-W)),cy=LH<=H?Math.round((LH-H)/2):Math.round(clamp(p.y-H/2,0,LH-H));
+  ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
+  const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(w-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(h-1,Math.ceil((cy+H)/T)+1);
+  const A=ART.ok;ctx.imageSmoothingEnabled=false;
+  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    const k=C.t[y*w+x],hh=hash(x,y),mx=x*T+T/2,my=y*T+T/2;
+    if(A&&k!==1&&spr(CHAO_C[k]==='grama'&&hh%5===0?'grama2':CHAO_C[k],0,0,mx,my))continue;
+    ctx.fillStyle=COR_C[k];ctx.fillRect(x*T,y*T,T,T);
+    if(k===0||k===4){ctx.fillStyle='#355f25';if(hh%3===0)ctx.fillRect(x*T+4+(hh>>5)%20,y*T+6+(hh>>9)%18,3,2)}
+    else if(k===2||k===6){ctx.fillStyle='#5d574e';ctx.fillRect(x*T,y*T+T-2,T,2);ctx.fillRect(x*T+T-2,y*T,2,T)}
+    else if(k===3){ctx.fillStyle='#5a3d22';ctx.fillRect(x*T,y*T+15,T,1)}
+  }
+  ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  for(let y=y0;y<=y1;y++){
+    for(let x=x0;x<=x1;x++){
+      const i=y*w+x,k=C.t[i],mx=x*T+T/2,my=y*T+T/2;
+      if(k===1){if(A&&spr(PECA[C.par[i]]||'par_h',0,0,mx,my))continue;
+        ctx.fillStyle='#57524b';ctx.fillRect(x*T,y*T-10,T,T+10);ctx.fillStyle='#6b665e';ctx.fillRect(x*T,y*T-10,T,3)}
+      else if(k===4){if(A&&spr(hash(x,y)&1?'arvore':'arvore2',0,0,mx,my))continue;
+        ctx.fillStyle='#4a3420';ctx.fillRect(mx-3,my-4,6,14);ctx.fillStyle='#2f5a22';circle(ctx,mx,my-12,14);ctx.fillStyle='#3b6e2b';circle(ctx,mx-4,my-16,8)}
+      else if(k===6){if(A&&spr('portal',0,0,mx,my))continue;
+        ctx.strokeStyle='#ffd68a';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(mx,my,13,9,0,0,TAU);ctx.stroke()}
+    }
+    for(const n of C.npcs)if((n.y/T|0)===y)drawNpc(n,p);
+    if((p.y/T|0)===y)drawPlayer(p,false,false);
+  }
+  /* nomes por cima de tudo, como no mapa da masmorra */
+  ctx.font=FONTE_MAPA;
+  for(const n of C.npcs)outText(CITY.npcs[n.k].nome,n.x-(A?desl('npc_'+n.k):0),n.y-(A?36:30),'#8fd0ff');
+  outText('Você',p.x-(A?desl('cls_'+save.classe):0),p.y-(A?36:30),'#00c000');
 }
 export function drawMini(){
   const s=MS/MW;mctx.setTransform(DPR,0,0,DPR,0,0);mctx.clearRect(0,0,MS,MS);

@@ -289,6 +289,8 @@ function epilogo(caso, alvo) {
   return `<script type="module">
 /* harness de tools/testar.mjs — roteiro do caso ${caso.nome} */
 import './src/main.js?v=${VERSAO}';
+import * as Tl from './src/telas.js?v=${VERSAO}';
+import * as Cd from './src/sim/cidade.js?v=${VERSAO}';
 (async function(){
   var H=document.documentElement;
   var $=function(s){return document.querySelector(s)};
@@ -303,6 +305,10 @@ import './src/main.js?v=${VERSAO}';
   var sv=function(){try{return JSON.parse(localStorage.getItem('masmorra-runas-v2')||'null')}catch(e){return null}};
   var clica=function(e){if(!e)throw new Error('elemento ausente para clicar');e.click()};
   var tecla=function(tipo,code){dispatchEvent(new KeyboardEvent(tipo,{code:code,bubbles:true}))};
+  /* do acampamento (ou da tela final) até a masmorra: entra na cidade, fala
+     com o Guia de caça sem andar até ele e escolhe o primeiro mapa. Quem quer
+     provar a caminhada na cidade é o caso cidade */
+  var cacar=function(){if(visivel('#menu'))clica($('#play'));else if(visivel('#end'))clica($('#toMenu'));Tl.abreNpc('guia');clica($('#huntList button'))};
   try{
 ${caso.roteiro}
   }catch(e){ok('roteiro sem excecao',false,(e&&e.stack)||e)}
@@ -544,6 +550,30 @@ async function testaSimulacao() {
     if (a.r.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.r.fim} após ${a.r.q} quadros`);
     if (!(a.r.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a.r)})`);
   }
+  /* a cidade: mapa do conteúdo, paredes, NPCs sólidos, quem está perto e a
+     chegada pelo portão; e o conteúdo com mapa torto é recusado */
+  try {
+    novoSave();
+    const Cd = await import(url('cidade.js'));
+    const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
+    if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
+    if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
+    for (let i = 0; i < 30; i++) Cd.updateCidade(0.05, oeste);
+    for (let i = 0; i < 40; i++) Cd.updateCidade(0.05, norte);
+    if (C.perto !== 'mercador') falhas.push(`andar até a casa do Mercador não o deixou ao alcance (${C.perto} em ${C.p.x},${C.p.y})`);
+    const m = C.npcs.find((n) => n.k === 'mercador');
+    if (!(C.p.y > m.y + 10)) falhas.push('o jogador atravessou o Mercador');
+    const C2 = Cd.entraCidade(true); Cd.updateCidade(0.05, parado);
+    if (C2.perto !== 'guia') falhas.push(`voltar pelo portão não pôs o jogador ao lado do Guia (${C2.perto})`);
+    const ruim = (f) => { const c = JSON.parse(CONTEUDO); f(c); try { carrega(c); return null; } catch (e) { return e.message; } finally { carrega(JSON.parse(CONTEUDO)); } };
+    if (!ruim((c) => { c.city.mapa[3] += ','; })) falhas.push('mapa da cidade com linha torta foi aceito');
+    if (!ruim((c) => { c.city.mapa[1] = c.city.mapa[1].replace(',', '?'); })) falhas.push('mapa da cidade com letra desconhecida foi aceito');
+    if (!ruim((c) => { c.city.mapa[11] = c.city.mapa[11].replace('@', '.'); })) falhas.push('mapa da cidade sem @ foi aceito');
+    if (!ruim((c) => { delete c.city.npcs.guia; })) falhas.push('cidade sem quem abra os mapas de caça foi aceita');
+    if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
+  } catch (e) { falhas.push('a cidade quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   return {falhas, a: a && a.r};
 }
 
@@ -563,7 +593,9 @@ const CASOS = [
     ok('o acampamento abriu', visivel('#menu'));
     ok('o menu mostra a versão do jogo', /^Protótipo · v\\d+\\.\\d+\\.\\d+ · Feiticeiro$/.test(txt('#mEye')||''), txt('#mEye'));
     ok('o cofre semeado aparece no menu', txt('#sCofre')==='1000', txt('#sCofre'));
-    clica($('#toShop'));
+    clica($('#play'));
+    ok('o menu leva à cidade', $('#app').classList.contains('cidade')&&!visivel('#menu'));
+    Tl.abreNpc('mercador');
     ok('o Mercador abriu', visivel('#shop'));
     ok('o Mercador mostra o cofre', txt('#shopGold')==='1000', txt('#shopGold'));
     var linha=function(nome){return todos('#shopList li.up').filter(function(li){return li.querySelector('h3').textContent===nome})[0]};
@@ -579,10 +611,12 @@ const CASOS = [
     ok('dois pips de Vigor acesos', linha('Vigor').querySelectorAll('.pips i.on').length===2, linha('Vigor').querySelectorAll('.pips i.on').length);
     ok('o cofre foi persistido', sv()&&sv().cofre===695, sv()&&sv().cofre);
     ok('a melhoria foi persistida', sv()&&sv().up.vigor===2, sv()&&sv().up.vigor);
+    ok('a volta do Mercador é para a cidade', txt('#shopBack')==='Voltar à cidade', txt('#shopBack'));
     clica($('#shopBack'));
-    ok('voltou ao acampamento', visivel('#menu'));
-    ok('o acampamento mostra o cofre novo', txt('#sCofre')==='695', txt('#sCofre'));
-    clica($('#play'));
+    ok('voltou à cidade', $('#app').classList.contains('cidade')&&!visivel('#shop'));
+    await quadros(2);
+    ok('a cidade mostra o cofre novo', txt('#cCofre')==='695', txt('#cCofre'));
+    cacar();
     await quadros(4);
     ok('o laço do jogo rodou de verdade', window.__quadros()>=4, window.__quadros());
     ok('Vigor x2 chegou em stats(): 85+30 de vida', txt('#hpT')==='115/115', txt('#hpT'));
@@ -590,6 +624,67 @@ const CASOS = [
     ok('a primeira habilidade foi para o botão grande', $('#s0').querySelector('.nm').textContent==='Faísca', $('#s0').querySelector('.nm').textContent);
     ok('o botão de habilidade tem rótulo acessível', $('#s0').getAttribute('aria-label')==='Faísca — 5 de mana (J)', $('#s0').getAttribute('aria-label'));
     ok('a incursão contou no save', sv()&&sv().runs===1, sv()&&sv().runs);
+`,
+  },
+  {
+    nome: 'cidade',
+    o_que: 'a cidade abre pelo menu, o jogador anda até a casa do Mercador, o NPC fala e o botão abre a loja; o Guia leva à masmorra e a volta é pelo portão',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 250, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    ok('o botão do menu leva à cidade', txt('#play')==='Entrar na cidade', txt('#play'));
+    clica($('#play'));
+    await quadros(3);
+    ok('a cidade abriu, sem nenhuma tela por cima', $('#app').classList.contains('cidade')&&todos('.screen').every(function(t){return t.hidden}));
+    ok('o HUD da cidade mostra classe, nível e cofre', txt('#cCls')==='Feiticeiro'&&txt('#cLvl')==='Nv 1'&&txt('#cCofre')==='250', txt('#cCls')+' / '+txt('#cLvl')+' / '+txt('#cCofre'));
+    ok('a chegada anuncia o nome da cidade', txt('#banner')==='Cidade', txt('#banner'));
+    ok('ninguém ao alcance na chegada: sem botão de falar', $('#bFalar').hidden);
+    ok('a chegada avisa onde está o Guia', /Guia/.test(txt('#log')||''), txt('#log'));
+    /* do @ da praça até o Mercador: oeste pela rua, norte pela porta da casa */
+    var x0=Cd.C.p.x;
+    tecla('keydown','KeyA');
+    var oeste=await ate(function(){return Cd.C.p.x<180},200);
+    tecla('keyup','KeyA');
+    ok('anda para oeste pela rua', oeste&&Cd.C.p.x<x0, x0+' → '+Cd.C.p.x);
+    tecla('keydown','KeyW');
+    var chegou=await ate(function(){return !$('#bFalar').hidden},200);
+    tecla('keyup','KeyW');
+    ok('entrou pela porta e chegou ao Mercador', chegou&&Cd.C.perto==='mercador', Cd.C.perto+' em '+Math.round(Cd.C.p.x)+','+Math.round(Cd.C.p.y));
+    ok('o botão diz com quem falar', txt('#falarT')==='Mercador', txt('#falarT'));
+    ok('o botão de falar tem rótulo acessível', /^Falar com Mercador/.test($('#bFalar').getAttribute('aria-label')||''), $('#bFalar').getAttribute('aria-label'));
+    ok('o Mercador falou no registro', /Mercador: /.test(txt('#log')||''), txt('#log'));
+    tecla('keydown','KeyW');await quadros(10);tecla('keyup','KeyW');
+    var y1=Cd.C.p.y;
+    ok('o NPC é sólido: não se anda por cima dele', y1>=5*32, y1);
+    tecla('keydown','Enter');tecla('keyup','Enter');
+    ok('Enter ao lado do Mercador abre a loja', visivel('#shop'));
+    clica($('#shopBack'));
+    ok('a volta é para a cidade, no mesmo lugar', $('#app').classList.contains('cidade')&&Math.abs(Cd.C.p.y-y1)<8, Cd.C.p.y);
+    clica($('#bFalar'));
+    ok('o botão de falar abre a loja', visivel('#shop'));
+    clica($('#shopBack'));
+    Tl.abreNpc('banqueiro');
+    ok('o Banqueiro abre o Banco', visivel('#equip')&&txt('#equip h2')==='Banco', txt('#equip h2'));
+    clica($('#eqBack'));
+    Tl.abreNpc('guia');
+    ok('o Guia mostra os mapas de caça', visivel('#hunts')&&todos('#huntList li').length>=1, todos('#huntList li').length);
+    ok('o mapa de caça diz o nível recomendado', /nível recomendado 1/.test(txt('#huntList .meta')||''), txt('#huntList .meta'));
+    clica($('#huntList button'));
+    await quadros(3);
+    ok('o Guia leva à masmorra', $('#app').classList.contains('playing')&&!$('#app').classList.contains('cidade'));
+    ok('a incursão contou no save', sv()&&sv().runs===1, sv()&&sv().runs);
+    ok('na masmorra o botão de falar some', getComputedStyle($('#bFalar')).display==='none'||$('#bFalar').offsetParent===null);
+    clica($('#toMenu'));
+    await quadros(3);
+    var g=Cd.C.npcs.filter(function(n){return n.k==='guia'})[0];
+    ok('a volta da incursão é pelo portão, ao lado do Guia', $('#app').classList.contains('cidade')&&Cd.C.perto==='guia', Cd.C.perto+' em '+Math.round(Cd.C.p.x)+','+Math.round(Cd.C.p.y)+' / guia '+g.x+','+g.y);
+    clica($('#cMenu'));
+    ok('o botão Menu da cidade volta ao acampamento', visivel('#menu')&&!$('#app').classList.contains('cidade'));
 `,
   },
   {
@@ -610,8 +705,9 @@ const CASOS = [
     var linha=function(nome){return todos('#eqList li.sp').filter(function(li){return li.querySelector('h3').textContent.indexOf(nome)===0})[0]};
     var bt=function(nome,i){return linha(nome).querySelectorAll('.btns button')[i]};
     var espaco=function(i){return todos('#eqSlots button')[i]};
-    clica($('#toEquip'));
-    ok('a tela de equipamento abriu', visivel('#equip'));
+    clica($('#play'));
+    Tl.abreNpc('banqueiro');
+    ok('o Banco abriu', visivel('#equip'));
     ok('três espaços, todos vazios', todos('#eqSlots button').length===3&&todos('#eqSlots button.full').length===0, todos('#eqSlots button').length);
     ok('o cofre lista as quatro peças (o item que não existe mais sumiu)', todos('#eqList li.sp').length===4, todos('#eqList li.sp').length);
     ok('o ouro do cofre aparece', txt('#eqGold')==='100', txt('#eqGold'));
@@ -632,21 +728,22 @@ const CASOS = [
     ok('tocar no espaço devolve o amuleto ao cofre', sv().chars.feiticeiro.equip.amuleto===null&&sv().itens.amuleto===1, JSON.stringify(sv().chars.feiticeiro.equip));
     clica(bt('amuleto',0));
     clica($('#eqBack'));
-    clica($('#toPick'));
+    clica($('#cPick'));
     var cav=todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Cavaleiro'})[0];
     clica(cav);
-    clica($('#toEquip'));
+    ok('escolher personagem na cidade volta para a cidade', $('#app').classList.contains('cidade'));
+    Tl.abreNpc('banqueiro');
     ok('o Cavaleiro tem os próprios espaços, vazios', todos('#eqSlots button.full').length===0, todos('#eqSlots button.full').length);
     ok('o cofre é o mesmo da conta', !!linha('espada')&&txt('#eqGold')==='190', todos('#eqList li.sp').length+' / '+txt('#eqGold'));
     clica(bt('espada',0));
     ok('a espada foi para o Cavaleiro', sv().chars.cavaleiro.equip.arma==='espada', JSON.stringify(sv().chars.cavaleiro.equip));
     ok('o cofre ficou vazio e diz isso', todos('#eqList li.vazio').length===1, todos('#eqList li').length);
     clica($('#eqBack'));
-    clica($('#toPick'));
+    clica($('#cPick'));
     var fei=todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Feiticeiro'})[0];
     clica(fei);
     ok('o Feiticeiro manteve o que vestia', sv().chars.feiticeiro.equip.arma==='machado'&&sv().chars.feiticeiro.equip.amuleto==='amuleto', JSON.stringify(sv().chars.feiticeiro.equip));
-    clica($('#play'));
+    cacar();
     await quadros(4);
     ok('o amuleto chegou em stats(): 85+15 de vida', txt('#hpT')==='100/100', txt('#hpT'));
     ok('o amuleto chegou em stats(): 95+15 de mana', txt('#mpT')==='110/110', txt('#mpT'));
@@ -665,7 +762,7 @@ const CASOS = [
       chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
     }},
     roteiro: `
-    clica($('#play'));
+    cacar();
     await quadros(2);
     ok('a incursão começou', $('#app').classList.contains('playing'));
     ok('o relógio foi encurtado para 20 s', txt('#timeT')==='0:20', txt('#timeT'));
@@ -722,7 +819,7 @@ const CASOS = [
     clica($('#toPick'));
     ok('a escolha de personagem mostra o retrato de cada classe', todos('#pickList .cls .ico').length===4, todos('#pickList .cls .ico').length);
     clica($('#pickBack'));
-    clica($('#play'));
+    cacar();
     await quadros(2);
     ok('o botão da poção ganhou o ícone', !!$('#bPot .ico'));
     tecla('keydown','KeyJ');
@@ -751,6 +848,9 @@ const CASOS = [
     await quadros(20);
     ok('a arte não foi marcada como carregada', !$('#app').dataset.arte);
     clica($('#play'));
+    await quadros(6);
+    ok('a cidade abre e é desenhada sem a arte', $('#app').classList.contains('cidade')&&!!Cd.C, !!Cd.C);
+    cacar();
     tecla('keydown','KeyJ');
     var acabou=await ate(function(){return visivel('#end')},1500);
     tecla('keyup','KeyJ');
@@ -772,7 +872,7 @@ const CASOS = [
     }},
     roteiro: `
     ok('o menu avisa o preço da morte antes de entrar', /25% da experiência do nível.*Hoje: 100 xp\\./.test(txt('#mRisco')||''), txt('#mRisco'));
-    clica($('#play'));
+    cacar();
     await quadros(2);
     ok('a incursão começou', $('#app').classList.contains('playing'));
     ok('o Feiticeiro entra com 85 de vida', txt('#hpT')==='85/85', txt('#hpT'));
@@ -796,6 +896,10 @@ const CASOS = [
     ok('o texto final fala da experiência perdida', /25% da experiência/.test(txt('#endText')||''), txt('#endText'));
     clica($('#toMenu'));
     await quadros(2);
+    Tl.abreNpc('guia');
+    ok('o Guia de caça também avisa, com o XP reduzido', (txt('#hRisco')||'').indexOf('Hoje: '+Math.floor(sv().chars.feiticeiro.xp*0.25)+' xp.')>=0, txt('#hRisco'));
+    clica($('#huntBack'));
+    clica($('#cMenu'));
     ok('de volta ao menu, o aviso já conta o XP reduzido', (txt('#mRisco')||'').indexOf('Hoje: '+Math.floor(sv().chars.feiticeiro.xp*0.25)+' xp.')>=0, txt('#mRisco'));
 `,
   },
@@ -820,14 +924,16 @@ const CASOS = [
       ok('o acampamento identifica '+n, (txt('#mEye')||'').slice(-n.length)===n, txt('#mEye'));
       ok(n+' nasce no nível 1', txt('#sLvl')==='1', txt('#sLvl'));
       ok(n+' nasce com 2 espaços', txt('#sSlots')==='2', txt('#sSlots'));
-      clica($('#play'));
+      cacar();
       await quadros(3);
       ok(n+' entra com a vida da classe', txt('#hpT')===vida[n], txt('#hpT'));
       ok(n+' leva ao menos uma habilidade', !$('#s0').hidden);
       ok('o nome da classe aparece no HUD de '+n, txt('#clsT')===n, txt('#clsT'));
       ok('o rótulo acessível de '+n+' diz o custo certo', ($('#s0').getAttribute('aria-label')||'').indexOf(n==='Cavaleiro'?'sem mana':'de mana')>=0, $('#s0').getAttribute('aria-label'));
       clica($('#toMenu'));
-      ok('voltou ao acampamento depois da incursão', visivel('#menu'));
+      ok('voltou à cidade depois da incursão', $('#app').classList.contains('cidade'));
+      clica($('#cMenu'));
+      ok('da cidade se volta ao acampamento', visivel('#menu'));
       clica($('#toPick'));
       ok('a escolha de personagem reabriu', visivel('#pick'));
       ok('com classe escolhida já há como voltar', !$('#pickBack').hidden);
@@ -892,7 +998,7 @@ const CASOS = [
     ok('esvaziar foi persistido', sv()&&sv().chars.cacador.slots.filter(Boolean).length===3, sv()&&JSON.stringify(sv().chars.cacador.slots));
     clica($('#grimBack'));
     ok('voltou ao acampamento', visivel('#menu'));
-    clica($('#play'));
+    cacar();
     await quadros(3);
     var visiveis=[0,1,2,3].filter(function(i){return !$('#s'+i).hidden});
     ok('a incursão mostra só os espaços cheios', visiveis.length===3, visiveis.join(','));
@@ -915,7 +1021,7 @@ const CASOS = [
       chars: {feiticeiro: {lvl: 8, xp: 3378, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null]}},
     }},
     roteiro: `
-    clica($('#play'));
+    cacar();
     await quadros(2);
     ok('entrou no nível 8', txt('#lvlT')==='Nv 8', txt('#lvlT'));
     ok('dois botões de ação no começo', [0,1,2,3].filter(function(i){return !$('#s'+i).hidden}).length===2, [0,1,2,3].filter(function(i){return !$('#s'+i).hidden}).join(','));
@@ -947,7 +1053,7 @@ const CASOS = [
     roteiro: `
     var arte=await ate(function(){return $('#app').dataset.arte==='1'},400);
     ok('o atlas carregou antes das fotos', arte);
-    clica($('#play'));
+    cacar();
     await quadros(2);
     ok('o log avisa que a masmorra veio do endereço', todos('#log .ln').some(function(l){return /Masmorra nº 12\.345, escolhida pelo endereço/.test(l.textContent)}), todos('#log .ln').map(function(l){return l.textContent}).join(' | '));
     var foto1=$('#c').toDataURL();
@@ -976,7 +1082,7 @@ const CASOS = [
     }},
     roteiro: `
     await ate(function(){return $('#app').dataset.arte==='1'},400);
-    clica($('#play'));
+    cacar();
     await quadros(2);
     ok('sem semente no endereço o log não fala de masmorra escolhida', !todos('#log .ln').some(function(l){return /escolhida pelo endereço/.test(l.textContent)}));
     var foto1=$('#c').toDataURL();
@@ -1013,7 +1119,7 @@ const CASOS = [
     ok('o acampamento foi desenhado de verdade', txt('#sCofre')==='300', txt('#sCofre'));
     ok('o acampamento tem um personagem para mostrar', txt('#sLvl')==='1', txt('#sLvl'));
     ok('o personagem que faltava foi criado', sv()&&sv().chars.druida&&sv().chars.druida.lvl===1, sv()&&JSON.stringify(sv().chars));
-    clica($('#play'));
+    cacar();
     await quadros(3);
     ok('a incursão roda depois de recuperado', $('#app').classList.contains('playing'));
     ok('a vida saiu da classe do save', txt('#hpT')==='92/92', txt('#hpT'));
@@ -1036,7 +1142,7 @@ const CASOS = [
     ok('o aviso é lido por leitor de tela (role=status)', $('#mAviso').getAttribute('role')==='status');
     ok('o aviso diz que o progresso não é salvo', /não está sendo salvo/.test(txt('#mAviso')), txt('#mAviso'));
     ok('o cofre carregado continua aparecendo', txt('#sCofre')==='40', txt('#sCofre'));
-    clica($('#play'));
+    cacar();
     await quadros(3);
     ok('dá para jogar mesmo sem gravar', $('#app').classList.contains('playing'));
 `,
@@ -1055,7 +1161,7 @@ const CASOS = [
     ok('o acampamento abriu', visivel('#menu'));
     ok('o aviso de save não aparece', !visivel('#mAviso'));
     ok('a caixa de conta aparece, com o formulário de e-mail', visivel('#mConta')&&visivel('#contaF'));
-    clica($('#play'));
+    cacar();
     await quadros(3);
     ok('a incursão gravou no save', sv()&&sv().runs===1, sv()&&sv().runs);
 `,
@@ -1086,7 +1192,7 @@ const CASOS = [
     ok('o acampamento mostra o nível migrado', txt('#sLvl')==='5', txt('#sLvl'));
     ok('o acampamento mostra o recorde migrado', txt('#sBest')==='220', txt('#sBest'));
     ok('dois espaços no nível 5', txt('#sSlots')==='2', txt('#sSlots'));
-    clica($('#play'));
+    cacar();
     await quadros(3);
     ok('a vida soma classe, nível e Vigor: 85+24+30', txt('#hpT')==='139/139', txt('#hpT'));
     ok('a mana soma classe, nível e Foco: 95+64+10', txt('#mpT')==='169/169', txt('#mpT'));
@@ -1133,7 +1239,7 @@ const CASOS = [
     ok('a nuvem foi lida depois de entrar', window.__nuvem.gets===1, window.__nuvem.gets);
     ${espera(1800)}
     ok('o save local subiu para a conta nova', window.__nuvem.posts>=1&&window.__nuvem.dados.cofre===10, window.__nuvem.posts);
-    clica($('#play'));
+    cacar();
     ${espera(1800)}
     ok('a incursão foi gravada na nuvem com o token', window.__nuvem.posts>=1&&window.__nuvem.dados.runs===2&&window.__nuvem.token==='tk1', window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.runs)+' / '+window.__nuvem.token);
 `,
@@ -1166,7 +1272,7 @@ const CASOS = [
     ok('o aparelho ficou ligado à conta', sv()&&sv().dono==='u1', sv()&&sv().dono);
     ok('a caixa mostra a conta', /salvo na nuvem · jogador/.test(txt('#contaT')||''), txt('#contaT'));
     ok('o formulário some com a sessão aberta', !visivel('#contaF')&&visivel('#contaSair'));
-    clica($('#play'));
+    cacar();
     ${espera(1800)}
     ok('a incursão nova foi gravada na nuvem', window.__nuvem.posts>=1&&window.__nuvem.dados.runs===6, window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.runs));
     ok('a gravação foi com o token da sessão', window.__nuvem.token==='tk1', window.__nuvem.token);

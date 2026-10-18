@@ -68,7 +68,7 @@ confundidas com precedente:
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot e progressão | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~210 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~250 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase, e só quando há conta. A folha do Google Fonts que existia saiu em
@@ -124,7 +124,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `dados.js` — **conteúdo do jogo**, **classes**, **habilidades**, **melhorias
   e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
-  `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`. As tabelas
+  `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`; da cidade,
+  `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de `city.mapa` é) e `ABRE`
+  (o que um NPC pode abrir). As tabelas
   são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
   valor, edite o JSON
 - `progresso.js` — **personagem e progressão**: o `save` em memória
@@ -132,7 +134,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
-  (qual peça de parede cada bloco sólido recebe)
+  (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
+- `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
+  `content.json`), a física da grade da cidade e `updateCidade(dt,ent)`, que
+  anda e devolve o NPC ao alcance (`C.perto`). É regra, não tela: na F3 é o
+  estado que o servidor da cidade compartilhada roda
 - `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
   `spawn()`, `pickType()`), **física** (`solid()`, `blocked()`, `move()`,
   `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
@@ -159,12 +165,17 @@ principal, o markup das telas e do HUD, e a linha que carrega
   arte, o `render()` segue a ordem do cliente do Tibia: chão, depois **linha
   por linha** as paredes da linha e quem está nela — a parede de baixo cobre o
   pé de quem encosta nela. Sem a arte, o caminho antigo (formas em código)
-  fica intacto; mexa nos dois ou teste o `sem-arte`
-- `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()` e
-  o cache de elementos `E`
-- `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`),
-  **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`), **mercador** (`drawShop()`,
-  `buy()`, `showShop()`) e `conteudoFalhou()`
+  fica intacto; mexa nos dois ou teste o `sem-arte`. A **cidade** tem o
+  `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`
+- `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
+  o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
+  falar e a frase do NPC no registro)
+- `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`), **cidade**
+  (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
+  **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
+  `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
+  cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
+  cidade voltam para ela (`volta()`)
 - `controles.js` — joystick por ponteiro, `bindHold()`, teclado, `held` e
   `leEntrada()`
 - `dom.js` — `$`, `app` e `RM` (`prefers-reduced-motion`)
@@ -408,8 +419,12 @@ Node roda sempre). O jogo de verdade nunca é tocado. Os casos cobrem o menu com
 ponta a ponta até a extração, a incursão desenhada com os sprites (`arte`) e
 sem eles (`sem-arte`, campo `semArte` do caso), a morte com o selo, as quatro
 classes, o grimório no nível 18, o nível subindo no meio da incursão, o save
-corrompido e bloqueado, a migração `v1`→`v2`, a conta na nuvem e o
-equipamento (cofre de peças da conta, espaços de cada personagem).
+corrompido e bloqueado, a migração `v1`→`v2`, a conta na nuvem, o
+equipamento (cofre de peças da conta, espaços de cada personagem) e a
+cidade (andar até o Mercador, falar, o Guia levando à masmorra e a volta pelo
+portão). Para chegar à masmorra, o roteiro chama `cacar()`, que entra na
+cidade e fala com o Guia sem andar; o roteiro também enxerga os módulos como
+`Tl` (`src/telas.js`) e `Cd` (`src/sim/cidade.js`).
 
 Caso novo entra na tabela `CASOS` no fim do
 [tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto

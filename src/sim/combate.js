@@ -1,8 +1,8 @@
 /* ---------- combate ---------- */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.6.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,fmtItem} from './dados.js?v=0.6.0';
-import {ch,KL,stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.6.0';
-import {G,flowAt,num,shake,finish} from './incursao.js?v=0.6.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.7.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,fmtItem} from './dados.js?v=0.7.0';
+import {ch,KL,stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.7.0';
+import {G,flowAt,num,shake,finish} from './incursao.js?v=0.7.0';
 
 function target(range){
   let best=null,bd=range;

@@ -148,6 +148,9 @@ O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
 
 ### 7.4 Multiplayer
 - **F2:** co-op em tempo real nas incursões (salas de 1 a 4, convite por link).
+- **Já existe (0.7.0, antecipado pelo dono):** a cidade andável, sem rede —
+  casas do Mercador e do Banco e o Guia de caça, que leva às masmorras. O
+  estado dela é simulação (`src/sim/cidade.js`), pronto para o servidor.
 - **F3:** cidade compartilhada (~50 por instância), chat com filtro, grupos,
   amigos, guildas, mercado.
 - **Fora do lançamento:** mundo aberto contínuo e PvP aberto.
@@ -377,6 +380,7 @@ a partir de issue `decisao-do-dono` respondida).
 | 2026-10-18 | Harness único (`tools/testar.mjs`), sem `package.json`, TypeScript ou Playwright como biblioteca; reavaliar na F2 | Seção 10, `CLAUDE.md` |
 | 2026-10-18 | `ROADMAP.md` é a fila única; issues só para decisão, bug e feedback | Seção 13.1 |
 | 2026-10-18 | Uma tarefa agendada por papel; as duplicadas foram apagadas | Seção 13.4 |
+| 2026-10-18 | Cidade andável antecipada da F3, ainda sem rede: casas do Mercador, Banco e Guia de caça; o mapa e os NPCs ficam em `city` e `hunts` do `content.json` | Seção 7.4, `CLAUDE.md` |
 
 ### 15.2 Pendentes (com padrão)
 

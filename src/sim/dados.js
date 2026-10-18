@@ -1,10 +1,11 @@
 /* ---------- conteúdo do jogo (data/game/content.json) ----------
-   Classes, habilidades, melhorias, inimigos, itens, loot e progressão moram
+   Classes, habilidades, melhorias, inimigos, itens, loot, progressão, a
+   cidade e os mapas de caça moram
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
 export function validaConteudo(c){
-  for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression'])
+  for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','city','hunts'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
   const tem=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
   if(!Array.isArray(c.classOrder)||!c.classOrder.length)throw new Error('classOrder vazio');
@@ -42,7 +43,32 @@ export function validaConteudo(c){
   }
   for(const k of [p.boss.type,...(p.boss.escort||[])])
     if(!tem(c.enemies,k))throw new Error(`chefe cita inimigo inexistente: ${k}`);
+  const ci=c.city,M=ci.mapa;
+  if(!Array.isArray(M)||M.length<3||typeof M[0]!=='string'||M[0].length<3)throw new Error('city.mapa precisa de ao menos 3 linhas de texto');
+  if(M.some(l=>typeof l!=='string'||l.length!==M[0].length))throw new Error(`city.mapa tem linhas de tamanhos diferentes (a primeira tem ${M[0].length})`);
+  const letras={};
+  for(const[k,n]of Object.entries(ci.npcs||{})){
+    if(typeof n.letra!=='string'||n.letra.length!==1||n.letra in LEGENDA)throw new Error(`NPC ${k} sem letra própria no mapa`);
+    if(!ABRE.includes(n.abre))throw new Error(`NPC ${k} abre algo que não existe: ${n.abre}`);
+    letras[n.letra]=0;
+  }
+  let chegada=0;
+  for(const l of M)for(const ch of l){if(ch==='@')chegada++;if(ch in letras)letras[ch]++;else if(!(ch in LEGENDA))throw new Error(`city.mapa tem um caractere desconhecido: "${ch}"`)}
+  if(chegada!==1)throw new Error(`city.mapa precisa de exatamente um @ (tem ${chegada})`);
+  for(const[k,n]of Object.entries(ci.npcs))if(letras[n.letra]!==1)throw new Error(`o NPC ${k} (${n.letra}) aparece ${letras[n.letra]} vezes no mapa, e não uma`);
+  for(const a of ABRE)if(!Object.values(ci.npcs).some(n=>n.abre===a))throw new Error(`nenhum NPC da cidade abre ${a}`);
+  if(!Object.keys(c.hunts).length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
+  for(const[k,h]of Object.entries(c.hunts))if(typeof h.nome!=='string'||typeof h.nivel!=='number')throw new Error(`mapa de caça ${k} sem nome ou nível`);
 }
+
+/* ---------- cidade e mapas de caça ----------
+   O mapa da cidade é texto no content.json, uma letra por tile: mudar uma
+   casa de lugar é editar dado. LEGENDA diz o que cada letra é (o número é o
+   tipo de tile de src/sim/cidade.js); as letras dos NPCs vêm de city.npcs.
+   ABRE é o que um NPC pode abrir. */
+export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2};
+export const ABRE=['mercador','banco','cacadas'];
+export let CITY,HUNTS;
 
 /* ---------- classes ----------
    Adaptação das vocações do Tibia: a identidade não vem de poderes exclusivos,
@@ -83,5 +109,5 @@ export const fmtBonus=it=>Object.entries(it.bonus||{}).map(([b,v])=>BONUS[b](v))
 export function carrega(c){
   validaConteudo(c);
   CLASSES=c.classes;CL_ORDEM=c.classOrder;SPELLS=c.spells;SLOT_LVL=c.slotLevels;
-  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;
+  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=c.hunts;
 }

@@ -1,11 +1,12 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.6.0';
-import {SPELLS} from './sim/dados.js?v=0.6.0';
-import {ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.6.0';
-import {G} from './sim/incursao.js?v=0.6.0';
-import {ART,icone} from './arte.js?v=0.6.0';
-import {$} from './dom.js?v=0.6.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.7.0';
+import {SPELLS,CITY} from './sim/dados.js?v=0.7.0';
+import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.7.0';
+import {G} from './sim/incursao.js?v=0.7.0';
+import {C} from './sim/cidade.js?v=0.7.0';
+import {ART,icone} from './arte.js?v=0.7.0';
+import {$} from './dom.js?v=0.7.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -61,3 +62,20 @@ export function hud(){
     b.classList.toggle('dim',p.mp<s.mana);
   }
 }
+/* ---------- HUD da cidade ----------
+   Quem você é, o cofre, e o botão de falar quando há um NPC ao alcance. Ao
+   chegar perto, o NPC diz a frase dele no registro, como no Tibia. */
+const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),falar:$('#bFalar'),quem:$('#falarT')};
+let pertoAntes=null;
+export function hudCidade(){
+  const c=ch();
+  setT(EC.cls,KL().nome);setT(EC.lvl,'Nv '+c.lvl);setT(EC.cofre,String(save.cofre));
+  if(C.perto===pertoAntes)return;
+  pertoAntes=C.perto;EC.falar.hidden=!C.perto;
+  if(!C.perto)return;
+  const n=CITY.npcs[C.perto];
+  setT(EC.quem,n.nome);EC.falar.setAttribute('aria-label',`Falar com ${n.nome} (${n.casa}) — Enter`);
+  log(`${n.nome}: ${n.fala}`,'info');
+}
+/* ao entrar na cidade o botão recomeça escondido */
+export const zeraCidade=()=>{pertoAntes=null;EC.falar.hidden=true};

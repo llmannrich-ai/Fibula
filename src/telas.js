@@ -1,19 +1,32 @@
 /* ---------- telas ----------
-   Acampamento, personagens, grimório, equipamento, tela final e Mercador. */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.6.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus} from './sim/dados.js?v=0.6.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.6.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.6.0';
-import {persist,saveFalhou} from './salvar.js?v=0.6.0';
-import {desenhaConta} from './nuvem.js?v=0.6.0';
-import {logEl,log,montaBotoes,setT} from './hud.js?v=0.6.0';
-import {icone} from './arte.js?v=0.6.0';
-import {$,app} from './dom.js?v=0.6.0';
+   Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
+   caça, tela final e Mercador. */
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.7.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.7.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.7.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.7.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.7.0';
+import {persist,saveFalhou} from './salvar.js?v=0.7.0';
+import {desenhaConta} from './nuvem.js?v=0.7.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade} from './hud.js?v=0.7.0';
+import {icone} from './arte.js?v=0.7.0';
+import {$,app} from './dom.js?v=0.7.0';
 
-export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip');
-const TELAS=[menu,endS,shopS,pickS,grimS,equipS];
-const soTela=el=>{for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing')};
+export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts');
+const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS];
+/* V.cidade: a cidade é o fundo (está nela, ou numa tela aberta a partir dela);
+   senão o fundo é a masmorra. As telas de dentro voltam para onde vieram. */
+export const V={cidade:false};
+const soTela=el=>{
+  for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing','cidade');
+  for(const b of document.querySelectorAll('.voltar'))b.textContent=V.cidade?'Voltar à cidade':'Voltar ao acampamento';
+};
+const volta=()=>V.cidade?showCidade():showMenu();
+/* pilar 1: o preço da morte, em número, antes de entrar — no acampamento e no
+   Guia de caça, que é por onde se entra */
+const risco=()=>{const pd=perdaXp();return `Morrer também custa ${pctPerdaXp()}% da experiência do nível atual, nunca o nível. Hoje: ${pd?pd+' xp':'nada, o nível está vazio'}.`};
 export function showMenu(){
+  V.cidade=false;
   if(!save.classe)return showPick();
   const c=ch();
   $('#mEye').textContent=`Protótipo · v${VERSAO} · ${KL().nome}`;
@@ -21,9 +34,7 @@ export function showMenu(){
   $('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;$('#sSlots').textContent=nSlots();
   $('#mAviso').hidden=!saveFalhou;desenhaConta();
   $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
-  /* pilar 1: o preço da morte, em número, antes de entrar */
-  const pd=perdaXp();
-  $('#mRisco').textContent=`Morrer também custa ${pctPerdaXp()}% da experiência do nível atual, nunca o nível. Hoje: ${pd?pd+' xp':'nada, o nível está vazio'}.`;
+  $('#mRisco').textContent=risco();
   soTela(menu);
   if(!G||G.active){newRun()}
 }
@@ -34,12 +45,52 @@ const SEM_URL=(()=>{try{const v=new URLSearchParams(location.search).get('sement
 const nMasmorra=s=>'nº '+s.toLocaleString('pt-BR');
 /* a versão vem do endereço deste módulo (?v=, posto por tools/versao.mjs) */
 const VERSAO=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'dev'}catch(e){return 'dev'}})();
+/* por ora todos os mapas de caça do Guia levam à mesma masmorra gerada */
 function start(){
+  V.cidade=false;
   newRun(SEM_URL);G.active=true;save.runs++;persist();montaBotoes();
-  for(const t of TELAS)t.hidden=true;app.classList.add('playing');logEl.textContent='';
+  for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';
   log('Você entrou na masmorra. O portal abre em 1:30.','info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
+
+/* ---------- cidade ----------
+   O mapa e quem está perto são da simulação (src/sim/cidade.js); aqui ficam
+   o que cada NPC abre e a chegada. como: 'chegada' (vindo do acampamento, no
+   @ do mapa), 'portao' (de volta de uma incursão, na frente do Guia) ou nada
+   (voltando de uma tela aberta na cidade, no mesmo lugar). */
+export function showCidade(como){
+  if(!save.classe)return showPick();
+  if(como||!C)entraCidade(como==='portao');
+  V.cidade=true;soTela(null);app.classList.add('cidade');zeraCidade();
+  if(como){logEl.textContent='';banner(CITY.nome);log(como==='portao'?'Você voltou à cidade pelo portão.':`Você está na ${CITY.nome.toLowerCase()}. Para caçar, fale com o Guia no portão sul.`,'info')}
+}
+export function abreNpc(k){
+  const a=CITY.npcs[k].abre;
+  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else showHunts();
+}
+function showHunts(){
+  const ul=$('#huntList'),c=ch();ul.textContent='';
+  $('#hRisco').textContent=risco();
+  for(const[k,h]of Object.entries(HUNTS)){
+    const li=document.createElement('li');li.className='sp';
+    const info=document.createElement('div');info.className='info';
+    const t=document.createElement('h3');t.textContent=h.nome;
+    const p=document.createElement('p');p.textContent=h.desc||'';
+    const meta=document.createElement('div');meta.className='meta'+(c.lvl<h.nivel?' alto':'');
+    meta.textContent=`nível recomendado ${h.nivel}`+(c.lvl<h.nivel?' · acima do seu':'');
+    info.append(t,p,meta);
+    const b=document.createElement('button');b.type='button';b.textContent='entrar';
+    b.setAttribute('aria-label',`Entrar em ${h.nome}`);b.addEventListener('click',start);
+    li.append(info,b);ul.appendChild(li);
+  }
+  soTela(huntS);
+}
+$('#bFalar').addEventListener('click',()=>{if(C&&C.perto)abreNpc(C.perto)});
+addEventListener('keydown',e=>{
+  if(!app.classList.contains('cidade')||e.repeat||!C||!C.perto)return;
+  if(e.code==='Enter'||e.code==='KeyE'){e.preventDefault();abreNpc(C.perto)}
+});
 
 /* ---------- personagens ---------- */
 export function showPick(){
@@ -73,7 +124,7 @@ export function showPick(){
 }
 function escolher(k){
   if(!save.chars[k])save.chars[k]=novoChar(k);
-  save.classe=k;persist();setG(null);showMenu();
+  save.classe=k;persist();setG(null);volta();
 }
 
 /* ---------- grimório ---------- */
@@ -247,17 +298,15 @@ function buy(k){
 }
 function showShop(){drawShop();soTela(shopS)}
 
-$('#toShop').addEventListener('click',showShop);
-$('#shopBack').addEventListener('click',showMenu);
+for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#toGrim').addEventListener('click',drawGrim);
-$('#grimBack').addEventListener('click',showMenu);
-$('#toEquip').addEventListener('click',drawEquip);
-$('#eqBack').addEventListener('click',showMenu);
+$('#cGrim').addEventListener('click',drawGrim);
 $('#toPick').addEventListener('click',showPick);
-$('#pickBack').addEventListener('click',showMenu);
-$('#play').addEventListener('click',start);
-$('#again').addEventListener('click',start);
-$('#toMenu').addEventListener('click',showMenu);
+$('#cPick').addEventListener('click',showPick);
+$('#cMenu').addEventListener('click',showMenu);
+$('#play').addEventListener('click',()=>showCidade('chegada'));
+$('#again').addEventListener('click',()=>start());
+$('#toMenu').addEventListener('click',()=>showCidade('portao'));
 
 /* conteúdo que não carregou: o menu diz o motivo e o jogo não começa */
 export function conteudoFalhou(err,DATA_URL){
