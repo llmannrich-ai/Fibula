@@ -158,18 +158,69 @@ Feiticeiro. **Esse é o padrão a seguir** — subir a versão da `KEY` sem escr
 a migração zera o progresso de todos os jogadores, e isso é decisão do Leonardo,
 não sua.
 
-**O save também vai para a nuvem quando há conta.** A seção `conta e save na
-nuvem` fala com o Supabase por `fetch` puro (sem biblioteca), só com a chave
-pública `SB_KEY`; as regras de acesso (RLS) estão em
-[tools/supabase/001_saves.sql](tools/supabase/001_saves.sql). Com `SB_KEY`
-vazia ou sem sessão, nada vai para a rede. `persist()` grava `save.em`
-(horário) e agenda o envio; `save.dono` marca a conta a que o aparelho está
-ligado; a sessão fica em `masmorra-runas-v2-sessao`. **Nunca ponha no
-`index.html` a senha do banco nem a chave `service_role`**: o arquivo é público.
+**O save também vai para a nuvem quando há conta** — ver a seção Supabase
+logo abaixo. `persist()` grava `save.em` (horário) e agenda o envio;
+`save.dono` marca a conta a que o aparelho está ligado; a sessão fica em
+`masmorra-runas-v2-sessao`.
 
 Toda escrita em `save` precisa de `persist()` depois. Todo atributo derivado
 (vida máxima, mana máxima, poder) passa por `stats()`, que lê a classe atual via
 `ch()` e `KL()` — nunca leia `save.chars` direto.
+
+## Supabase — a base de dados do jogo
+
+O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
+`https://bpwljbualdjlwmzcryzl.supabase.co`. É a peça "Contas e dados (F1)" do
+[PRD](docs/PRD.md). Hoje guarda:
+
+- **Contas** — Supabase Auth, login por link mágico no e-mail (cadastro aberto).
+- **`public.saves`** — um save por conta, mesmo JSON da `masmorra-runas-v2`.
+  Schema e regras em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
+
+O jogo fala com o banco pela seção `conta e save na nuvem` do `index.html`, com
+`fetch` puro (sem `supabase-js`) e só a chave **publishable** em `SB_KEY`, que
+é pública por natureza. Quem pode ler ou gravar o quê é decidido pela RLS no
+banco, não pelo código do cliente.
+
+**Os agentes têm acesso livre às chaves, sem pedir ao Leonardo.** Todas estão
+no arquivo `api key supabase.txt`, na raiz do checkout principal
+(`C:\Users\Leonardo Mannrich\Fibula\`), fora do git (`.gitignore` e
+`.git/info/exclude`). Use à vontade nas sessões locais:
+
+| Chave | Para quê | Pode ir para o navegador? |
+|---|---|---|
+| publishable (`sb_publishable_…`) e anon (JWT) | cliente do jogo, leituras de teste | sim — já está no `index.html` |
+| secret (`sb_secret_…`) e service_role (JWT) | administração: ignora a RLS, Auth Admin, ler e corrigir dados | **nunca** |
+| senha do banco (Postgres) | migrações e SQL direto (`supabase db push --db-url …`) | **nunca** |
+
+O que "acesso livre" **não** quer dizer:
+
+- Não é banco aberto ao público. Nunca desligue a RLS nem crie política para
+  `anon` ou `using (true)` em tabela de jogador.
+- Segredo (secret, service_role, senha) nunca entra em arquivo servido, commit,
+  `DIARIO.md`, issue, PR ou log. O repositório e o site são públicos; um
+  vazamento obriga o Leonardo a girar a chave no painel.
+- Mudança de schema entra como arquivo novo e idempotente em
+  `tools/supabase/NNN_nome.sql`, aplicado no banco e comitado junto do código
+  que depende dele. Não altere tabela à mão sem deixar o arquivo.
+- Dados de jogadores reais: leia para depurar, mas não apague nem reescreva o
+  save de ninguém sem pedido do Leonardo.
+
+Limites conhecidos de acesso:
+
+- **Execuções de nuvem não têm o arquivo de chaves.** Lá vale o item C5 do PRD:
+  `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_ACCESS_TOKEN` como variáveis
+  de ambiente, quando o Leonardo cadastrar. Sem elas, o agente de nuvem não
+  mexe no banco e registra a pendência no `DIARIO.md`.
+- **Configuração do Auth** (Site URL, URLs de redirecionamento, Google e outros
+  provedores, SMTP) não sai das chaves acima: exige um token pessoal
+  (`sbp_…`, em supabase.com/dashboard/account/tokens) via CLI
+  `supabase` ou Management API. Se o token entrar no arquivo de chaves, use-o.
+- O conector MCP do Supabase disponível no Claude está ligado a outra conta e
+  **não enxerga este projeto**; não adianta tentar por ele.
+- Os testes (`tools/testar.mjs`) nunca falam com o Supabase de verdade: o
+  prelúdio bloqueia `supabase.co` e o caso que precisa de nuvem usa `P.nuvem`,
+  um Supabase falso em memória.
 
 ## Convenções de código
 
