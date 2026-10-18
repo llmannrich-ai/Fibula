@@ -44,13 +44,22 @@ da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
 
 **Pilar 4** (base técnica da F2). O `update()` roda no `dt` de cada quadro, até
 50 ms. O servidor da F2 precisa do mesmo resultado em qualquer máquina: a
-simulação passa a andar em passos fixos (candidato: 1/30 s), com o laço do
-cliente acumulando tempo e chamando quantos passos couberem. Fazer depois do
-gerador com semente.
+simulação passa a andar em passos fixos, com o laço do cliente acumulando
+tempo e chamando quantos passos couberem. É a etapa M0 do
+[plano do multiplayer](docs/plano-multiplayer.md).
+
+- **Passo:** o plano propõe 1/20 s (a taxa de estado da F2 no PRD, e os 50 ms
+  que o jogo e o harness já usam como `dt` máximo); 1/30 s é a alternativa se
+  20 Hz ficar travado mesmo interpolado. Registre a escolha no diário.
+- **Interpolação no `render()` faz parte da entrega:** guardar a posição do
+  passo anterior (`x0`, `y0`) em jogador, monstros e projéteis, sem alocar no
+  laço, e desenhar entre os dois passos. Sem isso o movimento cai para 20
+  quadros visíveis.
 
 **Fase:** F0 (2). **Pronto quando:** a simulação no Node dá o mesmo resultado
 com passos de quadro diferentes (por exemplo, 16 ms e 50 ms) para a mesma
-semente, e o jogo no navegador continua igual.
+semente e as mesmas entradas, o harness prende isso, e o jogo no navegador
+continua igual num viewport de celular (olho humano).
 
 ### 2. Tela de créditos no jogo
 
@@ -87,6 +96,23 @@ diário.
 ---
 
 ## Depois
+
+### Multiplayer M1: a simulação com N jogadores (aguarda o Leonardo)
+
+**Pilar 2** (base da F2). Solo vira um grupo de um: `G.p` vira `G.ps`, a ficha
+do personagem entra no jogador em vez de a simulação ler o `save`, os ganhos
+da incursão são acumulados e aplicados no fim, e o campo de fluxo parte de
+todos os jogadores. Detalhes e regras de grupo na etapa M1 do
+[plano do multiplayer](docs/plano-multiplayer.md).
+
+**Só entra em `Próximo` quando o Leonardo decidir D-M1 (antecipar M1) e D-M2
+(regras de grupo)**, seção 7 do plano. Depende do passo fixo.
+
+**Pronto quando:** o harness roda no Node incursões com 1, 2 e 4 jogadores e a
+mesma semente com as mesmas entradas dá o mesmo resultado, os casos atuais
+continuam passando, e o solo não muda.
+
+**Fase:** F2 (antecipação sem gasto, se aprovada).
 
 ### Jogo, aguardando vaga (reordenar quando a F0 fechar)
 
