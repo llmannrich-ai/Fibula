@@ -193,6 +193,11 @@ no arquivo `api key supabase.txt`, na raiz do checkout principal
 | secret (`sb_secret_…`) e service_role (JWT) | administração: ignora a RLS, Auth Admin, ler e corrigir dados | **nunca** |
 | senha do banco (Postgres) | migrações e SQL direto (`supabase db push --db-url …`) | **nunca** |
 
+Para conectar no Postgres use o pooler, não o host direto (`db.<ref>.supabase.co`
+só responde por IPv6 e falha nesta máquina):
+`postgresql://postgres.bpwljbualdjlwmzcryzl:<senha>@aws-1-sa-east-1.pooler.supabase.com:5432/postgres`.
+A `001_saves.sql` foi aplicada assim em 2026-10-18.
+
 O que "acesso livre" **não** quer dizer:
 
 - Não é banco aberto ao público. Nunca desligue a RLS nem crie política para
