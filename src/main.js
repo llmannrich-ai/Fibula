@@ -3,18 +3,18 @@
    (src/sim/, sem DOM) às telas, ao desenho e ao save, e roda o laço.
    O carregamento do conteúdo é a primeira coisa que acontece porque a migração
    de save chama slotsIniciais() e portanto já precisa de SPELLS e SLOT_LVL. */
-import {saida} from './sim/base.js?v=0.7.0';
-import {carrega} from './sim/dados.js?v=0.7.0';
-import {G,update,parado} from './sim/incursao.js?v=0.7.0';
-import {C,updateCidade} from './sim/cidade.js?v=0.7.0';
-import {carregaSave,persist} from './salvar.js?v=0.7.0';
-import {puxa} from './nuvem.js?v=0.7.0';
-import {carregaArte} from './arte.js?v=0.7.0';
-import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.7.0';
-import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.7.0';
-import {showMenu,showPick,showEnd,pickS,endS,conteudoFalhou,V} from './telas.js?v=0.7.0';
-import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.7.0';
-import {app} from './dom.js?v=0.7.0';
+import {saida} from './sim/base.js?v=0.7.1';
+import {carrega} from './sim/dados.js?v=0.7.1';
+import {G,passo,parado} from './sim/incursao.js?v=0.7.1';
+import {C,updateCidade} from './sim/cidade.js?v=0.7.1';
+import {carregaSave,persist} from './salvar.js?v=0.7.1';
+import {puxa} from './nuvem.js?v=0.7.1';
+import {carregaArte} from './arte.js?v=0.7.1';
+import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.7.1';
+import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.7.1';
+import {showMenu,showPick,showEnd,pickS,endS,conteudoFalhou,V} from './telas.js?v=0.7.1';
+import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.7.1';
+import {app} from './dom.js?v=0.7.1';
 
 /* ---------- conteúdo do jogo (data/game/content.json) ---------- */
 const DATA_URL='data/game/content.json';
@@ -36,16 +36,16 @@ if(pronto){
   /* ---------- laço ---------- */
   let last=performance.now();
   const frame=now=>{
-    /* nem acima de 50 ms (aba voltando do fundo) nem abaixo de zero (carimbo do
-       quadro anterior ao performance.now() da carga) */
-    const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
+    /* nem acima de 100 ms, dois passos da regra (aba voltando do fundo), nem
+       abaixo de zero (carimbo do quadro anterior ao performance.now() da carga) */
+    const dt=Math.max(0,Math.min(.1,(now-last)/1000));last=now;
     if((app.clientWidth||innerWidth)!==W||(app.clientHeight||innerHeight)!==H)onResize();
     if(V.cidade&&C){
       /* andando na cidade; com uma tela dela aberta, ela só fica de fundo */
       if(app.classList.contains('cidade')){updateCidade(dt,leEntrada());hudCidade()}
       renderCidade();
     }else if(G){
-      if(G.active&&!G.over)update(dt,leEntrada());
+      if(G.active&&!G.over)passo(dt,leEntrada());
       else parado(dt);
       render();
       if(G.active){hud();G.miniT-=dt;if(G.miniT<=0){drawMini();G.miniT=.15}}

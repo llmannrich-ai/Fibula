@@ -1,12 +1,12 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.7.0';
-import {SPELLS,CITY} from './sim/dados.js?v=0.7.0';
-import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.7.0';
-import {G} from './sim/incursao.js?v=0.7.0';
-import {C} from './sim/cidade.js?v=0.7.0';
-import {ART,icone} from './arte.js?v=0.7.0';
-import {$} from './dom.js?v=0.7.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.7.1';
+import {SPELLS,CITY} from './sim/dados.js?v=0.7.1';
+import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.7.1';
+import {G} from './sim/incursao.js?v=0.7.1';
+import {C} from './sim/cidade.js?v=0.7.1';
+import {ART,icone} from './arte.js?v=0.7.1';
+import {$} from './dom.js?v=0.7.1';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
