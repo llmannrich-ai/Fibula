@@ -13,7 +13,75 @@ automático não tem como saber que terminou.
 
 ## Agora
 
-### Peso de verdade na morte: perder parte do XP, não só o saco
+### Ferramenta de teste headless no repositório
+
+**Pilar 5.** O `CLAUDE.md` manda montar a mão, a cada execução, um `test.html`
+com shim de `requestAnimationFrame` e captura de erros. Isso convida a pular o
+teste, e é a base da CI. Escrever em `tools/` um script Node (sem
+`package.json`, sem dependência) que gere as duas cópias de teste a partir do
+`index.html` (menu com loja; incursão ativa com `RUN`/`PORTAL_AT` encurtados e
+saco semeado), rode o Chromium de `/opt/pw-browsers` com `--headless=new
+--dump-dom` e saia com código diferente de zero se o atributo `data-errs="` (com
+sinal de igual e aspa) aparecer ou se o jogo não chegar ao fim da incursão.
+Arquivos gerados vão para `/tmp`, nunca para o repositório. Não altera o
+`index.html`.
+
+**Fase:** F0 (3). **Pronto quando:** `node tools/teste.js` roda os dois cenários,
+imprime `TESTE_OK` e sai com 0 no `index.html` atual; injetar um `throw` na
+cópia de teste faz o script sair com código ≠ 0; o `CLAUDE.md` passa a apontar
+para o script em vez de descrever a montagem manual.
+
+---
+
+## Próximo
+
+Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
+quando o Desenvolvedor julgar que cabe numa execução.
+
+### 1. CI no GitHub Actions
+
+**Pilar 5.** `.github/workflows/ci.yml` rodando a checagem de sintaxe e
+`tools/teste.js` em todo push e PR. Depende do item de Agora e da configuração
+C4 do dono (permissão para criar workflows; ver issue `precisa-do-dono`). Sem
+C4, o Desenvolvedor prepara o arquivo, abre PR e aguarda o dono mesclar.
+
+**Fase:** F0 (3). **Pronto quando:** o workflow roda verde na `main` e falha num
+PR de teste com erro de sintaxe proposital; o resultado está no diário.
+
+### 2. Aviso de falha do save e teste automatizado da migração v1→v2
+
+**Pilar 5.** Em modo privado, ou com `localStorage` bloqueado, o progresso não é
+salvo e o jogador não é avisado (o `catch` de `persist()` está vazio). Junto,
+um teste que semeia um save `masmorra-runas-v1` e confere que vira um
+Feiticeiro com cofre, melhorias e nível preservados. Nenhuma alteração no
+formato do save.
+
+**Fase:** F0 (4). **Pronto quando:** aviso no menu aparece se `persist()` falhou
+ao menos uma vez; o teste da migração roda dentro de `tools/` e falha se a
+migração perder campo.
+
+### 3. Pipeline dos sprites OTSP (sem trocar o desenho)
+
+**Pilar 2.** `tools/` com script que recorta as folhas usadas do OTSP, converte
+o magenta em transparência e monta o atlas; `assets/otsp/` com as folhas usadas,
+`LICENSE.txt` e `AUTHORS.md`; `assets/CREDITOS.md`. Seguir as regras da seção 9
+do PRD. O jogo continua desenhando as formas atuais.
+
+**Fase:** F0 (5). **Pronto quando:** rodar o script gera o atlas de criaturas de
+forma reproduzível, `assets/CREDITOS.md` lista origem, licença e alterações, e
+o `index.html` não mudou.
+
+### 4. Gerador aleatório com semente
+
+**Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
+semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
+`index.html` ou exigir mover código entre seções, esperar a divisão do arquivo
+(`comum.md`, seção 3) e fazer outro item.
+
+**Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
+`tools/`) e partidas sem semente continuam variando.
+
+### 5. Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
 experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
@@ -41,21 +109,9 @@ uma revisão posterior, com o diário registrando a decisão.
 em linha própria, o menu avisa a regra antes de entrar, e o save sobrevive a um
 recarregamento com o valor reduzido.
 
----
+**Fase:** jogo, em paralelo à F0.
 
-## Próximo
-
-### 1. Aviso quando o save não persiste
-
-**Pilar 5.** Em modo privado, ou com `localStorage` bloqueado, o progresso
-simplesmente não é salvo e o jogador não é avisado — ele joga, evolui e perde
-tudo ao fechar. O `catch` de `persist()` está vazio. Progresso que não persiste
-não é progresso, e isso ataca o pilar 5 na raiz.
-
-**Pronto quando:** um aviso no menu aparece se `persist()` tiver falhado ao
-menos uma vez, sem alterar o formato do save.
-
-### 2. Revisar a economia do Selo de resguardo
+### 6. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -65,7 +121,15 @@ as duas coisas somadas mudam a conta toda.
 **Pronto quando:** custo ou percentual ajustado, com a justificativa escrita no
 diário.
 
-### 3. Escolha de risco na entrada: três profundidades
+**Fase:** jogo, em paralelo à F0.
+
+---
+
+## Depois
+
+### Jogo, aguardando vaga (reordenar quando a F0 fechar)
+
+### Escolha de risco na entrada: três profundidades
 
 **Pilares 2 e 4.** Antes de entrar, o jogador escolhe entre três profundidades,
 cada uma com multiplicador de dano dos monstros e de valor do loot. O mundo
@@ -77,7 +141,7 @@ e transforma cada incursão numa decisão antes mesmo de começar.
 de loot, e a escolha some do caminho de quem só quer jogar (uma fica como
 padrão).
 
-### 4. Equipamento persistente com três slots
+### Equipamento persistente com três slots
 
 **Pilares 2 e 5.** Arma, armadura e amuleto. O loot raro que hoje é só número
 (espada enferrujada, amuleto tribal, gema rubra) passa a ter uso: equipar em vez
@@ -89,7 +153,7 @@ Atenção ao pilar 3: no máximo três slots, tela própria, nenhum arrastar e s
 **Pronto quando:** os três slots persistem no save, afetam `stats()`, e dá para
 equipar e desequipar numa tela só, com o dedo.
 
-### 5. Sair cedo precisa ser uma jogada válida
+### Sair cedo precisa ser uma jogada válida
 
 **Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
 ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
@@ -100,7 +164,7 @@ reabre. Precisa de teste de jogo, não só de implementação.
 **Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
 sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
 
-### 6. Lugares com nome em vez de uma masmorra genérica
+### Lugares com nome em vez de uma masmorra genérica
 
 **Pilar 2.** Três mapas com tema, paleta e lista de monstros próprios — Esgoto,
 Cripta, Acampamento Orc — escolhidos no menu. Reaproveita `genMap()` com
@@ -110,7 +174,7 @@ onde vai.
 **Pronto quando:** os três lugares têm nome no menu, monstros distintos e paleta
 distinta.
 
-### 7. Monstro novo para variar a sala do Guardião
+### Monstro novo para variar a sala do Guardião
 
 **Pilar 2.** Hoje só orc e xamã acompanham o chefe, então a sala final é sempre
 igual. Um acompanhante raro com loot próprio dá à sala do Guardião a chance de
@@ -119,7 +183,7 @@ surpreender.
 **Pronto quando:** um monstro novo aparece ocasionalmente nessa sala, com
 entrada própria em `MT` e em `LOOT`.
 
-### 8. Revisar a escala de HP dos monstros em níveis altos
+### Revisar a escala de HP dos monstros em níveis altos
 
 **Pilar 4.** Monstros escalam com `save.lvl`, o que pode tornar a incursão lenta
 e repetitiva para jogador avançado — e incursão lenta briga direto com o teto de
@@ -128,35 +192,29 @@ dez minutos.
 **Pronto quando:** a curva foi revisada contra dois ou três níveis de referência
 e o resultado está no diário.
 
-### 9. Log legível em tela estreita
+### Log legível em tela estreita
 
 **Pilar 3.** O `#log` usa `width:min(66vw,330px)` sobre o canvas; o
 empilhamento abaixo de 340px de largura nunca foi verificado.
 
 **Pronto quando:** testado num viewport de 320px e ajustado se preciso.
 
----
+### Outros
 
-## Depois
-
-- **Cortar a dependência de fontes externas** — o `index.html` busca Pixelify
+- **Cortar a dependência de fontes externas** *(F0 item 6)* — o `index.html` busca Pixelify
   Sans e Barlow Semi Condensed no Google Fonts, hoje a única coisa no jogo que
   depende de rede e um atraso no primeiro carregamento em conexão ruim
   (pilar 3). Duas saídas: embutir os dois pesos como `@font-face` com fonte em
   base64 no próprio arquivo, ou trocar por pilha de fontes do sistema e aceitar
   a perda estética. Pré-requisito para o PWA abrir offline de verdade.
-- **Harness de teste no repositório** — um script em `tools/` que gere os dois
-  harness headless descritos no [CLAUDE.md](CLAUDE.md) (menu com loja, e
-  incursão ativa) e retorne código de saída diferente de zero quando o
-  `data-errs` aparecer. Hoje cada execução monta o `test.html` do zero, o que
-  convida a pular o teste.
+
 - **Rastro assíncrono de outros jogadores** — placar local, marca de morte no
   mapa onde a última incursão terminou, recorde a ser batido. Sensação de MMO
   sem rede (pilar 2).
 - **Som** — efeitos curtos de golpe, de dano e de extração, mais um fundo sóbrio.
   Nada que precise de arquivo externo grande; de preferência síntese via
   WebAudio para manter o arquivo único.
-- **PWA** — manifesto e service worker para instalar na tela inicial e abrir
+- **PWA** *(F0 item 6)* — manifesto e service worker para instalar na tela inicial e abrir
   offline. Reforça o pilar 3 sem contrariar o "zero dependências".
 - **Mercado com preço móvel** — o valor dos itens oscila entre incursões, dando
   motivo para guardar loot em vez de vender na hora (pilar 5).
