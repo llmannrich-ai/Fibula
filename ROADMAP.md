@@ -19,8 +19,9 @@ automático não tem como saber que terminou.
 push e PR. O script já existe e já é o portão, mas hoje depende de o agente
 lembrar de chamá-lo; a CI é o que transforma isso em rede de verdade. Depende da
 configuração C4 do dono (permissão para criar workflows; ver issue
-`precisa-do-dono`). Sem C4, o Desenvolvedor prepara o arquivo, abre PR e aguarda
-o dono mesclar. Na nuvem não existe Edge: a Action instala Chromium e aponta
+`precisa-do-dono`). Tudo vai direto na `main`, sem PR. Se o push do workflow for
+recusado por falta de C4, deixe o arquivo pronto em `docs/` e siga para outro
+item. Na nuvem não existe Edge: a Action instala Chromium e aponta
 `FIBULA_EDGE` para ele.
 
 **Fase:** F0 (3). **Pronto quando:** o workflow roda verde na `main` e falha num
