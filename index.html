@@ -458,7 +458,8 @@ const persist=()=>{save.em=Date.now();try{localStorage.setItem(KEY,JSON.stringif
    RLS do banco (tools/supabase/001_saves.sql), não por este código.
    Conflito entre aparelhos: no aparelho já ligado à conta vence o save gravado
    por último (save.em); no primeiro login de um aparelho vence o que tem mais
-   incursões, para um save novo nunca apagar um antigo. */
+   incursões, para um save novo nunca apagar um antigo; num aparelho que era de
+   outra conta vence sempre a nuvem, para uma conta não herdar a outra. */
 const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
 let sessao=null;try{sessao=JSON.parse(localStorage.getItem(KEYS)||'null')}catch(e){}
@@ -512,8 +513,9 @@ async function puxa(){
     if(!r.ok)throw new Error('HTTP '+r.status);
     const d=((await r.json())[0]||{}).dados;
     if(G&&G.active)return void setTimeout(puxa,3000);
-    const ligado=save.dono===sessao.uid;
-    const adota=!!d&&(ligado?(d.em||0)>(save.em||0):(d.runs|0)>=(save.runs|0));
+    /* aparelho que era de outra conta: o save local é dela, nunca vai para esta */
+    const ligado=save.dono===sessao.uid,outro=!!save.dono&&!ligado;
+    const adota=!!d&&(ligado?(d.em||0)>(save.em||0):outro||(d.runs|0)>=(save.runs|0));
     if(adota){save=normaliza(d);save.dono=sessao.uid;try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){saveFalhou=true}}
     nuvem.pronto=true;nuvem.erro=false;
     if(!adota){save.dono=sessao.uid;persist()}

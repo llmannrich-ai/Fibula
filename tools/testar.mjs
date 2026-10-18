@@ -787,6 +787,33 @@ const CASOS = [
     ok('sair da conta não apaga o progresso local', sv()&&sv().cofre===120, sv()&&sv().cofre);
 `,
   },
+  {
+    nome: 'nuvem-outra-conta',
+    o_que: 'aparelho que era de outra conta: entrar com a segunda não sobrescreve o save dela com o da primeira',
+    semente: 44,
+    patches: [P.nuvem({
+      cofre: 30, runs: 2, ext: 1, deaths: 0, best: 30, em: 1000, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'druida',
+      chars: {druida: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: [null, null, null, null]}},
+    })],
+    save: {
+      'masmorra-runas-v2': {
+        cofre: 777, runs: 10, ext: 4, deaths: 2, best: 300, em: 9000, dono: 'u0',
+        up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+        classe: 'feiticeiro',
+        chars: {feiticeiro: {lvl: 5, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+      },
+      'masmorra-runas-v2-sessao': SESSAO,
+    },
+    roteiro: `
+    await ate(function(){return window.__nuvem.gets>0},200);
+    ${espera(1800)}
+    ok('o save da nuvem da conta nova não foi sobrescrito', window.__nuvem.dados&&window.__nuvem.dados.cofre===30, window.__nuvem.dados&&window.__nuvem.dados.cofre);
+    ok('o aparelho passou a mostrar o save da conta nova', sv()&&sv().cofre===30&&sv().dono==='u1', sv()&&[sv().cofre,sv().dono].join(','));
+    ok('o acampamento mostra o cofre da conta nova', txt('#sCofre')==='30', txt('#sCofre'));
+`,
+  },
 ];
 
 /* ---------- relatório ---------- */

@@ -213,16 +213,21 @@ O que "acesso livre" **não** quer dizer:
 
 Limites conhecidos de acesso:
 
-- **Execuções de nuvem não têm o arquivo de chaves.** Lá vale o item C5 do PRD:
-  `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_ACCESS_TOKEN` como variáveis
-  de ambiente, quando o Leonardo cadastrar. Sem elas, o agente de nuvem não
-  mexe no banco e registra a pendência no `DIARIO.md`.
+- **Execuções de nuvem não têm o arquivo de chaves, mas têm o conector.** O
+  conector MCP do Supabase (ferramentas `mcp__Supabase__*`) foi religado em
+  2026-10-18 à organização "Versa" (Free), a que contém o projeto Fibula, e
+  enxerga `bpwljbualdjlwmzcryzl`: listar tabelas, aplicar migração, rodar SQL,
+  ler logs e avisos de segurança. A outra organização da conta (a de TI da
+  Versa Engenharia, Pro) não é do jogo — nada do Fibula entra lá. Sem o
+  conector e sem as variáveis do item C5 do PRD, o agente não mexe no banco e
+  registra a pendência no `DIARIO.md`.
 - **Configuração do Auth** (Site URL, URLs de redirecionamento, Google e outros
-  provedores, SMTP) não sai das chaves acima: exige um token pessoal
-  (`sbp_…`, em supabase.com/dashboard/account/tokens) via CLI
+  provedores, SMTP) não sai das chaves acima nem do conector: exige o painel ou
+  um token pessoal (`sbp_…`, em supabase.com/dashboard/account/tokens) via CLI
   `supabase` ou Management API. Se o token entrar no arquivo de chaves, use-o.
-- O conector MCP do Supabase disponível no Claude está ligado a outra conta e
-  **não enxerga este projeto**; não adianta tentar por ele.
+- **O e-mail padrão do Supabase só entrega para membros da organização.** Até
+  existir SMTP próprio, o link mágico chega para o Leonardo e não para
+  testadores de fora.
 - Os testes (`tools/testar.mjs`) nunca falam com o Supabase de verdade: o
   prelúdio bloqueia `supabase.co` e o caso que precisa de nuvem usa `P.nuvem`,
   um Supabase falso em memória.

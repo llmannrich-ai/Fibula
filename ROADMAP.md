@@ -183,6 +183,16 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Save na nuvem com conta (antecipado da F1)**. Login por link
+  mágico no e-mail e save sincronizado com o Supabase (projeto
+  `bpwljbualdjlwmzcryzl`, tabela `public.saves` com RLS, esquema em
+  `tools/supabase/001_saves.sql`), por `fetch` direto, sem biblioteca. Opcional:
+  sem conta ou sem rede o jogo segue só com o `localStorage`. Antecipado da F1
+  por decisão do Leonardo, com a F0 ainda aberta. Dívida conhecida: o cliente
+  grava o save inteiro, então quem editar o JSON trapaceia no próprio save (só
+  se resolve com servidor autoritativo). Quatro casos novos em
+  `tools/testar.mjs` (`nuvem-entrar`, `nuvem-adota`, `nuvem-importa`,
+  `nuvem-outra-conta`).
 - **2026-10-18 — Aviso de falha do save**. O menu mostra uma faixa quando o
   navegador recusa gravar (aba anônima, armazenamento bloqueado), detectada por
   uma sonda na carga e por qualquer `persist()` que falhe. Formato do save
