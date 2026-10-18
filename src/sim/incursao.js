@@ -1,5 +1,5 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.7.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.7.0';
 import {EL_COR,MT,PROG} from './dados.js?v=0.7.0';
 import {save,ch,KL,stats,sealPct,guardaSaco,perdaXp} from './progresso.js?v=0.7.0';
 import {genMap,pecas} from './mapa.js?v=0.7.0';
@@ -32,7 +32,7 @@ export function newRun(s0=novaSemente()){
   const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+save.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0};
   G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
-     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,semente};
+     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const r of rooms){
     if(r===s)continue;
     const pr2=PROG.perRoom,d=r.d/md,
@@ -82,11 +82,36 @@ export const num=(x,y,txt,col,big)=>G.fx.push({k:'num',x:x+frr(-4,4),y,txt:Strin
 export const shake=v=>{G.shake=Math.max(G.shake,v)};
 export function spark(x,y,col){for(let i=0;i<6;i++){const a=frr(0,TAU),s=frr(30,90);G.fx.push({k:'sp',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,t:0,life:.35})}}
 
+/* ---------- passo fixo ----------
+   O cliente chama passo() uma vez por quadro, com o tempo real do quadro; a
+   regra só anda em update(TICK), quantas vezes couberem no tempo acumulado.
+   Assim a mesma semente e as mesmas entradas dão o mesmo resultado a 30, 60
+   ou 120 quadros por segundo, no celular, no Node e no servidor. Os efeitos
+   (G.fx, G.shake) não são regra e andam no tempo real, para não pular.
+   G.alfa diz quanto do passo seguinte já passou: o render() desenha entre a
+   posição do passo anterior (x0, y0) e a atual. */
+export function passo(dt,ent){
+  G.acc+=dt;
+  while(G.acc>=TICK&&!G.over){G.acc-=TICK;update(TICK,ent)}
+  efeitos(dt);G.alfa=G.over?1:G.acc/TICK;
+}
+function efeitos(dt){
+  for(let i=G.fx.length-1;i>=0;i--){const f=G.fx[i];f.t+=dt;if(f.vx!==undefined){f.x+=f.vx*dt;f.y+=f.vy*dt}if(f.t>=f.life)G.fx.splice(i,1)}
+  G.shake=Math.max(0,G.shake-dt*30);
+}
+/* a posição de antes do passo, que o render() usa para interpolar */
+function guarda(){
+  const p=G.p;p.x0=p.x;p.y0=p.y;p.w0=p.walk;
+  for(const m of G.mons){m.x0=m.x;m.y0=m.y;m.a0=m.anim}
+  for(const q of G.proj){q.x0=q.x;q.y0=q.y}
+}
+
 /* ---------- atualização ----------
+   Um passo da regra; fora dos testes, quem chama é passo(), sempre com TICK.
    ent é a entrada do quadro, montada pelo cliente em src/controles.js:
    {x,y} do movimento (comprimento até 1) e held[4] dos espaços seguros. */
 export function update(dt,ent){
-  const p=G.p;G.t+=dt;
+  const p=G.p;guarda();G.t+=dt;
   G.flowT-=dt;if(G.flowT<=0){buildFlow();G.flowT=.2}
   let mx=ent.x,my=ent.y;
   const ml=hyp(mx,my);if(ml>1){mx/=ml;my/=ml}
@@ -105,8 +130,6 @@ export function update(dt,ent){
   updateMons(dt);if(G.over)return;
   updateProj(dt);if(G.over)return;
   for(let i=G.drops.length-1;i>=0;i--){const d=G.drops[i];d.t+=dt;if(hyp(d.x-p.x,d.y-p.y)<p.r+16)pickup(d,i)}
-  for(let i=G.fx.length-1;i>=0;i--){const f=G.fx[i];f.t+=dt;if(f.vx!==undefined){f.x+=f.vx*dt;f.y+=f.vy*dt}if(f.t>=f.life)G.fx.splice(i,1)}
-  G.shake=Math.max(0,G.shake-dt*30);
   const po=G.portal;
   if(!po.open&&G.t>=PORTAL_AT){po.open=true;saida.banner('Portal de saída aberto');saida.log('Um portal se abriu na sala do Guardião. Siga o ponto dourado no mapa.','info')}
   if(po.open){
@@ -118,9 +141,7 @@ export function update(dt,ent){
   if(left<=0)finish('desabou');
 }
 /* fora da incursão (menu por cima do mapa, tela final) só os efeitos andam */
-export function parado(dt){
-  G.t+=dt;for(let i=G.fx.length-1;i>=0;i--){const f=G.fx[i];f.t+=dt;if(f.t>=f.life)G.fx.splice(i,1)}G.shake=Math.max(0,G.shake-dt*30);
-}
+export function parado(dt){G.t+=dt;G.alfa=1;efeitos(dt)}
 function updateMons(dt){
   const p=G.p,f=G.flow;
   for(const m of G.mons.slice()){
