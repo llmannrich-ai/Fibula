@@ -18,7 +18,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-18 22:20 UTC
+## 2026-10-18 23:50 UTC
 
 **Item desenvolvido:** Harness de teste headless no repositório —
 [tools/testar.mjs](tools/testar.mjs), commit `3f11261`. Um comando,
@@ -90,6 +90,28 @@ passaram a estar cobertos pelo script.
   Se o `index.html` mudar a linha patcheada, o harness falha alto em vez de
   testar coisa nenhuma — o modo de falha que mais importa evitar num portão.
 
+**Colisão com o agente Desenvolvedor, e o que foi feito:** enquanto esta
+execução terminava, a entrada das 23:30 entregou **outro** harness para o mesmo
+item, o `tools/teste.js` (126 linhas, dois cenários, Chromium da nuvem,
+`--dump-dom`). Ficar com os dois é pior que escolher qualquer um — dois portões
+para o mesmo item significam que um dos dois não roda e ninguém percebe. **O
+`tools/teste.js` foi removido e o `tools/testar.mjs` ficou**, por três motivos
+verificáveis, não por preferência:
+1. **O `--dump-dom` dele não funciona na máquina do Leonardo.** O Edge 155
+   aceita a opção e devolve zero byte com saída 0, então o `tools/teste.js`
+   reporta "navegador não rodou" e o portão vira silêncio. O `testar.mjs` usa o
+   coletor HTTP e roda nas duas máquinas.
+2. **Cobertura:** 2 cenários contra 8 casos e 194 asserções. A própria entrada
+   das 23:30 lista como pendência que não há cenário de extração nem de morte —
+   os dois existem aqui, e o de extração passa pelo combate.
+3. **A pendência "o save semeado precisa trazer o personagem em `chars`; sem ele
+   o menu quebra" era o bug nº 2 desta entrada.** Ele foi contornado lá e
+   corrigido aqui, então a restrição deixou de existir.
+O que o `tools/teste.js` fazia melhor foi absorvido: a descoberta do navegador
+(`CHROME`, `/opt/pw-browsers`, PATH) e o `--no-sandbox` fora do Windows, para a
+suíte rodar também na nuvem. Se o Leonardo discordar, `git revert` deste commit
+traz os dois de volta.
+
 **Roadmap:** enquanto esta execução trabalhava, o agente de Produto promoveu o
 mesmo item de `Depois` para `Agora` com uma especificação própria
 ("Ferramenta de teste headless no repositório", entrada de 22:00). Ele está
@@ -128,6 +150,11 @@ já está feita (caso `migracao-save`), sobrou o aviso de falha do `persist()`.
   "passar"; conserte o teste ou o jogo.
 - As cópias e os dumps de cada caso ficam em `%TEMP%/fibula-harness` até a
   execução seguinte, que apaga a pasta. Numa falha, o caminho vem impresso.
+- **A suíte só foi executada no Edge 155 do Windows.** O caminho de nuvem
+  (Chromium do Playwright, `--no-sandbox`) foi escrito mas não rodado. A
+  primeira execução de nuvem que chamar `node tools/testar.mjs` é quem vai
+  descobrir se o coletor HTTP em `127.0.0.1` passa pelo contêiner; se não
+  passar, é aí que a CI vai travar.
 
 **Próximo passo recomendado:** promover a CI no GitHub Actions rodando
 `node tools/testar.mjs` em cada push para a `main`, com Chromium instalado e
@@ -135,6 +162,29 @@ já está feita (caso `migracao-save`), sobrou o aviso de falha do `persist()`.
 hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
 roadmap.
 
+
+
+---
+
+## 2026-10-18 23:30 UTC — Desenvolvedor
+
+**Item desenvolvido:** ferramenta de teste headless — `tools/teste.js`, mais a seção 2 do `CLAUDE.md` reescrita para usá-la. Nenhuma linha do `index.html` alterada.
+
+**Validação:** `node tools/teste.js` imprime `TESTE_OK` e sai com 0 nos dois cenários (menu e Mercador com compra e save; incursão ativa de 12 s até a tela final e "Nova incursão"). Cópia com `throw` injetado em `update()` falha com exit 1 e mensagem do erro. Não rodei a checagem de sintaxe separada porque o código de jogo não mudou.
+
+**Análise:**
+- O jogo é uma IIFE: o teste não alcança `G` nem `save` por fora, então os cenários dirigem a interface por cliques e leem o DOM e o `localStorage`.
+- O save semeado precisa trazer o personagem em `chars`; sem isso o menu quebra (`ch()` indefinido). Qualquer teste futuro de save deve semear assim.
+- A incursão de teste termina por "desabou" (o jogador não se move), o que exercita `update()`, `hud()` e `finish()`, mas não a extração nem a morte em combate.
+
+**Roadmap:** item movido para `Concluído`; a CI foi promovida a `Agora`; `Próximo` renumerado.
+
+**Pendências e riscos:**
+- Não testei no Windows/Edge; o `CLAUDE.md` manda definir `CHROME` com o `msedge.exe`. Não confirmado.
+- Não há cenário de extração nem de morte. Cobrir isso exige mover o jogador até o portal, o que o IIFE dificulta; avaliar quando a divisão do `index.html` expuser a simulação.
+- A CI continua dependendo da permissão C4 (issue #2). Sem ela o push de `.github/workflows` pode ser recusado.
+
+**Próximo passo recomendado:** tentar a CI (`.github/workflows/ci.yml`: sintaxe + `node tools/teste.js`) direto na `main`; se o push for recusado, deixar o arquivo em `docs/` e seguir para o aviso de falha do save.
 
 ---
 

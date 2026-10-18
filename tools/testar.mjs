@@ -33,8 +33,8 @@
  * se algum caso registrar erro de janela ou se qualquer asserção falhar.
  */
 
-import {execFileSync, spawn} from 'node:child_process';
-import {existsSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
+import {execFileSync, spawn, spawnSync} from 'node:child_process';
+import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
@@ -46,16 +46,21 @@ const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const JOGO = process.env.FIBULA_JOGO || join(RAIZ, 'index.html');
 const SAIDA = process.env.FIBULA_SAIDA || join(tmpdir(), 'fibula-harness');
 
-const CANDIDATOS_EDGE = [
+/* Na máquina do Leonardo é o Edge; na nuvem não existe Edge, então procura
+   também o Chromium do Playwright e o que estiver no PATH. */
+const CANDIDATOS = [
   process.env.FIBULA_EDGE,
+  process.env.CHROME,
   'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
   'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
   '/usr/bin/microsoft-edge',
   '/usr/bin/microsoft-edge-stable',
   '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
   '/usr/bin/chromium',
+  '/usr/bin/chromium-browser',
   '/usr/bin/google-chrome',
 ].filter(Boolean);
+const NOMES_NO_PATH = ['chromium', 'chromium-browser', 'google-chrome', 'chrome', 'msedge'];
 
 /* ---------- portão de sintaxe ---------- */
 /* Mesmo gesto do CLAUDE.md: recorta o bloco <script> e passa no node --check.
@@ -183,9 +188,23 @@ function monta(caso, html, alvo) {
 }
 
 /* ---------- coletor e navegador ---------- */
-function achaEdge() {
-  for (const c of CANDIDATOS_EDGE) if (existsSync(c)) return c;
-  throw new Error('não achei o Edge. Aponte o binário em FIBULA_EDGE.');
+function achaNavegador() {
+  for (const c of CANDIDATOS) if (existsSync(c)) return c;
+  /* Chromium do Playwright, que é o que existe nas execuções de nuvem */
+  const base = process.env.PLAYWRIGHT_BROWSERS_PATH || '/opt/pw-browsers';
+  try {
+    for (const d of readdirSync(base)) {
+      if (!/^chromium(-\d+)?$/.test(d)) continue;
+      for (const p of [join(base, d), join(base, d, 'chrome-linux', 'chrome')]) {
+        try { if (statSync(p).isFile()) return p; } catch (e) { /* segue */ }
+      }
+    }
+  } catch (e) { /* pasta não existe */ }
+  for (const n of NOMES_NO_PATH) {
+    const r = spawnSync(process.platform === 'win32' ? 'where' : 'which', [n], {encoding: 'utf8'});
+    if (r.status === 0 && r.stdout.trim()) return r.stdout.trim().split(/\r?\n/)[0];
+  }
+  throw new Error('não achei navegador. Aponte o binário em FIBULA_EDGE (ou CHROME).');
 }
 
 async function abreColetor() {
@@ -221,6 +240,8 @@ function abreNavegador(edge, arquivo, perfil) {
   const url = 'file:///' + arquivo.replace(/\\/g, '/').replace(/^\/+/, '');
   const p = spawn(edge, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+    /* o Chromium das execuções de nuvem roda em contêiner, onde o sandbox não sobe */
+    ...(process.platform === 'win32' ? [] : ['--no-sandbox']),
     '--disable-extensions', '--mute-audio', '--window-size=420,860',
     /* nada de rede a não ser o coletor: a folha do Google Fonts degrada e o
        teste fica hermético */
@@ -584,7 +605,7 @@ async function main() {
   }
   console.log('SINTAXE_OK  (node --check no bloco <script>)');
 
-  const edge = achaEdge();
+  const edge = achaNavegador();
   const coletor = await abreColetor();
   console.log(`navegador    ${edge}`);
   console.log(`coletor      http://127.0.0.1:${coletor.porta}`);

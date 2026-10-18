@@ -121,11 +121,12 @@ Se não houve nada a fazer, registre isso em uma entrada curta. Execução vazia
 
 ## 7. Ambiente da nuvem
 
-- O `CLAUDE.md` descreve o teste headless com o Edge do Windows. Na nuvem não
-  há Edge: use o Chromium em `/opt/pw-browsers` (via Playwright, se instalado,
-  ou chamando o binário com `--headless=new --dump-dom`). O roteiro do teste
-  (shim de `requestAnimationFrame`, `data-errs`, `RUN`/`PORTAL_AT` encurtados
-  só na cópia) é o mesmo.
+- O teste é `node tools/testar.mjs`, e é o mesmo comando aqui e na máquina do
+  Leonardo: o script já procura o Chromium em `/opt/pw-browsers` sozinho e
+  acrescenta `--no-sandbox` fora do Windows. Se não achar, aponte o binário em
+  `FIBULA_EDGE` (ou `CHROME`). **Não escreva outro harness** — estenda a tabela
+  `CASOS` do script. E **não use `--dump-dom`**: ela saiu do headless novo, o
+  navegador aceita a opção e não escreve nada, com saída 0; é falha silenciosa.
 - `node` está disponível. `npm install` só se o projeto já tiver
   `package.json`; não crie um sem item no ROADMAP que peça isso.
 - Arquivos temporários vão para `/tmp`, nunca para o repositório.

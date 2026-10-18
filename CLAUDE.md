@@ -210,10 +210,18 @@ O que o script faz por você, e que custou tempo descobrir:
   da tag `<html>`, e o capturador monta o nome em duas partes para o literal
   nem aparecer na página.
 
+O navegador é descoberto nesta ordem: `FIBULA_EDGE`, `CHROME`, o Edge do
+Windows, o Chromium do Playwright em `/opt/pw-browsers` (que é o que existe nas
+execuções de nuvem) e, por último, o PATH. Em Linux e macOS o `--no-sandbox`
+entra sozinho, porque o contêiner da nuvem não sobe o sandbox.
+
 Para conferir que o portão realmente barra código quebrado,
 `FIBULA_JOGO=<cópia quebrada> node tools/testar.mjs` roda a suíte contra outro
-arquivo. `FIBULA_EDGE` aponta outro binário e `FIBULA_SAIDA` outra pasta de
-trabalho.
+arquivo. `FIBULA_SAIDA` muda a pasta de trabalho.
+
+**Há um só harness, e é este.** Se você for escrever outro, estenda a tabela
+`CASOS` em vez disso — dois portões para o mesmo item significam que um dos dois
+não roda e ninguém percebe.
 
 ### 3. O que olhar antes de dizer que está pronto
 
