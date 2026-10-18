@@ -32,9 +32,13 @@ Leia, nesta ordem:
 
 `docs/agentes/modo.txt` contém uma palavra:
 
-- **`direto`** — ainda não existe CI. Código vai direto na `main`, com os
-  portões do `CLAUDE.md` (checagem de sintaxe e teste headless). É o modo
-  atual.
+- **`pausado`** — **encerre a execução agora.** Não desenvolva, não comite, não
+  abra PR, não edite o `ROADMAP.md` nem o `DIARIO.md`, não responda issues.
+  Diga em uma linha que o ciclo está pausado e pare. Não leia isto como
+  "trabalhe sem publicar": é não trabalhar. O Leonardo usa quando está mexendo
+  no repositório à mão e não quer disputar os mesmos arquivos. É o modo atual.
+- **`direto`** — não existe CI, ou ela não é portão. Código vai direto na
+  `main`, com os portões do `CLAUDE.md` (checagem de sintaxe e teste headless).
 - **`pr`** — a CI existe e a `main` está protegida. Código entra só por PR
   com CI verde; o Revisor mescla.
 
@@ -43,9 +47,8 @@ está protegida, mas o modo ainda é `direto`), abra issue `decisao-do-dono`.
 
 ## 3. Divisão do index.html em andamento
 
-O dono está dividindo o `index.html` numa sessão própria. Enquanto o
-`CLAUDE.md` ainda tiver a seção "Regra número um: um arquivo, uma
-dependência":
+Enquanto a **Regra número um** do `CLAUDE.md` proibir arquivo `.js` separado —
+leia a seção, não o título dela, que já mudou uma vez:
 
 - não reorganize, não mova código entre seções e não crie arquivos `.js`;
 - mudanças no `index.html` só se forem pequenas (até ~60 linhas alteradas) e
@@ -53,7 +56,13 @@ dependência":
 - prefira trabalho fora do `index.html`: `tools/`, `tests/`, `assets/`,
   `.github/`, documentação.
 
-Quando a seção sumir do `CLAUDE.md`, siga o `CLAUDE.md` novo.
+O dado do jogo é outra conversa: classes, habilidades, melhorias, inimigos,
+itens, loot e progressão vivem em `data/game/content.json`, e ajustar
+balanceamento ali não conta como mexer no `index.html` — é para isso que o
+arquivo existe.
+
+Quando a Regra número um deixar de proibir separação de código, siga o
+`CLAUDE.md` novo.
 
 ## 4. Issues: como falar com o dono
 
