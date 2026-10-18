@@ -11,9 +11,13 @@ Este arquivo vale para todos os papéis. O arquivo do seu papel
 ## 1. Início de toda execução
 
 ```bash
-git checkout main && git pull origin main
+git fetch origin main && git checkout -B main origin/main
 cat docs/agentes/modo.txt
 ```
+
+O clone desta sessão é reaproveitado entre execuções e começa fora de branch;
+o comando acima sempre parte da `main` publicada. Toda execução anterior já
+publicou o que fez, então não há trabalho local a perder.
 
 Leia, nesta ordem:
 1. `docs/PRD.md` — o quê e em que fase. Vence qualquer outro documento.

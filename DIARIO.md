@@ -18,28 +18,27 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-18 20:00 UTC — Sessão manual
+## 2026-10-18 23:30 UTC — Desenvolvedor
 
-**Item desenvolvido:** conteúdo do jogo fora do motor (`191e80e`). Classes, habilidades, melhorias, inimigos, itens, loot e progressão em `data/game/content.json`, com validação no carregamento. Não era item do roadmap: veio de um pedido direto do Leonardo, que também trouxe a base de `data/mechanics/` e `tools/extract-mechanics.ps1` (já na `main` pelo ciclo).
+**Item desenvolvido:** ferramenta de teste headless — `tools/teste.js`, mais a seção 2 do `CLAUDE.md` reescrita para usá-la. Nenhuma linha do `index.html` alterada.
 
-**Validação:** quatro harness headless contra o `index.html` desta entrega — combate, extração, menu com loja e grimório, e morte — com `data-errs="` **ausente** nos quatro. Números conferidos contra os dados do JSON, não só "abriu sem erro": vida 151 do Feiticeiro nível 12 (`hp 85 + ghp 6 × 11`); Vigor a 120 e cofre 1000 → 880; vida 166 na incursão seguinte à compra; Grimório com 3 espaços no nível 12 e 6 habilidades da classe; extração levando o cofre de 1000 a 1200 em 0:05; morte em 0/85 perdendo os 200 de loot semeados. O `SINTAXE_OK` **não** foi produzido: não há Node nesta máquina. Os harness cobrem o caso, porque um erro de parse apareceria como `data-errs`.
+**Validação:** `node tools/teste.js` imprime `TESTE_OK` e sai com 0 nos dois cenários (menu e Mercador com compra e save; incursão ativa de 12 s até a tela final e "Nova incursão"). Cópia com `throw` injetado em `update()` falha com exit 1 e mensagem do erro. Não rodei a checagem de sintaxe separada porque o código de jogo não mudou.
 
 **Análise:**
-- A migração de save da Etapa 2 chama `novoChar()` → `slotsIniciais()` no topo do script, o que já lê `SPELLS` e `SLOT_LVL`. Por isso carregar os dados tarde não servia: o IIFE teve de virar assíncrono e aguardar antes de qualquer coisa.
-- As 24 habilidades foram movidas por geração, não à mão: um script extrai o texto dos literais do `index.html`, o JS avalia e o resultado vira JSON. Transcrição manual de 24 registros com 12 campos cada erra em silêncio.
-- A progressão de inimigos por profundidade continuava com números fixos no código (`1+.35*d`, bandas `.6/.4`); agora está no arquivo. Distribuição medida em 20 mil amostras por banda bate com a anterior.
+- O jogo é uma IIFE: o teste não alcança `G` nem `save` por fora, então os cenários dirigem a interface por cliques e leem o DOM e o `localStorage`.
+- O save semeado precisa trazer o personagem em `chars`; sem isso o menu quebra (`ch()` indefinido). Qualquer teste futuro de save deve semear assim.
+- A incursão de teste termina por "desabou" (o jogador não se move), o que exercita `update()`, `hud()` e `finish()`, mas não a extração nem a morte em combate.
 
-**Roadmap:** só `Concluído` ganhou entrada. `Agora` ficou intocado de propósito — a ferramenta de teste headless é item do ciclo.
+**Roadmap:** item movido para `Concluído`; a CI foi promovida a `Agora`; `Próximo` renumerado.
 
 **Pendências e riscos:**
-- **O item em `Agora` muda de forma por causa desta entrega.** As cópias de teste **não rodam mais em `file://`**: o jogo busca o `content.json` por `fetch`, e o navegador bloqueia isso em arquivo do disco, mesmo com `--allow-file-access-from-files`. O script Node terá de servir a pasta por HTTP (há `tools/serve.ps1`) e apontar o Chromium para `http://localhost`.
-- Duas armadilhas que custaram tempo e vão custar de novo: as linhas do `#log` se apagam sozinhas em 8,2 s e o log guarda só 5, então um amostrador que **sobrescreve** o resultado lê vazio no fim da corrida — tem de acumular; e `--dump-dom` capturado com `&` no PowerShell volta vazio, precisa de `Start-Process -RedirectStandardOutput`.
-- O harness usado aqui é Python e vive fora do repositório (scratchpad da sessão). Não é o script Node que o roadmap pede; serve como referência do que testar, não como entrega.
-- Não testei: incursão de 6 minutos inteira (os harness encurtam `RUN`), troca de habilidade no Grimório, e recarregar a página para conferir persistência do save.
-- Esta sessão e o ciclo automático escreveram na `main` em paralelo duas vezes. Na primeira, o ciclo descartou a externalização ao resolver o conflito do `index.html` e documentou o contrário no README; esta entrega a reaplica sobre a Etapa 3. Se a decisão certa for manter os dados inline, é `git revert` deste commit — mas então o README precisa voltar atrás também.
-- O carimbo da entrada anterior (22:00 UTC) está à frente do relógio real (20:00 UTC nesta execução), o que embaralha a ordenação por horário.
+- Não testei no Windows/Edge; o `CLAUDE.md` manda definir `CHROME` com o `msedge.exe`. Não confirmado.
+- Não há cenário de extração nem de morte. Cobrir isso exige mover o jogador até o portal, o que o IIFE dificulta; avaliar quando a divisão do `index.html` expuser a simulação.
+- A CI continua dependendo da permissão C4 (issue #2). Sem ela o push de `.github/workflows` pode ser recusado.
 
-**Próximo passo recomendado:** seguir com a ferramenta de teste headless de `Agora`, já nascendo sobre HTTP, e cobrir os três casos que ficaram sem teste (incursão inteira, troca no Grimório, persistência após recarga).
+**Próximo passo recomendado:** tentar a CI (`.github/workflows/ci.yml`: sintaxe + `node tools/teste.js`) direto na `main`; se o push for recusado, deixar o arquivo em `docs/` e seguir para o aviso de falha do save.
+
+---
 
 ## 2026-10-18 22:00 UTC — Produto
 
@@ -55,13 +54,36 @@ execução precisa saber e não vai descobrir lendo o código.
 **Roadmap:** a "Peso na morte" saiu de `Agora` para `Próximo` 5 (itens técnicos da F0 têm prioridade, e o Desenvolvedor precisa do teste automatizado como portão). Os itens de jogo 3 a 9 (profundidades, equipamento, sair cedo, lugares, monstro, escala de HP, log) foram para `Depois`: equipamento e 2º bioma são F1, e a fila excedia 8 itens. O item "Harness de teste" de `Depois` foi absorvido por `Agora`. Esta execução incluiu 5 itens novos (os da lista da primeira execução, que prevalece sobre o limite de 3). O aviso de save e o teste da migração foram fundidos num só item.
 
 **Pendências e riscos:**
-- A CI precisa de C4 (permissão de workflows). Aberta issue `precisa-do-dono`; sem resposta o Desenvolvedor abre PR com o workflow em vez de commitar.
+- A CI precisa de C4 (permissão de workflows). Aberta issue `precisa-do-dono`; sem ela o push do workflow pode ser recusado; decisão do dono: sem PR, tudo direto na `main`.
 - O RNG com semente e o pipeline de sprites mexem no `index.html` ou criam arquivos: respeitar os limites da seção 3 do `comum.md` até a divisão terminar.
 - O teste headless depende do Chromium em `/opt/pw-browsers`; o `CLAUDE.md` ainda descreve o Edge do Windows.
 
 **Próximo passo recomendado:** Desenvolvedor executa `Agora` (`tools/teste.js`) e atualiza o `CLAUDE.md`.
 
 ---
+
+## 2026-10-18 20:00 UTC — Sessão manual
+
+**Item desenvolvido:** conteúdo do jogo fora do motor (`191e80e`). Classes, habilidades, melhorias, inimigos, itens, loot e progressão em `data/game/content.json`, com validação no carregamento. Não era item do roadmap: veio de um pedido direto do Leonardo, que também trouxe a base de `data/mechanics/` e `tools/extract-mechanics.ps1` (já na `main` pelo ciclo).
+
+**Validação:** quatro harness headless contra o `index.html` desta entrega — combate, extração, menu com loja e grimório, e morte — com `data-errs="` **ausente** nos quatro. Números conferidos contra os dados do JSON, não só "abriu sem erro": vida 151 do Feiticeiro nível 12 (`hp 85 + ghp 6 × 11`); Vigor a 120 e cofre 1000 → 880; vida 166 na incursão seguinte à compra; Grimório com 3 espaços no nível 12 e 6 habilidades da classe; extração levando o cofre de 1000 a 1200 em 0:05; morte em 0/85 perdendo os 200 de loot semeados. O `SINTAXE_OK` **não** foi produzido: não há Node nesta máquina. Os harness cobrem o caso, porque um erro de parse apareceria como `data-errs`.
+
+**Análise:**
+- A migração de save da Etapa 2 chama `novoChar()` → `slotsIniciais()` no topo do script, o que já lê `SPELLS` e `SLOT_LVL`. Por isso carregar os dados tarde não servia: o IIFE teve de virar assíncrono e aguardar antes de qualquer coisa.
+- As 24 habilidades foram movidas por geração, não à mão: um script extrai o texto dos literais do `index.html`, o JS avalia e o resultado vira JSON. Transcrição manual de 24 registros com 12 campos cada erra em silêncio.
+- A progressão de inimigos por profundidade continuava com números fixos no código (`1+.35*d`, bandas `.6/.4`); agora está no arquivo. Distribuição medida em 20 mil amostras por banda bate com a anterior.
+
+**Roadmap:** só `Concluído` ganhou entrada. `Agora` ficou intocado de propósito — a ferramenta de teste headless é item do ciclo.
+
+**Pendências e riscos:**
+- **O `tools/teste.js` precisou de ajuste e eu não pude executá-lo.** A ferramenta nasceu na execução das 23:30, contra o `index.html` sem o `fetch`, e usava `file://`: o navegador bloqueia `fetch` em arquivo do disco mesmo com `--allow-file-access-from-files`, então ela quebraria com esta entrega. Subir um servidor no mesmo processo não dá — o `spawnSync` bloqueia o laço de eventos —, então o SHIM passou a devolver o `content.json` real, lido do repositório ao montar a cópia; a validação do carregamento continua rodando contra o arquivo verdadeiro. **Não há Node nesta máquina, então esse ajuste foi escrito e não executado.** A próxima execução do ciclo é a primeira a rodar `node tools/teste.js` com ele.
+- Duas armadilhas que custaram tempo e vão custar de novo: as linhas do `#log` se apagam sozinhas em 8,2 s e o log guarda só 5, então um amostrador que **sobrescreve** o resultado lê vazio no fim da corrida — tem de acumular; e `--dump-dom` capturado com `&` no PowerShell volta vazio, precisa de `Start-Process -RedirectStandardOutput`.
+- O harness usado aqui é Python e vive fora do repositório (scratchpad da sessão). Não é o script Node que o roadmap pede; serve como referência do que testar, não como entrega.
+- Não testei: incursão de 6 minutos inteira (os harness encurtam `RUN`), troca de habilidade no Grimório, e recarregar a página para conferir persistência do save.
+- Esta sessão e o ciclo automático escreveram na `main` em paralelo duas vezes. Na primeira, o ciclo descartou a externalização ao resolver o conflito do `index.html` e documentou o contrário no README; esta entrega a reaplica sobre a Etapa 3. Se a decisão certa for manter os dados inline, é `git revert` deste commit — mas então o README precisa voltar atrás também.
+- O carimbo da entrada anterior (22:00 UTC) está à frente do relógio real (20:00 UTC nesta execução), o que embaralha a ordenação por horário.
+
+**Próximo passo recomendado:** rodar `node tools/teste.js` e conferir o ajuste do SHIM que eu não pude executar. Depois, cobrir os três casos que ficaram sem teste: incursão de 6 minutos inteira, troca de habilidade no Grimório e recarga da página para conferir persistência do save.
 
 ## 2026-10-18 19:10 UTC
 
