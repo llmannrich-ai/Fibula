@@ -13,28 +13,7 @@ automático não tem como saber que terminou.
 
 ## Agora
 
-### CI no GitHub Actions
-
-**Pilar 5.** `.github/workflows/ci.yml` rodando `node tools/testar.mjs` em todo
-push e PR. O script já existe e já é o portão, mas hoje depende de o agente
-lembrar de chamá-lo; a CI é o que transforma isso em rede de verdade. Depende da
-configuração C4 do dono (permissão para criar workflows; ver issue
-`precisa-do-dono`). Tudo vai direto na `main`, sem PR. Se o push do workflow for
-recusado por falta de C4, deixe o arquivo pronto em `docs/` e siga para outro
-item. Na nuvem não existe Edge: a Action instala Chromium e aponta
-`FIBULA_EDGE` para ele.
-
-**Fase:** F0 (3). **Pronto quando:** o workflow roda verde na `main` e falha num
-PR de teste com erro de sintaxe proposital; o resultado está no diário.
-
----
-
-## Próximo
-
-Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
-quando o Desenvolvedor julgar que cabe numa execução.
-
-### 1. Aviso de falha do save em modo privado
+### Aviso de falha do save em modo privado
 
 **Pilar 5.** Em modo privado, ou com `localStorage` bloqueado, o progresso não é
 salvo e o jogador não é avisado (o `catch` de `persist()` está vazio). A outra
@@ -47,7 +26,14 @@ alteração no formato do save.
 ao menos uma vez, e um caso novo no `tools/testar.mjs` prova isso com o
 `localStorage` sabotado.
 
-### 2. Pipeline dos sprites OTSP (sem trocar o desenho)
+---
+
+## Próximo
+
+Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
+quando o Desenvolvedor julgar que cabe numa execução.
+
+### 1. Pipeline dos sprites OTSP (sem trocar o desenho)
 
 **Pilar 2.** `tools/` com script que recorta as folhas usadas do OTSP, converte
 o magenta em transparência e monta o atlas; `assets/otsp/` com as folhas usadas,
@@ -58,7 +44,7 @@ do PRD. O jogo continua desenhando as formas atuais.
 forma reproduzível, `assets/CREDITOS.md` lista origem, licença e alterações, e
 o `index.html` não mudou.
 
-### 3. Gerador aleatório com semente
+### 2. Gerador aleatório com semente
 
 **Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
 semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
@@ -68,7 +54,7 @@ semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
 **Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
 `tools/`) e partidas sem semente continuam variando.
 
-### 4. Peso de verdade na morte: perder parte do XP, não só o saco
+### 3. Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
 experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
@@ -98,7 +84,7 @@ recarregamento com o valor reduzido.
 
 **Fase:** jogo, em paralelo à F0.
 
-### 5. Revisar a economia do Selo de resguardo
+### 4. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -210,6 +196,10 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — CI no GitHub Actions** (`.github/workflows/ci.yml`). Todo push
+  e PR roda `node tools/testar.mjs` (sintaxe + os casos headless) no Ubuntu com
+  `google-chrome`. Verde na `main`; um branch com erro de sintaxe proposital
+  falhou, como devia.
 - **2026-10-18 — Ferramenta de teste headless no repositório** (`3f11261`).
   `node tools/testar.mjs` é um comando só e é o portão: refaz a checagem de
   sintaxe, monta uma cópia do `index.html` por caso de teste, roda cada uma no
