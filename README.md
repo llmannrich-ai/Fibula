@@ -28,3 +28,12 @@ incursões seguintes:
 O preço de cada nível sobe geometricamente, então o cofre nunca deixa de ter uso.
 
 O progresso fica salvo no navegador de cada aparelho.
+
+## Desenvolvimento
+
+O jogo inteiro é o `index.html` — sem build e sem biblioteca, servido cru pelo
+GitHub Pages.
+
+A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
+convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os
+não-objetivos), [ROADMAP.md](ROADMAP.md) e [DIARIO.md](DIARIO.md).
