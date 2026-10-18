@@ -18,10 +18,10 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-18 19:55 UTC
+## 2026-10-18 22:20 UTC
 
 **Item desenvolvido:** Harness de teste headless no repositório —
-[tools/testar.mjs](tools/testar.mjs), commit `PENDENTE`. Um comando,
+[tools/testar.mjs](tools/testar.mjs), commit `3f11261`. Um comando,
 `node tools/testar.mjs`, refaz a checagem de sintaxe, monta uma **cópia** do
 `index.html` por caso de teste, roda cada uma no Edge headless e sai com código
 diferente de zero se qualquer asserção falhar ou se um erro de janela aparecer.
@@ -90,9 +90,16 @@ passaram a estar cobertos pelo script.
   Se o `index.html` mudar a linha patcheada, o harness falha alto em vez de
   testar coisa nenhuma — o modo de falha que mais importa evitar num portão.
 
-**Roadmap:** "Harness de teste no repositório" saiu de `Depois` e entrou em
-`Concluído` com a descrição do que o script cobre e dos dois bugs que achou.
-`Agora` não foi tocado.
+**Roadmap:** enquanto esta execução trabalhava, o agente de Produto promoveu o
+mesmo item de `Depois` para `Agora` com uma especificação própria
+("Ferramenta de teste headless no repositório", entrada de 22:00). Ele está
+atendido e foi para `Concluído`; `Agora` passou a ser a CI, que era o item 1 de
+`Próximo`. **Duas diferenças em relação ao que a especificação pedia**, as duas
+deliberadas e explicadas acima: o arquivo é `tools/testar.mjs` e não
+`tools/teste.js` (ESM, para `import` sem `package.json`), e o resultado volta
+por um coletor HTTP em vez de `--dump-dom`, porque a opção não escreve mais
+nada. O item 2 de `Próximo` foi aparado: a metade do teste da migração `v1`→`v2`
+já está feita (caso `migracao-save`), sobrou o aviso de falha do `persist()`.
 
 **Pendências e riscos:**
 - **A extração é testada com o portal mudado de lugar.** No headless não há quem
@@ -127,6 +134,30 @@ passaram a estar cobertos pelo script.
 `FIBULA_EDGE` apontado — é o que transforma o portão em rede de verdade, já que
 hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
 roadmap.
+
+
+---
+
+## 2026-10-18 22:00 UTC — Produto
+
+**Item desenvolvido:** primeira execução do agente de Produto. Só `ROADMAP.md`; nenhuma linha de jogo. `Agora` virou a ferramenta de teste headless em `tools/`; `Próximo` ganhou os itens técnicos da F0 (CI, aviso de save + teste da migração, pipeline OTSP, RNG com semente) à frente de morte-com-XP e Selo.
+
+**Validação:** não se aplica a código. Conferido que o `ROADMAP.md` tem um item em `Agora`, 6 em `Próximo` e que todo item tem pilar, fase e "Pronto quando". Push de teste na `main` funcionou.
+
+**Análise:**
+- Fase atual: **F0 · Fundação**. Critérios de saída: faltam todos os verificáveis — não há CI nem testes, sem RNG com semente, sem sprites (`assets/` não existe), sem teste da migração, sem Playwright; fontes ainda externas; PWA ausente. A divisão do `index.html` segue em andamento (o `CLAUDE.md` ainda tem a "Regra número um").
+- Issues abertas: nenhuma antes desta execução; nada a responder nem prazo vencido.
+- Modo de publicação: `direto`, coerente (sem CI).
+
+**Roadmap:** a "Peso na morte" saiu de `Agora` para `Próximo` 5 (itens técnicos da F0 têm prioridade, e o Desenvolvedor precisa do teste automatizado como portão). Os itens de jogo 3 a 9 (profundidades, equipamento, sair cedo, lugares, monstro, escala de HP, log) foram para `Depois`: equipamento e 2º bioma são F1, e a fila excedia 8 itens. O item "Harness de teste" de `Depois` foi absorvido por `Agora`. Esta execução incluiu 5 itens novos (os da lista da primeira execução, que prevalece sobre o limite de 3). O aviso de save e o teste da migração foram fundidos num só item.
+
+**Pendências e riscos:**
+- A CI precisa de C4 (permissão de workflows). Aberta issue `precisa-do-dono`; sem resposta o Desenvolvedor abre PR com o workflow em vez de commitar.
+- O RNG com semente e o pipeline de sprites mexem no `index.html` ou criam arquivos: respeitar os limites da seção 3 do `comum.md` até a divisão terminar.
+- O teste headless depende do Chromium em `/opt/pw-browsers`; o `CLAUDE.md` ainda descreve o Edge do Windows.
+
+**Próximo passo recomendado:** Desenvolvedor executa `Agora` (`tools/teste.js`) e atualiza o `CLAUDE.md`.
+
 
 ---
 
