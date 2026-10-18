@@ -32,7 +32,9 @@ testado.
    passando, não publique: registre no diário e encerre.
 
 6. **Publique conforme o modo:**
-   - **`direto`:** commit na `main` com a mensagem no padrão do `CLAUDE.md`.
+   - **`direto`:** se mexeu em `src/` ou no `index.html`, suba a versão
+     (`node tools/versao.mjs`, seção "Versão e deploy" do `CLAUDE.md`).
+     Commit na `main` com a mensagem no padrão do `CLAUDE.md`.
      Depois do push, espere a CI do seu commit; se ficar vermelha, conserte
      na mesma execução.
      Atualize o `ROADMAP.md`: item para `Concluído` com data e commit, próximo

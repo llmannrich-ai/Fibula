@@ -70,7 +70,9 @@ const NOMES_NO_PATH = ['chromium', 'chromium-browser', 'google-chrome', 'chrome'
 /* ---------- fontes e portão de sintaxe ---------- */
 /* O jogo é o index.html e os módulos de src/. Todos são lidos para um mapa
    caminho → texto, que é o que os patches mexem e o que vai para cada cópia. */
-const MODULO = '<script type="module" src="src/main.js"></script>';
+/* a linha que carrega o jogo, com a versão (?v=) posta por tools/versao.mjs;
+   leFontes() preenche as duas a partir do index.html */
+let MODULO = '', VERSAO = '';
 function listaJs(dir) {
   const out = [];
   for (const n of readdirSync(dir)) {
@@ -82,9 +84,24 @@ function listaJs(dir) {
 }
 function leFontes() {
   const f = {'index.html': readFileSync(JOGO, 'utf8')};
-  if (!f['index.html'].includes(MODULO)) throw new Error(`o index.html não carrega o jogo com ${MODULO}`);
+  const m = /<script type="module" src="src\/main\.js\?v=(\d+\.\d+\.\d+)"><\/script>/.exec(f['index.html']);
+  if (!m) throw new Error('o index.html não carrega o jogo com <script type="module" src="src/main.js?v=X.Y.Z"> (rode node tools/versao.mjs X.Y.Z)');
+  MODULO = m[0]; VERSAO = m[1];
   for (const arq of listaJs(join(BASE, 'src'))) f[relative(BASE, arq).replace(/\\/g, '/')] = readFileSync(arq, 'utf8');
   return f;
+}
+
+/* Todo import relativo de src/ leva a versão do index.html. Sem ela, um deploy
+   novo pode se misturar com módulos velhos do cache do navegador; com versões
+   diferentes, o mesmo arquivo vira dois módulos com dois estados. */
+function verificaVersao(fontes) {
+  const ruins = [];
+  for (const [nome, txt] of Object.entries(fontes)) {
+    if (!nome.endsWith('.js')) continue;
+    for (const m of txt.matchAll(/from\s+'(\.{1,2}\/[^']+)'/g))
+      if (!m[1].endsWith(`.js?v=${VERSAO}`)) ruins.push(`${nome}: import '${m[1]}'`);
+  }
+  return ruins;
 }
 
 /* Um erro de sintaxe em qualquer módulo derruba o jogo inteiro: o navegador
@@ -271,7 +288,7 @@ function conteudoDoCaso(caso) {
 function epilogo(caso, alvo) {
   return `<script type="module">
 /* harness de tools/testar.mjs — roteiro do caso ${caso.nome} */
-import './src/main.js';
+import './src/main.js?v=${VERSAO}';
 (async function(){
   var H=document.documentElement;
   var $=function(s){return document.querySelector(s)};
@@ -442,7 +459,8 @@ async function testaSimulacao() {
         falhas.push(`${relative(BASE, arq)}: efeito visual usando o sorteio da regra — ${linha.trim().slice(0, 90)}`);
     }
   }
-  const url = (n) => pathToFileURL(join(dirSim, n)).href;
+  /* com a mesma versão dos imports internos: sem ela seriam outros módulos */
+  const url = (n) => pathToFileURL(join(dirSim, n)).href + `?v=${VERSAO}`;
   const B = await import(url('base.js'));
   const {saida} = B;
   const {carrega} = await import(url('dados.js'));
@@ -533,6 +551,7 @@ const CASOS = [
     }},
     roteiro: `
     ok('o acampamento abriu', visivel('#menu'));
+    ok('o menu mostra a versão do jogo', /^Protótipo · v\\d+\\.\\d+\\.\\d+ · Feiticeiro$/.test(txt('#mEye')||''), txt('#mEye'));
     ok('o cofre semeado aparece no menu', txt('#sCofre')==='1000', txt('#sCofre'));
     clica($('#toShop'));
     ok('o Mercador abriu', visivel('#shop'));
@@ -1223,6 +1242,12 @@ async function main() {
     return 1;
   }
   console.log(`SINTAXE_OK  (node --check em ${Object.keys(fontes).length - 1} módulos de src/)`);
+  const semVersao = verificaVersao(fontes);
+  if (semVersao.length) {
+    console.error(`VERSÃO FALHOU: imports sem ?v=${VERSAO} (rode node tools/versao.mjs ${VERSAO}):\n  ` + semVersao.join('\n  '));
+    return 1;
+  }
+  console.log(`VERSAO_OK   (v${VERSAO} no index.html e em todos os imports)`);
 
   const sim = await testaSimulacao();
   if (sim.falhas.length) {

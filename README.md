@@ -87,6 +87,18 @@ licença [CC BY 4.0](assets/otsp/LICENSE.txt), feito pela comunidade OpenTibia
 em [assets/CREDITOS.md](assets/CREDITOS.md); o atlas sai de
 [`tools/sprites.mjs`](tools/sprites.mjs).
 
+## Versões
+
+A versão aparece no alto do menu do jogo.
+
+| Versão | O que trouxe |
+|---|---|
+| 0.5.0 (18/10/2026) | Cada masmorra tem um número (tela final) e `?semente=` repete a mesma; código em módulos, com a regra do jogo separada da tela; versão no menu e nos endereços dos arquivos, para uma atualização nunca se misturar com o cache |
+| 0.4 | Arte do Tibia (OpenTibia Sprite Pack); conta com usuário e senha e progresso na nuvem; equipamento (arma, armadura e amuleto) e cofre de peças |
+| 0.3 | Etapa 3: quatro classes, grimório com espaços por nível, Magia e Perícia |
+| 0.2 | Etapa 2: cofre e Mercador |
+| 0.1 | Etapa 1: protótipo jogável — incursão, portal e morte com perda do saco |
+
 ## Desenvolvimento
 
 O código do jogo é o `index.html` mais os módulos ES de `src/` — sem build e sem

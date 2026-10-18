@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js';
-import {EL_COR,MT,PROG} from './dados.js';
-import {save,ch,KL,stats,sealPct,guardaSaco} from './progresso.js';
-import {genMap,pecas} from './mapa.js';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.5.0';
+import {EL_COR,MT,PROG} from './dados.js?v=0.5.0';
+import {save,ch,KL,stats,sealPct,guardaSaco} from './progresso.js?v=0.5.0';
+import {genMap,pecas} from './mapa.js?v=0.5.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.5.0';
 
 export let G=null;
 export const setG=v=>{G=v};

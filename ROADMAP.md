@@ -198,6 +198,13 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Versão 0.5.0 no ar, com versão nos endereços**. O menu mostra
+  a versão do jogo (antes dizia "Etapa 3"), e todo módulo e o atlas são
+  pedidos com `?v=<versão>`: o Pages guarda arquivos por 10 minutos, e sem
+  isso um deploy podia se misturar com módulos velhos do cache e deixar a
+  tela preta. `tools/versao.mjs` troca a versão em todos os endereços; o
+  `tools/testar.mjs` barra import sem a versão do `index.html`. Tabela
+  "Versões" no README.
 - **2026-10-18 — Sorteio com semente** *(F0 item 2, primeira metade)*. Toda a
   sorte da simulação sai de `src/sim/base.js` (mulberry32), em dois sorteios
   com a mesma semente: o da regra (mapa, spawn, dano, loot, movimento) e o dos

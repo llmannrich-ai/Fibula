@@ -19,6 +19,8 @@ erradas, e propor ajustes. Você não muda o jogo diretamente.
    tempo para matar cada monstro. Use também `data/mechanics/` e
    `docs/analise-tibia-habilidades.md` como referência.
    - A simulação roda no Node: importe os módulos de `src/sim/` (sem DOM),
+     sempre com o mesmo `?v=` dos imports internos (`node tools/versao.mjs`
+     mostra qual), senão o Node carrega uma segunda cópia de cada módulo;
      chame `carrega()` com o `content.json`, monte o save com `setSave()` e
      rode `newRun()` e `update(dt, ent)` em laço — o passo "simulação no Node"
      do `tools/testar.mjs` é o exemplo. Semeie o `Math.random` até o gerador

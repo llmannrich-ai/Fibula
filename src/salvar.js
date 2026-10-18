@@ -2,8 +2,8 @@
    localStorage na chave masmorra-runas-v2, mesclado sobre os padrões; sem ela,
    procura a v1 e migra. Subir a KEY sem escrever a migração zera o progresso
    de todos os jogadores. */
-import {CLASSES} from './sim/dados.js';
-import {UP0,novoChar,normaliza,save,setSave} from './sim/progresso.js';
+import {CLASSES} from './sim/dados.js?v=0.5.0';
+import {UP0,novoChar,normaliza,save,setSave} from './sim/progresso.js?v=0.5.0';
 
 export const KEY='masmorra-runas-v2';
 const KEY1='masmorra-runas-v1';

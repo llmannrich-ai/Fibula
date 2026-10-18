@@ -112,7 +112,8 @@ marcadores de seção `/* ---------- nome ---------- */`**, que são estáveis.
 Ponha código novo na seção certa — e, se for regra de jogo, em `src/sim/`.
 
 **`index.html`** — o `<head>` com o estilo crítico inline, o `<style>`
-principal, o markup das telas e do HUD, e a linha que carrega `src/main.js`.
+principal, o markup das telas e do HUD, e a linha que carrega
+`src/main.js?v=<versão>` (ver "Versão e deploy").
 
 **`src/sim/` — a simulação, sem DOM**
 
@@ -473,6 +474,33 @@ Os cinco estão cobertos pelo `tools/testar.mjs`, então o que sobra para o olho
 layout ou leitura, abra o jogo de verdade (`powershell -ExecutionPolicy Bypass
 -File tools/serve.ps1` e `http://localhost:8080/`) num viewport de celular.
 Se mexeu em regra, o script basta.
+
+## Versão e deploy
+
+**Deploy é o push na `main`**: o GitHub Pages publica sozinho em um ou dois
+minutos. Não há outro passo. Para conferir, a CI fica verde e o menu do jogo
+no ar mostra a versão nova.
+
+**A versão mora num lugar só**: o `?v=` da linha
+`<script type="module" src="src/main.js?v=0.5.0">` do `index.html`. Todo
+import relativo de `src/` repete essa versão, e o menu lê a sua de
+`import.meta.url`. O motivo é o cache: o Pages manda o navegador guardar cada
+arquivo por 10 minutos, e quem recarrega logo depois de um deploy receberia o
+`index.html` novo com módulos velhos — um import que não existe mais deixa a
+tela preta. Com a versão no endereço, versão nova é endereço novo. O
+`atlas.png` leva a mesma versão.
+
+- **Toda mudança em `src/` ou no `index.html` sobe a versão** antes do commit:
+  `node tools/versao.mjs 0.5.1`. Sem isso o cache de 10 minutos volta a poder
+  misturar arquivos. `node tools/versao.mjs` sozinho mostra a atual.
+- Esquema `0.<etapa>.<correção>`: o segundo número sobe quando muda o que o
+  jogador vê; o terceiro, para correção. Versão que muda o que o jogador vê
+  ganha uma linha na tabela "Versões" do `README.md`.
+- **Nunca escreva um import sem `?v=`** nem com versão diferente: o mesmo
+  arquivo com dois endereços vira dois módulos, com dois estados (dois `save`,
+  dois `G`). O `tools/testar.mjs` barra os dois casos e diz o comando.
+- `content.json` e `atlas.json` são buscados com `cache:'no-cache'` e não
+  precisam de versão.
 
 ## Git e o ciclo automático
 
