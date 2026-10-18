@@ -233,9 +233,12 @@ function prelude(caso) {
      O timestamp é sintético e anda 50 ms por quadro — o dt máximo que o jogo
      aceita — então cada quadro avança o tempo de jogo no passo cheio sem
      precisar esperar 50 ms de verdade: uma incursão de 20 s roda em segundos. */
-  var q=0,vt=performance.now();
+  /* O relógio sintético começa no primeiro quadro pedido, não na carga do
+     prelúdio: os módulos do jogo carregam depois, e numa máquina lenta (a CI)
+     o laço nascia com o relógio atrás do performance.now() do jogo. */
+  var q=0,vt=0;
   window.__quadros=function(){return q};
-  window.requestAnimationFrame=function(cb){return setTimeout(function(){q++;vt+=50;cb(vt)},0)};
+  window.requestAnimationFrame=function(cb){if(!vt)vt=performance.now();return setTimeout(function(){q++;vt+=50;cb(vt)},0)};
   window.cancelAnimationFrame=function(id){clearTimeout(id)};
   /* Math.random semeado: mapa, corredores, spawns e loot ficam iguais em toda
      execução, então um caso que passa hoje passa amanhã */

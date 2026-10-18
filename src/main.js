@@ -35,7 +35,9 @@ if(pronto){
   /* ---------- laço ---------- */
   let last=performance.now();
   const frame=now=>{
-    const dt=Math.min(.05,(now-last)/1000);last=now;
+    /* nem acima de 50 ms (aba voltando do fundo) nem abaixo de zero (carimbo do
+       quadro anterior ao performance.now() da carga) */
+    const dt=Math.max(0,Math.min(.05,(now-last)/1000));last=now;
     if((app.clientWidth||innerWidth)!==W||(app.clientHeight||innerHeight)!==H)onResize();
     if(G){
       if(G.active&&!G.over)update(dt,leEntrada());
