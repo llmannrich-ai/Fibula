@@ -16,10 +16,11 @@
 | Campo | Valor |
 |---|---|
 | Dono do produto | Leonardo |
-| Versão | 0.3 |
+| Versão | 0.4 |
 | Data | 2026-10-18 |
-| Status | Aprovado para a F0. Decisões pendentes na seção 15, todas com padrão definido. |
-| Mudanças da 0.3 | Ponto de partida refeito sobre a Etapa 3 e os guias novos; direção comercial com multiplayer confirmada; divisão do `index.html` em andamento noutra sessão; commit direto na `main` até a CI existir; sprites em `assets/`. |
+| Status | F0 em andamento. Decisões tomadas e pendentes na seção 15 — é a lista única de decisões do dono. |
+| Mudanças da 0.4 | Alinhamento com o que existe: código em módulos, testes e CI prontos, arte OTSP no jogo, login por usuário e senha antecipado da F1. Decisões do dono de 18/10 registradas (seção 15): modo `direto`, 4 espaços de habilidade, harness único sem `package.json`, ROADMAP como fila única. |
+| Mudanças da 0.3 | Ponto de partida refeito sobre a Etapa 3 e os guias novos; direção comercial com multiplayer confirmada; divisão do `index.html`; commit direto na `main` até a CI existir; sprites em `assets/`. |
 
 ---
 
@@ -33,41 +34,37 @@ curtas que cabe no dia de quem joga pelo celular.
 **Frase-guia:** *"Tibia no bolso: 5 minutos de masmorra com amigos, um
 personagem para a vida toda."*
 
-## 2. Ponto de partida (análise da `main` em 2026-10-18, 19h40 UTC)
+## 2. Ponto de partida (estado da `main` em 2026-10-18, 22h UTC)
 
 O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
 
 | Item | Estado |
 |---|---|
-| Código | Um único `index.html` com ~1.380 linhas (eram 870 de manhã): HTML, CSS e JS sem build, organizado por marcadores de seção. Nenhum teste automatizado, nenhuma CI. Uma dependência externa: Google Fonts. |
-| Jogo | Incursão single-player de até 6 min, mapa 64×64 gerado na hora, portal em 1:30, 5 monstros + Guardião, campo de fluxo para perseguição, joystick virtual, minimapa e bússola. |
-| Progressão (Etapa 3) | 4 classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por **taxa de crescimento**; grimório com slots liberados por nível; três moedas do Tibia — nível (abate), magia (mana gasta), perícia (golpes). Cofre e Mercador com 5 melhorias. |
-| Save | `localStorage`, chave `masmorra-runas-v2` (conta na raiz, personagem por classe em `chars`), com migração automática da v1. Falha de gravação ainda é silenciosa. |
-| Arte | Formas desenhadas em código no canvas; cor por classe. |
-| Guias | `CLAUDE.md` (como trabalhar), `VISAO.md` (pilares e não-objetivos), `AGENTS.md` (ponteiro), `docs/analise-tibia-habilidades.md` (fórmulas do Forgotten Server), `ROADMAP.md` com pilar por item, `DIARIO.md` com formato de 7 partes. |
-| Agentes | Tarefa agendada "Fibula - ciclo de analise e desenvolvimento" a cada 2 h, commit direto na `main`, instruções guardadas na própria tarefa. Sessões manuais (computador e celular) trabalham em paralelo na mesma `main`. |
-| Em andamento | Divisão do `index.html` em arquivos, numa sessão separada do dono. **Concluída em 18/10/2026:** `src/` (cliente) e `src/sim/` (simulação sem DOM), ver `CLAUDE.md`. |
+| Código | `index.html` (estilo e markup) + módulos ES nativos em `src/`, sem build e sem biblioteca. A regra do jogo fica em `src/sim/`, sem DOM, e já roda no Node. Nenhuma dependência de terceiro no navegador (as fontes são do sistema). |
+| Jogo | Incursão single-player de até 6 min, mapa 64×64 gerado na hora, portal em 1:30, 5 monstros + Guardião, campo de fluxo para perseguição, joystick virtual, minimapa e bússola. Arte do OpenTibia Sprite Pack (seção 9). |
+| Progressão (Etapa 3) | 4 classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por **taxa de crescimento**; grimório com 4 espaços liberados por nível (1, 1, 8, 18); três moedas do Tibia — nível (abate), magia (mana gasta), perícia (golpes). Cofre e Mercador com 5 melhorias. |
+| Save | `localStorage`, chave `masmorra-runas-v2`, com migração da v1 e aviso quando o navegador recusa gravar. Com conta, sincronizado no Supabase. |
+| Contas | Login simples por usuário e senha (antecipado da F1 por decisão do dono). Ver 7.5. |
+| Testes e CI | `node tools/testar.mjs`: sintaxe, simulação no Node e 16 casos no Chromium headless. GitHub Actions roda em todo push. |
+| Guias | `CLAUDE.md` (como trabalhar), `VISAO.md` (pilares e não-objetivos), `AGENTS.md` (ponteiro), `docs/analise-tibia-habilidades.md` (fórmulas do Forgotten Server), `ROADMAP.md` com pilar por item, `DIARIO.md` com formato de 7 partes, `docs/agentes/` (instruções dos agentes). |
+| Agentes | 4 tarefas agendadas (Produto, Desenvolvedor, Revisor, Balanceamento), controladas por `docs/agentes/modo.txt`. A rotina antiga de 2 em 2 h está desligada. Sessões manuais do dono trabalham em paralelo na mesma `main`. |
+| Playtest | Primeiro playtest do dono em 18/10: "razoável". Achado nos dados: o nível sobe rápido demais (nível 6 em poucas incursões). |
 
 **Problemas estruturais que o PRD precisa resolver:**
 
-1. **Simulação misturada com desenho e DOM.** Regras de combate, loot e XP
-   chamam `log()`, `banner()` e mexem em `G.fx`. Servidor (F2) e testes
-   precisam rodar as regras sem tela. A divisão em andamento deve criar essa
-   fronteira (seção 10).
+1. ~~**Simulação misturada com desenho e DOM.**~~ **Resolvido em 18/10:**
+   `src/sim/` não toca em DOM e fala com o cliente pelo objeto `saida`.
 2. **Aleatoriedade não reproduzível.** `Math.random()` direto em mapa, spawn,
    dano e loot. Sem semente não há teste determinístico, simulação de
    balanceamento nem reconciliação cliente/servidor.
 3. **Passo de tempo variável.** `update(dt)` usa o `dt` do quadro; o servidor
    precisa de passo fixo.
-4. **Teste só manual ou por harness improvisado.** O `CLAUDE.md` descreve um
-   teste headless montado à mão a cada execução; nada roda sozinho.
+4. ~~**Teste só manual.**~~ **Resolvido:** `tools/testar.mjs` e CI.
 5. **Várias frentes escrevendo na `main` ao mesmo tempo.** Já houve conflito
    entre a rotina e uma sessão manual no `ROADMAP.md` e no `DIARIO.md`, e o
    `index.html` cresceu 60% num dia por sessões diferentes.
-6. **Guias em conflito com a direção comercial.** O `VISAO.md` listava rede,
-   contas, monetização e telemetria como não-objetivos; o `CLAUDE.md` proíbe
-   arquivo separado. A 0.3 deste PRD resolve a direção; os guias são
-   atualizados conforme a seção 13.6.
+6. ~~**Guias em conflito.**~~ **Resolvido na 0.4:** guias alinhados; as
+   decisões ficam só na seção 15.
 
 ## 3. Objetivos do produto
 
@@ -130,7 +127,9 @@ O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
   grimório com slots por nível. Fórmulas em `docs/analise-tibia-habilidades.md`.
 - **Falta:** nome do personagem, aparência (outfit do pacote de arte), vários
   personagens por conta (F1) e personagem no servidor (F1/F2).
-- Na tela da incursão: no máximo 3 habilidades ativas + 1 consumível (pilar 3
+- Na tela da incursão: no máximo **4 espaços de habilidade + 1 consumível**
+  (poção). Os espaços abrem nos níveis 1, 1, 8 e 18, então o jogador começa com
+  2 botões e chega a 4 só no meio do jogo (decisão de 18/10, seção 15; pilar 3
   do `VISAO.md`).
 
 ### 7.2 Itens e equipamento
@@ -154,9 +153,16 @@ O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
 - **Fora do lançamento:** mundo aberto contínuo e PvP aberto.
 
 ### 7.5 Contas e persistência
-- Login por link mágico no e-mail e Google; conta convidada vinculável.
-- A partir da F1, progresso no servidor; o cliente nunca é fonte de verdade.
-- Na primeira entrada com conta, importar o save `masmorra-runas-v1`.
+- **Hoje (fase de teste):** usuário e senha, sem e-mail, por funções do
+  Supabase (`tools/supabase/002_login_simples.sql`). Jogar sem conta continua
+  possível; o save fica no aparelho.
+- **Na primeira entrada com conta:** conta sem save na nuvem recebe o save do
+  aparelho; conta com save na nuvem e aparelho novo fica com o que tem mais
+  incursões; aparelho que era de outra conta sempre fica com a nuvem.
+- **Antes do beta aberto (F4):** login por e-mail ou Google com SMTP próprio,
+  limite de tentativas de senha e recuperação de conta.
+- **A partir da F2:** progresso calculado no servidor; o cliente deixa de ser
+  fonte de verdade. Até lá, quem edita o save trapaceia no próprio save.
 
 ### 7.6 Monetização (F4)
 - Cosméticos, passe de temporada (trilha grátis e paga), conveniências sem poder
@@ -195,12 +201,14 @@ mantido pela comunidade OpenTibia, licença **Creative Commons Atribuição 4.0
   um agente; sprites carregados por bioma, em atlas pequenos, preservam o
   primeiro motivo, e imagens não precisam ser lidas pelos agentes.
 - **Regras para os agentes:**
-  1. Copiar para `assets/otsp/` apenas as folhas usadas, com `LICENSE.txt` e
-     `AUTHORS.md` do pacote.
+  1. O atlas (`assets/otsp/atlas.png` e `atlas.json`) é gerado por
+     `tools/sprites.mjs` a partir do `.dat`/`.spr` do pacote, num commit fixo,
+     nunca recortado à mão. O repositório guarda só o atlas, com `LICENSE.txt`
+     e `AUTHORS.md` do pacote. (Muda a regra da 0.3, que previa copiar as
+     folhas PNG: elas não dizem qual peça é de qual criatura.)
   2. Manter `assets/CREDITOS.md` com origem, licença e alterações de cada
-     arquivo; a tela "Créditos" do jogo mostra esse conteúdo.
-  3. Converter o magenta em transparência e montar atlas por bioma num script
-     versionado (`tools/`), nunca à mão.
+     arquivo; a tela "Créditos" do jogo mostra esse conteúdo (pendente).
+  3. Um atlas por bioma quando houver mais de um bioma.
   4. Proibido usar qualquer arte de `Tibia.spr`/`Tibia.dat`, do site oficial,
      da TibiaWiki ou de pacotes sem licença explícita. Na dúvida, não usa e
      abre issue.
@@ -216,27 +224,34 @@ sem impedir o multiplayer.
 
 | Camada | Escolha | Motivo |
 |---|---|---|
-| Linguagem | JavaScript moderno com módulos ES, checado por `tsc --checkJs` (tipos em JSDoc) | Tipagem para os agentes sem passo de build; o mesmo código roda no navegador e no Node |
+| Linguagem | JavaScript moderno com módulos ES nativos, sem build | O mesmo código roda no navegador e no Node |
 | Estrutura | **Divisão concluída em 18/10/2026:** módulos ES nativos em `src/`, com a simulação em `src/sim/`, sem DOM, falando com o cliente por `saida` e recebendo a entrada em `update(dt, ent)`; o `CLAUDE.md` descreve o mapa. A simulação ainda é chamada no passo do quadro, não em passo fixo (item 2 da F0). O que o PRD exige dela: regras de jogo (simulação) em módulos sem DOM, separadas de desenho, entrada e telas; tabelas de dados (`CLASSES`, `SPELLS`, `MT`, `ITEMS`, `LOOT`, `UP`) num lugar só; `index.html` continua na raiz. Pastas novas previstas: `server/` (F2), `tests/`, `tools/`, `assets/` | O que o servidor precisa fica separado do que é tela |
 | Cliente | Canvas 2D próprio, sprites em atlas, PWA (manifest + service worker) | Evolução do que já funciona; instalável na tela inicial |
 | Publicação | GitHub Pages a partir da `main` (sem build) | Já funciona; nada para configurar |
-| Testes | `node --test` (regras, save, geração de mapa com semente) + Playwright em viewport 360×640 (fluxos: menu → incursão → extração/morte → mercador) | Zero dependência para o núcleo; Chromium já existe no ambiente dos agentes |
-| CI | GitHub Actions: checagem de tipos, `node --test`, Playwright | Porteiro da `main` |
+| Testes | Um harness só, `tools/testar.mjs`: sintaxe de cada módulo, simulação no Node com semente e casos de fluxo no Chromium headless (menu → incursão → extração/morte → mercador, save, nuvem falsa). Sem `package.json`, sem TypeScript, sem Playwright como biblioteca (decisão de 18/10, seção 15) | Zero dependência; já pega erro real; um portão só |
+| CI | GitHub Actions rodando `node tools/testar.mjs` em todo push | No modo `direto` é alarme, não porteiro (seção 13.2) |
 | Contas e dados (F1) | Supabase: Auth + Postgres + RLS; acesso pelo cliente com chave pública e regras no banco | Menos backend próprio |
 | Servidor de jogo (F2) | Node.js + WebSocket (`ws`), rodando `src/sim/` em passo fixo; hospedagem com região São Paulo (Fly.io, região `gru`) | Reaproveita a simulação; latência baixa no Brasil |
 
-`package.json` só com dependências de desenvolvimento (TypeScript, Playwright)
-até a F2. Nenhum framework de UI.
+Sem `package.json` até a F2; o servidor (`server/`) pode ter o seu, com `ws`.
+Reavaliar checagem de tipos quando o servidor existir. Nenhum framework de UI.
 
 ## 11. Fases e critérios de saída
 
-Cada fase só começa quando a anterior cumpre o critério. O agente de Produto
-quebra a fase atual em issues; ninguém trabalha em fase futura, exceto
-pesquisa sem código.
+Os agentes trabalham na fase atual e não começam fase futura, exceto pesquisa
+sem código. **O dono pode antecipar itens de fase futura** (como fez com o
+login e o save na nuvem); a antecipação fica registrada no `ROADMAP.md` e não
+abre a fase para os agentes. O agente de Produto transforma a fase atual em
+itens do `ROADMAP.md`.
+
+**Estado da F0 em 18/10:** (1) divisão e fronteira sim/render ✅; (2) gerador
+com semente e passo fixo ⏳; (3) testes ✅, CI ✅, proteção da `main` — não se
+aplica no modo `direto`; (4) aviso de save e teste da migração ✅; (5) sprites
+✅, tela de créditos ⏳; (6) fontes ✅ (do sistema, nada a embutir), PWA ⏳.
 
 | Fase | Entrega | Pronto quando |
 |---|---|---|
-| **F0 · Fundação** | (1) Divisão do `index.html` (sessão do dono, em andamento) e fronteira sim/render. (2) RNG com semente e passo fixo. (3) Testes + CI + proteção da `main`. (4) Aviso de falha de save e teste da migração v1→v2. (5) Sprites OTSP no lugar das formas atuais. (6) Fontes embutidas e PWA instalável. Itens de jogo do `ROADMAP.md` continuam em paralelo. | Jogo jogável no Pages com sprites; mesma semente gera o mesmo mapa e o mesmo resultado nos testes; CI obrigatória para mesclar; save antigo migra sem perda (teste automatizado); Playwright cobre o fluxo completo em 360×640 |
+| **F0 · Fundação** | (1) Divisão do código e fronteira sim/render. (2) RNG com semente e passo fixo. (3) Testes + CI. (4) Aviso de falha de save e teste da migração v1→v2. (5) Sprites OTSP no lugar das formas atuais, com tela de créditos. (6) Fontes sem terceiro e PWA instalável. Itens de jogo do `ROADMAP.md` continuam em paralelo. | Jogo jogável no Pages com sprites e créditos; mesma semente gera o mesmo mapa e o mesmo resultado nos testes; CI verde na `main`; save antigo migra sem perda (teste automatizado); o harness cobre o fluxo completo |
 | **F1 · Personagem** | Contas Supabase, save no servidor, 4 vocações, equipamento com slots, 2º bioma, créditos, telemetria mínima | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op** | Servidor autoritativo, salas de 1 a 4, convite por link, reconexão | 4 celulares completam incursão juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Hub compartilhado, chat com filtro, grupos, guildas, mercado | 100 simultâneos estáveis em teste de carga; moderação básica (denúncia, silenciar, banir) |
@@ -256,21 +271,21 @@ pesquisa sem código.
 
 | Agente | Faz | Frequência | Mescla na `main`? |
 |---|---|---|---|
-| **Produto** | Mantém `ROADMAP.md` alinhado a este PRD; quebra a fase atual em issues pequenas com critério de pronto; triagem das issues de feedback; propõe padrões para decisões pendentes | 1×/dia | Só `ROADMAP.md` |
-| **Desenvolvedor** | Pega a issue `pronta` de maior prioridade, implementa com testes, abre PR; corrige PRs com pedido de ajuste | 4×/dia | Não |
-| **Revisor/QA** | Revisa PRs abertos; roda testes e Playwright em 360×640; pede ajuste ou aprova; **mescla quando a CI está verde** e o PR não é sensível | 4×/dia, 1h30 depois do Desenvolvedor | Sim |
+| **Produto** | Mantém `ROADMAP.md` alinhado a este PRD — **o `ROADMAP.md` é a fila única de trabalho**; issues servem só para decisão do dono, bug e feedback; propõe padrões para decisões pendentes | 1×/dia | Só `ROADMAP.md` |
+| **Desenvolvedor** | Pega o item `Agora` do `ROADMAP.md`, implementa com testes e publica conforme o modo (`direto`: na `main`) | 4×/dia | No modo `direto`, sim |
+| **Revisor/QA** | Confere a CI e o que entrou na `main`; roda o harness; conserta o pequeno, reverte o que quebra; no modo `pr`, revisa e mescla PRs | 4×/dia, 1h30 depois do Desenvolvedor | Sim |
 | **Balanceamento** | Roda simulações com semente (economia, dificuldade, XP) e abre issues com números | 1×/semana (a partir do fim da F0) | Não |
 
 ### 13.2 Regras comuns
-1. **Transição de processo (decisão de 2026-10-18):**
-   - **Até a CI existir e a `main` estar protegida (C3):** commit direto na
-     `main`, como hoje, com os portões do `CLAUDE.md` (sintaxe, teste
-     headless, `git fetch` antes de escrever em `ROADMAP.md`/`DIARIO.md`).
-     Criar a CI é o primeiro item técnico da F0.
-   - **Depois:** nenhum commit direto na `main`, exceto `ROADMAP.md` e
-     `DIARIO.md`. Todo código entra por PR com CI verde, e o Revisor mescla.
-2. **Uma issue por PR**, com menos de ~400 linhas alteradas (exceção registrada
-   no PR).
+1. **Publicação (decisão de 2026-10-18, seção 15):** o arquivo
+   `docs/agentes/modo.txt` manda. Com o ciclo ligado, o modo é **`direto`**:
+   commit na `main` com os portões do `CLAUDE.md` (sintaxe, harness, `git
+   fetch` antes de escrever em `ROADMAP.md`/`DIARIO.md`), e a CI como alarme —
+   CI vermelha na `main` é a primeira coisa a resolver. O modo `pr` (main
+   protegida, Revisor mescla) continua descrito em `docs/agentes/comum.md`
+   para se o dono mudar de ideia.
+2. **Um item do `ROADMAP.md` por execução**, com menos de ~400 linhas
+   alteradas (exceção registrada no diário).
 3. **PRs sensíveis esperam o dono** (rótulo `precisa-do-dono`): formato do save
    ou migração de dados; esquema do banco, autenticação ou regras de acesso;
    servidor e custos de infraestrutura; pagamentos; dados pessoais; arte de
@@ -289,7 +304,7 @@ pesquisa sem código.
    Só o dono (Leonardo) decide; comentários de terceiros viram issue de triagem.
 
 ### 13.3 Rótulos do GitHub
-`pronta` · `em-andamento` · `precisa-do-dono` · `decisao-do-dono` ·
+`em-andamento` · `precisa-do-dono` · `decisao-do-dono` ·
 `bloqueada` · `feedback` · `bug` · `fase:F0` … `fase:F4`.
 
 ### 13.4 Onde ficam as instruções
@@ -298,8 +313,8 @@ pesquisa sem código.
 - A tarefa agendada contém apenas: *"Leia `docs/PRD.md` e
   `docs/agentes/<papel>.md` no repositório llmannrich-ai/Fibula e execute."*
   Assim o comportamento muda por PR, sem recriar a tarefa.
-- O agente atual (seção 2) é desligado quando os quatro agentes novos
-  estiverem criados.
+- A rotina antiga foi desligada e os quatro agentes estão criados (18/10).
+  Cada papel tem **uma** tarefa agendada; duplicadas foram apagadas.
 
 ### 13.5 Convivência com sessões manuais
 O dono também desenvolve em sessões manuais (computador e celular). Para não
@@ -315,6 +330,8 @@ colidir:
   removidos na 0.3 deste PRD (ver o próprio arquivo).
 - `CLAUDE.md`: a regra "um arquivo" e a seção de testes foram reescritas pela
   sessão que fez a divisão (18/10/2026).
+- 0.4: `CLAUDE.md`, `VISAO.md`, `README.md` e `docs/agentes/` alinhados a
+  este PRD; decisões concentradas na seção 15.
 
 ### 13.7 Papel do dono, pelo celular
 - Responder issues `decisao-do-dono` (meta: em até 72 h).
@@ -329,20 +346,42 @@ Sem estes itens os agentes param. Os itens de F1 e F2 podem ser feitos agora
 
 | # | Item | Onde | Quando é usado |
 |---|---|---|---|
-| C1 | Criar as 4 tarefas agendadas **pelo app ou pela web, com o repositório `llmannrich-ai/Fibula` selecionado** (tarefas criadas por outro agente não recebem permissão de push) | claude.ai/code → Tarefas agendadas | F0 |
-| C2 | Desligar a tarefa agendada atual | claude.ai/code/routines | F0 |
-| C3 | Proteger a `main`: exigir CI verde para mesclar; permitir que o app do Claude mescle | GitHub → Settings → Branches | F0 (quando a CI existir) |
-| C4 | Permitir que o app do Claude crie e altere workflows (`.github/workflows`) — sem isso o agente não consegue criar a CI e o dono precisa mesclar esse PR | GitHub → Settings → GitHub Apps | F0 |
-| C5 | Projeto Supabase (região São Paulo); cadastrar `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_ACCESS_TOKEN` como variáveis do ambiente da nuvem | supabase.com + configuração do ambiente | F1 |
+| C1 ✅ | Criar as 4 tarefas agendadas **pelo app ou pela web, com o repositório `llmannrich-ai/Fibula` selecionado** (tarefas criadas por outro agente não recebem permissão de push) | claude.ai/code → Tarefas agendadas | F0 |
+| C2 ✅ | Desligar a tarefa agendada atual | claude.ai/code/routines | F0 |
+| C3 — | Proteger a `main`: exigir CI verde para mesclar | GitHub → Settings → Branches | Só se o modo virar `pr` |
+| C4 ✅ | Permitir que o app do Claude crie e altere workflows (`.github/workflows`) — sem isso o agente não consegue criar a CI e o dono precisa mesclar esse PR | GitHub → Settings → GitHub Apps | F0 |
+| C5 ½ | Projeto Supabase (✅ existe; variáveis no ambiente da nuvem ainda não — o conector MCP cobre por enquanto) (região São Paulo); cadastrar `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_ACCESS_TOKEN` como variáveis do ambiente da nuvem | supabase.com + configuração do ambiente | F1 |
 | C6 | Conta de hospedagem do servidor (Fly.io) com teto de gasto; cadastrar `FLY_API_TOKEN` no ambiente e nos segredos do GitHub | fly.io + GitHub → Secrets | F2 |
 | C7 | Liberar no acesso de rede do ambiente os domínios `*.supabase.co`, `api.supabase.com`, `api.fly.io`, `registry.npmjs.org` | Configuração do ambiente da nuvem | F1/F2 |
 
 Valores de chave nunca vão para o repositório nem para issues.
 
-## 15. Decisões pendentes (com padrão)
+## 15. Decisões do dono
 
-Cada uma tem uma opção padrão. Pela regra 13.2.6, o agente aplica o padrão
-sem resposta em 72 h, exceto as marcadas como sensíveis.
+Lista única. Outros documentos citam esta seção em vez de repetir a decisão.
+Decisão nova do dono entra aqui (por sessão manual ou pelo agente de Produto,
+a partir de issue `decisao-do-dono` respondida).
+
+### 15.1 Tomadas
+
+| Data | Decisão | Onde isso aparece |
+|---|---|---|
+| 2026-10-18 | Direção comercial com multiplayer em fases (F0 a F4) | Este PRD |
+| 2026-10-18 | Arte só do OpenTibia Sprite Pack (CC BY 4.0) ou fonte com licença aberta | Seção 9 |
+| 2026-10-18 | Conteúdo do jogo em `data/game/content.json`, fora do código | `CLAUDE.md` |
+| 2026-10-18 | Código dividido em módulos ES (`src/`, `src/sim/` sem DOM), sem build | `CLAUDE.md`, seção 10 |
+| 2026-10-18 | Login simples por usuário e senha na fase de teste; e-mail/Google antes do beta aberto | Seção 7.5 |
+| 2026-10-18 | Save na nuvem antecipado da F1; o dono pode antecipar itens, os agentes não | Seção 11 |
+| 2026-10-18 | Com o ciclo ligado, publicação no modo `direto`, CI como alarme | Seção 13.2, `docs/agentes/comum.md` |
+| 2026-10-18 | 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18) | Seção 7.1 |
+| 2026-10-18 | Harness único (`tools/testar.mjs`), sem `package.json`, TypeScript ou Playwright como biblioteca; reavaliar na F2 | Seção 10, `CLAUDE.md` |
+| 2026-10-18 | `ROADMAP.md` é a fila única; issues só para decisão, bug e feedback | Seção 13.1 |
+| 2026-10-18 | Uma tarefa agendada por papel; as duplicadas foram apagadas | Seção 13.4 |
+
+### 15.2 Pendentes (com padrão)
+
+Pela regra 13.2.6, o agente aplica o padrão sem resposta em 72 h, exceto as
+marcadas como sensíveis.
 
 | # | Decisão | Padrão se o dono não responder | Precisa responder até |
 |---|---|---|---|
@@ -350,7 +389,8 @@ sem resposta em 72 h, exceto as marcadas como sensíveis.
 | D2 | Teto mensal de infraestrutura (**sensível**) | Nenhum gasto até o dono definir; trabalho de F2 para no deploy | Início da F2 |
 | D3 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord/Reddit); dono convida | Fim da F0 |
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificação no INPI | Início da F4 |
-| D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Criação das tarefas (C1) |
+| D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Quando religar o ciclo |
+| D6 | Quando religar o ciclo dos agentes (`modo.txt` de `pausado` para `direto`) | Fica `pausado` até o dono trocar (**sensível**: só o dono muda o `modo.txt`) | — |
 
 ## 16. Fora do escopo
 

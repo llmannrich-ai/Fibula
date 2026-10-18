@@ -33,6 +33,8 @@ testado.
 
 6. **Publique conforme o modo:**
    - **`direto`:** commit na `main` com a mensagem no padrão do `CLAUDE.md`.
+     Depois do push, espere a CI do seu commit; se ficar vermelha, conserte
+     na mesma execução.
      Atualize o `ROADMAP.md`: item para `Concluído` com data e commit, próximo
      de `Próximo` sobe para `Agora`.
    - **`pr`:** branch `dev/<item-curto>`, commit, `gh pr create` com o que
