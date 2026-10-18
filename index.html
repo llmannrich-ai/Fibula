@@ -423,7 +423,10 @@ const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIn
 let save={cofre:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{}};
 try{
   const s=JSON.parse(localStorage.getItem(KEY)||'null');
-  if(s){save=Object.assign(save,s);save.up=Object.assign({},UP0,s.up||{});save.chars=s.chars||{}}
+  if(s){save=Object.assign(save,s);save.up=Object.assign({},UP0,s.up||{});save.chars=s.chars||{};
+    /* save apontando para um personagem que não existe deixava a tela em branco */
+    if(save.classe&&!CLASSES[save.classe])save.classe=null;
+    if(save.classe&&!save.chars[save.classe]){save.chars[save.classe]=novoChar(save.classe);localStorage.setItem(KEY,JSON.stringify(save))}}
   else{ // migra o save da Etapa 2: cofre, melhorias e o nível viram um Feiticeiro
     const v1=JSON.parse(localStorage.getItem(KEY1)||'null');
     if(v1){
@@ -776,6 +779,9 @@ function gainXp(x){
       const vago=c.slots.indexOf(null);
       if(vago>=0&&vago<nSlots()){c.slots[vago]=k;log(`${SPELLS[k].n} foi para o espaço ${vago+1}.`,'info')}
     }
+    /* os espaços e as habilidades mudaram: sem isto o botão da habilidade nova
+       só aparecia na incursão seguinte */
+    montaBotoes();
   }
   persist();
 }
@@ -1109,7 +1115,7 @@ function montaBotoes(){ // chamado ao entrar na incursão: os espaços mudam com
     b.querySelector('.nm').textContent=s.k;
     b.querySelector('.ct').textContent=s.mana?s.mana+' mana':'grátis';
     b.dataset.el=s.t==='cura'?'cura':s.t==='buff'?'apoio':s.el;
-    b.setAttribute('aria-label',`${s.n} — ${s.mana} de mana (${['J','K','L','I'][i]})`);
+    b.setAttribute('aria-label',`${s.n} — ${s.mana?s.mana+' de mana':'sem mana'} (${['J','K','L','I'][i]})`);
   }
 }
 function hud(){

@@ -145,11 +145,6 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
   (pilar 3). Duas saídas: embutir os dois pesos como `@font-face` com fonte em
   base64 no próprio arquivo, ou trocar por pilha de fontes do sistema e aceitar
   a perda estética. Pré-requisito para o PWA abrir offline de verdade.
-- **Harness de teste no repositório** — um script em `tools/` que gere os dois
-  harness headless descritos no [CLAUDE.md](CLAUDE.md) (menu com loja, e
-  incursão ativa) e retorne código de saída diferente de zero quando o
-  `data-errs` aparecer. Hoje cada execução monta o `test.html` do zero, o que
-  convida a pular o teste.
 - **Rastro assíncrono de outros jogadores** — placar local, marca de morte no
   mapa onde a última incursão terminou, recorde a ser batido. Sensação de MMO
   sem rede (pilar 2).
@@ -165,6 +160,19 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Harness de teste no repositório** (`PENDENTE`).
+  `node tools/testar.mjs` é um comando só e é o portão: refaz a checagem de
+  sintaxe, monta uma cópia do `index.html` por caso de teste, roda cada uma no
+  Edge headless e sai com código diferente de zero se qualquer asserção falhar
+  ou se o `data-errs` aparecer. Oito casos, 194 asserções: menu com Mercador,
+  incursão de ponta a ponta até a extração, morte com o selo, as quatro
+  classes, grimório no nível 18, nível subindo no meio da incursão, save
+  corrompido e migração `v1`→`v2`. Cada caso tem save semeado próprio e
+  `Math.random` semeado, então o resultado é determinístico. Rodar contra a
+  Etapa 3 achou dois bugs, corrigidos no mesmo commit: o botão da habilidade
+  aprendida no meio da incursão não aparecia até a incursão seguinte, e um save
+  com classe apontando para personagem ausente deixava a tela em branco.
+  Substitui o `test.html` montado à mão que o `CLAUDE.md` descrevia.
 - **2026-10-18 — Etapa 3: classes, habilidades e evolução** (`1639d2d`).
   Quatro classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por taxa de
   crescimento e não por lista de poderes, grimório com slots de habilidade
