@@ -183,10 +183,11 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
-- **2026-10-18 — Save na nuvem com conta (antecipado da F1)**. Login por link
-  mágico no e-mail e save sincronizado com o Supabase (projeto
-  `bpwljbualdjlwmzcryzl`, tabela `public.saves` com RLS, esquema em
-  `tools/supabase/001_saves.sql`), por `fetch` direto, sem biblioteca. Opcional:
+- **2026-10-18 — Save na nuvem com conta (antecipado da F1)**. Login simples
+  com usuário e senha, sem e-mail (fase de teste; o link mágico, que veio
+  primeiro, não entregava o e-mail), e save sincronizado com o Supabase
+  (projeto `bpwljbualdjlwmzcryzl`, funções e tabelas em
+  `tools/supabase/002_login_simples.sql`), por `fetch` direto, sem biblioteca. Opcional:
   sem conta ou sem rede o jogo segue só com o `localStorage`. Antecipado da F1
   por decisão do Leonardo, com a F0 ainda aberta. Dívida conhecida: o cliente
   grava o save inteiro, então quem editar o JSON trapaceia no próprio save (só
