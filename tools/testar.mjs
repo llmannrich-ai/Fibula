@@ -34,7 +34,7 @@
  */
 
 import {execFileSync, spawn, spawnSync} from 'node:child_process';
-import {existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
+import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
 import {dirname, join, resolve} from 'node:path';
@@ -170,6 +170,19 @@ const CONTEUDO = (() => {
   process.exit(2);
 })();
 
+/* A arte (assets/otsp) segue o mesmo caminho: o atlas.json volta pelo fetch
+   falso e o atlas.png é copiado ao lado de cada cópia, porque <img> lê file://
+   sem problema. Caso com semArte:true não recebe nenhum dos dois e exercita o
+   desenho em código, que é o que o jogador vê se a arte não carregar. */
+const ARTE = (() => {
+  for (const base of [dirname(JOGO), RAIZ]) {
+    const js = join(base, 'assets', 'otsp', 'atlas.json'), png = join(base, 'assets', 'otsp', 'atlas.png');
+    if (existsSync(js) && existsSync(png)) return {json: readFileSync(js, 'utf8'), png};
+  }
+  console.error('FALHA: não achei assets/otsp/atlas.json e atlas.png (rode node tools/sprites.mjs)');
+  process.exit(2);
+})();
+
 function prelude(caso) {
   const semeadura = Object.entries(caso.save || {})
     .map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)},${JSON.stringify(JSON.stringify(v))});`)
@@ -207,10 +220,12 @@ function prelude(caso) {
      data/game/content.json real, embutido por tools/testar.mjs. Só essa URL é
      interceptada: o POST do resultado para o coletor precisa do fetch real */
   var CT=${conteudoDoCaso(caso)};
+  var AT=${caso.semArte ? 'null' : ARTE.json};
   var fr=window.fetch.bind(window);
   window.fetch=function(u,o){
     /* nenhum caso fala com o Supabase de verdade; quem quer nuvem usa P.nuvem */
     if(/supabase.co/.test(String(u)))return Promise.reject(new Error('rede real bloqueada no teste'));
+    if(/atlas\.json/.test(String(u)))return AT?Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(AT)}}):Promise.reject(new Error('arte desligada no teste'));
     if(!/content\.json/.test(String(u)))return fr(u,o);
     return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(CT)}})};
 })();
@@ -427,6 +442,60 @@ const CASOS = [
     ok('o tempo na masmorra foi registrado', (txt('#eTime')||'')!=='', txt('#eTime'));
     ok('o selo não aparece em extração', $('#eSeal').hidden);
     ok('o saco foi detalhado item por item', todos('#endItems li').length>=1, todos('#endItems li').length);
+`,
+  },
+  {
+    nome: 'arte',
+    o_que: 'os sprites do OTSP chegam e a incursão roda desenhada com eles: combate, cadáver, efeitos e ícones',
+    semente: 11,
+    limite: 90000,
+    patches: [P.tempo(20, 10), P.saco, P.portalNaEntrada, P.spawnNaEntrada],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    var chegou=await ate(function(){return $('#app').dataset.arte==='1'},400);
+    ok('o atlas carregou', chegou);
+    clica($('#toPick'));
+    ok('a escolha de personagem mostra o retrato de cada classe', todos('#pickList .cls .ico').length===4, todos('#pickList .cls .ico').length);
+    clica($('#pickBack'));
+    clica($('#play'));
+    await quadros(2);
+    ok('o botão da poção ganhou o ícone', !!$('#bPot .ico'));
+    tecla('keydown','KeyJ');
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    tecla('keyup','KeyJ');
+    ok('a incursão desenhada com sprites chegou ao fim', acabou, txt('#endTitle'));
+    ok('saiu pelo portal', txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    ok('houve combate com os sprites', +txt('#eKills')>=1, txt('#eKills'));
+    ok('os itens da tela final têm ícone', todos('#endItems li .ico').length>=1, todos('#endItems li .ico').length);
+`,
+  },
+  {
+    nome: 'sem-arte',
+    o_que: 'sem o atlas a incursão continua jogável com o desenho em código',
+    semente: 11,
+    limite: 90000,
+    semArte: true,
+    patches: [P.tempo(20, 10), P.saco, P.portalNaEntrada, P.spawnNaEntrada],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    await quadros(20);
+    ok('a arte não foi marcada como carregada', !$('#app').dataset.arte);
+    clica($('#play'));
+    tecla('keydown','KeyJ');
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    tecla('keyup','KeyJ');
+    ok('a incursão chegou ao fim sem a arte', acabou, txt('#endTitle'));
+    ok('o botão da poção ficou sem ícone', !$('#bPot .ico'));
 `,
   },
   {
@@ -861,6 +930,10 @@ async function main() {
     let carga = null, erro = null, nav = null;
     try {
       writeFileSync(arquivo, monta(caso, html, alvo), 'utf8');
+      if (!caso.semArte) {
+        mkdirSync(join(dir, 'assets', 'otsp'), {recursive: true});
+        copyFileSync(ARTE.png, join(dir, 'assets', 'otsp', 'atlas.png'));
+      }
       const aguarda = coletor.espera(caso.nome, caso.limite || 45000);
       nav = abreNavegador(edge, arquivo, join(dir, 'perfil'));
       carga = await aguarda;
