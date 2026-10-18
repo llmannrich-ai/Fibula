@@ -46,7 +46,7 @@ O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
 | Arte | Formas desenhadas em código no canvas; cor por classe. |
 | Guias | `CLAUDE.md` (como trabalhar), `VISAO.md` (pilares e não-objetivos), `AGENTS.md` (ponteiro), `docs/analise-tibia-habilidades.md` (fórmulas do Forgotten Server), `ROADMAP.md` com pilar por item, `DIARIO.md` com formato de 7 partes. |
 | Agentes | Tarefa agendada "Fibula - ciclo de analise e desenvolvimento" a cada 2 h, commit direto na `main`, instruções guardadas na própria tarefa. Sessões manuais (computador e celular) trabalham em paralelo na mesma `main`. |
-| Em andamento | Divisão do `index.html` em arquivos, numa sessão separada do dono. |
+| Em andamento | Divisão do `index.html` em arquivos, numa sessão separada do dono. **Concluída em 18/10/2026:** `src/` (cliente) e `src/sim/` (simulação sem DOM), ver `CLAUDE.md`. |
 
 **Problemas estruturais que o PRD precisa resolver:**
 
@@ -217,7 +217,7 @@ sem impedir o multiplayer.
 | Camada | Escolha | Motivo |
 |---|---|---|
 | Linguagem | JavaScript moderno com módulos ES, checado por `tsc --checkJs` (tipos em JSDoc) | Tipagem para os agentes sem passo de build; o mesmo código roda no navegador e no Node |
-| Estrutura | **Divisão em andamento noutra sessão do dono.** Os agentes não refazem nem reorganizam essa divisão; adaptam-se ao que ela entregar. O que o PRD exige dela: regras de jogo (simulação) em módulos sem DOM, separadas de desenho, entrada e telas; tabelas de dados (`CLASSES`, `SPELLS`, `MT`, `ITEMS`, `LOOT`, `UP`) num lugar só; `index.html` continua na raiz. Pastas novas previstas: `server/` (F2), `tests/`, `tools/`, `assets/` | O que o servidor precisa fica separado do que é tela |
+| Estrutura | **Divisão concluída em 18/10/2026:** módulos ES nativos em `src/`, com a simulação em `src/sim/`, sem DOM, falando com o cliente por `saida` e recebendo a entrada em `update(dt, ent)`; o `CLAUDE.md` descreve o mapa. A simulação ainda é chamada no passo do quadro, não em passo fixo (item 2 da F0). O que o PRD exige dela: regras de jogo (simulação) em módulos sem DOM, separadas de desenho, entrada e telas; tabelas de dados (`CLASSES`, `SPELLS`, `MT`, `ITEMS`, `LOOT`, `UP`) num lugar só; `index.html` continua na raiz. Pastas novas previstas: `server/` (F2), `tests/`, `tools/`, `assets/` | O que o servidor precisa fica separado do que é tela |
 | Cliente | Canvas 2D próprio, sprites em atlas, PWA (manifest + service worker) | Evolução do que já funciona; instalável na tela inicial |
 | Publicação | GitHub Pages a partir da `main` (sem build) | Já funciona; nada para configurar |
 | Testes | `node --test` (regras, save, geração de mapa com semente) + Playwright em viewport 360×640 (fluxos: menu → incursão → extração/morte → mercador) | Zero dependência para o núcleo; Chromium já existe no ambiente dos agentes |
@@ -307,16 +307,14 @@ colidir:
 - Sessão manual que vai mexer em algo grande cria uma issue `em-andamento`
   descrevendo o escopo; agentes não tocam nos mesmos arquivos ou seções
   enquanto ela estiver aberta.
-- A divisão do `index.html` (seção 10) é tratada assim: até ela chegar na
-  `main`, agentes só fazem mudanças pequenas no `index.html`, e nenhuma
-  reorganização.
+- A divisão do `index.html` (seção 10) chegou na `main` em 18/10/2026; a
+  restrição de mudanças pequenas que valia até lá caiu.
 
 ### 13.6 Atualização dos guias
 - `VISAO.md`: não-objetivos de rede, contas, monetização e telemetria
   removidos na 0.3 deste PRD (ver o próprio arquivo).
-- `CLAUDE.md`: a regra "um arquivo" e a seção de testes serão reescritas pela
-  sessão que faz a divisão, quando ela chegar na `main`. Até lá, vale o
-  `CLAUDE.md` atual para *como* mexer no código.
+- `CLAUDE.md`: a regra "um arquivo" e a seção de testes foram reescritas pela
+  sessão que fez a divisão (18/10/2026).
 
 ### 13.7 Papel do dono, pelo celular
 - Responder issues `decisao-do-dono` (meta: em até 72 h).

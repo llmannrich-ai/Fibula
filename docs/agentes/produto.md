@@ -56,5 +56,4 @@ nesta ordem, junto com os itens de jogo que já existem:
 3. Aviso de falha do save e teste automatizado da migração v1→v2.
 4. Pipeline dos sprites OTSP (`tools/` + `assets/` + `assets/CREDITOS.md`),
    sem ainda trocar o desenho do jogo.
-5. Gerador aleatório com semente (pequeno, isolado; esperar a divisão do
-   `index.html` se ele for grande).
+5. Gerador aleatório com semente (pequeno, isolado, em `src/sim/base.js`).

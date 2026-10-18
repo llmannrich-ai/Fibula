@@ -16,9 +16,10 @@ automático não tem como saber que terminou.
 ### Gerador aleatório com semente
 
 **Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
-semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
-`index.html` ou exigir mover código entre seções, esperar a divisão do arquivo
-(`comum.md`, seção 3) e fazer outro item.
+semente, em `src/sim/base.js`, usado por `genMap()`, `spawn()` e o resto da
+simulação no lugar do `Math.random`. A divisão em módulos já entregou o lugar
+e o teste: o `tools/testar.mjs` já roda a incursão no Node e confere que a
+mesma semente dá o mesmo resultado (hoje semeando o `Math.random` por fora).
 
 **Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
 `tools/`) e partidas sem semente continuam variando.
@@ -175,6 +176,17 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Código dividido em módulos ES, com a regra do jogo separada da
+  tela** *(F0 item 1)*. O `<script>` de 1.290 linhas saiu do `index.html` para
+  `src/` (cliente) e `src/sim/` (simulação: conteúdo, progressão, mapa,
+  incursão, física e combate), sem build e sem biblioteca. `src/sim/` não toca
+  em DOM nem em armazenamento: avisa o cliente pelo objeto `saida` e recebe a
+  entrada em `update(dt, ent)`. O `tools/testar.mjs` passou a servir as cópias
+  por HTTP (módulo ES não abre em `file://`), checa a sintaxe de cada módulo e
+  ganhou o passo "simulação no Node": procura DOM em `src/sim/` e roda uma
+  incursão inteira sem navegador, duas vezes com a mesma semente. Nada muda
+  para o jogador; os 16 casos de navegador passam como antes. Decisão do
+  Leonardo (opção A).
 - **2026-10-18 — Arte do Tibia: sprites OTSP no lugar das formas e janelas de
   pedra** (pedido do Leonardo; cobre o item `Agora` "pipeline dos sprites" e
   vai além dele, trocando o desenho — F0 item 5 — e cortando o Google Fonts —

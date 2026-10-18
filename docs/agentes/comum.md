@@ -45,24 +45,23 @@ Leia, nesta ordem:
 Só o dono muda esse arquivo. Se ele parecer errado (ex.: existe CI e a `main`
 está protegida, mas o modo ainda é `direto`), abra issue `decisao-do-dono`.
 
-## 3. Divisão do index.html em andamento
+## 3. Código em módulos: a fronteira da simulação
 
-Enquanto a **Regra número um** do `CLAUDE.md` proibir arquivo `.js` separado —
-leia a seção, não o título dela, que já mudou uma vez:
+A divisão do `index.html` terminou em 18/10/2026: o código mora em `src/`
+(cliente) e `src/sim/` (simulação, sem DOM). O mapa e as regras estão no
+`CLAUDE.md`, seção "Regra número um". O que mais importa para um agente:
 
-- não reorganize, não mova código entre seções e não crie arquivos `.js`;
-- mudanças no `index.html` só se forem pequenas (até ~60 linhas alteradas) e
-  localizadas numa seção;
-- prefira trabalho fora do `index.html`: `tools/`, `tests/`, `assets/`,
-  `.github/`, documentação.
+- regra de jogo nova vai para `src/sim/` e não pode tocar em `document`,
+  `window`, `localStorage`, canvas ou temporizador; o que precisar sair para a
+  tela passa por `saida`, e a entrada chega em `update(dt, ent)`. O
+  `tools/testar.mjs` reprova quem cruzar essa linha;
+- não crie arquivo `.js` novo sem uma seção com fronteira clara que o
+  justifique, e não reorganize módulos por estética;
+- nada de biblioteca, bundler ou `package.json`.
 
 O dado do jogo é outra conversa: classes, habilidades, melhorias, inimigos,
 itens, loot e progressão vivem em `data/game/content.json`, e ajustar
-balanceamento ali não conta como mexer no `index.html` — é para isso que o
-arquivo existe.
-
-Quando a Regra número um deixar de proibir separação de código, siga o
-`CLAUDE.md` novo.
+balanceamento ali não é mexer em código — é para isso que o arquivo existe.
 
 ## 4. Issues: como falar com o dono
 

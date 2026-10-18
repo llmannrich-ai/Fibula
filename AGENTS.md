@@ -16,6 +16,6 @@ O jogo tem base de dados no **Supabase** (contas e save na nuvem). Projeto,
 chaves e regras de uso estão na seção "Supabase" do `CLAUDE.md`; os agentes
 locais têm acesso às chaves sem precisar pedir.
 
-Dois portões, sem exceção: a checagem de sintaxe do bloco `<script>` antes de
+Dois portões, sem exceção: a checagem de sintaxe dos módulos de `src/` antes de
 qualquer commit de código, e o teste da incursão ativa — não só do menu. Os dois
 estão descritos no `CLAUDE.md`.

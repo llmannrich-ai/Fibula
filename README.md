@@ -82,8 +82,10 @@ em [assets/CREDITOS.md](assets/CREDITOS.md); o atlas sai de
 
 ## Desenvolvimento
 
-Todo o código do jogo é o `index.html` — sem build e sem biblioteca, servido cru
-pelo GitHub Pages. O conteúdo fica fora dele, num arquivo de dados.
+O código do jogo é o `index.html` mais os módulos ES de `src/` — sem build e sem
+biblioteca, servidos crus pelo GitHub Pages. A regra do jogo fica em `src/sim/`,
+sem nada de navegador, para poder rodar também num servidor. O conteúdo fica
+fora do código, num arquivo de dados.
 
 A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
 convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os

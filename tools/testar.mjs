@@ -2,10 +2,12 @@
 /* Harness de teste headless do Fibula.
  *
  * Automatiza o roteiro manual da seção "Como testar" do CLAUDE.md: checa a
- * sintaxe do bloco <script>, monta uma CÓPIA do index.html para cada caso de
- * teste e roda cada cópia no Edge headless. O index.html nunca é tocado.
+ * sintaxe de cada módulo de src/, roda a simulação (src/sim/) direto no Node,
+ * sem navegador, monta uma CÓPIA do jogo (index.html, src/, conteúdo e arte)
+ * para cada caso de teste e roda cada cópia no Edge headless, servida por HTTP
+ * em 127.0.0.1. O jogo de verdade nunca é tocado.
  *
- * Cada cópia recebe, injetado em volta do <script> do jogo:
+ * Cada cópia recebe, injetado em volta do módulo do jogo:
  *   - o atalho de requestAnimationFrame (sem ele o laço nunca roda no headless
  *     e o teste leria só os placeholders estáticos do markup);
  *   - um capturador que acumula erros de janela num atributo data-errs no <html>;
@@ -16,8 +18,9 @@
  *
  * Por que não --dump-dom: o Edge 155 aceita a opção e não escreve nada (a
  * opção saiu do headless novo e só existe no chrome-headless-shell, que não
- * vem instalado). Em vez dela, este script sobe um coletor HTTP em 127.0.0.1 e
- * a cópia faz POST do resultado no fim do roteiro. O DOM final vem no mesmo
+ * vem instalado). Em vez dela, este script sobe um servidor HTTP em 127.0.0.1,
+ * que entrega as cópias (módulo ES não carrega de file://) e recebe o POST do
+ * resultado no fim do roteiro. O DOM final vem no mesmo
  * pacote e é gravado em dump.html, para inspeção igual à do roteiro manual.
  *
  * Uso:
@@ -29,7 +32,8 @@
  * seguinte; --manter só imprime onde elas estão.
  *
  * Variáveis de ambiente: FIBULA_EDGE (binário do navegador), FIBULA_SAIDA
- * (pasta de trabalho). Sai com código diferente de zero se a sintaxe falhar,
+ * (pasta de trabalho), FIBULA_JOGO (index.html de outra cópia do jogo, com o
+ * src/ ao lado). Sai com código diferente de zero se a sintaxe falhar,
  * se algum caso registrar erro de janela ou se qualquer asserção falhar.
  */
 
@@ -37,13 +41,14 @@ import {execFileSync, spawn, spawnSync} from 'node:child_process';
 import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {createServer} from 'node:http';
 import {tmpdir} from 'node:os';
-import {dirname, join, resolve} from 'node:path';
-import {fileURLToPath} from 'node:url';
+import {dirname, extname, join, relative, resolve} from 'node:path';
+import {fileURLToPath, pathToFileURL} from 'node:url';
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 /* FIBULA_JOGO serve para apontar uma cópia propositalmente quebrada e conferir
    que o portão realmente falha; no uso normal é sempre o index.html da raiz */
 const JOGO = process.env.FIBULA_JOGO || join(RAIZ, 'index.html');
+const BASE = dirname(JOGO);
 const SAIDA = process.env.FIBULA_SAIDA || join(tmpdir(), 'fibula-harness');
 
 /* Na máquina do Leonardo é o Edge; na nuvem não existe Edge, então procura
@@ -62,37 +67,54 @@ const CANDIDATOS = [
 ].filter(Boolean);
 const NOMES_NO_PATH = ['chromium', 'chromium-browser', 'google-chrome', 'chrome', 'msedge'];
 
-/* ---------- portão de sintaxe ---------- */
-/* Mesmo gesto do CLAUDE.md: recorta o bloco <script> e passa no node --check.
-   Um erro de sintaxe aqui derruba o jogo inteiro, porque é um arquivo só. */
-function corpoDoScript(html) {
-  /* o index.html é salvo com CRLF, então o marcador tolera os dois finais */
-  /* o laço virou (async()=>{ quando o conteúdo passou a vir por fetch */
-  const m = /<script>\r?\n\((?:async)?\(\)=>\{/.exec(html);
-  if (!m) throw new Error('não achei o <script> do jogo no index.html');
-  const ini = m.index;
-  const fim = html.indexOf('</script>', ini);
-  if (fim < 0) throw new Error('o <script> do jogo não fecha');
-  return {ini, fim: fim + '</script>'.length, js: html.slice(ini + '<script>'.length, fim)};
+/* ---------- fontes e portão de sintaxe ---------- */
+/* O jogo é o index.html e os módulos de src/. Todos são lidos para um mapa
+   caminho → texto, que é o que os patches mexem e o que vai para cada cópia. */
+const MODULO = '<script type="module" src="src/main.js"></script>';
+function listaJs(dir) {
+  const out = [];
+  for (const n of readdirSync(dir)) {
+    const p = join(dir, n);
+    if (statSync(p).isDirectory()) out.push(...listaJs(p));
+    else if (n.endsWith('.js')) out.push(p);
+  }
+  return out;
+}
+function leFontes() {
+  const f = {'index.html': readFileSync(JOGO, 'utf8')};
+  if (!f['index.html'].includes(MODULO)) throw new Error(`o index.html não carrega o jogo com ${MODULO}`);
+  for (const arq of listaJs(join(BASE, 'src'))) f[relative(BASE, arq).replace(/\\/g, '/')] = readFileSync(arq, 'utf8');
+  return f;
 }
 
-function verificaSintaxe(html, trabalho) {
-  const arq = join(trabalho, 'sintaxe.js');
-  writeFileSync(arq, corpoDoScript(html).js, 'utf8');
-  try {
-    execFileSync(process.execPath, ['--check', arq], {stdio: 'pipe'});
-    return null;
-  } catch (e) {
-    return String(e.stderr || e.message).trim();
+/* Um erro de sintaxe em qualquer módulo derruba o jogo inteiro: o navegador
+   não executa nada de um grafo de módulos com um arquivo quebrado. */
+function verificaSintaxe(fontes, trabalho) {
+  const dir = join(trabalho, 'sintaxe');
+  for (const [nome, txt] of Object.entries(fontes)) {
+    if (!nome.endsWith('.js')) continue;
+    /* .mjs para o node ler como módulo sem depender de package.json */
+    const arq = join(dir, nome.replace(/\.js$/, '.mjs'));
+    mkdirSync(dirname(arq), {recursive: true});
+    writeFileSync(arq, txt, 'utf8');
+    try {
+      execFileSync(process.execPath, ['--check', arq], {stdio: 'pipe'});
+    } catch (e) {
+      return `${nome}: ${String(e.stderr || e.message).trim()}`;
+    }
   }
+  return null;
 }
 
 /* ---------- patches na cópia ---------- */
-/* Cada patch é uma substituição exata que estoura se não casar: se o
-   index.html mudar, o harness falha alto em vez de testar coisa nenhuma. */
-function patch(html, de, para, nome) {
-  if (!html.includes(de)) throw new Error(`patch "${nome}" não casou: o index.html mudou, ajuste tools/testar.mjs`);
-  return html.split(de).join(para);
+/* Cada patch é uma substituição exata, procurada em todas as fontes, que
+   estoura se não casar em nenhuma: se o código mudar, o harness falha alto em
+   vez de testar coisa nenhuma. */
+function patch(fontes, de, para, nome) {
+  const onde = Object.keys(fontes).filter((k) => fontes[k].includes(de));
+  if (!onde.length) throw new Error(`patch "${nome}" não casou: o jogo mudou, ajuste tools/testar.mjs`);
+  for (const k of onde) fontes[k] = fontes[k].split(de).join(para);
+  return fontes;
 }
 
 const P = {
@@ -113,8 +135,8 @@ const P = {
      gravação e login fica contado para o roteiro conferir. O token válido é
      sempre 'tk1', do jogador 'u1'. */
   nuvem: (remoto, contas) => (h) => patch(h,
-    "'use strict';",
-    `'use strict';
+    MODULO,
+    `<script>
 window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
   const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
@@ -125,7 +147,9 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
   if(fn==='conta_criar'){N.login=b.p_usuario;if(b.p_usuario.toLowerCase() in N.contas)return erro('usuario_existe');
     N.contas[b.p_usuario.toLowerCase()]=b.p_senha;return r(200,{token:'tk1',id:'u1',usuario:b.p_usuario})}
   if(fn==='conta_sair'){N.saiu++;return r(204,null)}
-  return r(404,{})}}`, 'Supabase falso'),
+  return r(404,{})}}
+</script>
+${MODULO}`, 'Supabase falso'),
 };
 
 /* Ajustes no conteúdo que o prelúdio entrega à cópia. As tabelas saíram do
@@ -152,16 +176,13 @@ const SESSAO = {tk: 'tk1', uid: 'u1', usuario: 'jogador'};
 const espera = (ms) => `await new Promise(function(r){setTimeout(r,${ms})});`;
 
 /* ---------- injeção ---------- */
-/* O jogo carrega data/game/content.json por fetch, e fetch é bloqueado em
-   file://, de onde o harness abre as cópias — mesmo com
-   --allow-file-access-from-files. Subir um servidor para a página não resolveria
-   de graça: o coletor já ocupa 127.0.0.1 e a cópia vive em outro diretório. Em
-   vez disso o prelúdio devolve o arquivo real, lido aqui ao montar a cópia,
-   então validaConteudo() continua rodando contra o conteúdo verdadeiro.
+/* Cada cópia leva o próprio data/game/content.json (o real, ou o ajustado pelo
+   campo conteudo do caso), e o jogo o busca por fetch como no Pages, então
+   validaConteudo() roda contra o conteúdo verdadeiro.
    O recuo para RAIZ existe porque FIBULA_JOGO pode apontar uma cópia quebrada
    fora do repositório, que não tem data/ ao lado. */
 const CONTEUDO = (() => {
-  const tentativas = [join(dirname(JOGO), 'data', 'game', 'content.json'),
+  const tentativas = [join(BASE, 'data', 'game', 'content.json'),
                       join(RAIZ, 'data', 'game', 'content.json')];
   for (const arq of tentativas) {
     if (!existsSync(arq)) continue;
@@ -176,14 +197,14 @@ const CONTEUDO = (() => {
   process.exit(2);
 })();
 
-/* A arte (assets/otsp) segue o mesmo caminho: o atlas.json volta pelo fetch
-   falso e o atlas.png é copiado ao lado de cada cópia, porque <img> lê file://
-   sem problema. Caso com semArte:true não recebe nenhum dos dois e exercita o
-   desenho em código, que é o que o jogador vê se a arte não carregar. */
+/* A arte (assets/otsp) segue o mesmo caminho: atlas.json e atlas.png são
+   copiados para cada cópia. Caso com semArte:true não recebe nenhum dos dois e
+   exercita o desenho em código, que é o que o jogador vê se a arte não
+   carregar. */
 const ARTE = (() => {
-  for (const base of [dirname(JOGO), RAIZ]) {
+  for (const base of [BASE, RAIZ]) {
     const js = join(base, 'assets', 'otsp', 'atlas.json'), png = join(base, 'assets', 'otsp', 'atlas.png');
-    if (existsSync(js) && existsSync(png)) return {json: readFileSync(js, 'utf8'), png};
+    if (existsSync(js) && existsSync(png)) return {json: js, png};
   }
   console.error('FALHA: não achei assets/otsp/atlas.json e atlas.png (rode node tools/sprites.mjs)');
   process.exit(2);
@@ -222,18 +243,12 @@ function prelude(caso) {
   Math.random=function(){s=(s+0x6D2B79F5)|0;var t=s;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296};
   try{localStorage.clear();${semeadura}}catch(e){anota('localStorage: '+e.message)}
   ${caso.bloqueiaSave ? "Storage.prototype.setItem=function(){throw new DOMException('bloqueado pelo teste','QuotaExceededError')};" : ''}
-  /* conteúdo do jogo: fetch não funciona em file://, então devolvemos o
-     data/game/content.json real, embutido por tools/testar.mjs. Só essa URL é
-     interceptada: o POST do resultado para o coletor precisa do fetch real */
-  var CT=${conteudoDoCaso(caso)};
-  var AT=${caso.semArte ? 'null' : ARTE.json};
+  /* nenhum caso fala com o Supabase de verdade; quem quer nuvem usa P.nuvem.
+     O resto (conteúdo, arte, o POST do resultado) vai ao servidor do harness */
   var fr=window.fetch.bind(window);
   window.fetch=function(u,o){
-    /* nenhum caso fala com o Supabase de verdade; quem quer nuvem usa P.nuvem */
     if(/supabase.co/.test(String(u)))return Promise.reject(new Error('rede real bloqueada no teste'));
-    if(/atlas\.json/.test(String(u)))return AT?Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(AT)}}):Promise.reject(new Error('arte desligada no teste'));
-    if(!/content\.json/.test(String(u)))return fr(u,o);
-    return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(CT)}})};
+    return fr(u,o)};
 })();
 </script>
 `;
@@ -246,9 +261,12 @@ function conteudoDoCaso(caso) {
   return JSON.stringify(c);
 }
 
+/* O roteiro é um módulo que importa o do jogo: só começa depois que o
+   src/main.js terminou de carregar o conteúdo e abriu a primeira tela. */
 function epilogo(caso, alvo) {
-  return `<script>
+  return `<script type="module">
 /* harness de tools/testar.mjs — roteiro do caso ${caso.nome} */
+import './src/main.js';
 (async function(){
   var H=document.documentElement;
   var $=function(s){return document.querySelector(s)};
@@ -278,11 +296,30 @@ ${caso.roteiro}
 `;
 }
 
-function monta(caso, html, alvo) {
-  let h = html;
-  for (const p of caso.patches || []) h = p(h);
-  const {ini, fim} = corpoDoScript(h);
-  return h.slice(0, ini) + prelude(caso) + h.slice(ini, fim) + epilogo(caso, alvo) + h.slice(fim);
+/* Grava a cópia do caso em dir: fontes com os patches, prelúdio antes de
+   tudo (no fim do <head>), roteiro logo depois do módulo do jogo, conteúdo e
+   arte ao lado. */
+function monta(caso, fontes, dir, alvo) {
+  const f = Object.assign({}, fontes);
+  for (const p of caso.patches || []) p(f);
+  let h = f['index.html'];
+  if (!h.includes('</head>')) throw new Error('o index.html não tem </head>');
+  h = h.replace('</head>', prelude(caso) + '</head>');
+  /* o último <script type="module" src="src/main.js"> é o do jogo; P.nuvem
+     põe o Supabase falso logo antes dele */
+  const k = h.lastIndexOf(MODULO);
+  f['index.html'] = h.slice(0, k + MODULO.length) + '\n' + epilogo(caso, alvo) + h.slice(k + MODULO.length);
+  for (const [nome, txt] of Object.entries(f)) {
+    mkdirSync(dirname(join(dir, nome)), {recursive: true});
+    writeFileSync(join(dir, nome), txt, 'utf8');
+  }
+  mkdirSync(join(dir, 'data', 'game'), {recursive: true});
+  writeFileSync(join(dir, 'data', 'game', 'content.json'), conteudoDoCaso(caso), 'utf8');
+  if (!caso.semArte) {
+    mkdirSync(join(dir, 'assets', 'otsp'), {recursive: true});
+    copyFileSync(ARTE.json, join(dir, 'assets', 'otsp', 'atlas.json'));
+    copyFileSync(ARTE.png, join(dir, 'assets', 'otsp', 'atlas.png'));
+  }
 }
 
 /* ---------- coletor e navegador ---------- */
@@ -305,9 +342,20 @@ function achaNavegador() {
   throw new Error('não achei navegador. Aponte o binário em FIBULA_EDGE (ou CHROME).');
 }
 
+/* Um servidor só: GET entrega os arquivos das cópias (a pasta de trabalho),
+   POST recebe o resultado do roteiro. */
+const TIPOS = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
+  '.json': 'application/json; charset=utf-8', '.png': 'image/png'};
 async function abreColetor() {
   const pendentes = new Map();
   const srv = createServer((req, res) => {
+    if (req.method === 'GET') {
+      const arq = join(SAIDA, decodeURIComponent(req.url.split('?')[0]));
+      if (!arq.startsWith(SAIDA) || !existsSync(arq) || !statSync(arq).isFile()) { res.writeHead(404); res.end(); return; }
+      res.writeHead(200, {'content-type': TIPOS[extname(arq)] || 'application/octet-stream', 'cache-control': 'no-store'});
+      res.end(readFileSync(arq));
+      return;
+    }
     let corpo = '';
     req.setEncoding('utf8');
     req.on('data', (c) => { corpo += c; });
@@ -334,8 +382,7 @@ async function abreColetor() {
   };
 }
 
-function abreNavegador(edge, arquivo, perfil) {
-  const url = 'file:///' + arquivo.replace(/\\/g, '/').replace(/^\/+/, '');
+function abreNavegador(edge, url, perfil) {
   const p = spawn(edge, [
     '--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
     /* o Chromium das execuções de nuvem roda em contêiner, onde o sandbox não sobe */
@@ -345,7 +392,7 @@ function abreNavegador(edge, arquivo, perfil) {
        teste fica hermético */
     '--host-resolver-rules=MAP * ~NOTFOUND,EXCLUDE 127.0.0.1',
     /* o perfil é sempre temporário, para não tocar no perfil real do usuário */
-    `--user-data-dir=${perfil}`, '--allow-file-access-from-files',
+    `--user-data-dir=${perfil}`,
     url,
   ], {stdio: 'ignore', windowsHide: true});
   p.on('error', () => {});
@@ -358,6 +405,49 @@ function mata(p) {
     if (process.platform === 'win32') execFileSync('taskkill', ['/PID', String(p.pid), '/T', '/F'], {stdio: 'ignore'});
     else p.kill('SIGKILL');
   } catch (e) { /* já morreu */ }
+}
+
+/* ---------- a simulação no Node ----------
+   src/sim/ é a regra do jogo sem DOM, a que o servidor da F2 vai rodar. Este
+   passo prova as duas coisas sem navegador: nenhum arquivo de src/sim/ cita
+   DOM ou armazenamento do navegador, e uma incursão inteira roda no Node,
+   com o mesmo resultado para a mesma semente. */
+async function testaSimulacao() {
+  const falhas = [];
+  const dirSim = join(BASE, 'src', 'sim');
+  const proibido = /\b(document|window|localStorage|sessionStorage|navigator|requestAnimationFrame|matchMedia|setTimeout|performance)\b/;
+  for (const arq of listaJs(dirSim)) {
+    const sem = readFileSync(arq, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    const m = proibido.exec(sem);
+    if (m) falhas.push(`${relative(BASE, arq)} usa ${m[1]}: src/sim/ não pode depender do navegador`);
+  }
+  const url = (n) => pathToFileURL(join(dirSim, n)).href;
+  const {saida} = await import(url('base.js'));
+  const {carrega} = await import(url('dados.js'));
+  const P = await import(url('progresso.js'));
+  const I = await import(url('incursao.js'));
+  carrega(JSON.parse(CONTEUDO));
+  const rnd0 = Math.random;
+  const roda = (semente) => {
+    let sd = semente >>> 0;
+    Math.random = () => { sd = (sd + 0x6D2B79F5) | 0; let t = sd; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+    const sv = P.SAVE0(); sv.classe = 'feiticeiro'; sv.chars.feiticeiro = P.novoChar('feiticeiro'); P.setSave(sv);
+    let fim = null; saida.fim = (k) => { fim = k; };
+    I.newRun(); I.G.active = true;
+    const ent = {x: 0, y: 0, held: [true, false, false, false]};
+    let q = 0;
+    while (!I.G.over && q < 20000) { I.update(0.05, ent); q++; }
+    return {fim, q, kills: I.G.kills, xp: I.G.xpGain, saco: I.G.bagVal, mons: I.G.mons.length};
+  };
+  let a, b;
+  try { a = roda(7); b = roda(7); } catch (e) { falhas.push('a incursão quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
+  if (a) {
+    if (a.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.fim} após ${a.q} quadros`);
+    if (!(a.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a)})`);
+    if (JSON.stringify(a) !== JSON.stringify(b)) falhas.push(`mesma semente, resultados diferentes: ${JSON.stringify(a)} / ${JSON.stringify(b)}`);
+  }
+  return {falhas, a};
 }
 
 /* ---------- os casos ---------- */
@@ -929,14 +1019,22 @@ async function main() {
   if (existsSync(SAIDA)) rmSync(SAIDA, {recursive: true, force: true});
   mkdirSync(SAIDA, {recursive: true});
 
-  const html = readFileSync(JOGO, 'utf8');
+  const fontes = leFontes();
 
-  const erroSintaxe = verificaSintaxe(html, SAIDA);
+  const erroSintaxe = verificaSintaxe(fontes, SAIDA);
   if (erroSintaxe) {
-    console.error('SINTAXE FALHOU no bloco <script> do index.html:\n' + erroSintaxe);
+    console.error('SINTAXE FALHOU em src/:\n' + erroSintaxe);
     return 1;
   }
-  console.log('SINTAXE_OK  (node --check no bloco <script>)');
+  console.log(`SINTAXE_OK  (node --check em ${Object.keys(fontes).length - 1} módulos de src/)`);
+
+  const sim = await testaSimulacao();
+  if (sim.falhas.length) {
+    console.log('\u2717 simulação no Node');
+    for (const f of sim.falhas) console.log(`    falhou: ${f}`);
+  } else {
+    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.q} quadros, ${sim.a.kills} abates, mesma semente, mesmo resultado`);
+  }
 
   const edge = achaNavegador();
   const coletor = await abreColetor();
@@ -944,22 +1042,17 @@ async function main() {
   console.log(`coletor      http://127.0.0.1:${coletor.porta}`);
   console.log(`trabalho     ${SAIDA}\n`);
 
-  let falhas = 0;
+  let falhas = sim.falhas.length ? 1 : 0;
   for (const caso of casos) {
     const dir = join(SAIDA, caso.nome);
     mkdirSync(dir, {recursive: true});
-    const arquivo = join(dir, 'harness.html');
     const alvo = `http://127.0.0.1:${coletor.porta}/${caso.nome}`;
 
     let carga = null, erro = null, nav = null;
     try {
-      writeFileSync(arquivo, monta(caso, html, alvo), 'utf8');
-      if (!caso.semArte) {
-        mkdirSync(join(dir, 'assets', 'otsp'), {recursive: true});
-        copyFileSync(ARTE.png, join(dir, 'assets', 'otsp', 'atlas.png'));
-      }
+      monta(caso, fontes, dir, alvo);
       const aguarda = coletor.espera(caso.nome, caso.limite || 45000);
-      nav = abreNavegador(edge, arquivo, join(dir, 'perfil'));
+      nav = abreNavegador(edge, `${alvo}/index.html`, join(dir, 'perfil'));
       carga = await aguarda;
     } catch (e) {
       erro = String(e.message).split('\n')[0];
@@ -982,7 +1075,8 @@ async function main() {
   }
 
   await coletor.fecha();
-  console.log(`\n${casos.length - falhas}/${casos.length} casos passaram.`);
+  const total = casos.length + 1;
+  console.log(`\n${total - falhas}/${total} casos passaram (a simulação no Node conta como um).`);
   if (manter) console.log(`cópias e dumps guardados em ${SAIDA}`);
   return falhas ? 1 : 0;
 }

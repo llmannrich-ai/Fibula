@@ -15,8 +15,7 @@ testado.
    primeiro de `Próximo` se ele:
    - depender de algo do dono que ainda não existe;
    - estiver coberto por uma issue `em-andamento` do dono;
-   - exigir reorganizar o `index.html` enquanto a divisão não acabou
-     (`comum.md`, seção 3).
+   - exigir código de navegador dentro de `src/sim/` (`comum.md`, seção 3).
    Registre no diário por que pulou.
 
 3. **Planeje em um parágrafo:** o que muda, em quais arquivos, e como vai provar

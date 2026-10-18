@@ -20,23 +20,50 @@ raiz do repositório).
 
 ## Regra número um: nada de build, nada de biblioteca
 
-Todo o **código** do jogo é o [index.html](index.html) — hoje 1629 linhas. Não
-há build, não há `package.json`, não há import, não há arquivo `.js` ou `.css`
-separado. O
-GitHub Pages serve o arquivo cru, e o `.nojekyll` existe para ele não ser
-processado. A pasta `docs/` guarda análise de design, e a `tools/` ferramenta de
-desenvolvimento (teste, servidor local, extração de dados, montagem do atlas) — nada em nenhuma das
-duas vai para o navegador do jogador. A regra vale para o que é **servido**: o
-`tools/testar.mjs` roda no Node e pode ter o tamanho que precisar.
+O **código** do jogo é o [index.html](index.html) (estilo e markup) mais os
+módulos ES nativos de [`src/`](src/), que o navegador carrega como estão, a
+partir de um único `<script type="module" src="src/main.js">`. Não há build,
+não há bundler, não há `package.json`, não há biblioteca, não há `.css`
+separado. O GitHub Pages serve os arquivos crus, e o `.nojekyll` existe para
+eles não serem processados. A pasta `docs/` guarda análise de design, e a
+`tools/` ferramenta de desenvolvimento (teste, servidor local, extração de
+dados, montagem do atlas) — nada em nenhuma das duas vai para o navegador do
+jogador. A regra vale para o que é **servido**: o `tools/testar.mjs` roda no
+Node e pode ter o tamanho que precisar.
 
 Isso é uma escolha, não uma dívida: o jogo abre rápido no celular e qualquer
-agente consegue ler o programa inteiro de uma vez. **Não quebre isso.** Nenhuma
-biblioteca, nenhum bundler, nenhum arquivo `.js` separado — nem "só para
-organizar".
+agente lê o programa inteiro em poucos arquivos. **Não quebre isso.** Nenhuma
+biblioteca, nenhum bundler, nenhum passo de compilação, nenhum `import` de fora
+do repositório.
 
-Fora o `index.html`, o jogador baixa **três** coisas, todas do próprio
-repositório, servidas pelo mesmo Pages. Estão aqui para não serem confundidas
-com precedente:
+O código foi dividido em módulos em 18/10/2026, por decisão do Leonardo
+(opção A da análise daquele dia), para separar a **regra** do jogo da **tela**:
+a F2 do [PRD](docs/PRD.md) precisa rodar a mesma simulação num servidor. Por
+isso a fronteira abaixo é a regra que mais importa nesta pasta.
+
+### A fronteira: `src/sim/` não conhece o navegador
+
+`src/sim/` é a simulação: conteúdo, progressão, mapa, incursão, física e
+combate. **Nada ali toca em `document`, `window`, `localStorage`, canvas,
+`setTimeout` ou `requestAnimationFrame`.** O que a simulação precisa contar
+para fora sai pelo objeto `saida` de [`src/sim/base.js`](src/sim/base.js) —
+`log`, `banner`, `nivel` (espaços ou habilidades mudaram), `fim` (incursão
+acabou) e `persist` (hora de gravar) —, que o cliente preenche em
+[`src/main.js`](src/main.js). A entrada chega como argumento:
+`update(dt, ent)`, com `ent` montado por `leEntrada()` em `src/controles.js`.
+Efeitos visuais (`G.fx`, `G.shake`) são dados do estado; quem os desenha, e
+quem respeita `prefers-reduced-motion`, é o `render()`.
+
+O `tools/testar.mjs` vigia isso: procura esses nomes nos arquivos de
+`src/sim/` e roda uma incursão inteira no Node, sem navegador. Se você precisa
+de algo do navegador dentro de `src/sim/`, o lugar certo é um campo novo em
+`saida` ou em `ent`, não um `import` do cliente.
+
+### O que mais o jogador baixa
+
+Fora o `index.html` e o `src/`, o jogador baixa **três** coisas, todas do
+próprio repositório, servidas pelo mesmo Pages. Estão aqui para não serem
+confundidas com precedente:
 
 | O quê | De onde | Se não carregar |
 |---|---|---|
@@ -63,69 +90,91 @@ edite a tabela `ARTE` do `tools/sprites.mjs` e rode `node tools/sprites.mjs`
 repositório, o teste é se ele serve para alguém ajustar o jogo sem programar —
 se for só para "organizar o código", não entra.
 
-Duas consequências de o jogo buscar o `content.json`, que já pegaram gente
-desprevenida:
+Duas consequências de o jogo ser módulo ES e buscar o `content.json`, que já
+pegaram gente desprevenida:
 
-- **O `index.html` não abre direto do disco.** O navegador bloqueia `fetch` em
-  `file://` e o menu avisa. Para rodar local, use
-  [`tools/serve.ps1`](tools/serve.ps1) e abra pelo `localhost`.
-- O `tools/testar.mjs` embute o `content.json` e o `atlas.json` na cópia de
-  teste e os devolve por um `fetch` falso, porque abre as cópias em `file://`;
-  o `atlas.png` é copiado ao lado de cada cópia.
+- **O `index.html` não abre direto do disco.** O navegador bloqueia `fetch` e
+  módulo ES em `file://`. Para rodar local, use
+  [`tools/serve.ps1`](tools/serve.ps1) (ou qualquer servidor estático que
+  entregue `.js` como `text/javascript`) e abra pelo `localhost`.
+- O `tools/testar.mjs` monta cada cópia de teste numa pasta (o `index.html`, o
+  `src/`, o `content.json` do caso e o atlas) e a serve pelo mesmo servidor em
+  `127.0.0.1` que recebe o resultado.
 
-Se o `index.html` passar de ~2000 linhas, aí sim vale discutir separar **código**
-com o Leonardo antes de fazer.
+Arquivo novo em `src/` precisa de motivo: um módulo é uma **seção** com
+fronteira clara, não um lugar para "organizar". Antes de criar um, veja se o
+código cabe numa seção que já existe.
 
-## Mapa do index.html
+## Mapa do código
 
-O arquivo tem 1629 linhas em 18/10/2026. Os quatro blocos são o `<head>` (com o
-estilo crítico inline), o `<style>` principal, o markup e o `<script>`.
-
-Esses números envelhecem a cada commit. **Para achar as coisas, use os
+Os números envelhecem a cada commit. **Para achar as coisas, use os
 marcadores de seção `/* ---------- nome ---------- */`**, que são estáveis.
-Mantenha a divisão e ponha código novo na seção certa:
+Ponha código novo na seção certa — e, se for regra de jogo, em `src/sim/`.
 
-- **conteúdo do jogo** — `DATA_URL`, `validaConteudo()`, `conteudoFalhou()` e o
-  `await` que carrega o `data/game/content.json`. É a primeira coisa que roda,
-  porque a migração de save chama `slotsIniciais()` e já precisa de `SPELLS`;
-  por isso o IIFE é `async`. As tabelas abaixo são **leituras** desse arquivo,
-  não literais: para mudar valor, edite o JSON
-- **arte** — `ART`, o carregamento do atlas (sem `await`: não segura o jogo),
-  `spr()` (desenha com o canto inferior direito no tile, como o Tibia),
+**`index.html`** — o `<head>` com o estilo crítico inline, o `<style>`
+principal, o markup das telas e do HUD, e a linha que carrega `src/main.js`.
+
+**`src/sim/` — a simulação, sem DOM**
+
+- `base.js` — `T=32`, `MW`, `MH`, `RUN`, `PORTAL_AT`, `EXT`, `rnd()`, `rr()`,
+  `ri()`, `clamp()`, `hyp()`, `fmt()`, `DIRS` e o objeto `saida`
+- `dados.js` — **conteúdo do jogo**, **classes**, **habilidades**, **melhorias
+  e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
+  `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
+  `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()`. As tabelas
+  são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
+  valor, edite o JSON
+- `progresso.js` — **personagem e progressão**: o `save` em memória
+  (`setSave()` para trocar o objeto inteiro), `SAVE0()`, `normaliza()`,
+  `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
+  `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`
+- `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
+  (qual peça de parede cada bloco sólido recebe)
+- `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
+  `spawn()`, `pickType()`), **física** (`solid()`, `blocked()`, `move()`,
+  `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
+  **atualização** (`update(dt,ent)`, `parado(dt)`, `updateMons()`,
+  `updateProj()`, `finish()`)
+- `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`),
+  `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`
+
+**`src/` — o cliente**
+
+- `main.js` — busca o `data/game/content.json` (primeira coisa que roda,
+  porque a migração de save chama `slotsIniciais()`), liga `saida` às telas e
+  ao save, e o **laço** (`frame()`, `onResize()`)
+- `salvar.js` — **progresso salvo**: `KEY`, `KEY1`, `carregaSave()` com a
+  migração v1→v2, `persist()`, `saveFalhou`
+- `nuvem.js` — **conta e save na nuvem** (Supabase); registra-se em
+  `aoGravar()` para subir cada gravação
+- `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
-- **classes** — `CLASSES` e `CL_ORDEM`, o coração da Etapa 3
-- **habilidades** — `SPELLS`, `SLOT_LVL`, `listaDaClasse()`, `slotsIniciais()`
-- **progresso salvo** — `KEY`, `KEY1`, `save`, `persist()`, a migração v1→v2
-- **personagem e progressão** — `novoChar()`, `ch()`, `KL()`, `stats()`,
-  `xpNeed()`, `manaPraMag()`, `golpesPraPer()`, `nSlots()`, `desbloqueadas()`
-- **melhorias permanentes** — `UP`, `upCost()`, `sealPct()`
-- **dados do jogo** — `MT` (monstros), `ITEMS`, `LOOT`, `PROG` (progressão)
-- **mapa** — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
-  (qual peça de parede cada bloco sólido recebe)
-- **estado da incursão** — `newRun()`, `spawn()`, `pickType()`
-- **física** — `solid()`, `blocked()`, `move()`, `buildFlow()`, `reveal()`
-- **efeitos e mensagens** — `log()`, `banner()`, `num()`, `shake()`, `spark()`
-- **combate** — conjuração, `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`,
-  `pickup()`
-- **atualização** — `update()`, `updateMons()`, `updateProj()`, `finish()`
-- **desenho** — `render()`, `drawPlayer()`, `drawMon()`, `drawMini()`,
-  `efArea()` (magia de área tile a tile), `sprCriatura()`. Com a arte, o
-  `render()` segue a ordem do cliente do Tibia: chão, depois **linha por
-  linha** as paredes da linha e quem está nela — a parede de baixo cobre o pé
-  de quem encosta nela. Sem a arte, o caminho antigo (formas em código) fica
-  intacto; mexa nos dois ou teste o `sem-arte`
-- **HUD** — `hud()` e o cache de elementos `E`
-- **telas** — `showMenu()`, `start()`, `showEnd()`
-- **personagens** — escolha de classe, `showPick()`
-- **grimório** — habilidades desbloqueadas e os slots de ação
-- **mercador** — `drawShop()`, `buy()`, `showShop()`
-- **controles** — joystick por ponteiro, `bindHold()`, teclado
-- **laço** — `frame()`, `onResize()`
+- `desenho.js` — canvas, `resize()`, `spr()` (desenha com o canto inferior
+  direito no tile, como o Tibia), `render()`, `drawPlayer()`, `drawMon()`,
+  `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`. Com a
+  arte, o `render()` segue a ordem do cliente do Tibia: chão, depois **linha
+  por linha** as paredes da linha e quem está nela — a parede de baixo cobre o
+  pé de quem encosta nela. Sem a arte, o caminho antigo (formas em código)
+  fica intacto; mexa nos dois ou teste o `sem-arte`
+- `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()` e
+  o cache de elementos `E`
+- `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`),
+  **personagens** (`showPick()`), **grimório**, **mercador** (`drawShop()`,
+  `buy()`, `showShop()`) e `conteudoFalhou()`
+- `controles.js` — joystick por ponteiro, `bindHold()`, teclado, `held` e
+  `leEntrada()`
+- `dom.js` — `$`, `app` e `RM` (`prefers-reduced-motion`)
+
+Os ciclos de `import` entre módulos são permitidos e existem
+(`incursao`↔`combate`, `telas`↔`nuvem`), desde que **o topo do módulo não use
+nada do outro lado do ciclo** — só funções chamadas depois. Quebrar isso dá
+`Cannot access 'X' before initialization` na carga; foi assim que
+`salvar.js` passou a não importar `nuvem.js`.
 
 ### Números que governam o jogo
 
-Constantes no topo do script: `T=32` (lado do tile), `MW=MH=64` (mapa),
+Constantes de `src/sim/base.js`: `T=32` (lado do tile), `MW=MH=64` (mapa),
 `RUN=360` (duração da incursão em segundos), `PORTAL_AT=90` (quando o portal
 abre), `EXT=2.5` (segundos parado no portal para extrair).
 
@@ -201,7 +250,7 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
 
-O jogo fala com o banco pela seção `conta e save na nuvem` do `index.html`, com
+O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 `fetch` puro (sem `supabase-js`) e só a chave **publishable** em `SB_KEY`, que
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
 `conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`
@@ -222,7 +271,7 @@ no arquivo `api key supabase.txt`, na raiz do checkout principal
 
 | Chave | Para quê | Pode ir para o navegador? |
 |---|---|---|
-| publishable (`sb_publishable_…`) e anon (JWT) | cliente do jogo, leituras de teste | sim — já está no `index.html` |
+| publishable (`sb_publishable_…`) e anon (JWT) | cliente do jogo, leituras de teste | sim — já está em `src/nuvem.js` |
 | secret (`sb_secret_…`) e service_role (JWT) | administração: ignora a RLS, Auth Admin, ler e corrigir dados | **nunca** |
 | senha do banco (Postgres) | migrações e SQL direto (`supabase db push --db-url …`) | **nunca** |
 
@@ -295,11 +344,14 @@ ativa.
 ### 1. Sintaxe (obrigatório antes de qualquer commit de código)
 
 ```bash
-sed -n '/^<script>$/,/^<\/script>$/p' index.html | sed '1d;$d' > /tmp/game.js && node --check /tmp/game.js && echo SINTAXE_OK
+for f in $(find src -name '*.js'); do cp "$f" /tmp/m.mjs && node --check /tmp/m.mjs || echo "FALHOU $f"; done; echo SINTAXE_OK
 ```
 
-Sem `SINTAXE_OK` na saída, **não comite**. Um erro de sintaxe aqui derruba o
-jogo inteiro, porque é um arquivo só.
+Qualquer `FALHOU` na saída e **não comite**. Um erro de sintaxe em qualquer
+módulo derruba o jogo inteiro: o navegador não executa nada de um grafo de
+módulos com um arquivo quebrado. (A cópia para `.mjs` é para o `node` ler o
+arquivo como módulo sem `package.json`.) O `tools/testar.mjs` refaz essa
+checagem sozinho.
 
 ### 2. Execução headless
 
@@ -309,19 +361,22 @@ Um comando, e ele é o portão:
 node tools/testar.mjs
 ```
 
-Refaz a checagem de sintaxe, monta uma **cópia** do `index.html` para cada caso
-de teste, roda cada cópia no Edge headless e sai com código diferente de zero
-se qualquer coisa falhar. `node tools/testar.mjs --lista` mostra os casos;
-`node tools/testar.mjs morte` roda só os que casam com o nome. O `index.html`
-nunca é tocado. Os casos cobrem o menu com o Mercador, a incursão de
+Refaz a checagem de sintaxe, roda a **simulação no Node** (procura DOM em
+`src/sim/`, joga uma incursão inteira sem navegador e confere que a mesma
+semente dá o mesmo resultado), monta uma **cópia** do jogo para cada caso de
+teste, roda cada cópia no Edge headless e sai com código diferente de zero se
+qualquer coisa falhar. `node tools/testar.mjs --lista` mostra os casos;
+`node tools/testar.mjs morte` roda só os que casam com o nome (a simulação no
+Node roda sempre). O jogo de verdade nunca é tocado. Os casos cobrem o menu com o Mercador, a incursão de
 ponta a ponta até a extração, a incursão desenhada com os sprites (`arte`) e
 sem eles (`sem-arte`, campo `semArte` do caso), a morte com o selo, as quatro
 classes, o grimório no nível 18, o nível subindo no meio da incursão, o save
 corrompido e bloqueado, a migração `v1`→`v2` e a conta na nuvem.
 
 Caso novo entra na tabela `CASOS` no fim do
-[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto no
-`index.html`, ajustes no `content.json` (campo `conteudo`, para mexer em
+[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto
+(procurados em todas as fontes, `index.html` e `src/`; o patch estoura se não
+casar em nenhuma), ajustes no `content.json` (campo `conteudo`, para mexer em
 monstro, item ou classe — as tabelas não moram mais no código) e um roteiro
 que clica nos botões e chama `ok(nome, condição, o_que_leu)`. Uma asserção
 falha imprime o que ela leu, e a cópia e o DOM final ficam na pasta de trabalho
@@ -337,14 +392,16 @@ O que o script faz por você, e que custou tempo descobrir:
   segundos.
 - **O `--dump-dom` não existe mais.** O Edge 155 aceita a opção e não escreve
   nada; ela saiu do headless novo e só vive no `chrome-headless-shell`, que não
-  vem instalado. O script sobe um coletor HTTP em `127.0.0.1` e a cópia faz
-  `POST` do resultado no fim do roteiro, com o DOM final no mesmo pacote.
+  vem instalado. O script sobe um servidor HTTP em `127.0.0.1`, que entrega as
+  cópias e recebe o `POST` do resultado no fim do roteiro, com o DOM final no
+  mesmo pacote.
+- **O roteiro é um módulo que importa `./src/main.js`.** Módulo com `await` no
+  topo não segura o próximo `<script>`; importar o do jogo é o que garante que
+  o roteiro só começa depois do conteúdo carregado e da primeira tela aberta.
 - **O `--user-data-dir` é sempre um perfil temporário**, um por caso, para
   nunca tocar no perfil real.
 - **O `Math.random` é semeado**, então mapa, corredores, spawns e loot ficam
   iguais em toda execução: um caso que passa hoje passa amanhã.
-- **O navegador embutido do Claude não abre `file://`** — é por isso que o
-  caminho é o Edge, e não ele.
 - **Contar ocorrências de `data-errs` dá falso positivo**, porque casa com o
   próprio código do harness no DOM. O script ancora no nome do atributo dentro
   da tag `<html>`, e o capturador monta o nome em duas partes para o literal
@@ -356,8 +413,8 @@ execuções de nuvem) e, por último, o PATH. Em Linux e macOS o `--no-sandbox`
 entra sozinho, porque o contêiner da nuvem não sobe o sandbox.
 
 Para conferir que o portão realmente barra código quebrado,
-`FIBULA_JOGO=<cópia quebrada> node tools/testar.mjs` roda a suíte contra outro
-arquivo. `FIBULA_SAIDA` muda a pasta de trabalho.
+`FIBULA_JOGO=<cópia quebrada>/index.html node tools/testar.mjs` roda a suíte
+contra outra cópia do jogo (com o `src/` ao lado). `FIBULA_SAIDA` muda a pasta de trabalho.
 
 **Há um só harness, e é este.** Se você for escrever outro, estenda a tabela
 `CASOS` em vez disso — dois portões para o mesmo item significam que um dos dois
