@@ -743,7 +743,7 @@ const CASOS = [
     ok('o registro avisa a chegada', /Ana chegou à cidade/.test(txt('#log')||''), txt('#log'));
     ok('quem chega fica sabendo onde estou', RT.posMandadas().length===2, RT.posMandadas().length);
     RT.pos('ana1',360,300);await ate(function(){return a.ax===360},10);await quadros(1);
-    var meio=a.x;await quadros(12);
+    var meio=a.x;await quadros(16);
     ok('o boneco dela anda até a posição nova, sem saltar', meio>300&&meio<360&&Math.abs(a.x-360)<1, meio+' → '+a.x);
     /* dado de fora: posição fora do mapa, classe que não existe, nome comprido com controle */
     RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50);
@@ -751,10 +751,12 @@ const CASOS = [
     var m=Cd.OUTROS.get('mal');
     ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.x===Cd.C.w*32&&m.y===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
     RT.sai('mal');
-    var n0=RT.posMandadas().length;
+    var n0=RT.posMandadas().length,t0=Cd.C.t0;
     tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await quadros(2);
-    var n1=RT.posMandadas().length-n0;
-    ok('andando, manda a posição no máximo 8 vezes por segundo', n1>=3&&n1<=6, n1+' em 0,6 s');
+    /* o laço do roteiro e o do jogo dividem o relógio sintético: o tempo de
+       jogo que passou é o da cidade (C.t0), não o número de quadros */
+    var n1=RT.posMandadas().length-n0,dtj=Cd.C.t0-t0;
+    ok('andando, manda a posição no máximo 5 vezes por segundo', n1>=2&&n1<=Math.floor(dtj/0.2)+1, n1+' em '+dtj.toFixed(2)+' s');
     var ult=RT.posMandadas()[RT.posMandadas().length-1].payload.payload;
     ok('a última posição mandada é onde parei', Math.abs(ult.x-Math.round(Cd.C.p.x))<=1, ult.x+' / '+Cd.C.p.x);
     RT.sai('ana1');await quadros(3);
@@ -775,6 +777,10 @@ const CASOS = [
     ok('se a conexão cai, avisa e esquece os outros', txt('#cRede')==='Sem rede: só você'&&Cd.OUTROS.size===0, txt('#cRede'));
     var voltou=await ate(function(){return RT.abertos===3&&txt('#cRede')==='2 na cidade'},60);
     ok('e religa sozinha', voltou, RT.abertos+' / '+txt('#cRede'));
+    /* o Supabase tira do canal quem manda demais, sem fechar o socket */
+    RT.todos({event:'system',payload:{message:'Too many messages per second',status:'error',extension:'system'}});
+    var expulsou=await ate(function(){return RT.abertos===4&&txt('#cRede')==='2 na cidade'},80);
+    ok('expulso do canal pelo servidor, percebe e religa', expulsou, RT.abertos+' / '+txt('#cRede'));
     clica($('#cMenu'));await quadros(3);
     ok('o menu sai da cidade e desliga', RT.vivos.length===0, RT.vivos.length);
 `,

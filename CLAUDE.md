@@ -165,7 +165,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   Supabase Realtime, por `WebSocket` nativo. `quadro(dt,naCidade)`, chamado
   pelo laço, liga ao entrar na cidade e desliga ao sair dela (caçar, menu) ou
   com a aba no fundo, e religa sozinho. Presença (nome, classe, nível) e
-  broadcast da posição, no máximo 8 por segundo e só quando mexe. Não decide
+  broadcast da posição, no máximo 5 por segundo e só quando mexe; erro do
+  canal (expulsão por excesso) fecha o socket e religa. Não decide
   regra nenhuma: a caçada é sozinha, e o co-op da incursão é o servidor da F2
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
@@ -396,8 +397,13 @@ Limites conhecidos de acesso:
 Primeiro teste do multiplayer, decisão do Leonardo em 19/10/2026: **só na
 cidade**; as caçadas continuam sozinhas. Usa o Realtime do mesmo projeto, com
 a chave publicável, sem tabela nem servidor próprio, e por isso não custa nada
-no plano Free (limites dele: 200 conexões simultâneas e 2 milhões de mensagens
-por mês, contando cada entrega). Cada aparelho conta a própria posição e
+no plano Free. Limites, medidos em 19/10/2026 com clientes de carga no canal
+de verdade: **~100 envios por segundo por canal** (11 pessoas a 8/s passam; 13
+perdem mensagens e são expulsas com "Too many messages per second"; a 5/s,
+cerca de 15 andando ao mesmo tempo com folga), 200 conexões simultâneas e 2
+milhões de mensagens por mês, **contando cada entrega** (uma posição para 19
+pessoas são 20 mensagens). A conta mensal cresce com o quadrado de quem está
+junto, e é por isso que mais de 20 pessoas juntas pedem o servidor da F2. Cada aparelho conta a própria posição e
 desenha a dos outros: quem tem a chave pode mandar posição falsa, e tudo bem,
 porque na cidade não se ganha nem se perde nada. O que chega de fora passa por
 `poeOutro()` em `src/sim/cidade.js`, que prende a posição ao mapa, só aceita

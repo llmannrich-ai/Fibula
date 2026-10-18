@@ -4,8 +4,8 @@
    não segura o jogo: enquanto não chega, ou se não chegar, o render() usa o
    desenho em código de antes. app.dataset.arte marca que chegou (o CSS usa
    para os ícones). */
-import {TAU} from './sim/base.js?v=0.8.0';
-import {app} from './dom.js?v=0.8.0';
+import {TAU} from './sim/base.js?v=0.8.1';
+import {app} from './dom.js?v=0.8.1';
 
 export const ART_URL='assets/otsp/';
 /* a imagem leva a versão do jogo (?v=, como os módulos): sem ela, um atlas

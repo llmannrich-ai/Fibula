@@ -18,6 +18,22 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 02:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** limite real do Realtime medido, e duas correções na cidade compartilhada (0.8.1). Posição a 5 por segundo (era 8). Erro do canal (`system` com erro, `phx_error`, `phx_close`, resposta de erro) agora fecha o socket e religa: antes, o servidor tirava o cliente do canal sem fechar o socket e o jogo ficava "ligado" e invisível para os outros. O boneco dos outros corre na velocidade de quem anda (132 px/s, ou 5× a distância), para não andar e parar a cada mensagem.
+
+**Validação:** `node tools/testar.mjs` — 22/22. O caso `cidade-compartilhada` ganhou a expulsão pelo servidor (religa sozinho) e mede a taxa pelo tempo de jogo (`C.t0`), porque o laço do roteiro e o do jogo dividem o relógio sintético; sabotagem com envio a 20/s reprovou (11 em 1,2 s). Carga no Realtime de verdade, com clientes no Node, todos enviando no mesmo instante (pior caso): 4 e 8 pessoas a 8/s, 100%; 11 a 8/s, 100%; 13 a 8/s, 92% e expulsão; 15 a 8/s, 86%; 20 a 4/s, 100%; 20 a 5/s, 100%; 18 a 5/s, 86%.
+
+**Análise:** o limite do Free é de **envios por segundo no canal** (~100), não de entregas, como eu tinha suposto na conta de custo. A cobrança mensal, essa sim, conta cada entrega (N+1 por broadcast). Resultado: até ~15 andando juntos funciona de graça; 20 ou mais juntos por horas estoura a cota mensal (2 milhões) e, no Pro, custa centenas de dólares por mês. Para mais de 20 o caminho é o servidor próprio do plano (M2–M4), estimado em US$ 35–80 por mês.
+
+**Roadmap:** sem mudança de fila.
+
+**Pendências e riscos:** o limite exato oscila entre execuções (18 a 5/s perdeu, 20 a 5/s passou): o rate limit do Supabase parece ser por janela, sensível a rajada. Teste com pessoas de verdade, que não mandam no mesmo milissegundo, deve aguentar mais. Cota mensal: o painel do Supabase (Usage → Realtime Messages) mostra o consumo; vale olhar depois do primeiro teste com amigos.
+
+**Próximo passo recomendado:** o Leonardo testar com amigos; depois, "Sair cedo" (`Agora`).
+
+---
+
 ## 2026-10-19 01:10 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a cidade compartilhada (0.8.0), a pedido do Leonardo ("testar o multiplayer apenas no cenário base de cidade, deixando as caçadas individuais, rodando com o que temos"). Branch `claude/cidade-multiplayer`: parte do `claude/cidade` (0.7.0, ainda fora da `main`), mescla a `main` (passo fixo, 0.6.1) e acrescenta `src/rede.js` (Supabase Realtime por `WebSocket` nativo: presença + broadcast de posição), os outros jogadores em `src/sim/cidade.js` (`OUTROS`, `poeOutro()`, `tiraOutro()`, boneco que corre atrás da posição recebida), o desenho deles com nome em `renderCidade()` (`drawPlayer()` aceita `p.classe`), o contador no HUD da cidade (`#cRede`) e um Realtime falso no prelúdio do harness.
@@ -562,26 +578,3 @@ roadmap.
 
 
 ---
-
-## 2026-10-18 20:00 UTC — Sessão manual
-
-**Item desenvolvido:** conteúdo do jogo fora do motor (`191e80e`). Classes, habilidades, melhorias, inimigos, itens, loot e progressão em `data/game/content.json`, com validação no carregamento. Não era item do roadmap: veio de um pedido direto do Leonardo, que também trouxe a base de `data/mechanics/` e `tools/extract-mechanics.ps1` (já na `main` pelo ciclo).
-
-**Validação:** quatro harness headless contra o `index.html` desta entrega — combate, extração, menu com loja e grimório, e morte — com `data-errs="` **ausente** nos quatro. Números conferidos contra os dados do JSON, não só "abriu sem erro": vida 151 do Feiticeiro nível 12 (`hp 85 + ghp 6 × 11`); Vigor a 120 e cofre 1000 → 880; vida 166 na incursão seguinte à compra; Grimório com 3 espaços no nível 12 e 6 habilidades da classe; extração levando o cofre de 1000 a 1200 em 0:05; morte em 0/85 perdendo os 200 de loot semeados. O `SINTAXE_OK` **não** foi produzido: não há Node nesta máquina. Os harness cobrem o caso, porque um erro de parse apareceria como `data-errs`.
-
-**Análise:**
-- A migração de save da Etapa 2 chama `novoChar()` → `slotsIniciais()` no topo do script, o que já lê `SPELLS` e `SLOT_LVL`. Por isso carregar os dados tarde não servia: o IIFE teve de virar assíncrono e aguardar antes de qualquer coisa.
-- As 24 habilidades foram movidas por geração, não à mão: um script extrai o texto dos literais do `index.html`, o JS avalia e o resultado vira JSON. Transcrição manual de 24 registros com 12 campos cada erra em silêncio.
-- A progressão de inimigos por profundidade continuava com números fixos no código (`1+.35*d`, bandas `.6/.4`); agora está no arquivo. Distribuição medida em 20 mil amostras por banda bate com a anterior.
-
-**Roadmap:** só `Concluído` ganhou entrada. `Agora` ficou intocado de propósito — a ferramenta de teste headless é item do ciclo.
-
-**Pendências e riscos:**
-- **O `tools/testar.mjs` precisou de ajuste e eu não pude executá-lo.** O harness abre as cópias em `file://`, onde o `fetch` do `content.json` é bloqueado mesmo com `--allow-file-access-from-files`, então ele quebraria com esta entrega — e a CI roda em todo push. O `prelude()` passou a embutir o `data/game/content.json` real, lido do repositório ao montar a cópia, e a devolver por um `fetch` falso; `validaConteudo()` continua rodando contra o conteúdo verdadeiro. Há recuo para a raiz porque `FIBULA_JOGO` pode apontar uma cópia fora do repositório, sem `data/` ao lado. **Não há Node nesta máquina: o ajuste foi escrito e não executado.** O que deu para conferir foi a sintaxe, fazendo o Chromium parsear o arquivo como módulo — só apareceram falhas de resolução de `node:*`, nenhum `SyntaxError`, e a resolução só acontece depois do parse. A primeira execução de verdade é a da CI neste push. Se ela ficar vermelha, é aqui que se olha primeiro.
-- Duas armadilhas que custaram tempo e vão custar de novo: as linhas do `#log` se apagam sozinhas em 8,2 s e o log guarda só 5, então um amostrador que **sobrescreve** o resultado lê vazio no fim da corrida — tem de acumular; e `--dump-dom` capturado com `&` no PowerShell volta vazio, precisa de `Start-Process -RedirectStandardOutput`.
-- O harness usado aqui é Python e vive fora do repositório (scratchpad da sessão). Não é o script Node que o roadmap pede; serve como referência do que testar, não como entrega.
-- Não testei: incursão de 6 minutos inteira (os harness encurtam `RUN`), troca de habilidade no Grimório, e recarregar a página para conferir persistência do save.
-- Esta sessão e o ciclo automático escreveram na `main` em paralelo duas vezes. Na primeira, o ciclo descartou a externalização ao resolver o conflito do `index.html` e documentou o contrário no README; esta entrega a reaplica sobre a Etapa 3. Se a decisão certa for manter os dados inline, é `git revert` deste commit — mas então o README precisa voltar atrás também.
-- O carimbo da entrada anterior (22:00 UTC) está à frente do relógio real (20:00 UTC nesta execução), o que embaralha a ordenação por horário.
-
-**Próximo passo recomendado:** rodar `node tools/teste.js` e conferir o ajuste do SHIM que eu não pude executar. Depois, cobrir os três casos que ficaram sem teste: incursão de 6 minutos inteira, troca de habilidade no Grimório e recarga da página para conferir persistência do save.

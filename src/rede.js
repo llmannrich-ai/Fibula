@@ -9,18 +9,21 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES} from './sim/dados.js?v=0.8.0';
-import {save,ch} from './sim/progresso.js?v=0.8.0';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.8.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.8.0';
-import {log} from './hud.js?v=0.8.0';
+import {CLASSES} from './sim/dados.js?v=0.8.1';
+import {save,ch} from './sim/progresso.js?v=0.8.1';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.8.1';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.8.1';
+import {log} from './hud.js?v=0.8.1';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 const TOPICO='realtime:cidade-'+VER;
 /* identidade desta aba, não da conta: duas abas da mesma conta são dois bonecos */
 const ID=Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(16).padStart(2,'0')).join('');
-const ENVIO=.125,BATIDA=25;
+/* o Realtime do plano Free aceita ~100 envios por segundo por canal (medido em
+   19/10/2026: 11 pessoas a 8/s passam, 13 perdem mensagens e são expulsas).
+   A 5 por segundo, e só de quem está andando, cabem 20 andando ao mesmo tempo */
+const ENVIO=.2,BATIDA=25;
 export const rede={estado:'fora',n:0};
 let ws=null,ref=0,pronto=false,quer=false,espera=0,tenta=0,batida=0,envio=0,mandou={x:NaN,y:NaN,mv:false},primeiro=true;
 
@@ -58,8 +61,13 @@ function chegou(id,meta,avisa){
   const o=poeOutro(id,meta);
   if(o&&avisa)log(`${o.nome} chegou à cidade.`,'info');
 }
+/* o servidor pode tirar o cliente do canal (excesso de mensagens, canal
+   reiniciado) sem fechar o socket: aí o jogo ficaria "ligado" e invisível.
+   Qualquer erro do canal fecha o socket, e caiu() religa com espera */
+const expulso=d=>d.event==='phx_error'||d.event==='phx_close'||(d.event==='system'&&d.payload&&d.payload.status==='error')||(d.event==='phx_reply'&&d.ref!=='1'&&d.payload&&d.payload.status==='error');
 function recebe(d){
   const p=d.payload||{};
+  if(expulso(d)){const s=ws;ws=null;caiu();try{s&&s.close()}catch(e){}return}
   if(d.event==='phx_reply'&&d.ref==='1'){
     if(p.status!=='ok'){rede.estado='sem rede';return}
     pronto=true;rede.estado='ligado';

@@ -5,9 +5,9 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp} from './base.js?v=0.8.0';
-import {CITY,LEGENDA,CLASSES} from './dados.js?v=0.8.0';
-import {pecas} from './mapa.js?v=0.8.0';
+import {T,hyp} from './base.js?v=0.8.1';
+import {CITY,LEGENDA,CLASSES} from './dados.js?v=0.8.1';
+import {pecas} from './mapa.js?v=0.8.1';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
@@ -63,7 +63,7 @@ export function updateCidade(dt,ent){
    por poeOutro() e tiraOutro(). É dado de fora, então tudo é conferido: número
    preso ao mapa, classe que existe, nome curto e sem caractere de controle.
    Cada outro guarda o alvo (ax, ay), a última posição recebida, e a posição
-   desenhada (x, y), que corre atrás dele: as mensagens chegam a no máximo 8
+   desenhada (x, y), que corre atrás dele: as mensagens chegam a no máximo 5
    por segundo e a tela anda a 60. Nada daqui é regra de jogo: na cidade não se
    ganha nem se perde nada, e é por isso que ela pode ser o primeiro teste do
    multiplayer sem servidor próprio. */
@@ -86,14 +86,15 @@ export function poeOutro(id,d){
 }
 export const tiraOutro=id=>OUTROS.delete(id);
 let dtS=0;const segue1=o=>segue(o,dtS);
-/* corre atrás do alvo um pouco mais rápido que se anda (128), e salta se ficou
-   longe demais (mensagem perdida, aba que voltou do fundo) */
+/* corre atrás do alvo na velocidade de quem anda (128), um pouco mais se
+   ficou para trás, e salta se ficou longe demais (mensagem perdida, aba que
+   voltou do fundo). Mais rápido que isso, o boneco anda e para a cada mensagem */
 function segue(o,dt){
   if(!o.vis)return;
   const dx=o.ax-o.x,dy=o.ay-o.y,d=hyp(dx,dy);
   if(d>T*4){o.x=o.ax;o.y=o.ay;o.mv=false;return}
   o.mv=d>1.5;
   if(!o.mv)return;
-  const s=Math.min(d,Math.max(150,d*8)*dt);o.x+=dx/d*s;o.y+=dy/d*s;
+  const s=Math.min(d,Math.max(132,d*5)*dt);o.x+=dx/d*s;o.y+=dy/d*s;
   o.face=Math.atan2(dy,dx);o.walk+=dt*12;
 }
