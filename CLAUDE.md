@@ -116,8 +116,10 @@ principal, o markup das telas e do HUD, e a linha que carrega `src/main.js`.
 
 **`src/sim/` — a simulação, sem DOM**
 
-- `base.js` — `T=32`, `MW`, `MH`, `RUN`, `PORTAL_AT`, `EXT`, `rnd()`, `rr()`,
-  `ri()`, `clamp()`, `hyp()`, `fmt()`, `DIRS` e o objeto `saida`
+- `base.js` — `T=32`, `MW`, `MH`, `RUN`, `PORTAL_AT`, `EXT`, `clamp()`,
+  `hyp()`, `fmt()`, `DIRS`, o objeto `saida` e o **sorteio com semente**:
+  `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`, `rnd()`, `rr()`,
+  `ri()` (regra) e `frr()` (efeito)
 - `dados.js` — **conteúdo do jogo**, **classes**, **habilidades**, **melhorias
   e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
@@ -202,7 +204,35 @@ isso saiu, está em
 [docs/analise-tibia-habilidades.md](docs/analise-tibia-habilidades.md) — leia
 antes de tocar em qualquer curva.
 
-### Duas coisas sutis que já custaram tempo
+### Três coisas sutis que já custaram tempo
+
+**A sorte tem semente, e são duas.** Nada no jogo usa `Math.random`, a não ser
+`novaSemente()`, que escolhe a semente de uma incursão nova. Toda a sorte sai
+de `src/sim/base.js`: `newRun(s)` chama `semeia(s)`, e a partir daí a mesma
+semente dá a mesma masmorra — mapa, monstros, dano, loot. É a base do
+multiplayer (cliente e servidor precisam sortear igual), de reproduzir um bug
+pelo número da masmorra (a tela final mostra; `?semente=12345` no endereço
+repete) e de medir balanceamento sem ruído.
+
+São **dois sorteios** com a mesma semente e sequências separadas, e misturar
+os dois é o erro fácil de cometer:
+
+- **regra** — `sorte()`, `rnd()`, `rr()`, `ri()`: tudo que muda o resultado
+  (mapa, spawn, dano, loot, movimento, recarga);
+- **efeito** — `frr()`: tudo que só enfeita (partículas, número de dano,
+  tremor, direção e passo inicial do desenho do monstro).
+
+Na dúvida, pergunte: "se isto mudar, o jogador ganha ou perde algo?" Se sim, é
+regra. Efeito com o sorteio da regra faz uma tela que desenha mais faíscas
+mudar o loot do próximo monstro. O `tools/testar.mjs` barra `Math.random` em
+`src/sim/`, efeito (`G.fx.push`) sorteando pela regra, mudança no algoritmo
+(a sequência do mulberry32 está presa) e masmorra diferente para a mesma
+semente.
+
+Limite atual: o resultado de uma incursão **inteira** só se repete com o mesmo
+`dt` em cada quadro, porque o passo da simulação ainda é o do quadro. O mapa e
+os monstros iniciais se repetem sempre. O passo fixo é o item seguinte da F0.
+
 
 **O campo de fluxo.** A perseguição dos monstros não é um pathfinding por
 monstro: `buildFlow()` faz uma BFS a partir do jogador e preenche `G.flow` com a
@@ -405,8 +435,10 @@ O que o script faz por você, e que custou tempo descobrir:
   o roteiro só começa depois do conteúdo carregado e da primeira tela aberta.
 - **O `--user-data-dir` é sempre um perfil temporário**, um por caso, para
   nunca tocar no perfil real.
-- **O `Math.random` é semeado**, então mapa, corredores, spawns e loot ficam
-  iguais em toda execução: um caso que passa hoje passa amanhã.
+- **O `Math.random` é semeado**, e ele escolhe a semente de cada incursão, então
+  mapa, corredores, spawns e loot ficam iguais em toda execução: um caso que
+  passa hoje passa amanhã. Caso com `query` abre a cópia com parâmetros no
+  endereço (o `?semente=` usa isso).
 - **Contar ocorrências de `data-errs` dá falso positivo**, porque casa com o
   próprio código do harness no DOM. O script ancora no nome do atributo dentro
   da tag `<html>`, e o capturador monta o nome em duas partes para o literal

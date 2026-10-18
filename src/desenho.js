@@ -1,7 +1,7 @@
 /* ---------- desenho ----------
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e nunca o altera,
    a não ser pela lista de tochas visíveis, que é cache do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,rr,hyp} from './sim/base.js';
+import {T,MW,MH,RUN,EXT,TAU,frr,hyp} from './sim/base.js';
 import {save,KL} from './sim/progresso.js';
 import {G,solid} from './sim/incursao.js';
 import {bf} from './sim/combate.js';
@@ -148,7 +148,7 @@ export function render(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0a0910';ctx.fillRect(0,0,W,H);
   if(!G)return;
   const p=G.p,sh=RM?0:G.shake; // sem tremor com prefers-reduced-motion
-  const cx=Math.round(p.x-W/2+(sh?rr(-sh,sh):0)),cy=Math.round(p.y-H/2+(sh?rr(-sh,sh):0));
+  const cx=Math.round(p.x-W/2+(sh?frr(-sh,sh):0)),cy=Math.round(p.y-H/2+(sh?frr(-sh,sh):0));
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(MW-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(MH-1,Math.ceil((cy+H)/T)+1);
   G.torches.length=0;

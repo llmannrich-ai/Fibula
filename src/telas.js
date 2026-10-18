@@ -1,6 +1,6 @@
 /* ---------- telas ----------
    Acampamento, personagens, grimório, equipamento, tela final e Mercador. */
-import {clamp,fmtEl} from './sim/base.js';
+import {clamp,fmtEl,sementeDe} from './sim/base.js';
 import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus} from './sim/dados.js';
 import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender} from './sim/progresso.js';
 import {G,setG,newRun} from './sim/incursao.js';
@@ -24,10 +24,16 @@ export function showMenu(){
   soTela(menu);
   if(!G||G.active){newRun()}
 }
+/* ?semente=12345 (ou um texto qualquer) no endereço fixa a masmorra de toda
+   incursão desta aba: para reproduzir um problema pelo número que a tela final
+   mostra, ou para jogar o mesmo mapa que outra pessoa */
+const SEM_URL=(()=>{try{const v=new URLSearchParams(location.search).get('semente');return v?sementeDe(v):undefined}catch(e){return undefined}})();
+const nMasmorra=s=>'nº '+s.toLocaleString('pt-BR');
 function start(){
-  newRun();G.active=true;save.runs++;persist();montaBotoes();
+  newRun(SEM_URL);G.active=true;save.runs++;persist();montaBotoes();
   for(const t of TELAS)t.hidden=true;app.classList.add('playing');logEl.textContent='';
   log('Você entrou na masmorra. O portal abre em 1:30.','info');
+  if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
 
 /* ---------- personagens ---------- */
@@ -195,7 +201,7 @@ export function showEnd(){
   $('#eTrain').textContent=(G.magGain||G.perGain)
     ? [G.magGain&&`+${G.magGain} de Magia`,G.perGain&&`+${G.perGain} de Perícia`].filter(Boolean).join(' · ')
     : `Magia ${c.mag} · Perícia ${c.per}`;
-  $('#eTime').textContent=fmtEl(G.dur);$('#eCofre').textContent=`${save.cofre} ouro`;
+  $('#eTime').textContent=fmtEl(G.dur);$('#eSeed').textContent=nMasmorra(G.semente);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
   const rows=Object.entries(G.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
   if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}

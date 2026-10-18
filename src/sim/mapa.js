@@ -1,12 +1,12 @@
 /* ---------- mapa ---------- */
-import {MW,MH,rnd,ri,hyp} from './base.js';
+import {MW,MH,rnd,ri,hyp,sorte} from './base.js';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
 function corridor(g,a,b){
   let x=a.cx,y=a.cy;
   const sx=()=>{while(x!==b.cx){carve(g,x,y);carve(g,x,y+1);x+=Math.sign(b.cx-x)}};
   const sy=()=>{while(y!==b.cy){carve(g,x,y);carve(g,x+1,y);y+=Math.sign(b.cy-y)}};
-  if(Math.random()<.5){sx();sy()}else{sy();sx()}
+  if(sorte()<.5){sx();sy()}else{sy();sx()}
   carve(g,x,y);carve(g,x+1,y);carve(g,x,y+1);
 }
 function carveRooms(g,rooms){

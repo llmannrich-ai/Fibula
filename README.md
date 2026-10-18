@@ -11,6 +11,10 @@ Protótipo jogável de um RPG de extração para celular.
 - O portal de saída abre aos 1:30. Fique 2,5 s nele para extrair. Se morrer, perde o loot do saco.
 - Com o portal aberto, uma bússola aparece ao lado do minimapa apontando a direção dele.
 - Teclado: WASD anda, **J K L I** são os quatro espaços de habilidade, **P** bebe poção.
+- Cada masmorra tem um número, mostrado na tela final. Para jogar a mesma de
+  novo — ou a mesma que um amigo —, abra o jogo com `?semente=` e o número no
+  fim do endereço: https://llmannrich-ai.github.io/Fibula/?semente=12345. Um
+  texto também vale (`?semente=desafio`).
 
 ## Classes e habilidades (Etapa 3)
 

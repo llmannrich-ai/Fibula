@@ -245,7 +245,7 @@ abre a fase para os agentes. O agente de Produto transforma a fase atual em
 itens do `ROADMAP.md`.
 
 **Estado da F0 em 18/10:** (1) divisão e fronteira sim/render ✅; (2) gerador
-com semente e passo fixo ⏳; (3) testes ✅, CI ✅, proteção da `main` — não se
+com semente ✅ (18/10), passo fixo ⏳; (3) testes ✅, CI ✅, proteção da `main` — não se
 aplica no modo `direto`; (4) aviso de save e teste da migração ✅; (5) sprites
 ✅, tela de créditos ⏳; (6) fontes ✅ (do sistema, nada a embutir), PWA ⏳.
 

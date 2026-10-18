@@ -14,27 +14,7 @@ não tem como saber que terminou.
 
 ## Agora
 
-### Gerador aleatório com semente
-
-**Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
-semente, em `src/sim/base.js`, usado por `genMap()`, `spawn()` e o resto da
-simulação no lugar do `Math.random`. A divisão em módulos já entregou o lugar
-e o teste: o `tools/testar.mjs` já roda a incursão no Node e confere que a
-mesma semente dá o mesmo resultado (hoje semeando o `Math.random` por fora).
-
-**Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
-`tools/`) e partidas sem semente continuam variando.
-
----
-
-## Próximo
-
-Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
-("razoável"): primeiro o que faz a **decisão de extrair** existir (morte que
-custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
-da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
-
-### 1. Peso de verdade na morte: perder parte do XP, não só o saco
+### Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
 experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
@@ -64,7 +44,16 @@ recarregamento com o valor reduzido.
 
 **Fase:** jogo, em paralelo à F0.
 
-### 2. Curva de nível rápida demais
+---
+
+## Próximo
+
+Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
+("razoável"): primeiro o que faz a **decisão de extrair** existir (morte que
+custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
+da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
+
+### 1. Curva de nível rápida demais
 
 **Pilar 5** (e princípio 3 do PRD: progressão lenta e visível). No playtest de
 18/10 o Cavaleiro chegou ao nível 7 em poucas incursões. A conta confirma:
@@ -84,7 +73,7 @@ a curva (ou o XP dos monstros) foi ajustada no `content.json`, e o caso
 
 **Fase:** jogo, em paralelo à F0.
 
-### 3. Sair cedo precisa ser uma jogada válida
+### 2. Sair cedo precisa ser uma jogada válida
 
 **Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
 ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
@@ -97,7 +86,7 @@ sair aos 5:30, e o diário registra qual das três opções foi escolhida e por 
 
 **Fase:** jogo, em paralelo à F0.
 
-### 4. Passo fixo na simulação
+### 3. Passo fixo na simulação
 
 **Pilar 4** (base técnica da F2). O `update()` roda no `dt` de cada quadro, até
 50 ms. O servidor da F2 precisa do mesmo resultado em qualquer máquina: a
@@ -109,7 +98,7 @@ gerador com semente.
 com passos de quadro diferentes (por exemplo, 16 ms e 50 ms) para a mesma
 semente, e o jogo no navegador continua igual.
 
-### 5. Tela de créditos no jogo
+### 4. Tela de créditos no jogo
 
 **Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
 `assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
@@ -119,7 +108,7 @@ autores.
 **Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
 licença e link para os autores, e há caso no `tools/testar.mjs`.
 
-### 6. PWA instalável
+### 5. PWA instalável
 
 **Pilar 3.** Manifesto e service worker para instalar na tela inicial e abrir
 offline, com o último conteúdo baixado. As fontes já são do sistema, então não
@@ -129,7 +118,7 @@ há folha externa para embutir. Sem biblioteca.
 o jogo abre sem rede depois da primeira visita, e um caso no harness confere
 que o manifesto e o service worker carregam.
 
-### 7. Revisar a economia do Selo de resguardo
+### 6. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -209,6 +198,16 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Sorteio com semente** *(F0 item 2, primeira metade)*. Toda a
+  sorte da simulação sai de `src/sim/base.js` (mulberry32), em dois sorteios
+  com a mesma semente: o da regra (mapa, spawn, dano, loot, movimento) e o dos
+  efeitos visuais, que não se misturam. `newRun(s)` repete a masmorra; sem
+  semente, cada incursão sorteia a sua. A tela final mostra o número da
+  masmorra, e `?semente=` no endereço a repete. O `tools/testar.mjs` prende a
+  sequência do gerador, proíbe `Math.random` e efeito com sorteio da regra em
+  `src/sim/`, e confere mesma masmorra para a mesma semente no Node e na tela
+  (casos `semente-na-url` e `semente-variada`). Cinco sabotagens, cinco
+  barradas.
 - **2026-10-18 — Equipamento persistente com três espaços e cofre de peças da
   conta** *(pedido do Leonardo, adiantado do `Depois`; pilares 2 e 5)*. Arma,
   armadura e amuleto, uma tela própria (`Equipamento`, no acampamento) com

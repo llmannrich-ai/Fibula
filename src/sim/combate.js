@@ -1,5 +1,5 @@
 /* ---------- combate ---------- */
-import {T,TAU,rr,ri,hyp,saida} from './base.js';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js';
 import {EL_COR,SPELLS,ITEMS,LOOT,fmtItem} from './dados.js';
 import {ch,KL,stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js';
 import {G,flowAt,num,shake,finish} from './incursao.js';
@@ -156,10 +156,10 @@ function kill(m){
   const i=G.mons.indexOf(m);if(i>=0)G.mons.splice(i,1);
   G.kills++;
   G.cad.push({x:m.x,y:m.y,k:m.k});if(G.cad.length>60)G.cad.shift();
-  for(let k=0;k<10;k++){const a=rr(0,TAU),s=rr(15,50);G.fx.push({k:'puff',x:m.x,y:m.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:rr(3,6),t:0,life:.6})}
+  for(let k=0;k<10;k++){const a=frr(0,TAU),s=frr(15,50);G.fx.push({k:'puff',x:m.x,y:m.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:frr(3,6),t:0,life:.6})}
   gainXp(Math.round(m.t.xp*m.xpm));
   const got=[];
-  for(const[k,ch,a,b]of LOOT[m.k])if(Math.random()<ch)got.push([k,ri(a,b)]);
+  for(const[k,ch,a,b]of LOOT[m.k])if(sorte()<ch)got.push([k,ri(a,b)]);
   const rar=got.length?Math.max(...got.map(g=>ITEMS[g[0]].rar)):0;
   if(got.length)G.drops.push({x:m.x,y:m.y,items:got,rar,t:0});
   saida.log(`Loot de ${m.t.nome}: ${got.length?got.map(fmtItem).join(', '):'nada'}.`,['loot','rare','epic'][rar]);

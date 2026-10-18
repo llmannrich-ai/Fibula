@@ -1,5 +1,5 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,hyp,DIRS,saida} from './base.js';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js';
 import {EL_COR,MT,PROG} from './dados.js';
 import {save,ch,KL,stats,sealPct,guardaSaco} from './progresso.js';
 import {genMap,pecas} from './mapa.js';
@@ -10,7 +10,7 @@ export const setG=v=>{G=v};
 function pickType(d){
   const bandas=PROG.bands,b=bandas.find(b=>d<b.untilDepth)||bandas[bandas.length-1];
   const linhas=Object.entries(b.weights);
-  let r=Math.random();
+  let r=sorte();
   for(const[k,w]of linhas){if(r<w)return k;r-=w}
   return linhas[linhas.length-1][0];
 }
@@ -19,9 +19,12 @@ function spawn(k,r,d,boss){
     hpm=boss?1+lv*sc.bossLevelFactor:1+sc.hpPerDepth*d+lv;
   const x=boss?(r.cx+.5)*T:(r.x+1+rnd(r.w-2)+.5)*T,y=boss?(r.cy-.5)*T:(r.y+1+rnd(r.h-2)+.5)*T;
   const hp=Math.round(t.hp*hpm);
-  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:rr(0,9),mv:0,face:rr(0,TAU),slow:0,slowF:1,dot:null});
+  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null});
 }
-export function newRun(){
+/* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
+   sorteia uma nova (é o caso normal do jogador) */
+export function newRun(s0=novaSemente()){
+  semeia(s0);
   const {g,rooms}=genMap(),s=rooms[0];
   let pr=s,md=1;
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
@@ -29,7 +32,7 @@ export function newRun(){
   const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+save.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0};
   G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
-     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0};
+     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,semente};
   for(const r of rooms){
     if(r===s)continue;
     const pr2=PROG.perRoom,d=r.d/md,
@@ -75,9 +78,9 @@ function reveal(){
 /* ---------- efeitos ----------
    Efeitos visuais são dados do estado (G.fx, G.shake); quem desenha é o
    render(), que também é quem respeita prefers-reduced-motion. */
-export const num=(x,y,txt,col,big)=>G.fx.push({k:'num',x:x+rr(-4,4),y,txt:String(txt),col,big,t:0,life:1});
+export const num=(x,y,txt,col,big)=>G.fx.push({k:'num',x:x+frr(-4,4),y,txt:String(txt),col,big,t:0,life:1});
 export const shake=v=>{G.shake=Math.max(G.shake,v)};
-export function spark(x,y,col){for(let i=0;i<6;i++){const a=rr(0,TAU),s=rr(30,90);G.fx.push({k:'sp',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,t:0,life:.35})}}
+export function spark(x,y,col){for(let i=0;i<6;i++){const a=frr(0,TAU),s=frr(30,90);G.fx.push({k:'sp',x,y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,col,t:0,life:.35})}}
 
 /* ---------- atualização ----------
    ent é a entrada do quadro, montada pelo cliente em src/controles.js:
@@ -126,7 +129,7 @@ function updateMons(dt){
     if(m.slow>0){m.slow-=dt;if(m.slow<=0)m.slowF=1}
     if(m.dot){m.dot.left-=dt;m.dot.tick+=dt;
       if(m.dot.tick>=.5){m.dot.tick=0;hitMon(m,Math.max(1,Math.round(m.dot.dps*.5)),EL_COR[m.dot.el]);
-        G.fx.push({k:'sp',x:m.x+rr(-6,6),y:m.y+rr(-6,6),vx:0,vy:-24,col:EL_COR[m.dot.el],t:0,life:.4});
+        G.fx.push({k:'sp',x:m.x+frr(-6,6),y:m.y+frr(-6,6),vx:0,vy:-24,col:EL_COR[m.dot.el],t:0,life:.4});
         if(m.hp<=0)continue}
       if(m.dot.left<=0)m.dot=null}
     const spd=m.spd*m.slowF;
@@ -153,7 +156,7 @@ function updateMons(dt){
       }
       if(vx||vy){move(m,vx*spd*dt,vy*spd*dt);m.mv=1}
     }else{
-      m.wt-=dt;if(m.wt<=0){m.wt=rr(1,3);m.wa=rr(0,TAU);m.wm=Math.random()<.45}
+      m.wt-=dt;if(m.wt<=0){m.wt=rr(1,3);m.wa=rr(0,TAU);m.wm=sorte()<.45}
       if(m.wm){move(m,Math.cos(m.wa)*spd*.3*dt,Math.sin(m.wa)*spd*.3*dt);m.mv=1;m.face=m.wa}
     }
   }

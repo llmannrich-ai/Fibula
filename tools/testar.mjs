@@ -414,9 +414,17 @@ function mata(p) {
 
 /* ---------- a simulação no Node ----------
    src/sim/ é a regra do jogo sem DOM, a que o servidor da F2 vai rodar. Este
-   passo prova as duas coisas sem navegador: nenhum arquivo de src/sim/ cita
-   DOM ou armazenamento do navegador, e uma incursão inteira roda no Node,
-   com o mesmo resultado para a mesma semente. */
+   passo prova sem navegador: nenhum arquivo de src/sim/ cita DOM ou
+   armazenamento do navegador, uma incursão inteira roda no Node, e o sorteio
+   com semente cumpre o que promete (ver o bloco "sorteio com semente" de
+   src/sim/base.js):
+   - o gerador é o mulberry32 de sempre (sequência presa: trocar o algoritmo
+     mudaria a masmorra de todas as sementes);
+   - a simulação não usa Math.random: ele é sabotado durante a incursão;
+   - mesma semente, mesma masmorra (mapa, monstros) e mesmo resultado;
+   - sementes diferentes, masmorras diferentes;
+   - o sorteio dos efeitos não mexe no da regra, nem os efeitos gastam o dela;
+   - sem semente, cada incursão sorteia a sua. */
 async function testaSimulacao() {
   const falhas = [];
   const dirSim = join(BASE, 'src', 'sim');
@@ -425,28 +433,76 @@ async function testaSimulacao() {
     const sem = readFileSync(arq, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
     const m = proibido.exec(sem);
     if (m) falhas.push(`${relative(BASE, arq)} usa ${m[1]}: src/sim/ não pode depender do navegador`);
+    /* Math.random só pode aparecer em novaSemente(), a escolha da semente */
+    const usos = (sem.match(/Math\.random/g) || []).length, deSemente = (sem.match(/novaSemente=\(\)=>[^\n]*Math\.random/g) || []).length;
+    if (usos > deSemente) falhas.push(`${relative(BASE, arq)} usa Math.random: a sorte da simulação vem de src/sim/base.js`);
+    /* efeito visual (G.fx.push) sorteia com frr(), nunca com o sorteio da regra */
+    for (const linha of sem.split('\n')) {
+      if (/G\.fx\.push/.test(linha) && /(^|[^f\w])(rr|ri|rnd|sorte)\(/.test(linha))
+        falhas.push(`${relative(BASE, arq)}: efeito visual usando o sorteio da regra — ${linha.trim().slice(0, 90)}`);
+    }
   }
   const url = (n) => pathToFileURL(join(dirSim, n)).href;
-  const {saida} = await import(url('base.js'));
+  const B = await import(url('base.js'));
+  const {saida} = B;
   const {carrega} = await import(url('dados.js'));
   const P = await import(url('progresso.js'));
   const I = await import(url('incursao.js'));
   carrega(JSON.parse(CONTEUDO));
-  const rnd0 = Math.random;
-  const roda = (semente) => {
-    let sd = semente >>> 0;
-    Math.random = () => { sd = (sd + 0x6D2B79F5) | 0; let t = sd; t = Math.imul(t ^ t >>> 15, t | 1); t ^= t + Math.imul(t ^ t >>> 7, t | 61); return ((t ^ t >>> 14) >>> 0) / 4294967296; };
-    const sv = P.SAVE0(); sv.classe = 'feiticeiro'; sv.chars.feiticeiro = P.novoChar('feiticeiro'); P.setSave(sv);
+
+  /* sequência presa do mulberry32 (confere com a implementação de referência) */
+  const u32 = (v) => Math.floor(v * 4294967296);
+  B.semeia(1);
+  const seq = [B.sorte(), B.sorte(), B.sorte()].map(u32).join(',');
+  if (seq !== '2693262067,11749833,2265367787') falhas.push(`o gerador mudou: semente 1 deu ${seq}`);
+  if (B.sementeDe('123') !== 123 || B.sementeDe(' Leo ') !== B.sementeDe('leo') || B.sementeDe('leo') === B.sementeDe('leo2'))
+    falhas.push('sementeDe() não converte texto em semente de forma estável');
+
+  const fnv = (arr) => { let h = 0x811C9DC5; for (let i = 0; i < arr.length; i++) h = Math.imul(h ^ arr[i], 0x01000193); return h >>> 0; };
+  const novoSave = () => { const sv = P.SAVE0(); sv.classe = 'feiticeiro'; sv.chars.feiticeiro = P.novoChar('feiticeiro'); P.setSave(sv); };
+  /* o retrato da masmorra recém-gerada: mapa, monstros e portal */
+  const retrato = () => `${fnv(I.G.g)}|${I.G.mons.map((m) => `${m.k}@${Math.round(m.x)},${Math.round(m.y)}:${m.hp}`).join(';')}|${I.G.portal.x},${I.G.portal.y}`;
+  /* extra: quantos sorteios de efeito "a tela" gasta por quadro, para provar
+     que eles não mudam a regra */
+  const roda = (semente, extra) => {
+    novoSave();
     let fim = null; saida.fim = (k) => { fim = k; };
-    I.newRun(); I.G.active = true;
+    I.newRun(semente); I.G.active = true;
+    const foto = retrato();
     const ent = {x: 0, y: 0, held: [true, false, false, false]};
     let q = 0;
-    while (!I.G.over && q < 20000) { I.update(0.05, ent); q++; }
-    return {fim, q, kills: I.G.kills, xp: I.G.xpGain, saco: I.G.bagVal, mons: I.G.mons.length};
+    while (!I.G.over && q < 20000) { I.update(0.05, ent); for (let i = 0; i < (extra || 0); i++) B.frr(0, 1); q++; }
+    return {foto, r: {fim, q, kills: I.G.kills, xp: I.G.xpGain, saco: I.G.bagVal, mons: I.G.mons.length, semente: I.G.semente}};
   };
-  let a, b;
-  try { a = roda(7); b = roda(7); } catch (e) { falhas.push('a incursão quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  const rnd0 = Math.random;
+  let a, b, c, d;
+  try {
+    Math.random = () => { throw new Error('Math.random chamado dentro da simulação'); };
+    a = roda(7); b = roda(7); c = roda(8); d = roda(7, 37);
+  } catch (e) { falhas.push('a incursão quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
+  if (a) {
+    if (a.r.semente !== 7) falhas.push(`a incursão não guardou a semente (G.semente=${a.r.semente})`);
+    if (a.foto !== b.foto) falhas.push('mesma semente, masmorras diferentes');
+    if (JSON.stringify(a.r) !== JSON.stringify(b.r)) falhas.push(`mesma semente, resultados diferentes: ${JSON.stringify(a.r)} / ${JSON.stringify(b.r)}`);
+    if (a.foto.split('|')[0] === c.foto.split('|')[0]) falhas.push('sementes 7 e 8 deram o mesmo mapa');
+    if (JSON.stringify(a.r) !== JSON.stringify(d.r)) falhas.push(`os efeitos mexeram na regra: ${JSON.stringify(a.r)} / ${JSON.stringify(d.r)}`);
+  }
+  /* sonda direta: produzir efeitos (número de dano, faíscas) não pode gastar
+     nenhum sorteio da regra — o próximo sorteio da regra tem de ser o mesmo
+     com ou sem efeitos no meio */
+  try {
+    novoSave(); I.newRun(5);
+    B.semeia(99); const limpo = [B.sorte(), B.sorte()].join();
+    B.semeia(99);
+    for (let i = 0; i < 10; i++) { I.num(0, 0, 1, '#fff'); I.spark(0, 0, '#fff'); I.shake(3); }
+    const sujo = [B.sorte(), B.sorte()].join();
+    if (limpo !== sujo) falhas.push('num(), spark() ou shake() gastaram sorteio da regra: efeito tem de usar frr()');
+  } catch (e) { falhas.push('a sonda dos efeitos quebrou: ' + e.message); }
+  try {
+    novoSave(); I.newRun(); const s1 = I.G.semente; I.newRun(); const s2 = I.G.semente;
+    if (s1 === s2) falhas.push(`sem semente, duas incursões seguidas sortearam a mesma (${s1})`);
+  } catch (e) { falhas.push('newRun() sem semente quebrou: ' + e.message); }
   try {
     const sv = P.SAVE0(); sv.classe = 'cavaleiro'; sv.chars.cavaleiro = P.novoChar('cavaleiro'); P.setSave(sv);
     const r = P.guardaSaco({ouro: 50, dente: 2, cota: 1});
@@ -457,11 +513,10 @@ async function testaSimulacao() {
     if (!P.desequipar('armadura') || !P.vender('cota') || sv.cofre !== 146) falhas.push(`devolver e vender a cota: cofre ${sv.cofre}`);
   } catch (e) { falhas.push('o cofre quebrou no Node: ' + e.message); }
   if (a) {
-    if (a.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.fim} após ${a.q} quadros`);
-    if (!(a.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a)})`);
-    if (JSON.stringify(a) !== JSON.stringify(b)) falhas.push(`mesma semente, resultados diferentes: ${JSON.stringify(a)} / ${JSON.stringify(b)}`);
+    if (a.r.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.r.fim} após ${a.r.q} quadros`);
+    if (!(a.r.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a.r)})`);
   }
-  return {falhas, a};
+  return {falhas, a: a && a.r};
 }
 
 /* ---------- os casos ---------- */
@@ -837,6 +892,67 @@ const CASOS = [
 `,
   },
   {
+    nome: 'semente-na-url',
+    o_que: '?semente= no endereço reproduz a mesma masmorra na tela, e a tela final mostra o número dela',
+    semente: 51,
+    query: '?semente=12345',
+    limite: 60000,
+    patches: [P.tempo(3, 2)],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    var arte=await ate(function(){return $('#app').dataset.arte==='1'},400);
+    ok('o atlas carregou antes das fotos', arte);
+    clica($('#play'));
+    await quadros(2);
+    ok('o log avisa que a masmorra veio do endereço', todos('#log .ln').some(function(l){return /Masmorra nº 12\.345, escolhida pelo endereço/.test(l.textContent)}), todos('#log .ln').map(function(l){return l.textContent}).join(' | '));
+    var foto1=$('#c').toDataURL();
+    var fim1=await ate(function(){return visivel('#end')},400);
+    ok('a primeira incursão terminou', fim1);
+    ok('a tela final mostra o número da masmorra', txt('#eSeed')==='nº 12.345', txt('#eSeed'));
+    clica($('#again'));
+    await quadros(2);
+    var foto2=$('#c').toDataURL();
+    ok('a mesma semente desenhou a mesma masmorra', foto1===foto2, foto1.length+' / '+foto2.length);
+    await ate(function(){return visivel('#end')},400);
+    ok('a segunda incursão também é a nº 12.345', txt('#eSeed')==='nº 12.345', txt('#eSeed'));
+`,
+  },
+  {
+    nome: 'semente-variada',
+    o_que: 'sem semente no endereço, cada incursão sorteia uma masmorra nova',
+    semente: 52,
+    limite: 60000,
+    patches: [P.tempo(3, 2)],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    }},
+    roteiro: `
+    await ate(function(){return $('#app').dataset.arte==='1'},400);
+    clica($('#play'));
+    await quadros(2);
+    ok('sem semente no endereço o log não fala de masmorra escolhida', !todos('#log .ln').some(function(l){return /escolhida pelo endereço/.test(l.textContent)}));
+    var foto1=$('#c').toDataURL();
+    await ate(function(){return visivel('#end')},400);
+    var n1=txt('#eSeed');
+    ok('a tela final mostra um número de masmorra', /^nº [0-9.]+$/.test(n1||''), n1);
+    clica($('#again'));
+    await quadros(2);
+    var foto2=$('#c').toDataURL();
+    await ate(function(){return visivel('#end')},400);
+    var n2=txt('#eSeed');
+    ok('a segunda incursão é outra masmorra', n1!==n2, n1+' / '+n2);
+    ok('e é desenhada diferente', foto1!==foto2);
+`,
+  },
+  {
     nome: 'save-corrompido',
     o_que: 'save apontando para um personagem que não existe não pode deixar a tela em branco',
     semente: 29,
@@ -1113,7 +1229,7 @@ async function main() {
     console.log('\u2717 simulação no Node');
     for (const f of sim.falhas) console.log(`    falhou: ${f}`);
   } else {
-    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.q} quadros, ${sim.a.kills} abates, mesma semente, mesmo resultado`);
+    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.q} quadros, ${sim.a.kills} abates; sorteio com semente: mesma masmorra, efeitos isolados, sem Math.random`);
   }
 
   const edge = achaNavegador();
@@ -1132,7 +1248,7 @@ async function main() {
     try {
       monta(caso, fontes, dir, alvo);
       const aguarda = coletor.espera(caso.nome, caso.limite || 45000);
-      nav = abreNavegador(edge, `${alvo}/index.html`, join(dir, 'perfil'));
+      nav = abreNavegador(edge, `${alvo}/index.html${caso.query || ''}`, join(dir, 'perfil'));
       carga = await aguarda;
     } catch (e) {
       erro = String(e.message).split('\n')[0];
