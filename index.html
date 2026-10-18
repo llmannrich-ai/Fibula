@@ -55,6 +55,8 @@ body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bon
 #mini{width:96px;height:96px;border:1px solid var(--line);border-radius:3px;background:rgba(8,7,12,.85)}
 .map span{font:600 12px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
 .map span.open{color:var(--torch)}
+.compass{font-size:20px;color:var(--torch);line-height:1;text-align:center}
+.compass b{display:inline-block;transition:transform .15s linear}
 
 #log{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:182px;width:min(66vw,330px);display:flex;flex-direction:column;gap:2px;font:600 13px/1.25 var(--f-body)}
 .ln{color:var(--loot);animation:fadeout 8s forwards}
@@ -146,6 +148,7 @@ h2.lost{color:var(--hp)}
       <div class="map">
         <div class="clock out" id="clock"><strong id="timeT">6:00</strong></div>
         <canvas id="mini"></canvas>
+        <div class="compass out" id="compass" hidden><b id="compassArrow">➤</b></div>
         <span class="out" id="portalT">Portal em 1:30</span>
       </div>
     </div>
@@ -718,7 +721,7 @@ function drawMini(){
 }
 
 /* ---------- HUD ---------- */
-const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bFire:$('#bFire'),bRune:$('#bRune'),bPot:$('#bPot'),potN:$('#potN')};
+const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bFire:$('#bFire'),bRune:$('#bRune'),bPot:$('#bPot'),potN:$('#potN'),compass:$('#compass'),compassArrow:$('#compassArrow')};
 const setT=(el,v)=>{if(el.textContent!==v)el.textContent=v};
 function hud(){
   const p=G.p,left=Math.max(0,RUN-G.t);
@@ -727,6 +730,8 @@ function hud(){
   E.xpI.style.width=(save.xp/xpNeed(save.lvl)*100)+'%';setT(E.lvlT,'Nv '+save.lvl);
   setT(E.bagT,String(G.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
+  const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
+  if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
   E.bFire.style.setProperty('--cd',clamp(p.cdA/.42,0,1));E.bRune.style.setProperty('--cd',clamp(p.cdB/4,0,1));E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));
   E.bFire.classList.toggle('dim',p.mp<5);E.bRune.classList.toggle('dim',p.mp<28);E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
 }
