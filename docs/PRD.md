@@ -258,7 +258,7 @@ pesquisa sem código.
 |---|---|---|---|
 | **Produto** | Mantém `ROADMAP.md` alinhado a este PRD; quebra a fase atual em issues pequenas com critério de pronto; triagem das issues de feedback; propõe padrões para decisões pendentes | 1×/dia | Só `ROADMAP.md` |
 | **Desenvolvedor** | Pega a issue `pronta` de maior prioridade, implementa com testes, abre PR; corrige PRs com pedido de ajuste | 4×/dia | Não |
-| **Revisor/QA** | Revisa PRs abertos; roda testes e Playwright em 360×640; pede ajuste ou aprova; **mescla quando a CI está verde** e o PR não é sensível | 4×/dia, 1 h depois do Desenvolvedor | Sim |
+| **Revisor/QA** | Revisa PRs abertos; roda testes e Playwright em 360×640; pede ajuste ou aprova; **mescla quando a CI está verde** e o PR não é sensível | 4×/dia, 1h30 depois do Desenvolvedor | Sim |
 | **Balanceamento** | Roda simulações com semente (economia, dificuldade, XP) e abre issues com números | 1×/semana (a partir do fim da F0) | Não |
 
 ### 13.2 Regras comuns
