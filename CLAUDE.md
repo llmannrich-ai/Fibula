@@ -163,40 +163,33 @@ jogo inteiro, porque é um arquivo só.
 
 ### 2. Execução headless
 
-O navegador embutido do Claude não abre `file://`. Use o Edge headless, com
-`--user-data-dir` sempre apontando para um perfil temporário, para não tocar no
-perfil real:
-
 ```bash
-msedge --headless=new --disable-gpu --no-first-run --user-data-dir=/tmp/perfil-teste --allow-file-access-from-files --virtual-time-budget=40000 --dump-dom "file:///caminho/test.html"
+node tools/teste.js
 ```
 
-No Windows o binário está em
-`C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe`.
+O script gera duas cópias do `index.html` em `/tmp` (menu com loja; incursão
+ativa), roda cada uma no Chromium headless e imprime `TESTE_OK` com saída 0. Se
+um cenário falhar ou o console tiver erro, sai com código 1. **Sem `TESTE_OK`,
+não comite.** Aceita outro arquivo como argumento (`node tools/teste.js
+caminho.html`) e a variável `CHROME` para apontar o navegador; sem ela, usa o
+Chromium de `/opt/pw-browsers` ou `chrome`/`chromium` do PATH. Na máquina do
+Leonardo (Windows), defina `CHROME` com o `msedge.exe`.
 
-**`requestAnimationFrame` não dispara nesse modo.** Sem um shim, o laço nunca
-roda e você lê só os placeholders estáticos do markup (`100/100`, `×3`) e acha
-que passou. Injete antes do script do jogo:
+O que o script faz por baixo, para quando precisar estender um cenário:
 
-```js
-window.requestAnimationFrame=function(cb){return setTimeout(function(){cb(performance.now())},50)};
-```
+- **`requestAnimationFrame` não dispara em headless.** O script injeta um shim
+  (50 ms por quadro, o `dt` máximo do jogo) e `--virtual-time-budget` controla a
+  duração. Sem o shim você lê só os placeholders do markup e acha que passou.
+- Erros viram o atributo `data-errs` no `<html>`; o roteiro grava resultados em
+  `data-*`. O script filtra pelo atributo seguido de `="` — contar a palavra
+  solta dá falso positivo, porque ela casa com o próprio código do harness.
+- Patches (`RUN=12`, `PORTAL_AT=3`, saco semeado) valem **só na cópia**, e o
+  script falha alto se o trecho a trocar sumir do `index.html`.
+- O save semeado precisa ter o personagem em `chars`; sem ele o jogo quebra no
+  menu.
 
-50 ms é o `dt` máximo que o jogo aceita, então cada quadro avança o tempo de
-jogo no passo cheio e a `--virtual-time-budget` controla a duração do teste.
-
-O `test.html` é uma **cópia** do `index.html` com: um capturador que joga erros
-num atributo `data-errs` no `<html>`, o save semeado no `localStorage`, e um
-roteiro que clica nos botões e grava os resultados em atributos `data-*`. Depois
-é só procurar no `--dump-dom`. Para encurtar a incursão, patcheie **só a
-cópia**: `RUN=360` para `12`, `PORTAL_AT=90` para `3`, e semeie o saco
-(`bag:{},bagVal:0` para `bag:{ouro:200},bagVal:200`) para a aritmética ficar
-determinística.
-
-Rode os dois harness — menu com loja, e incursão ativa — e confirme que o
-atributo `data-errs` está **ausente** nos dois dumps. Cuidado: contar ocorrências
-de `data-errs` dá falso positivo, porque casa com o próprio código do harness no
-DOM; filtre pelo nome do atributo seguido do sinal de igual e da aspa.
+Para ampliar a cobertura, adicione um cenário à lista `CENARIOS` em
+`tools/teste.js`.
 
 ### 3. O que olhar antes de dizer que está pronto
 

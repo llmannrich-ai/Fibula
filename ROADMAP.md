@@ -13,32 +13,7 @@ automático não tem como saber que terminou.
 
 ## Agora
 
-### Ferramenta de teste headless no repositório
-
-**Pilar 5.** O `CLAUDE.md` manda montar a mão, a cada execução, um `test.html`
-com shim de `requestAnimationFrame` e captura de erros. Isso convida a pular o
-teste, e é a base da CI. Escrever em `tools/` um script Node (sem
-`package.json`, sem dependência) que gere as duas cópias de teste a partir do
-`index.html` (menu com loja; incursão ativa com `RUN`/`PORTAL_AT` encurtados e
-saco semeado), rode o Chromium de `/opt/pw-browsers` com `--headless=new
---dump-dom` e saia com código diferente de zero se o atributo `data-errs="` (com
-sinal de igual e aspa) aparecer ou se o jogo não chegar ao fim da incursão.
-Arquivos gerados vão para `/tmp`, nunca para o repositório. Não altera o
-`index.html`.
-
-**Fase:** F0 (3). **Pronto quando:** `node tools/teste.js` roda os dois cenários,
-imprime `TESTE_OK` e sai com 0 no `index.html` atual; injetar um `throw` na
-cópia de teste faz o script sair com código ≠ 0; o `CLAUDE.md` passa a apontar
-para o script em vez de descrever a montagem manual.
-
----
-
-## Próximo
-
-Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
-quando o Desenvolvedor julgar que cabe numa execução.
-
-### 1. CI no GitHub Actions
+### CI no GitHub Actions
 
 **Pilar 5.** `.github/workflows/ci.yml` rodando a checagem de sintaxe e
 `tools/teste.js` em todo push e PR. Depende do item de Agora e da configuração
@@ -49,7 +24,14 @@ deixe o arquivo pronto em `docs/` e siga para outro item.
 **Fase:** F0 (3). **Pronto quando:** o workflow roda verde na `main` e falha num
 PR de teste com erro de sintaxe proposital; o resultado está no diário.
 
-### 2. Aviso de falha do save e teste automatizado da migração v1→v2
+---
+
+## Próximo
+
+Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
+quando o Desenvolvedor julgar que cabe numa execução.
+
+### 1. Aviso de falha do save e teste automatizado da migração v1→v2
 
 **Pilar 5.** Em modo privado, ou com `localStorage` bloqueado, o progresso não é
 salvo e o jogador não é avisado (o `catch` de `persist()` está vazio). Junto,
@@ -61,7 +43,7 @@ formato do save.
 ao menos uma vez; o teste da migração roda dentro de `tools/` e falha se a
 migração perder campo.
 
-### 3. Pipeline dos sprites OTSP (sem trocar o desenho)
+### 2. Pipeline dos sprites OTSP (sem trocar o desenho)
 
 **Pilar 2.** `tools/` com script que recorta as folhas usadas do OTSP, converte
 o magenta em transparência e monta o atlas; `assets/otsp/` com as folhas usadas,
@@ -72,7 +54,7 @@ do PRD. O jogo continua desenhando as formas atuais.
 forma reproduzível, `assets/CREDITOS.md` lista origem, licença e alterações, e
 o `index.html` não mudou.
 
-### 4. Gerador aleatório com semente
+### 3. Gerador aleatório com semente
 
 **Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
 semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
@@ -82,7 +64,7 @@ semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
 **Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
 `tools/`) e partidas sem semente continuam variando.
 
-### 5. Peso de verdade na morte: perder parte do XP, não só o saco
+### 4. Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
 experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
@@ -112,7 +94,7 @@ recarregamento com o valor reduzido.
 
 **Fase:** jogo, em paralelo à F0.
 
-### 6. Revisar a economia do Selo de resguardo
+### 5. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -224,6 +206,11 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Ferramenta de teste headless** (`tools/teste.js`). Um comando,
+  `node tools/teste.js`, roda o menu com loja e uma incursão ativa até a tela
+  final no Chromium, imprime `TESTE_OK` ou sai com código 1 se houver erro no
+  console. Verificado injetando um `throw` em `update()`. O `CLAUDE.md` passou a
+  apontar para o script.
 - **2026-10-18 — Etapa 3: classes, habilidades e evolução** (`1639d2d`).
   Quatro classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por taxa de
   crescimento e não por lista de poderes, grimório com slots de habilidade
