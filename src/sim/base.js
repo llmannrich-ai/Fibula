@@ -4,6 +4,10 @@
    simulação precisa contar para fora (mensagem, nível novo, fim da incursão,
    hora de gravar) sai por `saida`, que o cliente preenche em src/main.js. */
 export const T=32,MW=64,MH=64,RUN=360,PORTAL_AT=90,EXT=2.5,TAU=Math.PI*2;
+/* a regra anda em passos fixos de TICK segundos (20 por segundo, a taxa de
+   estado do servidor da F2), qualquer que seja o quadro da tela: ver passo()
+   em incursao.js */
+export const TICK=.05;
 
 /* ---------- sorteio com semente ----------
    Toda a sorte do jogo sai daqui, nunca de Math.random: a mesma semente dá a

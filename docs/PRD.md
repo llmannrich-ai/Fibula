@@ -57,8 +57,8 @@ O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
 2. **Aleatoriedade não reproduzível.** `Math.random()` direto em mapa, spawn,
    dano e loot. Sem semente não há teste determinístico, simulação de
    balanceamento nem reconciliação cliente/servidor.
-3. **Passo de tempo variável.** `update(dt)` usa o `dt` do quadro; o servidor
-   precisa de passo fixo.
+3. ~~**Passo de tempo variável.**~~ **Resolvido em 18/10 (0.6.1):** a regra
+   anda em passos de 50 ms (`TICK`), e o desenho interpola.
 4. ~~**Teste só manual.**~~ **Resolvido:** `tools/testar.mjs` e CI.
 5. **Várias frentes escrevendo na `main` ao mesmo tempo.** Já houve conflito
    entre a rotina e uma sessão manual no `ROADMAP.md` e no `DIARIO.md`, e o
@@ -225,7 +225,7 @@ sem impedir o multiplayer.
 | Camada | Escolha | Motivo |
 |---|---|---|
 | Linguagem | JavaScript moderno com módulos ES nativos, sem build | O mesmo código roda no navegador e no Node |
-| Estrutura | **Divisão concluída em 18/10/2026:** módulos ES nativos em `src/`, com a simulação em `src/sim/`, sem DOM, falando com o cliente por `saida` e recebendo a entrada em `update(dt, ent)`; o `CLAUDE.md` descreve o mapa. A simulação ainda é chamada no passo do quadro, não em passo fixo (item 2 da F0). O que o PRD exige dela: regras de jogo (simulação) em módulos sem DOM, separadas de desenho, entrada e telas; tabelas de dados (`CLASSES`, `SPELLS`, `MT`, `ITEMS`, `LOOT`, `UP`) num lugar só; `index.html` continua na raiz. Pastas novas previstas: `server/` (F2), `tests/`, `tools/`, `assets/` | O que o servidor precisa fica separado do que é tela |
+| Estrutura | **Divisão concluída em 18/10/2026:** módulos ES nativos em `src/`, com a simulação em `src/sim/`, sem DOM, falando com o cliente por `saida` e recebendo a entrada em `update(dt, ent)`; o `CLAUDE.md` descreve o mapa. A simulação anda em passo fixo de 50 ms desde a 0.6.1 (item 2 da F0). O que o PRD exige dela: regras de jogo (simulação) em módulos sem DOM, separadas de desenho, entrada e telas; tabelas de dados (`CLASSES`, `SPELLS`, `MT`, `ITEMS`, `LOOT`, `UP`) num lugar só; `index.html` continua na raiz. Pastas novas previstas: `server/` (F2), `tests/`, `tools/`, `assets/` | O que o servidor precisa fica separado do que é tela |
 | Cliente | Canvas 2D próprio, sprites em atlas, PWA (manifest + service worker) | Evolução do que já funciona; instalável na tela inicial |
 | Publicação | GitHub Pages a partir da `main` (sem build) | Já funciona; nada para configurar |
 | Testes | Um harness só, `tools/testar.mjs`: sintaxe de cada módulo, simulação no Node com semente e casos de fluxo no Chromium headless (menu → incursão → extração/morte → mercador, save, nuvem falsa). Sem `package.json`, sem TypeScript, sem Playwright como biblioteca (decisão de 18/10, seção 15) | Zero dependência; já pega erro real; um portão só |
@@ -245,7 +245,7 @@ abre a fase para os agentes. O agente de Produto transforma a fase atual em
 itens do `ROADMAP.md`.
 
 **Estado da F0 em 18/10:** (1) divisão e fronteira sim/render ✅; (2) gerador
-com semente ✅ (18/10), passo fixo ⏳; (3) testes ✅, CI ✅, proteção da `main` — não se
+com semente ✅ (18/10), passo fixo ✅ (18/10); (3) testes ✅, CI ✅, proteção da `main` — não se
 aplica no modo `direto`; (4) aviso de save e teste da migração ✅; (5) sprites
 ✅, tela de créditos ⏳; (6) fontes ✅ (do sistema, nada a embutir), PWA ⏳.
 

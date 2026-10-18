@@ -40,28 +40,7 @@ Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
 custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
 da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
 
-### 1. Passo fixo na simulação
-
-**Pilar 4** (base técnica da F2). O `update()` roda no `dt` de cada quadro, até
-50 ms. O servidor da F2 precisa do mesmo resultado em qualquer máquina: a
-simulação passa a andar em passos fixos, com o laço do cliente acumulando
-tempo e chamando quantos passos couberem. É a etapa M0 do
-[plano do multiplayer](docs/plano-multiplayer.md).
-
-- **Passo:** o plano propõe 1/20 s (a taxa de estado da F2 no PRD, e os 50 ms
-  que o jogo e o harness já usam como `dt` máximo); 1/30 s é a alternativa se
-  20 Hz ficar travado mesmo interpolado. Registre a escolha no diário.
-- **Interpolação no `render()` faz parte da entrega:** guardar a posição do
-  passo anterior (`x0`, `y0`) em jogador, monstros e projéteis, sem alocar no
-  laço, e desenhar entre os dois passos. Sem isso o movimento cai para 20
-  quadros visíveis.
-
-**Fase:** F0 (2). **Pronto quando:** a simulação no Node dá o mesmo resultado
-com passos de quadro diferentes (por exemplo, 16 ms e 50 ms) para a mesma
-semente e as mesmas entradas, o harness prende isso, e o jogo no navegador
-continua igual num viewport de celular (olho humano).
-
-### 2. Tela de créditos no jogo
+### 1. Tela de créditos no jogo
 
 **Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
 `assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
@@ -71,7 +50,7 @@ autores.
 **Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
 licença e link para os autores, e há caso no `tools/testar.mjs`.
 
-### 3. PWA instalável
+### 2. PWA instalável
 
 **Pilar 3.** Manifesto e service worker para instalar na tela inicial e abrir
 offline, com o último conteúdo baixado. As fontes já são do sistema, então não
@@ -81,7 +60,7 @@ há folha externa para embutir. Sem biblioteca.
 o jogo abre sem rede depois da primeira visita, e um caso no harness confere
 que o manifesto e o service worker carregam.
 
-### 4. Revisar a economia do Selo de resguardo
+### 3. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -106,7 +85,7 @@ todos os jogadores. Detalhes e regras de grupo na etapa M1 do
 [plano do multiplayer](docs/plano-multiplayer.md).
 
 **Só entra em `Próximo` quando o Leonardo decidir D-M1 (antecipar M1) e D-M2
-(regras de grupo)**, seção 7 do plano. Depende do passo fixo.
+(regras de grupo)**, seção 7 do plano. O passo fixo, de que ela dependia, entrou na 0.6.1.
 
 **Pronto quando:** o harness roda no Node incursões com 1, 2 e 4 jogadores e a
 mesma semente com as mesmas entradas dá o mesmo resultado, os casos atuais
@@ -178,6 +157,16 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Passo fixo na simulação (0.6.1)** *(F0, item 2; etapa M0 do
+  [plano do multiplayer](docs/plano-multiplayer.md))*. A regra anda em
+  `update(TICK)` com `TICK=0.05` (20 passos por segundo, a taxa de estado da
+  F2), chamada por `passo(dt,ent)` com acumulador; os efeitos andam no tempo do
+  quadro, e o `render()` interpola jogador, monstros e projéteis entre o passo
+  anterior e o atual. A simulação no Node confere a mesma incursão inteira com
+  quadros de 50 ms, 1/60 s e irregulares; a sabotagem (regra no tempo do
+  quadro) deu 6 contra 8 abates na mesma semente e reprovou. Escolhido 1/20 s
+  em vez do 1/30 s que o item sugeria: é o `dt` com que o harness e o jogo já
+  rodavam, e a interpolação cobre a tela.
 - **2026-10-18 — A morte custa XP, e a curva de nível ficou lenta (0.6.0)**
   *(os itens "Peso de verdade na morte" e "Curva de nível rápida demais",
   juntos a pedido do Leonardo: 25% de um nível barato não pesava nada)*.

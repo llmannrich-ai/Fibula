@@ -60,7 +60,10 @@ O que impede, em ordem de esforço:
 
 ## 3. Etapas
 
-### M0 · Passo fixo (item 2 da F0)
+### M0 · Passo fixo (item 2 da F0) — feito em 18/10, versão 0.6.1
+
+Entrou como descrito abaixo, com `TICK=0.05` e `passo()` em `src/sim/incursao.js`;
+o `CLAUDE.md` ("O passo é fixo") descreve o resultado.
 
 **O que fazer**
 

@@ -1,12 +1,12 @@
 /* ---------- desenho ----------
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e nunca o altera,
    a não ser pela lista de tochas visíveis, que é cache do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,frr,hyp} from './sim/base.js?v=0.6.0';
-import {save,KL} from './sim/progresso.js?v=0.6.0';
-import {G,solid} from './sim/incursao.js?v=0.6.0';
-import {bf} from './sim/combate.js?v=0.6.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.6.0';
-import {$,app,RM} from './dom.js?v=0.6.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp} from './sim/base.js?v=0.6.1';
+import {save,KL} from './sim/progresso.js?v=0.6.1';
+import {G,solid} from './sim/incursao.js?v=0.6.1';
+import {bf} from './sim/combate.js?v=0.6.1';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.6.1';
+import {$,app,RM} from './dom.js?v=0.6.1';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -144,7 +144,27 @@ function drawMon(m){
       const e=.6+.4*Math.sin(G.t*5);ctx.fillStyle=`rgba(255,184,77,${e})`;ctx.fillRect(x-9,y-13,6,3);ctx.fillRect(x+3,y-13,6,3);break}
   }
 }
+/* ---------- interpolação ----------
+   A regra anda a 20 passos por segundo (TICK); a tela, a 60. Para o movimento
+   não andar aos saltos, o quadro é desenhado entre o passo anterior (x0, y0,
+   guardados por update()) e o atual, na fração G.alfa — um passo atrás do
+   estado, como todo jogo em rede. render() troca as posições pelas
+   interpoladas, desenha e devolve as verdadeiras: nada é alocado e a regra
+   nunca vê a posição desenhada. */
+const lerp=(e,a)=>{e.xr=e.x;e.yr=e.y;if(e.x0!==undefined){e.x=e.x0+(e.x-e.x0)*a;e.y=e.y0+(e.y-e.y0)*a}};
+const volta=e=>{e.x=e.xr;e.y=e.yr};
 export function render(){
+  if(!G)return cena();
+  const a=G.alfa,p=G.p,tr=G.t,wr=p.walk;
+  if(a<1){
+    G.t-=(1-a)*TICK;lerp(p,a);if(p.w0!==undefined)p.walk=p.w0+(p.walk-p.w0)*a;
+    for(const m of G.mons){lerp(m,a);m.ar=m.anim;if(m.a0!==undefined)m.anim=m.a0+(m.anim-m.a0)*a}
+    for(const q of G.proj)lerp(q,a);
+  }
+  cena();
+  if(a<1){G.t=tr;volta(p);p.walk=wr;for(const m of G.mons){volta(m);m.anim=m.ar}for(const q of G.proj)volta(q)}
+}
+function cena(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0a0910';ctx.fillRect(0,0,W,H);
   if(!G)return;
   const p=G.p,sh=RM?0:G.shake; // sem tremor com prefers-reduced-motion

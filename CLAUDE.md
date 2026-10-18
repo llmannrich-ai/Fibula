@@ -117,7 +117,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
 
 **`src/sim/` — a simulação, sem DOM**
 
-- `base.js` — `T=32`, `MW`, `MH`, `RUN`, `PORTAL_AT`, `EXT`, `clamp()`,
+- `base.js` — `T=32`, `MW`, `MH`, `RUN`, `PORTAL_AT`, `EXT`, `TICK`, `clamp()`,
   `hyp()`, `fmt()`, `DIRS`, o objeto `saida` e o **sorteio com semente**:
   `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`, `rnd()`, `rr()`,
   `ri()` (regra) e `frr()` (efeito)
@@ -136,6 +136,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
   `spawn()`, `pickType()`), **física** (`solid()`, `blocked()`, `move()`,
   `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
+  **passo fixo** (`passo(dt,ent)`, `efeitos()`, `guarda()`),
   **atualização** (`update(dt,ent)`, `parado(dt)`, `updateMons()`,
   `updateProj()`, `finish()`)
 - `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`),
@@ -153,7 +154,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
-- `desenho.js` — canvas, `resize()`, `spr()` (desenha com o canto inferior
+- `desenho.js` — canvas, `resize()`, **interpolação** (`render()` desenha
+  entre o passo anterior e o atual e chama `cena()`), `spr()` (desenha com o canto inferior
   direito no tile, como o Tibia), `render()`, `drawPlayer()`, `drawMon()`,
   `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`. Com a
   arte, o `render()` segue a ordem do cliente do Tibia: chão, depois **linha
@@ -179,7 +181,8 @@ nada do outro lado do ciclo** — só funções chamadas depois. Quebrar isso d�
 
 Constantes de `src/sim/base.js`: `T=32` (lado do tile), `MW=MH=64` (mapa),
 `RUN=360` (duração da incursão em segundos), `PORTAL_AT=90` (quando o portal
-abre), `EXT=2.5` (segundos parado no portal para extrair).
+abre), `EXT=2.5` (segundos parado no portal para extrair), `TICK=0.05` (o
+passo da regra: 20 por segundo).
 
 Balanceamento vive nas tabelas `CLASSES`, `SPELLS`, `MT`, `LOOT`, `ITEMS` e
 `UP`, não espalhado pelo código. Ajuste de dificuldade é edição de tabela. Se
@@ -232,9 +235,20 @@ mudar o loot do próximo monstro. O `tools/testar.mjs` barra `Math.random` em
 (a sequência do mulberry32 está presa) e masmorra diferente para a mesma
 semente.
 
-Limite atual: o resultado de uma incursão **inteira** só se repete com o mesmo
-`dt` em cada quadro, porque o passo da simulação ainda é o do quadro. O mapa e
-os monstros iniciais se repetem sempre. O passo fixo é o item seguinte da F0.
+**O passo é fixo.** A regra anda em `update(TICK)`, chamada por `passo(dt,ent)`
+quantas vezes couber no tempo real acumulado em `G.acc`; por isso a mesma
+semente com as mesmas entradas dá a mesma incursão inteira a 20, 60 ou 120
+quadros por segundo (o `tools/testar.mjs` confere com quadros de 50 ms, 1/60 s
+e irregulares). Três consequências:
+
+- **Nada de regra fora de `update()`.** Só os efeitos (`G.fx`, `G.shake`)
+  andam no tempo do quadro, em `efeitos(dt)`.
+- **O desenho fica um passo atrás.** `update()` guarda a posição de antes
+  (`x0`, `y0`, `w0`, `a0`) em jogador, monstros e projéteis; o `render()` troca
+  pelas posições interpoladas na fração `G.alfa`, desenha e devolve as
+  verdadeiras. Entidade nova que se mexe precisa entrar em `guarda()` e no
+  `render()`, senão anda aos saltos de 50 ms.
+- **Testes chamam `passo()`, não `update()`**: é ela que tem o acumulador.
 
 
 **O campo de fluxo.** A perseguição dos monstros não é um pathfinding por

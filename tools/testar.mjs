@@ -482,21 +482,24 @@ async function testaSimulacao() {
   const retrato = () => `${fnv(I.G.g)}|${I.G.mons.map((m) => `${m.k}@${Math.round(m.x)},${Math.round(m.y)}:${m.hp}`).join(';')}|${I.G.portal.x},${I.G.portal.y}`;
   /* extra: quantos sorteios de efeito "a tela" gasta por quadro, para provar
      que eles não mudam a regra */
-  const roda = (semente, extra) => {
+  /* quadros: a sequência de tempos de quadro (em s) que a "tela" usa, repetida;
+     o passo fixo faz o resultado não depender dela */
+  const roda = (semente, extra, quadros = [0.05]) => {
     novoSave();
     let fim = null; saida.fim = (k) => { fim = k; };
     I.newRun(semente); I.G.active = true;
     const foto = retrato();
     const ent = {x: 0, y: 0, held: [true, false, false, false]};
     let q = 0;
-    while (!I.G.over && q < 20000) { I.update(0.05, ent); for (let i = 0; i < (extra || 0); i++) B.frr(0, 1); q++; }
-    return {foto, r: {fim, q, kills: I.G.kills, xp: I.G.xpGain, saco: I.G.bagVal, mons: I.G.mons.length, semente: I.G.semente}};
+    while (!I.G.over && q < 60000) { I.passo(quadros[q % quadros.length], ent); for (let i = 0; i < (extra || 0); i++) B.frr(0, 1); q++; }
+    return {foto, r: {fim, t: I.G.t, passos: Math.round(I.G.t / B.TICK), kills: I.G.kills, xp: I.G.xpGain, saco: I.G.bagVal, mons: I.G.mons.length, semente: I.G.semente}};
   };
   const rnd0 = Math.random;
-  let a, b, c, d;
+  let a, b, c, d, e, f;
   try {
     Math.random = () => { throw new Error('Math.random chamado dentro da simulação'); };
     a = roda(7); b = roda(7); c = roda(8); d = roda(7, 37);
+    e = roda(7, 0, [1 / 60]); f = roda(7, 0, [0.016, 0.017, 0.033, 0.1, 0.004]);
   } catch (e) { falhas.push('a incursão quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
   if (a) {
@@ -505,6 +508,9 @@ async function testaSimulacao() {
     if (JSON.stringify(a.r) !== JSON.stringify(b.r)) falhas.push(`mesma semente, resultados diferentes: ${JSON.stringify(a.r)} / ${JSON.stringify(b.r)}`);
     if (a.foto.split('|')[0] === c.foto.split('|')[0]) falhas.push('sementes 7 e 8 deram o mesmo mapa');
     if (JSON.stringify(a.r) !== JSON.stringify(d.r)) falhas.push(`os efeitos mexeram na regra: ${JSON.stringify(a.r)} / ${JSON.stringify(d.r)}`);
+    /* passo fixo: 20, 60 ou quadros irregulares, a mesma incursão */
+    if (JSON.stringify(a.r) !== JSON.stringify(e.r)) falhas.push(`o resultado depende do quadro (50 ms × 1/60 s): ${JSON.stringify(a.r)} / ${JSON.stringify(e.r)}`);
+    if (JSON.stringify(a.r) !== JSON.stringify(f.r)) falhas.push(`o resultado depende do quadro (50 ms × irregular): ${JSON.stringify(a.r)} / ${JSON.stringify(f.r)}`);
   }
   /* sonda direta: produzir efeitos (número de dano, faíscas) não pode gastar
      nenhum sorteio da regra — o próximo sorteio da regra tem de ser o mesmo
@@ -541,7 +547,7 @@ async function testaSimulacao() {
     if (!P.desequipar('armadura') || !P.vender('cota') || sv.cofre !== 146) falhas.push(`devolver e vender a cota: cofre ${sv.cofre}`);
   } catch (e) { falhas.push('o cofre quebrou no Node: ' + e.message); }
   if (a) {
-    if (a.r.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.r.fim} após ${a.r.q} quadros`);
+    if (a.r.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.r.fim} após ${a.r.passos} passos`);
     if (!(a.r.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a.r)})`);
   }
   return {falhas, a: a && a.r};
@@ -1275,7 +1281,7 @@ async function main() {
     console.log('\u2717 simulação no Node');
     for (const f of sim.falhas) console.log(`    falhou: ${f}`);
   } else {
-    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.q} quadros, ${sim.a.kills} abates; sorteio com semente: mesma masmorra, efeitos isolados, sem Math.random`);
+    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.passos} passos, ${sim.a.kills} abates; sorteio com semente: mesma masmorra, mesmo resultado a 20, 60 e quadros irregulares, efeitos isolados, sem Math.random`);
   }
 
   const edge = achaNavegador();
