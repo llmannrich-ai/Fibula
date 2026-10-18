@@ -204,29 +204,50 @@ const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}
 const xpNeed=l=>Math.round(40*Math.pow(l,1.6));
 const stats=()=>{const l=save.lvl;return{mhp:100+12*(l-1),mmp:60+8*(l-1),pow:1+.07*(l-1)}};
 
-/* ---------- dados do jogo ---------- */
-const MT={
-  rato:{nome:'Rato',hp:22,spd:72,dmg:4,xp:6,r:9,atk:.9},
-  aranha:{nome:'Aranha',hp:34,spd:106,dmg:6,xp:12,r:10,atk:.8},
-  esqueleto:{nome:'Esqueleto',hp:62,spd:62,dmg:10,xp:24,r:11,atk:1.1},
-  orc:{nome:'Orc',hp:95,spd:74,dmg:14,xp:40,r:13,atk:1.2},
-  xama:{nome:'Xamã Orc',hp:58,spd:58,dmg:12,xp:46,r:12,atk:1.9,ranged:true},
-  guardiao:{nome:'Guardião do Portal',hp:520,spd:54,dmg:24,xp:220,r:20,atk:1.4,boss:true}
-};
-const ITEMS={
-  ouro:{nome:'ouro',val:1,rar:0},dente:{nome:'dente de rato',val:3,rar:0},seda:{nome:'seda de aranha',val:8,rar:0},
-  osso:{nome:'osso antigo',val:10,rar:0},espada:{nome:'espada enferrujada',val:20,rar:0},machado:{nome:'machado rachado',val:28,rar:0},
-  erva:{nome:'erva rara',val:15,rar:0},amuleto:{nome:'amuleto tribal',val:60,rar:1},gema:{nome:'gema rubra',val:120,rar:1},
-  coroa:{nome:'coroa do guardião',val:500,rar:2}
-};
-const LOOT={
-  rato:[['ouro',.9,1,4],['dente',.5,1,1]],
-  aranha:[['ouro',.85,2,8],['seda',.4,1,2],['gema',.03,1,1]],
-  esqueleto:[['ouro',.9,5,14],['osso',.5,1,2],['espada',.15,1,1]],
-  orc:[['ouro',.9,8,24],['machado',.25,1,1],['amuleto',.06,1,1]],
-  xama:[['ouro',.9,10,25],['erva',.35,1,2],['amuleto',.1,1,1],['gema',.05,1,1]],
-  guardiao:[['ouro',1,80,150],['coroa',1,1,1],['gema',.6,1,2]]
-};
+/* ---------- dados do jogo (data/game/content.json) ---------- */
+const DATA_URL='data/game/content.json';
+let MT=null,ITEMS=null,LOOT=null,PROG=null;
+async function loadContent(){
+  const res=await fetch(DATA_URL,{cache:'no-cache'});
+  if(!res.ok)throw new Error(`HTTP ${res.status} em ${DATA_URL}`);
+  const c=await res.json();
+  for(const k of ['enemies','items','loot','progression'])
+    if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
+  const p=c.progression;
+  if(!Array.isArray(p.bands)||!p.bands.length)throw new Error('progression.bands vazio');
+  if(!p.scaling||!p.boss||!p.perRoom)throw new Error('progression incompleta');
+  /* integridade: nenhuma referência pode apontar para chave inexistente, senão
+     o erro só apareceria no meio de uma incursão */
+  const hasE=k=>Object.prototype.hasOwnProperty.call(c.enemies,k);
+  const hasI=k=>Object.prototype.hasOwnProperty.call(c.items,k);
+  for(const b of p.bands){
+    if(typeof b.untilDepth!=='number')throw new Error('banda sem untilDepth numérico');
+    const w=Object.values(b.weights||{}).reduce((a,v)=>a+v,0);
+    if(Math.abs(w-1)>.001)throw new Error(`pesos da banda ${b.untilDepth} somam ${w}, não 1`);
+    for(const k of Object.keys(b.weights))if(!hasE(k))throw new Error(`banda cita inimigo inexistente: ${k}`);
+  }
+  for(const k of [p.boss.type,...(p.boss.escort||[])])if(!hasE(k))throw new Error(`chefe cita inimigo inexistente: ${k}`);
+  for(const k of Object.keys(c.enemies))if(!c.loot[k])throw new Error(`inimigo sem tabela de loot: ${k}`);
+  for(const [k,tbl] of Object.entries(c.loot)){
+    if(!hasE(k))throw new Error(`loot de inimigo inexistente: ${k}`);
+    for(const row of tbl)if(!hasI(row[0]))throw new Error(`loot cita item inexistente: ${row[0]}`);
+  }
+  MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=p;
+}
+function contentFailure(err){
+  console.error('[Fibula] conteúdo não carregado:',err);
+  const play=$('#play');
+  if(play){play.disabled=true;play.textContent='Conteúdo não carregado'}
+  const box=document.createElement('p');
+  box.style.cssText='margin:12px 0 0;padding:10px 12px;border:1px solid #7a2b2b;border-radius:10px;'+
+    'background:#2a1414;color:#f0c7c7;font-size:13px;line-height:1.45;text-align:left';
+  box.textContent=location.protocol==='file:'
+    ? 'Os dados do jogo são carregados por rede, e o navegador bloqueia isso em arquivo aberto do disco. '+
+      'Sirva a pasta por HTTP e abra pelo localhost.'
+    : `Falha ao carregar ${DATA_URL} — ${err.message}`;
+  (play&&play.parentNode||menu).appendChild(box);
+  menu.hidden=false;
+}
 const fmtItem=([k,q])=>k==='ouro'?`${q} de ouro`:(q>1?`${q} × ${ITEMS[k].nome}`:ITEMS[k].nome);
 const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
 
@@ -262,15 +283,19 @@ const hash=(x,y)=>{let h=(Math.imul(x,73856093)^Math.imul(y,19349663))>>>0;h=Mat
 
 /* ---------- estado da incursão ---------- */
 let G=null,fireHeld=false;
-function pickType(d){const r=Math.random();
-  if(d<.35)return r<.6?'rato':'aranha';
-  if(d<.7)return r<.35?'aranha':r<.7?'esqueleto':'orc';
-  return r<.35?'esqueleto':r<.7?'orc':'xama';}
+function pickType(d){
+  const bands=PROG.bands,b=bands.find(b=>d<b.untilDepth)||bands[bands.length-1];
+  const rows=Object.entries(b.weights);
+  let r=Math.random();
+  for(const[k,w]of rows){if(r<w)return k;r-=w}
+  return rows[rows.length-1][0];
+}
 function spawn(k,r,d,boss){
-  const t=MT[k],lv=.05*(save.lvl-1),hpm=boss?1+lv*1.5:1+.35*d+lv;
+  const t=MT[k],sc=PROG.scaling,lv=sc.hpPerPlayerLevel*(save.lvl-1),
+    hpm=boss?1+lv*sc.bossLevelFactor:1+sc.hpPerDepth*d+lv;
   const x=boss?(r.cx+.5)*T:(r.x+1+rnd(r.w-2)+.5)*T,y=boss?(r.cy-.5)*T:(r.y+1+rnd(r.h-2)+.5)*T;
   const hp=Math.round(t.hp*hpm);
-  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+.25*d)),xpm:1+.4*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:rr(0,9),mv:0});
+  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:rr(0,9),mv:0});
 }
 function newRun(){
   const {g,rooms}=genMap(),s=rooms[0];
@@ -280,13 +305,16 @@ function newRun(){
   const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,cdA:0,cdB:0,cdC:0,pot:3,flash:0,walk:0};
   G={g,rooms,seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],
      t:0,bag:{},bagVal:0,kills:0,xpGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null};
+  const perRoom=PROG.perRoom;
   for(const r of rooms){
     if(r===s)continue;
-    const d=r.d/md,n=ri(2,3)+(r.w*r.h>50?1:0);
+    const d=r.d/md,
+      n=ri(perRoom.min,perRoom.max)+(r.w*r.h>perRoom.largeRoomArea?perRoom.largeRoomBonus:0);
     for(let k=0;k<n;k++)spawn(pickType(d),r,d,false);
   }
-  spawn('guardiao',pr,1,true);
-  spawn(Math.random()<.5?'xama':'orc',pr,1,false);
+  const bs=PROG.boss;
+  spawn(bs.type,pr,1,true);
+  spawn(bs.escort[rnd(bs.escort.length)],pr,1,false);
   reveal();
 }
 
@@ -761,8 +789,10 @@ function frame(now){
 function onResize(){resize();if(joy.id===null)joyIdle()}
 addEventListener('resize',onResize);
 onResize();
-showMenu();
-requestAnimationFrame(frame);
+loadContent().then(()=>{
+  showMenu();
+  requestAnimationFrame(frame);
+}).catch(contentFailure);
 })();
 </script>
 
