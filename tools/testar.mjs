@@ -107,18 +107,24 @@ const P = {
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
   /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
-     mas nada sai para a rede): a tabela saves vive em window.__nuvem (dados = a linha do jogador,
-     null = sem linha), e cada GET e POST fica contado para o roteiro conferir */
-  nuvem: (remoto) => (h) => patch(h,
+     mas nada sai para a rede). Imita as funções do login simples
+     (tools/supabase/002_login_simples.sql): window.__nuvem.dados é o save do
+     jogador (null = sem save), contas guarda usuário → senha, e cada leitura,
+     gravação e login fica contado para o roteiro conferir. O token válido é
+     sempre 'tk1', do jogador 'u1'. */
+  nuvem: (remoto, contas) => (h) => patch(h,
     "'use strict';",
     `'use strict';
-window.__nuvem={dados:${JSON.stringify(remoto ?? null)},gets:0,posts:0,auth:'',otp:''};
+window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
-  const N=window.__nuvem,r=(st,b)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(b)});
-  if(u.indexOf('/rest/v1/saves')>=0){N.auth=(o.headers||{}).Authorization||'';
-    if((o.method||'GET')==='GET'){N.gets++;return r(200,N.dados?[{dados:N.dados}]:[])}
-    N.posts++;N.dados=JSON.parse(o.body).dados;return r(201,null)}
-  if(u.indexOf('/auth/v1/otp')>=0){N.otp=JSON.parse(o.body).email;return r(200,{})}
+  const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
+    erro=m=>r(400,{code:'P0001',message:m}),fn=u.split('/rpc/')[1];
+  if(fn==='save_ler'){N.gets++;N.token=b.p_token;return b.p_token==='tk1'?r(200,N.dados):erro('sessao')}
+  if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');N.posts++;N.dados=b.p_dados;return r(204,null)}
+  if(fn==='conta_entrar'){N.login=b.p_usuario;return N.contas[b.p_usuario.toLowerCase()]===b.p_senha?r(200,{token:'tk1',id:'u1',usuario:b.p_usuario}):erro('credenciais')}
+  if(fn==='conta_criar'){N.login=b.p_usuario;if(b.p_usuario.toLowerCase() in N.contas)return erro('usuario_existe');
+    N.contas[b.p_usuario.toLowerCase()]=b.p_senha;return r(200,{token:'tk1',id:'u1',usuario:b.p_usuario})}
+  if(fn==='conta_sair'){N.saiu++;return r(204,null)}
   return r(404,{})}}`, 'Supabase falso'),
 };
 
@@ -141,8 +147,8 @@ const A = {
     ajusta(c, 'enemies.rato.atk', 0.9, 0.3, 'rato letal');
   },
 };
-/* sessão já aberta, com validade longe o bastante para nunca pedir renovação */
-const SESSAO = {at: 'x.eyJzdWIiOiJ1MSJ9.y', rt: 'r1', exp: 9e15, uid: 'u1', email: 'jogador@exemplo.com'};
+/* sessão já aberta do login simples: o token 'tk1' é o que o Supabase falso aceita */
+const SESSAO = {tk: 'tk1', uid: 'u1', usuario: 'jogador'};
 const espera = (ms) => `await new Promise(function(r){setTimeout(r,${ms})});`;
 
 /* ---------- injeção ---------- */
@@ -695,29 +701,46 @@ const CASOS = [
   },
   {
     nome: 'nuvem-entrar',
-    o_que: 'sem sessão a caixa de conta aparece e pede o link mágico por e-mail',
+    o_que: 'login simples: senha errada é recusada, conta nova entra, lê a nuvem e grava a incursão seguinte',
     semente: 41,
-    patches: [P.nuvem(null)],
+    patches: [P.nuvem(null, {velho: 'abc'})],
     save: {'masmorra-runas-v2': {
       cofre: 10, runs: 1, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'feiticeiro',
       chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
-    }},
+    },
+    /* sessão do login por e-mail, que saiu: precisa ser descartada */
+    'masmorra-runas-v2-sessao': {at: 'x.y.z', rt: 'r1', exp: 9e15, uid: 'u9', email: 'antigo@exemplo.com'}},
     roteiro: `
     await quadros(4);
     ok('a caixa de conta aparece', visivel('#mConta'));
-    ok('o formulário de e-mail aparece', visivel('#contaF'));
-    ok('o botão de sair fica escondido', !visivel('#contaSair'));
+    ok('a sessão antiga do e-mail foi descartada', visivel('#contaF')&&!visivel('#contaSair'));
     ok('sem sessão nada é lido da nuvem', window.__nuvem.gets===0, window.__nuvem.gets);
-    $('#contaE').value='jogador@exemplo.com';
-    $('#contaF').dispatchEvent(new Event('submit',{cancelable:true}));
-    var pediu=await ate(function(){return /Enviamos um link/.test(txt('#contaT')||'')},200);
-    ok('o pedido de link chegou ao Supabase', window.__nuvem.otp==='jogador@exemplo.com', window.__nuvem.otp);
-    ok('o jogador vê que o link foi enviado', pediu, txt('#contaT'));
+    clica($('#contaB'));
+    await quadros(2);
+    ok('campos vazios pedem usuário e senha', /Preencha usuário e senha/.test(txt('#contaT')||''), txt('#contaT'));
+    $('#contaU').value='velho';$('#contaS').value='errada';
+    clica($('#contaB'));
+    var recusou=await ate(function(){return /incorretos/.test(txt('#contaT')||'')},200);
+    ok('senha errada é recusada', recusou&&!localStorage.getItem('masmorra-runas-v2-sessao'), txt('#contaT'));
+    $('#contaU').value='Velho';$('#contaS').value='x';
+    clica($('#contaC'));
+    var existe=await ate(function(){return /já existe/.test(txt('#contaT')||'')},200);
+    ok('usuário repetido não cria conta (sem diferenciar maiúscula)', existe, txt('#contaT'));
+    $('#contaU').value='  novato ';$('#contaS').value='1';
+    clica($('#contaC'));
+    var entrou=await ate(function(){return /salvo na nuvem · novato/.test(txt('#contaT')||'')},200);
+    ok('conta nova entra e mostra o usuário', entrou, txt('#contaT'));
+    ok('a conta foi criada com o nome sem espaços', window.__nuvem.contas.novato==='1', JSON.stringify(window.__nuvem.contas));
+    ok('a sessão ficou guardada no aparelho', /tk1/.test(localStorage.getItem('masmorra-runas-v2-sessao')||''));
+    ok('a senha não fica guardada no aparelho', !/"1"/.test(localStorage.getItem('masmorra-runas-v2-sessao')||'')&&$('#contaS').value==='');
+    ok('a nuvem foi lida depois de entrar', window.__nuvem.gets===1, window.__nuvem.gets);
+    ${espera(1800)}
+    ok('o save local subiu para a conta nova', window.__nuvem.posts>=1&&window.__nuvem.dados.cofre===10, window.__nuvem.posts);
     clica($('#play'));
     ${espera(1800)}
-    ok('sem sessão nada é gravado na nuvem', window.__nuvem.posts===0, window.__nuvem.posts);
+    ok('a incursão foi gravada na nuvem com o token', window.__nuvem.posts>=1&&window.__nuvem.dados.runs===2&&window.__nuvem.token==='tk1', window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.runs)+' / '+window.__nuvem.token);
 `,
   },
   {
@@ -746,12 +769,12 @@ const CASOS = [
     ok('o nível da nuvem chegou', txt('#sLvl')==='4', txt('#sLvl'));
     ok('o save local foi substituído', sv()&&sv().cofre===900&&sv().runs===5, sv()&&[sv().cofre,sv().runs].join(','));
     ok('o aparelho ficou ligado à conta', sv()&&sv().dono==='u1', sv()&&sv().dono);
-    ok('a caixa mostra a conta', /salvo na nuvem · jogador@exemplo\\.com/.test(txt('#contaT')||''), txt('#contaT'));
+    ok('a caixa mostra a conta', /salvo na nuvem · jogador/.test(txt('#contaT')||''), txt('#contaT'));
     ok('o formulário some com a sessão aberta', !visivel('#contaF')&&visivel('#contaSair'));
     clica($('#play'));
     ${espera(1800)}
     ok('a incursão nova foi gravada na nuvem', window.__nuvem.posts>=1&&window.__nuvem.dados.runs===6, window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.runs));
-    ok('a gravação foi com o token da sessão', window.__nuvem.auth==='Bearer x.eyJzdWIiOiJ1MSJ9.y', window.__nuvem.auth);
+    ok('a gravação foi com o token da sessão', window.__nuvem.token==='tk1', window.__nuvem.token);
     ok('o cofre gravado é o da nuvem', window.__nuvem.dados.cofre===900, window.__nuvem.dados.cofre);
 `,
   },
@@ -784,6 +807,7 @@ const CASOS = [
     await quadros(4);
     ok('sair da conta mostra o formulário de novo', visivel('#contaF')&&!visivel('#contaSair'));
     ok('a sessão foi apagada do aparelho', !localStorage.getItem('masmorra-runas-v2-sessao'));
+    ok('o banco foi avisado da saída', window.__nuvem.saiu===1, window.__nuvem.saiu);
     ok('sair da conta não apaga o progresso local', sv()&&sv().cofre===120, sv()&&sv().cofre);
 `,
   },

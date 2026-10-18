@@ -160,8 +160,8 @@ não sua.
 
 **O save também vai para a nuvem quando há conta** — ver a seção Supabase
 logo abaixo. `persist()` grava `save.em` (horário) e agenda o envio;
-`save.dono` marca a conta a que o aparelho está ligado; a sessão fica em
-`masmorra-runas-v2-sessao`.
+`save.dono` marca a conta a que o aparelho está ligado; a sessão (token,
+id e nome de usuário, nunca a senha) fica em `masmorra-runas-v2-sessao`.
 
 Toda escrita em `save` precisa de `persist()` depois. Todo atributo derivado
 (vida máxima, mana máxima, poder) passa por `stats()`, que lê a classe atual via
@@ -173,14 +173,30 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
 `https://bpwljbualdjlwmzcryzl.supabase.co`. É a peça "Contas e dados (F1)" do
 [PRD](docs/PRD.md). Hoje guarda:
 
-- **Contas** — Supabase Auth, login por link mágico no e-mail (cadastro aberto).
-- **`public.saves`** — um save por conta, mesmo JSON da `masmorra-runas-v2`.
-  Schema e regras em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
+- **Contas** — login simples da fase de teste: **usuário e senha, sem
+  e-mail**, por decisão do Leonardo em 2026-10-18 (o link mágico não chegava,
+  porque o SMTP padrão do Supabase só entrega para membros da organização).
+  Tabelas `public.jogadores` (senha só como hash bcrypt), `public.sessoes` (só
+  o sha256 do token) e `public.saves_jogador` (um save por jogador, mesmo JSON
+  da `masmorra-runas-v2`). Esquema e funções em
+  [tools/supabase/002_login_simples.sql](tools/supabase/002_login_simples.sql).
+- **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
+  Fica para quando o login com e-mail ou Google voltar.
+  Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
 
 O jogo fala com o banco pela seção `conta e save na nuvem` do `index.html`, com
 `fetch` puro (sem `supabase-js`) e só a chave **publishable** em `SB_KEY`, que
-é pública por natureza. Quem pode ler ou gravar o quê é decidido pela RLS no
-banco, não pelo código do cliente.
+é pública por natureza. O navegador não toca nas tabelas: chama só as funções
+`conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`
+(`POST /rest/v1/rpc/<nome>`), que rodam como dono e conferem senha ou token por
+dentro. As tabelas têm RLS ligada e nenhuma política, de propósito. Por isso
+os avisos de segurança do Supabase listam essas cinco funções como "executáveis
+por anon" e as tabelas como "RLS sem política": é o desenho, não um furo. Se
+um aviso **novo** aparecer, aí sim investigue.
+
+Limites aceitos para a fase de teste, que precisam cair antes de abrir para
+desconhecidos: sem limite de tentativas de senha, sem recuperação de senha, e
+o cliente grava o save inteiro (quem editar o JSON trapaceia no próprio save).
 
 **Os agentes têm acesso livre às chaves, sem pedir ao Leonardo.** Todas estão
 no arquivo `api key supabase.txt`, na raiz do checkout principal
@@ -225,12 +241,14 @@ Limites conhecidos de acesso:
   provedores, SMTP) não sai das chaves acima nem do conector: exige o painel ou
   um token pessoal (`sbp_…`, em supabase.com/dashboard/account/tokens) via CLI
   `supabase` ou Management API. Se o token entrar no arquivo de chaves, use-o.
-- **O e-mail padrão do Supabase só entrega para membros da organização.** Até
-  existir SMTP próprio, o link mágico chega para o Leonardo e não para
-  testadores de fora.
+- **O e-mail padrão do Supabase só entrega para membros da organização.** Foi
+  por isso que o login saiu do e-mail; antes de voltar a ele, configure SMTP
+  próprio.
+- **O `execute_sql` do conector expira em comandos que apagam dados** (o
+  `select` funciona). Apagar dado de jogador fica com o Leonardo no painel.
 - Os testes (`tools/testar.mjs`) nunca falam com o Supabase de verdade: o
   prelúdio bloqueia `supabase.co` e o caso que precisa de nuvem usa `P.nuvem`,
-  um Supabase falso em memória.
+  um Supabase falso em memória que imita as cinco funções do login simples.
 
 ## Convenções de código
 

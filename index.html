@@ -232,7 +232,10 @@ h2.lost{color:var(--hp)}
       <p class="aviso" id="mAviso" role="status" hidden>Seu progresso não está sendo salvo neste navegador (aba anônima ou armazenamento bloqueado). Ao fechar a aba, ele se perde.</p>
       <div class="conta" id="mConta" hidden>
         <p id="contaT" role="status"></p>
-        <form class="row" id="contaF"><input id="contaE" type="email" inputmode="email" autocomplete="email" placeholder="seu e-mail" aria-label="E-mail para guardar o progresso na nuvem" required><button class="ghost" id="contaB">Entrar</button></form>
+        <form class="conta" id="contaF">
+          <div class="row2"><input id="contaU" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="usuário" aria-label="Nome de usuário"><input id="contaS" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha"></div>
+          <div class="row2"><button class="ghost" id="contaB">Entrar</button><button class="ghost" type="button" id="contaC">Criar conta</button></div>
+        </form>
         <button class="ghost" id="contaSair" hidden>Sair da conta</button>
       </div>
       <dl class="stats">
@@ -453,9 +456,11 @@ const persist=()=>{save.em=Date.now();try{localStorage.setItem(KEY,JSON.stringif
 
 /* ---------- conta e save na nuvem (Supabase) ----------
    Opcional e sem biblioteca: fetch puro na API do Supabase com a chave
-   pública. Sem SB_KEY ou sem sessão nada daqui fala com a rede, e o jogo segue
-   só com o localStorage. Quem pode ler ou gravar o quê é decidido pelas regras
-   RLS do banco (tools/supabase/001_saves.sql), não por este código.
+   pública. Login simples da fase de teste, com usuário e senha e sem e-mail:
+   o jogo só chama as funções conta_* e save_* do banco
+   (tools/supabase/002_login_simples.sql), que conferem senha e token; as
+   tabelas não são acessíveis de fora. Sem sessão nada daqui fala com a rede, e
+   o jogo segue só com o localStorage.
    Conflito entre aparelhos: no aparelho já ligado à conta vence o save gravado
    por último (save.em); no primeiro login de um aparelho vence o que tem mais
    incursões, para um save novo nunca apagar um antigo; num aparelho que era de
@@ -463,39 +468,23 @@ const persist=()=>{save.em=Date.now();try{localStorage.setItem(KEY,JSON.stringif
 const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
 let sessao=null;try{sessao=JSON.parse(localStorage.getItem(KEYS)||'null')}catch(e){}
-const nuvem={pronto:false,enviado:'',erro:false,timer:0,sujo:false};
-const jwt=t=>{try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')))}catch(e){return{}}};
-const guardaSessao=(at,rt,exp)=>{
-  if(!at){sessao=null;try{localStorage.removeItem(KEYS)}catch(e){}return}
-  const p=jwt(at);sessao={at,rt,exp:Date.now()+(exp|0)*1000,uid:p.sub,email:p.email||''};
-  try{localStorage.setItem(KEYS,JSON.stringify(sessao))}catch(e){}
-};
-/* volta do link mágico: o Supabase devolve a sessão no #hash da URL */
-if(SB_KEY&&/access_token=|error_description=/.test(location.hash)){
-  const h=new URLSearchParams(location.hash.slice(1));
-  if(h.get('access_token'))guardaSessao(h.get('access_token'),h.get('refresh_token'),+h.get('expires_in')||3600);
-  else nuvem.enviado='O link expirou ou já foi usado. Peça outro.';
-  history.replaceState(null,'',location.pathname+location.search);
-}
-const sbFetch=(path,opt={})=>fetch(SB_URL+path,Object.assign({},opt,{headers:Object.assign(
-  {apikey:SB_KEY,'Content-Type':'application/json'},sessao?{Authorization:'Bearer '+sessao.at}:{},opt.headers||{})}));
-/* garante um token válido; false quando a sessão morreu e é preciso entrar de novo */
-async function token(){
-  if(sessao.exp-Date.now()>60000)return true;
-  const r=await fetch(SB_URL+'/auth/v1/token?grant_type=refresh_token',{method:'POST',
-    headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({refresh_token:sessao.rt})});
-  if(r.status===400||r.status===401){guardaSessao(null);nuvem.pronto=false;desenhaConta();return false}
-  if(!r.ok)throw new Error('HTTP '+r.status);
-  const j=await r.json();guardaSessao(j.access_token,j.refresh_token,j.expires_in);return true;
-}
+/* sessão do login por e-mail, que saiu: some do aparelho */
+if(sessao&&!sessao.tk){sessao=null;try{localStorage.removeItem(KEYS)}catch(e){}}
+const nuvem={pronto:false,msg:'',erro:false,timer:0,sujo:false};
+const guardaSessao=v=>{sessao=v;try{v?localStorage.setItem(KEYS,JSON.stringify(v)):localStorage.removeItem(KEYS)}catch(e){}};
+const rpc=(fn,corpo,keepalive)=>fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',keepalive:!!keepalive,
+  headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(corpo)});
+/* as funções do banco levantam uma palavra-chave como mensagem de erro */
+const erroRpc=async r=>{try{return(await r.json()).message||''}catch(e){return''}};
+const MSG_CONTA={credenciais:'Usuário ou senha incorretos.',usuario_existe:'Esse nome de usuário já existe. Escolha outro ou entre com a senha dele.',
+  usuario_invalido:'O nome de usuário precisa ter de 1 a 24 caracteres.',senha_invalida:'A senha não pode ficar vazia.'};
+const sessaoMorta=()=>{guardaSessao(null);nuvem.pronto=false;nuvem.erro=false;nuvem.msg='Sua sessão expirou. Entre de novo.';desenhaConta()};
 async function empurra(keepalive){
   if(!sessao||!nuvem.pronto)return;
   nuvem.sujo=false;
   try{
-    if(!await token())return;
-    const r=await sbFetch('/rest/v1/saves',{method:'POST',keepalive:!!keepalive,
-      headers:{Prefer:'resolution=merge-duplicates,return=minimal'},body:JSON.stringify({user_id:sessao.uid,dados:save})});
-    if(!r.ok)throw new Error('HTTP '+r.status);
+    const r=await rpc('save_gravar',{p_token:sessao.tk,p_dados:save},keepalive);
+    if(!r.ok){if(await erroRpc(r)==='sessao')return sessaoMorta();throw new Error('HTTP '+r.status)}
     if(nuvem.erro){nuvem.erro=false;desenhaConta()}
   }catch(e){nuvem.sujo=true;if(!nuvem.erro){nuvem.erro=true;desenhaConta()}}
 }
@@ -508,10 +497,10 @@ async function puxa(){
   /* não troca o save no meio de uma incursão: espera ela acabar */
   if(G&&G.active)return void setTimeout(puxa,3000);
   try{
-    if(!await token())return;
-    const r=await sbFetch('/rest/v1/saves?select=dados&user_id=eq.'+encodeURIComponent(sessao.uid));
-    if(!r.ok)throw new Error('HTTP '+r.status);
-    const d=((await r.json())[0]||{}).dados;
+    const r=await rpc('save_ler',{p_token:sessao.tk});
+    if(!r.ok){if(await erroRpc(r)==='sessao')return sessaoMorta();throw new Error('HTTP '+r.status)}
+    const d=await r.json();
+    if(!sessao)return;
     if(G&&G.active)return void setTimeout(puxa,3000);
     /* aparelho que era de outra conta: o save local é dela, nunca vai para esta */
     const ligado=save.dono===sessao.uid,outro=!!save.dono&&!ligado;
@@ -527,25 +516,26 @@ function desenhaConta(){
   $('#contaF').hidden=!!sessao;$('#contaSair').hidden=!sessao;
   $('#contaT').textContent=sessao
     ?(nuvem.erro?'Sem conexão com a nuvem agora. O progresso segue salvo neste aparelho.'
-      :nuvem.pronto?`Progresso salvo na nuvem · ${sessao.email}`:'Conectando à nuvem…')
-    :nuvem.enviado||'Entre com seu e-mail para guardar o progresso na nuvem e continuar em outro aparelho.';
+      :nuvem.pronto?`Progresso salvo na nuvem · ${sessao.usuario}`:'Conectando à nuvem…')
+    :nuvem.msg||'Entre com um usuário e uma senha para guardar o progresso na nuvem e continuar em outro aparelho.';
 }
-$('#contaF').addEventListener('submit',async ev=>{
-  ev.preventDefault();
-  const email=$('#contaE').value.trim(),b=$('#contaB');if(!email)return;
-  b.disabled=true;
+async function acessa(fn){
+  const u=$('#contaU').value.trim(),pw=$('#contaS').value;
+  if(!u||!pw){nuvem.msg='Preencha usuário e senha.';return desenhaConta()}
+  $('#contaB').disabled=$('#contaC').disabled=true;
   try{
-    const r=await fetch(SB_URL+'/auth/v1/otp?redirect_to='+encodeURIComponent(location.origin+location.pathname),{method:'POST',
-      headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify({email,create_user:true})});
-    nuvem.enviado=r.ok?`Enviamos um link para ${email}. Abra-o neste aparelho para entrar.`
-      :r.status===429?'Muitos pedidos seguidos. Espere um minuto e tente de novo.':'Não deu para enviar o link. Confira o e-mail.';
-  }catch(e){nuvem.enviado='Sem conexão. Tente de novo quando tiver rede.'}
-  b.disabled=false;desenhaConta();
-});
+    const r=await rpc(fn,{p_usuario:u,p_senha:pw});
+    if(r.ok){const j=await r.json();guardaSessao({tk:j.token,uid:j.id,usuario:j.usuario});nuvem.msg='';$('#contaS').value='';puxa()}
+    else nuvem.msg=MSG_CONTA[await erroRpc(r)]||'Não deu para entrar agora. Tente de novo.';
+  }catch(e){nuvem.msg='Sem conexão. Tente de novo quando tiver rede.'}
+  $('#contaB').disabled=$('#contaC').disabled=false;desenhaConta();
+}
+$('#contaF').addEventListener('submit',ev=>{ev.preventDefault();acessa('conta_entrar')});
+$('#contaC').addEventListener('click',()=>acessa('conta_criar'));
 $('#contaSair').addEventListener('click',async()=>{
   clearTimeout(nuvem.timer);if(nuvem.sujo)await empurra();
-  if(sessao)sbFetch('/auth/v1/logout',{method:'POST'}).catch(()=>{});
-  guardaSessao(null);nuvem.pronto=false;nuvem.erro=false;nuvem.enviado='';desenhaConta();
+  if(sessao)rpc('conta_sair',{p_token:sessao.tk}).catch(()=>{});
+  guardaSessao(null);nuvem.pronto=false;nuvem.erro=false;nuvem.msg='';desenhaConta();
 });
 /* fechar a aba ou trocar de app não pode deixar a última gravação para trás */
 addEventListener('visibilitychange',()=>{if(document.hidden&&nuvem.sujo){clearTimeout(nuvem.timer);empurra(true)}});
