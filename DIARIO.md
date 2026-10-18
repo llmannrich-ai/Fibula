@@ -18,6 +18,177 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-18 23:50 UTC
+
+**Item desenvolvido:** Harness de teste headless no repositório —
+[tools/testar.mjs](tools/testar.mjs), commit `3f11261`. Um comando,
+`node tools/testar.mjs`, refaz a checagem de sintaxe, monta uma **cópia** do
+`index.html` por caso de teste, roda cada uma no Edge headless e sai com código
+diferente de zero se qualquer asserção falhar ou se um erro de janela aparecer.
+Oito casos, 194 asserções, 6 s de execução: menu com Mercador, incursão de ponta
+a ponta até a extração, morte com o Selo de resguardo, as quatro classes,
+grimório no nível 18, nível subindo no meio da incursão, save corrompido e
+migração `v1`→`v2`. Cada caso tem save semeado próprio. No mesmo commit, as
+duas correções que ele achou na Etapa 3 (abaixo) e o `CLAUDE.md` trocando o
+procedimento manual pela linha de comando.
+
+**Validação:** `SINTAXE_OK` e os 8 casos passando. O portão foi testado contra
+si mesmo, com três cópias quebradas de propósito via `FIBULA_JOGO`: chave de
+bloco a mais no `hud()` (barrou na sintaxe, saída 1), referência inexistente no
+`hud()` (apareceu em `data-errs`, saída 1) e remoção do `save.cofre+=G.bagVal`
+no `finish()` (duas asserções falharam nomeando o que leram, saída 1). Os cinco
+itens da lista "o que olhar antes de dizer que está pronto" do `CLAUDE.md`
+passaram a estar cobertos pelo script.
+
+**Análise:**
+- **A Etapa 3 nunca tinha sido executada fora do navegador de quem escreveu, e
+  tinha dois bugs. Os dois foram corrigidos neste commit.**
+  1. **A habilidade aprendida no meio da incursão não virava botão.** O
+     `gainXp()` abre espaço novo, escolhe a habilidade e escreve no log
+     "`Onda de Fogo` foi para o espaço 3" — mas o `montaBotoes()` só era chamado
+     no `start()`, então o botão continuava `hidden` até a incursão seguinte. O
+     `hud()` faz `if(b.hidden)continue`, então nada o revelava depois. Pior:
+     `lancarSlot(i)` lê `ch().slots[i]`, que **estava** preenchido, então a
+     tecla `L` do teclado conjurava uma habilidade sem botão na tela. Num jogo
+     de celular, isso é a habilidade simplesmente não existir. Correção de uma
+     linha: `montaBotoes()` no fim do laço de nível do `gainXp()`.
+  2. **Save com classe apontando para personagem ausente deixava a tela em
+     branco.** Com `classe:'druida'` e `chars:{}` no `localStorage`, o `ch()`
+     devolve `undefined` e o `showMenu()` estoura em `c.lvl` **antes** do
+     `requestAnimationFrame(frame)` no fim da IIFE: o laço nunca começa e o
+     jogador fica olhando os placeholders do markup, sem jeito de sair a não ser
+     limpando o armazenamento. Correção na carga do save: classe fora da tabela
+     `CLASSES` volta a `null` (cai na escolha de personagem) e classe válida sem
+     personagem ganha um `novoChar()`, já persistido. O cofre e as melhorias
+     sobrevivem.
+- Terceira correção, menor: o `aria-label` dos botões de habilidade dizia
+  "0 de mana" para o Golpe do Cavaleiro, enquanto o rótulo visível dizia
+  "grátis". Agora diz "sem mana" nos dois.
+- **O `--dump-dom` que o `CLAUDE.md` mandava usar não existe mais.** O Edge
+  desta máquina é o 155, aceita a opção e não escreve nada — nem para uma página
+  trivial. A opção saiu do headless novo e só vive no `chrome-headless-shell`,
+  que não vem instalado. Foi o que custou mais tempo nesta execução, porque
+  falha em silêncio: saída 0, zero byte, nenhum erro. No lugar dela o script
+  sobe um coletor HTTP em `127.0.0.1` e a cópia faz `POST` do resultado no fim
+  do roteiro, com o DOM final no mesmo pacote (gravado em `dump.html` para
+  inspeção, igual ao roteiro manual). Isso também dispensou a
+  `--virtual-time-budget`.
+- O atalho do `requestAnimationFrame` ficou melhor do que o documentado: em vez
+  de `setTimeout(cb, 50)`, é `setTimeout(cb, 0)` com um **timestamp sintético**
+  que anda 50 ms por quadro. O `dt` do jogo continua no passo cheio, mas o
+  tempo de parede não precisa passar: uma incursão de 20 s roda em segundos, e
+  a suíte inteira em 6.
+- O `Math.random` é semeado por caso (mulberry32 de uma linha). Sem isso, mapa,
+  corredores, spawns e loot mudam a cada execução e um teste de combate fica
+  intermitente. Com isso, "passou hoje" significa "passa amanhã".
+- Como o jogo inteiro vive numa IIFE, o harness não alcança função nenhuma por
+  dentro: tudo é clique em botão, tecla despachada na janela e leitura do DOM e
+  do `localStorage`. Isso é limitação e virtude — testa o que o jogador toca.
+  Para exercitar o combate, o roteiro despacha `keydown` de `KeyJ`, que o
+  `update()` lê como botão segurado.
+- Os patches na cópia são substituições exatas que **estouram se não casarem**.
+  Se o `index.html` mudar a linha patcheada, o harness falha alto em vez de
+  testar coisa nenhuma — o modo de falha que mais importa evitar num portão.
+
+**Colisão com o agente Desenvolvedor, e o que foi feito:** enquanto esta
+execução terminava, a entrada das 23:30 entregou **outro** harness para o mesmo
+item, o `tools/teste.js` (126 linhas, dois cenários, Chromium da nuvem,
+`--dump-dom`). Ficar com os dois é pior que escolher qualquer um — dois portões
+para o mesmo item significam que um dos dois não roda e ninguém percebe. **O
+`tools/teste.js` foi removido e o `tools/testar.mjs` ficou**, por três motivos
+verificáveis, não por preferência:
+1. **O `--dump-dom` dele não funciona na máquina do Leonardo.** O Edge 155
+   aceita a opção e devolve zero byte com saída 0, então o `tools/teste.js`
+   reporta "navegador não rodou" e o portão vira silêncio. O `testar.mjs` usa o
+   coletor HTTP e roda nas duas máquinas.
+2. **Cobertura:** 2 cenários contra 8 casos e 194 asserções. A própria entrada
+   das 23:30 lista como pendência que não há cenário de extração nem de morte —
+   os dois existem aqui, e o de extração passa pelo combate.
+3. **A pendência "o save semeado precisa trazer o personagem em `chars`; sem ele
+   o menu quebra" era o bug nº 2 desta entrada.** Ele foi contornado lá e
+   corrigido aqui, então a restrição deixou de existir.
+O que o `tools/teste.js` fazia melhor foi absorvido: a descoberta do navegador
+(`CHROME`, `/opt/pw-browsers`, PATH) e o `--no-sandbox` fora do Windows, para a
+suíte rodar também na nuvem. Se o Leonardo discordar, `git revert` deste commit
+traz os dois de volta.
+
+**Roadmap:** enquanto esta execução trabalhava, o agente de Produto promoveu o
+mesmo item de `Depois` para `Agora` com uma especificação própria
+("Ferramenta de teste headless no repositório", entrada de 22:00). Ele está
+atendido e foi para `Concluído`; `Agora` passou a ser a CI, que era o item 1 de
+`Próximo`. **Duas diferenças em relação ao que a especificação pedia**, as duas
+deliberadas e explicadas acima: o arquivo é `tools/testar.mjs` e não
+`tools/teste.js` (ESM, para `import` sem `package.json`), e o resultado volta
+por um coletor HTTP em vez de `--dump-dom`, porque a opção não escreve mais
+nada. O item 2 de `Próximo` foi aparado: a metade do teste da migração `v1`→`v2`
+já está feita (caso `migracao-save`), sobrou o aviso de falha do `persist()`.
+
+**Pendências e riscos:**
+- **A extração é testada com o portal mudado de lugar.** No headless não há quem
+  arraste o joystick da sala de entrada até a sala do Guardião, então o caso
+  `incursao-extracao` patcheia a cópia para o portal nascer na sala de entrada.
+  O que fica **sem** cobertura é a travessia: campo de fluxo levando o jogador
+  para longe, aggro em corredor, o Guardião. Testar isso de verdade pede um
+  roteiro que leia o `G.flow` e dirija o joystick, e o `G` está fechado dentro
+  da IIFE. A saída provável é um gancho de depuração no `index.html` ligado
+  apenas quando um parâmetro de URL estiver presente — decisão do Leonardo,
+  porque é código de teste no arquivo do jogo.
+- **Não há CI.** O script existe mas nada o roda sozinho. O ciclo automático
+  tem que chamá-lo, e o `CLAUDE.md` agora manda. O item "CI no GitHub Actions"
+  está em [docs/agentes/produto.md](docs/agentes/produto.md) e vale promover.
+  Atenção: na nuvem não existe Edge; a Action precisa instalar Chromium e
+  apontar `FIBULA_EDGE`.
+- **O `kill()` sombreia o `ch`**: `for(const[k,ch,a,b]of LOOT[m.k])` usa `ch`
+  como a chance do item, apagando dentro do laço o acessor do personagem. Hoje
+  não quebra nada, porque o corpo do laço não chama `ch()` — mas qualquer linha
+  nova ali dentro que precise do personagem vai pegar um número. Renomear para
+  `pc` é seguro; não fiz para manter o diff desta execução nos dois bugs reais.
+- **O número de asserções que dependem de texto exato é alto de propósito.**
+  Mudar um rótulo de botão ou um formato de linha da tela final quebra casos do
+  harness. Isso é o preço de testar pelo DOM, e a mensagem de falha sempre
+  imprime o que ela leu, então o conserto é óbvio. Não afrouxe as asserções para
+  "passar"; conserte o teste ou o jogo.
+- As cópias e os dumps de cada caso ficam em `%TEMP%/fibula-harness` até a
+  execução seguinte, que apaga a pasta. Numa falha, o caminho vem impresso.
+- **A suíte só foi executada no Edge 155 do Windows.** O caminho de nuvem
+  (Chromium do Playwright, `--no-sandbox`) foi escrito mas não rodado. A
+  primeira execução de nuvem que chamar `node tools/testar.mjs` é quem vai
+  descobrir se o coletor HTTP em `127.0.0.1` passa pelo contêiner; se não
+  passar, é aí que a CI vai travar.
+
+**Próximo passo recomendado:** promover a CI no GitHub Actions rodando
+`node tools/testar.mjs` em cada push para a `main`, com Chromium instalado e
+`FIBULA_EDGE` apontado — é o que transforma o portão em rede de verdade, já que
+hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
+roadmap.
+
+
+
+---
+
+## 2026-10-18 23:50 UTC — Desenvolvedor
+
+**Item desenvolvido:** CI no GitHub Actions — `.github/workflows/ci.yml`, commits `fea2e5e` e `9b92a55`.
+
+**Validação:** run `39162120905` verde na `main`. Branch descartável `teste-ci-quebrada` com erro de sintaxe proposital: CI falhou (sem PR, o push do branch já dispara).
+
+**Análise:**
+- A primeira versão da CI chamava `tools/teste.js`, que o dono removera ao consolidar tudo em `tools/testar.mjs` ("um harness só"). Falhou com MODULE_NOT_FOUND. Lição: `git pull` e ler `tools/` antes de apontar a CI para um script.
+- `tools/testar.mjs` já inclui a checagem de sintaxe, então a CI tem um passo só.
+- O C4 foi concedido pelo dono (app Claude com acesso de escrita a workflows em todos os repositórios); o push do workflow passou direto na `main`.
+- `gh api .../logs` falha (proxy); os logs saem pela ferramenta `get_job_logs` do GitHub MCP.
+
+**Roadmap:** CI em `Concluído`; aviso de falha do save + teste da migração promovido a `Agora`. O teste da migração v1→v2 já existe em `testar.mjs` (caso de migração): conferir antes de duplicar.
+
+**Pendências e riscos:**
+- O branch remoto `teste-ci-quebrada` ficou: a exclusão deu 403. Apagar à mão (GitHub → Branches).
+- Node 20 nas actions `checkout@v4`/`setup-node@v4` gera aviso de depreciação; subir versão quando houver.
+- C3 (proteger a `main` exigindo CI) segue com o dono, e `modo.txt` continua `direto`. Proteger a `main` obrigaria PR; o dono decidiu direto na `main`, então não sugerir.
+
+**Próximo passo recomendado:** aviso de falha do `persist()` no menu; o teste da migração já existe.
+
+---
+
 ## 2026-10-18 23:30 UTC — Desenvolvedor
 
 **Item desenvolvido:** ferramenta de teste headless — `tools/teste.js`, mais a seção 2 do `CLAUDE.md` reescrita para usá-la. Nenhuma linha do `index.html` alterada.
@@ -60,6 +231,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 **Próximo passo recomendado:** Desenvolvedor executa `Agora` (`tools/teste.js`) e atualiza o `CLAUDE.md`.
 
+
 ---
 
 ## 2026-10-18 20:00 UTC — Sessão manual
@@ -76,7 +248,7 @@ execução precisa saber e não vai descobrir lendo o código.
 **Roadmap:** só `Concluído` ganhou entrada. `Agora` ficou intocado de propósito — a ferramenta de teste headless é item do ciclo.
 
 **Pendências e riscos:**
-- **O `tools/teste.js` precisou de ajuste e eu não pude executá-lo.** A ferramenta nasceu na execução das 23:30, contra o `index.html` sem o `fetch`, e usava `file://`: o navegador bloqueia `fetch` em arquivo do disco mesmo com `--allow-file-access-from-files`, então ela quebraria com esta entrega. Subir um servidor no mesmo processo não dá — o `spawnSync` bloqueia o laço de eventos —, então o SHIM passou a devolver o `content.json` real, lido do repositório ao montar a cópia; a validação do carregamento continua rodando contra o arquivo verdadeiro. **Não há Node nesta máquina, então esse ajuste foi escrito e não executado.** A próxima execução do ciclo é a primeira a rodar `node tools/teste.js` com ele.
+- **O `tools/testar.mjs` precisou de ajuste e eu não pude executá-lo.** O harness abre as cópias em `file://`, onde o `fetch` do `content.json` é bloqueado mesmo com `--allow-file-access-from-files`, então ele quebraria com esta entrega — e a CI roda em todo push. O `prelude()` passou a embutir o `data/game/content.json` real, lido do repositório ao montar a cópia, e a devolver por um `fetch` falso; `validaConteudo()` continua rodando contra o conteúdo verdadeiro. Há recuo para a raiz porque `FIBULA_JOGO` pode apontar uma cópia fora do repositório, sem `data/` ao lado. **Não há Node nesta máquina: o ajuste foi escrito e não executado.** O que deu para conferir foi a sintaxe, fazendo o Chromium parsear o arquivo como módulo — só apareceram falhas de resolução de `node:*`, nenhum `SyntaxError`, e a resolução só acontece depois do parse. A primeira execução de verdade é a da CI neste push. Se ela ficar vermelha, é aqui que se olha primeiro.
 - Duas armadilhas que custaram tempo e vão custar de novo: as linhas do `#log` se apagam sozinhas em 8,2 s e o log guarda só 5, então um amostrador que **sobrescreve** o resultado lê vazio no fim da corrida — tem de acumular; e `--dump-dom` capturado com `&` no PowerShell volta vazio, precisa de `Start-Process -RedirectStandardOutput`.
 - O harness usado aqui é Python e vive fora do repositório (scratchpad da sessão). Não é o script Node que o roadmap pede; serve como referência do que testar, não como entrega.
 - Não testei: incursão de 6 minutos inteira (os harness encurtam `RUN`), troca de habilidade no Grimório, e recarregar a página para conferir persistência do save.

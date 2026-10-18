@@ -23,7 +23,10 @@ raiz do repositório).
 Todo o jogo é o [index.html](index.html) — hoje ~1380 linhas. Não há build, não
 há `package.json`, não há import, não há arquivo `.js` ou `.css` separado. O
 GitHub Pages serve o arquivo cru, e o `.nojekyll` existe para ele não ser
-processado. A pasta `docs/` guarda análise de design, não código.
+processado. A pasta `docs/` guarda análise de design, e a `tools/` ferramenta de
+desenvolvimento (teste, servidor local, extração de dados) — nada em nenhuma das
+duas vai para o navegador do jogador. A regra vale para o que é **servido**: o
+`tools/testar.mjs` roda no Node e pode ter o tamanho que precisar.
 
 Isso é uma escolha, não uma dívida: o jogo abre instantâneo no celular e
 qualquer agente consegue ler o programa inteiro de uma vez. **Não quebre isso.**
@@ -41,9 +44,9 @@ Leonardo antes de fazer.
 
 ## Mapa do index.html
 
-O arquivo tem 1376 linhas em 18/10/2026. Os quatro blocos são `<head>` (3–190,
+O arquivo tem 1382 linhas em 18/10/2026. Os quatro blocos são `<head>` (3–190,
 com o estilo crítico inline na 11 e as fontes externas em 13–15), o `<style>`
-principal (16–188), o markup (191–302) e o `<script>` (303–1373).
+principal (16–188), o markup (191–302) e o `<script>` (303–1379).
 
 Esses números envelhecem a cada commit. **Para achar as coisas, use os
 marcadores de seção `/* ---------- nome ---------- */`**, que são estáveis.
@@ -163,33 +166,62 @@ jogo inteiro, porque é um arquivo só.
 
 ### 2. Execução headless
 
+Um comando, e ele é o portão:
+
 ```bash
-node tools/teste.js
+node tools/testar.mjs
 ```
 
-O script gera duas cópias do `index.html` em `/tmp` (menu com loja; incursão
-ativa), roda cada uma no Chromium headless e imprime `TESTE_OK` com saída 0. Se
-um cenário falhar ou o console tiver erro, sai com código 1. **Sem `TESTE_OK`,
-não comite.** Aceita outro arquivo como argumento (`node tools/teste.js
-caminho.html`) e a variável `CHROME` para apontar o navegador; sem ela, usa o
-Chromium de `/opt/pw-browsers` ou `chrome`/`chromium` do PATH. Na máquina do
-Leonardo (Windows), defina `CHROME` com o `msedge.exe`.
+Refaz a checagem de sintaxe, monta uma **cópia** do `index.html` para cada caso
+de teste, roda cada cópia no Edge headless e sai com código diferente de zero
+se qualquer coisa falhar. `node tools/testar.mjs --lista` mostra os casos;
+`node tools/testar.mjs morte` roda só os que casam com o nome. O `index.html`
+nunca é tocado. Os oito casos de hoje são o menu com o Mercador, a incursão de
+ponta a ponta até a extração, a morte com o selo, as quatro classes, o grimório
+no nível 18, o nível subindo no meio da incursão, o save corrompido e a
+migração `v1`→`v2`.
 
-O que o script faz por baixo, para quando precisar estender um cenário:
+Caso novo entra na tabela `CASOS` no fim do
+[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches e um roteiro
+que clica nos botões e chama `ok(nome, condição, o_que_leu)`. Uma asserção
+falha imprime o que ela leu, e a cópia e o DOM final ficam na pasta de trabalho
+para inspeção.
 
-- **`requestAnimationFrame` não dispara em headless.** O script injeta um shim
-  (50 ms por quadro, o `dt` máximo do jogo) e `--virtual-time-budget` controla a
-  duração. Sem o shim você lê só os placeholders do markup e acha que passou.
-- Erros viram o atributo `data-errs` no `<html>`; o roteiro grava resultados em
-  `data-*`. O script filtra pelo atributo seguido de `="` — contar a palavra
-  solta dá falso positivo, porque ela casa com o próprio código do harness.
-- Patches (`RUN=12`, `PORTAL_AT=3`, saco semeado) valem **só na cópia**, e o
-  script falha alto se o trecho a trocar sumir do `index.html`.
-- O save semeado precisa ter o personagem em `chars`; sem ele o jogo quebra no
-  menu.
+O que o script faz por você, e que custou tempo descobrir:
 
-Para ampliar a cobertura, adicione um cenário à lista `CENARIOS` em
-`tools/teste.js`.
+- **O `requestAnimationFrame` não dispara no headless.** Sem o atalho o laço
+  nunca roda e você lê só os placeholders estáticos do markup (`100/100`,
+  `×3`) e acha que passou. O atalho usa um timestamp sintético que anda 50 ms
+  por quadro — o `dt` máximo que o jogo aceita — então o tempo de jogo corre no
+  passo cheio sem esperar 50 ms de verdade: uma incursão de 20 s roda em
+  segundos.
+- **O `--dump-dom` não existe mais.** O Edge 155 aceita a opção e não escreve
+  nada; ela saiu do headless novo e só vive no `chrome-headless-shell`, que não
+  vem instalado. O script sobe um coletor HTTP em `127.0.0.1` e a cópia faz
+  `POST` do resultado no fim do roteiro, com o DOM final no mesmo pacote.
+- **O `--user-data-dir` é sempre um perfil temporário**, um por caso, para
+  nunca tocar no perfil real.
+- **O `Math.random` é semeado**, então mapa, corredores, spawns e loot ficam
+  iguais em toda execução: um caso que passa hoje passa amanhã.
+- **O navegador embutido do Claude não abre `file://`** — é por isso que o
+  caminho é o Edge, e não ele.
+- **Contar ocorrências de `data-errs` dá falso positivo**, porque casa com o
+  próprio código do harness no DOM. O script ancora no nome do atributo dentro
+  da tag `<html>`, e o capturador monta o nome em duas partes para o literal
+  nem aparecer na página.
+
+O navegador é descoberto nesta ordem: `FIBULA_EDGE`, `CHROME`, o Edge do
+Windows, o Chromium do Playwright em `/opt/pw-browsers` (que é o que existe nas
+execuções de nuvem) e, por último, o PATH. Em Linux e macOS o `--no-sandbox`
+entra sozinho, porque o contêiner da nuvem não sobe o sandbox.
+
+Para conferir que o portão realmente barra código quebrado,
+`FIBULA_JOGO=<cópia quebrada> node tools/testar.mjs` roda a suíte contra outro
+arquivo. `FIBULA_SAIDA` muda a pasta de trabalho.
+
+**Há um só harness, e é este.** Se você for escrever outro, estenda a tabela
+`CASOS` em vez disso — dois portões para o mesmo item significam que um dos dois
+não roda e ninguém percebe.
 
 ### 3. O que olhar antes de dizer que está pronto
 
@@ -197,6 +229,12 @@ Uma incursão inteira do início ao fim sem erro no console. Morrer de propósit
 conferir a tela final. Extrair e conferir que o cofre subiu. Comprar no
 Mercador e conferir que o efeito aparece na incursão seguinte. Recarregar e
 conferir que o save sobreviveu.
+
+Os cinco estão cobertos pelo `tools/testar.mjs`, então o que sobra para o olho
+é o que ele não vê: o que **aparece na tela**. Se a mudança mexeu em desenho,
+layout ou leitura, abra o jogo de verdade (`powershell -ExecutionPolicy Bypass
+-File tools/serve.ps1` e `http://localhost:8080/`) num viewport de celular.
+Se mexeu em regra, o script basta.
 
 ## Git e o ciclo automático
 
