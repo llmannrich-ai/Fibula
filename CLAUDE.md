@@ -182,7 +182,9 @@ no nível 18, o nível subindo no meio da incursão, o save corrompido e a
 migração `v1`→`v2`.
 
 Caso novo entra na tabela `CASOS` no fim do
-[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches e um roteiro
+[tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto no
+`index.html`, ajustes no `content.json` (campo `conteudo`, para mexer em
+monstro, item ou classe — as tabelas não moram mais no código) e um roteiro
 que clica nos botões e chama `ok(nome, condição, o_que_leu)`. Uma asserção
 falha imprime o que ela leu, e a cópia e o DOM final ficam na pasta de trabalho
 para inspeção.

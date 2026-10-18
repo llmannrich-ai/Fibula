@@ -67,7 +67,7 @@ const NOMES_NO_PATH = ['chromium', 'chromium-browser', 'google-chrome', 'chrome'
    Um erro de sintaxe aqui derruba o jogo inteiro, porque é um arquivo só. */
 function corpoDoScript(html) {
   /* o index.html é salvo com CRLF, então o marcador tolera os dois finais */
-  const m = /<script>\r?\n\(\(\)=>\{/.exec(html);
+  const m = /<script>\r?\n\((?:async)?\(\)=>\{/.exec(html);
   if (!m) throw new Error('não achei o <script> do jogo no index.html');
   const ini = m.index;
   const fim = html.indexOf('</script>', ini);
@@ -105,9 +105,26 @@ const P = {
     'portal:{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false,ch:0}', 'portal na entrada'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
+};
+
+/* Ajustes no conteúdo que o prelúdio entrega à cópia. As tabelas saíram do
+   index.html para o content.json, então o que antes era patch de texto agora
+   muda o objeto — e estoura do mesmo jeito se o campo esperado não estiver lá. */
+function ajusta(c, caminho, esperado, novo, nome) {
+  const ch = caminho.split('.'), k = ch.pop();
+  const o = ch.reduce((a, p) => a && a[p], c);
+  if (!o || JSON.stringify(o[k]) !== JSON.stringify(esperado))
+    throw new Error(`ajuste "${nome}" não casou em ${caminho}: o content.json mudou, ajuste tools/testar.mjs`);
+  o[k] = novo;
+}
+
+const A = {
   /* rato letal: mata o jogador num golpe, para exercitar finish("morreu") */
-  ratoLetal: (h) => patch(h, "rato:{nome:'Rato',hp:22,spd:72,dmg:4,xp:6,r:9,atk:.9}",
-    "rato:{nome:'Rato',hp:22,spd:150,dmg:200,xp:6,r:9,atk:.3}", 'rato letal'),
+  ratoLetal: (c) => {
+    ajusta(c, 'enemies.rato.spd', 72, 150, 'rato letal');
+    ajusta(c, 'enemies.rato.dmg', 4, 200, 'rato letal');
+    ajusta(c, 'enemies.rato.atk', 0.9, 0.3, 'rato letal');
+  },
 };
 
 /* ---------- injeção ---------- */
@@ -169,13 +186,22 @@ function prelude(caso) {
   try{localStorage.clear();${semeadura}}catch(e){anota('localStorage: '+e.message)}
   ${caso.bloqueiaSave ? "Storage.prototype.setItem=function(){throw new DOMException('bloqueado pelo teste','QuotaExceededError')};" : ''}
   /* conteúdo do jogo: fetch não funciona em file://, então devolvemos o
-     data/game/content.json real, embutido por tools/testar.mjs */
-  var CT=${CONTEUDO};
-  window.fetch=function(){return Promise.resolve({ok:true,status:200,
-    json:function(){return Promise.resolve(CT)}})};
+     data/game/content.json real, embutido por tools/testar.mjs. Só essa URL é
+     interceptada: o POST do resultado para o coletor precisa do fetch real */
+  var CT=${conteudoDoCaso(caso)};
+  var fr=window.fetch.bind(window);
+  window.fetch=function(u,o){if(!/content\.json/.test(String(u)))return fr(u,o);
+    return Promise.resolve({ok:true,status:200,json:function(){return Promise.resolve(CT)}})};
 })();
 </script>
 `;
+}
+
+function conteudoDoCaso(caso) {
+  if (!caso.conteudo) return CONTEUDO;
+  const c = JSON.parse(CONTEUDO);
+  for (const a of caso.conteudo) a(c);
+  return JSON.stringify(c);
 }
 
 function epilogo(caso, alvo) {
@@ -386,7 +412,8 @@ const CASOS = [
     nome: 'morte',
     o_que: 'morte: tela final, perda do saco e Selo de resguardo devolvendo 40%',
     semente: 3,
-    patches: [P.tempo(12, 3), P.saco, P.spawnNaEntrada, P.ratoLetal],
+    patches: [P.tempo(12, 3), P.saco, P.spawnNaEntrada],
+    conteudo: [A.ratoLetal],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 2},
