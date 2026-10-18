@@ -72,6 +72,14 @@ O preço de cada nível sobe geometricamente, então o cofre nunca deixa de ter 
 
 O progresso fica salvo no navegador de cada aparelho.
 
+## Arte
+
+Os sprites são do [OpenTibia Sprite Pack](https://github.com/peonso/opentibia_sprite_pack),
+licença [CC BY 4.0](assets/otsp/LICENSE.txt), feito pela comunidade OpenTibia
+([autores](assets/otsp/AUTHORS.md)). O que foi usado e o que foi alterado está
+em [assets/CREDITOS.md](assets/CREDITOS.md); o atlas sai de
+[`tools/sprites.mjs`](tools/sprites.mjs).
+
 ## Desenvolvimento
 
 Todo o código do jogo é o `index.html` — sem build e sem biblioteca, servido cru

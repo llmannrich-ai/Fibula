@@ -13,25 +13,7 @@ automático não tem como saber que terminou.
 
 ## Agora
 
-### Pipeline dos sprites OTSP (sem trocar o desenho)
-
-**Pilar 2.** `tools/` com script que recorta as folhas usadas do OTSP, converte
-o magenta em transparência e monta o atlas; `assets/otsp/` com as folhas usadas,
-`LICENSE.txt` e `AUTHORS.md`; `assets/CREDITOS.md`. Seguir as regras da seção 9
-do PRD. O jogo continua desenhando as formas atuais.
-
-**Fase:** F0 (5). **Pronto quando:** rodar o script gera o atlas de criaturas de
-forma reproduzível, `assets/CREDITOS.md` lista origem, licença e alterações, e
-o `index.html` não mudou.
-
----
-
-## Próximo
-
-Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
-quando o Desenvolvedor julgar que cabe numa execução.
-
-### 1. Gerador aleatório com semente
+### Gerador aleatório com semente
 
 **Pilar 5.** RNG pequeno e isolado (mulberry32 ou similar) com função de
 semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
@@ -40,6 +22,23 @@ semente, exposto para `genMap()` e `spawn()`. Se virar mais de ~60 linhas em
 
 **Fase:** F0 (2). **Pronto quando:** mesma semente gera o mesmo mapa (teste em
 `tools/`) e partidas sem semente continuam variando.
+
+---
+
+## Próximo
+
+Itens técnicos da F0 primeiro (PRD, seção 11); itens de jogo entram em paralelo
+quando o Desenvolvedor julgar que cabe numa execução.
+
+### 1. Tela de créditos no jogo
+
+**Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
+`assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
+conteúdo. Botão discreto no acampamento abrindo uma tela com origem, licença e
+autores.
+
+**Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
+licença e link para os autores, e há caso no `tools/testar.mjs`.
 
 ### 2. Peso de verdade na morte: perder parte do XP, não só o saco
 
@@ -161,13 +160,6 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ### Outros
 
-- **Cortar a dependência de fontes externas** *(F0 item 6)* — o `index.html` busca Pixelify
-  Sans e Barlow Semi Condensed no Google Fonts, hoje a única coisa no jogo que
-  depende de rede e um atraso no primeiro carregamento em conexão ruim
-  (pilar 3). Duas saídas: embutir os dois pesos como `@font-face` com fonte em
-  base64 no próprio arquivo, ou trocar por pilha de fontes do sistema e aceitar
-  a perda estética. Pré-requisito para o PWA abrir offline de verdade.
-
 - **Rastro assíncrono de outros jogadores** — placar local, marca de morte no
   mapa onde a última incursão terminou, recorde a ser batido. Sensação de MMO
   sem rede (pilar 2).
@@ -182,6 +174,21 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 ---
 
 ## Concluído
+
+- **2026-10-18 — Arte do Tibia: sprites OTSP no lugar das formas e janelas de
+  pedra** (pedido do Leonardo; cobre o item `Agora` "pipeline dos sprites" e
+  vai além dele, trocando o desenho — F0 item 5 — e cortando o Google Fonts —
+  metade do F0 item 6). `tools/sprites.mjs` lê `otsp.dat`/`otsp.spr` do
+  pacote no commit fixado e gera `assets/otsp/atlas.png` + `atlas.json`
+  (idênticos a cada execução), com `LICENSE.txt`, `AUTHORS.md` e
+  `assets/CREDITOS.md`. No jogo: monstros, classes e cadáveres do pacote com 4
+  direções e caminhada, chão de terra, paredes de tijolo com o encaixe do
+  Tibia desenhadas linha a linha com as criaturas, sacos e itens, efeitos de
+  magia por tile e projéteis em 8 direções por elemento, nome e barra de vida
+  nas cores do Tibia e minimapa marrom e cinza. Interface com janelas de pedra
+  chanfradas, barras do Tibia, botões quadrados com ícone e fontes do sistema.
+  Sem o atlas o jogo cai no desenho em código. Dois casos novos (`arte`,
+  `sem-arte`); 16/16.
 
 - **2026-10-18 — Save na nuvem com conta (antecipado da F1)**. Login simples
   com usuário e senha, sem e-mail (fase de teste; o link mágico, que veio

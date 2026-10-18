@@ -20,12 +20,12 @@ raiz do repositório).
 
 ## Regra número um: nada de build, nada de biblioteca
 
-Todo o **código** do jogo é o [index.html](index.html) — hoje 1361 linhas. Não
+Todo o **código** do jogo é o [index.html](index.html) — hoje 1629 linhas. Não
 há build, não há `package.json`, não há import, não há arquivo `.js` ou `.css`
 separado. O
 GitHub Pages serve o arquivo cru, e o `.nojekyll` existe para ele não ser
 processado. A pasta `docs/` guarda análise de design, e a `tools/` ferramenta de
-desenvolvimento (teste, servidor local, extração de dados) — nada em nenhuma das
+desenvolvimento (teste, servidor local, extração de dados, montagem do atlas) — nada em nenhuma das
 duas vai para o navegador do jogador. A regra vale para o que é **servido**: o
 `tools/testar.mjs` roda no Node e pode ter o tamanho que precisar.
 
@@ -34,23 +34,30 @@ agente consegue ler o programa inteiro de uma vez. **Não quebre isso.** Nenhuma
 biblioteca, nenhum bundler, nenhum arquivo `.js` separado — nem "só para
 organizar".
 
-Fora o `index.html`, o jogador baixa **duas** coisas. As duas são conhecidas e
-estão aqui para não serem confundidas com precedente:
+Fora o `index.html`, o jogador baixa **três** coisas, todas do próprio
+repositório, servidas pelo mesmo Pages. Estão aqui para não serem confundidas
+com precedente:
 
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot e progressão | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| Folha de estilo do Google Fonts (Pixelify Sans, Barlow Semi Condensed), linhas 13–15 | servidor de terceiro | degrada para `system-ui`/`sans-serif` |
+| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~210 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
-A diferença entre as duas é o critério para julgar qualquer dependência nova. O
-`content.json` é arquivo do próprio repositório, servido pelo mesmo Pages, e
-existe por um motivo que o código não resolve: **ajustar o jogo sem editar
-programa.** Mudar o preço de uma melhoria, o dano de uma habilidade ou a vida de
-um monstro é mexer em dado, e quem balanceia não precisa encostar no motor — o
-carregamento valida o arquivo antes de liberar o jogo. A fonte do Google é a
-dependência frágil de verdade: é de terceiro e, num celular com rede ruim, é ela
-que atrasa a primeira tela. Está no [ROADMAP.md](ROADMAP.md) para ser embutida ou
-removida.
+Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
+Supabase, e só quando há conta. A folha do Google Fonts que existia saiu em
+18/10/2026 junto com a arte do Tibia — as fontes agora são do sistema (Verdana,
+como o cliente do Tibia, e uma serifa Palatino nos títulos).
+
+O `content.json` existe por um motivo que o código não resolve: **ajustar o
+jogo sem editar programa.** Mudar o preço de uma melhoria, o dano de uma
+habilidade ou a vida de um monstro é mexer em dado, e quem balanceia não
+precisa encostar no motor — o carregamento valida o arquivo antes de liberar o
+jogo. O atlas é imagem, que não cabe num arquivo de texto, e segue as regras de
+arte da seção 9 do [PRD](docs/PRD.md): só OTSP ou outra fonte com licença
+aberta, montado por script versionado, nunca à mão, com cada arquivo listado em
+[`assets/CREDITOS.md`](assets/CREDITOS.md). Para trocar o sprite de um monstro,
+edite a tabela `ARTE` do `tools/sprites.mjs` e rode `node tools/sprites.mjs`
+(o `--catalogo` grava folhas com o id de cada sprite do pacote).
 
 **Não adicione dependência de terceiro nenhuma.** Para dado do próprio
 repositório, o teste é se ele serve para alguém ajustar o jogo sem programar —
@@ -62,17 +69,17 @@ desprevenida:
 - **O `index.html` não abre direto do disco.** O navegador bloqueia `fetch` em
   `file://` e o menu avisa. Para rodar local, use
   [`tools/serve.ps1`](tools/serve.ps1) e abra pelo `localhost`.
-- O `tools/testar.mjs` embute o `content.json` na cópia de teste e o devolve por
-  um `fetch` falso, porque abre as cópias em `file://`.
+- O `tools/testar.mjs` embute o `content.json` e o `atlas.json` na cópia de
+  teste e os devolve por um `fetch` falso, porque abre as cópias em `file://`;
+  o `atlas.png` é copiado ao lado de cada cópia.
 
 Se o `index.html` passar de ~2000 linhas, aí sim vale discutir separar **código**
 com o Leonardo antes de fazer.
 
 ## Mapa do index.html
 
-O arquivo tem 1361 linhas em 18/10/2026. Os quatro blocos são o `<head>` (com o
-estilo crítico inline e as fontes externas nas linhas 13–15), o `<style>`
-principal, o markup e o `<script>`.
+O arquivo tem 1629 linhas em 18/10/2026. Os quatro blocos são o `<head>` (com o
+estilo crítico inline), o `<style>` principal, o markup e o `<script>`.
 
 Esses números envelhecem a cada commit. **Para achar as coisas, use os
 marcadores de seção `/* ---------- nome ---------- */`**, que são estáveis.
@@ -83,6 +90,10 @@ Mantenha a divisão e ponha código novo na seção certa:
   porque a migração de save chama `slotsIniciais()` e já precisa de `SPELLS`;
   por isso o IIFE é `async`. As tabelas abaixo são **leituras** desse arquivo,
   não literais: para mudar valor, edite o JSON
+- **arte** — `ART`, o carregamento do atlas (sem `await`: não segura o jogo),
+  `spr()` (desenha com o canto inferior direito no tile, como o Tibia),
+  `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
+  `PECA`
 - **classes** — `CLASSES` e `CL_ORDEM`, o coração da Etapa 3
 - **habilidades** — `SPELLS`, `SLOT_LVL`, `listaDaClasse()`, `slotsIniciais()`
 - **progresso salvo** — `KEY`, `KEY1`, `save`, `persist()`, a migração v1→v2
@@ -90,14 +101,20 @@ Mantenha a divisão e ponha código novo na seção certa:
   `xpNeed()`, `manaPraMag()`, `golpesPraPer()`, `nSlots()`, `desbloqueadas()`
 - **melhorias permanentes** — `UP`, `upCost()`, `sealPct()`
 - **dados do jogo** — `MT` (monstros), `ITEMS`, `LOOT`, `PROG` (progressão)
-- **mapa** — `genMap()`, `carveRooms()`, `corridor()`, `carve()`
+- **mapa** — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
+  (qual peça de parede cada bloco sólido recebe)
 - **estado da incursão** — `newRun()`, `spawn()`, `pickType()`
 - **física** — `solid()`, `blocked()`, `move()`, `buildFlow()`, `reveal()`
 - **efeitos e mensagens** — `log()`, `banner()`, `num()`, `shake()`, `spark()`
 - **combate** — conjuração, `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`,
   `pickup()`
 - **atualização** — `update()`, `updateMons()`, `updateProj()`, `finish()`
-- **desenho** — `render()`, `drawPlayer()`, `drawMon()`, `drawMini()`
+- **desenho** — `render()`, `drawPlayer()`, `drawMon()`, `drawMini()`,
+  `efArea()` (magia de área tile a tile), `sprCriatura()`. Com a arte, o
+  `render()` segue a ordem do cliente do Tibia: chão, depois **linha por
+  linha** as paredes da linha e quem está nela — a parede de baixo cobre o pé
+  de quem encosta nela. Sem a arte, o caminho antigo (formas em código) fica
+  intacto; mexa nos dois ou teste o `sem-arte`
 - **HUD** — `hud()` e o cache de elementos `E`
 - **telas** — `showMenu()`, `start()`, `showEnd()`
 - **personagens** — escolha de classe, `showPick()`
@@ -296,10 +313,11 @@ Refaz a checagem de sintaxe, monta uma **cópia** do `index.html` para cada caso
 de teste, roda cada cópia no Edge headless e sai com código diferente de zero
 se qualquer coisa falhar. `node tools/testar.mjs --lista` mostra os casos;
 `node tools/testar.mjs morte` roda só os que casam com o nome. O `index.html`
-nunca é tocado. Os oito casos de hoje são o menu com o Mercador, a incursão de
-ponta a ponta até a extração, a morte com o selo, as quatro classes, o grimório
-no nível 18, o nível subindo no meio da incursão, o save corrompido e a
-migração `v1`→`v2`.
+nunca é tocado. Os casos cobrem o menu com o Mercador, a incursão de
+ponta a ponta até a extração, a incursão desenhada com os sprites (`arte`) e
+sem eles (`sem-arte`, campo `semArte` do caso), a morte com o selo, as quatro
+classes, o grimório no nível 18, o nível subindo no meio da incursão, o save
+corrompido e bloqueado, a migração `v1`→`v2` e a conta na nuvem.
 
 Caso novo entra na tabela `CASOS` no fim do
 [tools/testar.mjs](tools/testar.mjs): nome, save semeado, patches de texto no
