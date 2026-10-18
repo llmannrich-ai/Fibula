@@ -87,7 +87,7 @@ h1,h2{margin:0;font-family:var(--f-display);font-weight:700;line-height:1;color:
 h1{font-size:38px} h2{font-size:34px}
 h2.lost{color:var(--hp)}
 .lede{margin:0;font-size:16px;line-height:1.45}
-.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin:0;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;margin:0;background:var(--line);border:1px solid var(--line);border-radius:4px;overflow:hidden}
 .stats div{background:var(--void);padding:10px 4px;text-align:center}
 .stats dt{font:600 11px var(--f-body);text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
 .stats dd{margin:3px 0 0;font:500 20px var(--f-display);font-variant-numeric:tabular-nums}
@@ -106,6 +106,26 @@ h2.lost{color:var(--hp)}
 #endItems li{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
 #endItems .r1{color:var(--rare)} #endItems .r2{color:var(--epic)}
 .row{display:grid;grid-template-columns:1fr auto;gap:10px}
+.how b{color:var(--bone);font-weight:600}
+
+/* Mercador */
+.vault{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;background:var(--void);border:1px solid var(--line);border-radius:4px}
+.vault span{font:600 12px var(--f-body);text-transform:uppercase;letter-spacing:.12em;color:var(--muted)}
+.vault b{font:500 24px/1 var(--f-display);color:var(--torch);font-variant-numeric:tabular-nums}
+#shopList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
+.up{display:flex;align-items:center;gap:12px;background:var(--void);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+.up.maxed{border-color:rgba(138,216,114,.38)}
+.up .info{flex:1;min-width:0;display:grid;gap:3px}
+.up h3{margin:0;font:500 16px/1.1 var(--f-display);color:var(--bone)}
+.up p{margin:0;font:500 13px/1.35 var(--f-body);color:var(--muted)}
+.pips{display:flex;gap:3px;margin-top:1px}
+.pips i{width:10px;height:4px;border-radius:1px;background:var(--line)}
+.pips i.on{background:var(--torch)}
+.buy{flex:0 0 auto;min-width:78px;font:600 14px var(--f-body);font-variant-numeric:tabular-nums;background:transparent;color:var(--torch);border:1px solid var(--torch);border-radius:4px;padding:10px;cursor:pointer}
+.buy:active:not(:disabled){transform:translateY(1px)}
+.buy:disabled{color:var(--muted);border-color:var(--line);cursor:default}
+.buy.max{color:var(--loot);border-color:transparent}
+.buy:focus-visible{outline:2px solid var(--bone);outline-offset:3px}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
 </style>
 
@@ -145,6 +165,8 @@ h2.lost{color:var(--hp)}
       <dl class="stats">
         <div><dt>Nível</dt><dd id="sLvl">1</dd></div>
         <div><dt>Cofre</dt><dd id="sCofre">0</dd></div>
+        <div><dt>Recorde</dt><dd id="sBest">0</dd></div>
+        <div><dt>Incursões</dt><dd id="sRuns">0</dd></div>
         <div><dt>Saídas</dt><dd id="sExt">0</dd></div>
         <div><dt>Mortes</dt><dd id="sDead">0</dd></div>
       </dl>
@@ -152,9 +174,21 @@ h2.lost{color:var(--hp)}
         <li>Cace monstros. Cada um deixa um saco de loot no chão.</li>
         <li>Aos 1:30 abre o portal de saída na sala mais distante, guardada pelo Guardião.</li>
         <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde o saco.</li>
+        <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b> em melhorias permanentes.</li>
       </ol>
-      <button class="cta" id="play">Entrar na masmorra</button>
+      <div class="row"><button class="cta" id="play">Entrar na masmorra</button><button class="ghost" id="toShop">Mercador</button></div>
       <p class="keys">Arraste o lado esquerdo da tela para andar. Segure <b>Faísca</b> para atacar o monstro mais próximo. No teclado: <b>WASD</b> anda, <b>J</b> Faísca, <b>K</b> Runa, <b>L</b> Poção.</p>
+    </div>
+  </div>
+
+  <div class="screen" id="shop" hidden>
+    <div class="panel">
+      <p class="eyebrow">Entre incursões</p>
+      <h2>Mercador</h2>
+      <p class="lede">O cofre só serve para isto. As melhorias são permanentes e valem para todas as incursões seguintes.</p>
+      <div class="vault"><span>No cofre</span><b id="shopGold">0</b></div>
+      <ul id="shopList"></ul>
+      <button class="ghost" id="shopBack">Voltar ao acampamento</button>
     </div>
   </div>
 
@@ -165,6 +199,7 @@ h2.lost{color:var(--hp)}
       <p class="lede" id="endText"></p>
       <dl class="ledger">
         <dt>Loot no saco</dt><dd id="eLoot"></dd>
+        <dt id="eSealDt" hidden>Resguardado pelo selo</dt><dd id="eSeal" hidden></dd>
         <dt>Monstros abatidos</dt><dd id="eKills"></dd>
         <dt>Experiência</dt><dd id="eXp"></dd>
         <dt>Tempo na masmorra</dt><dd id="eTime"></dd>
@@ -198,11 +233,28 @@ function resize(){
 
 /* ---------- progresso salvo neste navegador ---------- */
 const KEY='masmorra-runas-v1';
-let save={lvl:1,xp:0,cofre:0,runs:0,ext:0,deaths:0,best:0};
-try{const s=JSON.parse(localStorage.getItem(KEY)||'null');if(s)save=Object.assign(save,s)}catch(e){}
+const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
+let save={lvl:1,xp:0,cofre:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0)};
+try{const s=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(s){const up=Object.assign({},UP0,s.up||{});save=Object.assign(save,s);save.up=up}}catch(e){}
 const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}};
 const xpNeed=l=>Math.round(40*Math.pow(l,1.6));
-const stats=()=>{const l=save.lvl;return{mhp:100+12*(l-1),mmp:60+8*(l-1),pow:1+.07*(l-1)}};
+const stats=()=>{const l=save.lvl,u=save.up;return{
+  mhp:100+12*(l-1)+15*u.vigor,
+  mmp:60+8*(l-1)+10*u.foco,
+  pow:1+.07*(l-1)+.08*u.poder
+}};
+
+/* ---------- melhorias permanentes (ralo do cofre) ---------- */
+const UP={
+  vigor:{nome:'Vigor',desc:'+15 de vida máxima',max:8,base:120,mult:1.55},
+  foco:{nome:'Foco',desc:'+10 de mana máxima',max:8,base:100,mult:1.55},
+  poder:{nome:'Poder arcano',desc:'+8% de dano na Faísca e na Runa',max:8,base:150,mult:1.65},
+  bolsa:{nome:'Bolsa de poções',desc:'+1 poção em cada incursão',max:4,base:180,mult:1.8},
+  seguro:{nome:'Selo de resguardo',desc:'guarda 20% do loot do saco se você morrer',max:3,base:300,mult:2}
+};
+const upCost=(k,n)=>Math.round(UP[k].base*Math.pow(UP[k].mult,n)/5)*5;
+const sealPct=()=>.2*save.up.seguro;
 
 /* ---------- dados do jogo ---------- */
 const MT={
@@ -277,7 +329,7 @@ function newRun(){
   let pr=s,md=1;
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const st=stats();
-  const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,cdA:0,cdB:0,cdC:0,pot:3,flash:0,walk:0};
+  const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,cdA:0,cdB:0,cdC:0,pot:3+save.up.bolsa,flash:0,walk:0};
   G={g,rooms,seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],
      t:0,bag:{},bagVal:0,kills:0,xpGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null};
   for(const r of rooms){
@@ -386,7 +438,9 @@ function gainXp(x){
   save.xp+=x;G.xpGain+=x;num(G.p.x,G.p.y-40,x+' xp','#f3ead6');
   while(save.xp>=xpNeed(save.lvl)){
     save.xp-=xpNeed(save.lvl);save.lvl++;
-    const st=stats(),p=G.p;p.mhp=st.mhp;p.mmp=st.mmp;p.hp=p.mhp;p.mp=p.mmp;
+    const st=stats(),p=G.p,dh=st.mhp-p.mhp,dm=st.mmp-p.mmp;
+    p.mhp=st.mhp;p.mmp=st.mmp;
+    p.hp=Math.min(p.mhp,p.hp+dh);p.mp=Math.min(p.mmp,p.mp+dm);
     banner(`Nível ${save.lvl}`);log(`Você subiu para o nível ${save.lvl}. Vida e mana máximas aumentaram.`,'info');
   }
   persist();
@@ -492,7 +546,9 @@ function updateProj(dt){
 }
 function finish(kind){
   if(G.over)return;G.over=true;G.end=kind;fireHeld=false;
-  if(kind==='extraiu'){save.cofre+=G.bagVal;save.ext++;save.best=Math.max(save.best,G.bagVal)}else save.deaths++;
+  G.sealed=0;
+  if(kind==='extraiu'){save.cofre+=G.bagVal;save.ext++;save.best=Math.max(save.best,G.bagVal)}
+  else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed}
   persist();
   if(kind!=='extraiu')shake(8);
   setTimeout(showEnd,kind==='extraiu'?450:1100);
@@ -675,10 +731,11 @@ function hud(){
 }
 
 /* ---------- telas ---------- */
-const menu=$('#menu'),endS=$('#end');
+const menu=$('#menu'),endS=$('#end'),shopS=$('#shop');
 function showMenu(){
-  $('#sLvl').textContent=save.lvl;$('#sCofre').textContent=save.cofre;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
-  endS.hidden=true;menu.hidden=false;app.classList.remove('playing');
+  $('#sLvl').textContent=save.lvl;$('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;
+  $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
+  endS.hidden=true;shopS.hidden=true;menu.hidden=false;app.classList.remove('playing');
   if(!G||G.active){newRun()}
 }
 function start(){
@@ -694,6 +751,9 @@ function showEnd(){
     :k==='morreu'?'O loot que você carregava ficou na masmorra. A experiência ganha foi mantida.'
     :'A masmorra desabou antes de você chegar ao portal. O loot ficou para trás. A experiência foi mantida.';
   const l=$('#eLoot');l.textContent=`${G.bagVal} ouro · ${ok?'guardado':'perdido'}`;l.className=ok?'ok':'bad';
+  const sealOn=!ok&&G.sealed>0,sl=$('#eSeal');
+  $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;
+  if(sealOn){sl.textContent=`+${G.sealed} ouro (${Math.round(sealPct()*100)}%)`;sl.className='ok'}
   $('#eKills').textContent=G.kills;$('#eXp').textContent=`+${G.xpGain} (nível ${save.lvl})`;
   $('#eTime').textContent=fmt(G.t);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
@@ -703,13 +763,43 @@ function showEnd(){
     const a=document.createElement('span');a.textContent=fmtItem([k,q]);const b=document.createElement('span');b.textContent=ITEMS[k].val*q;li.append(a,b);ul.appendChild(li)}
   app.classList.remove('playing');endS.hidden=false;
 }
+/* ---------- mercador ---------- */
+function drawShop(){
+  setT($('#shopGold'),String(save.cofre));
+  const ul=$('#shopList');ul.textContent='';
+  for(const k in UP){
+    const u=UP[k],n=save.up[k],maxed=n>=u.max,cost=maxed?0:upCost(k,n);
+    const li=document.createElement('li');li.className=maxed?'up maxed':'up';
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=u.nome;
+    const d=document.createElement('p');d.textContent=u.desc;
+    const pips=document.createElement('div');pips.className='pips';
+    for(let i=0;i<u.max;i++){const pip=document.createElement('i');if(i<n)pip.className='on';pips.appendChild(pip)}
+    info.append(h,d,pips);
+    const b=document.createElement('button');b.className=maxed?'buy max':'buy';
+    b.textContent=maxed?'máx':cost+' ouro';
+    b.disabled=maxed||save.cofre<cost;
+    b.setAttribute('aria-label',maxed?`${u.nome} já está no nível máximo`:`Comprar ${u.nome} nível ${n+1} por ${cost} de ouro`);
+    if(!maxed)b.addEventListener('click',()=>buy(k));
+    li.append(info,b);ul.appendChild(li);
+  }
+}
+function buy(k){
+  const n=save.up[k];if(n>=UP[k].max)return;
+  const cost=upCost(k,n);if(save.cofre<cost)return;
+  save.cofre-=cost;save.up[k]=n+1;persist();drawShop();
+}
+function showShop(){menu.hidden=true;endS.hidden=true;shopS.hidden=false;app.classList.remove('playing');drawShop()}
+
+$('#toShop').addEventListener('click',showShop);
+$('#shopBack').addEventListener('click',showMenu);
 $('#play').addEventListener('click',start);
 $('#again').addEventListener('click',start);
 $('#toMenu').addEventListener('click',showMenu);
 
 /* ---------- controles ---------- */
 const joyEl=$('#joy'),knob=$('#knob');
-function joyIdle(){joyEl.classList.add('idle');joyEl.style.left=(Math.max(16,0)+64)+'px';joyEl.style.top=(H-96)+'px';knob.style.transform=''}
+function joyIdle(){joyEl.classList.add('idle');joyEl.style.left='80px';joyEl.style.top=(H-96)+'px';knob.style.transform=''}
 app.addEventListener('pointerdown',e=>{
   if(!G||!G.active||G.over||joy.id!==null)return;
   if(e.target.closest('button,.screen'))return;
