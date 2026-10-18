@@ -1,0 +1,85 @@
+{
+    "_meta":  {
+                  "derivedFrom":  "The Forgotten Server (otland/forgottenserver), GPLv2",
+                  "sourceDataAsOf":  "2026-10-18",
+                  "contentPolicy":  "Somente numeros, formulas e descritores mecanicos. Sem nomes, descricoes ou assets de origem.",
+                  "generatedBy":  "tools/extract-mechanics.ps1"
+              },
+    "weaponDamage":  {
+                         "formula":  "max = round(level/5 + ((skill/4 + 1) * (attack/3) * 1.03) / attackFactor)",
+                         "levelDivisor":  5,
+                         "skillDivisor":  4,
+                         "attackDivisor":  3,
+                         "constant":  1.03,
+                         "roll":  "dano = aleatorio em [0, max] com vies para o alto; multiplicado pelo multiplicador de dano da classe",
+                         "unarmed":  {
+                                         "attackValue":  7,
+                                         "formula":  "mesma, usando a skill de maos livres"
+                                     },
+                         "source":  "src/weapons.cpp:123 (getMaxWeaponDamage), :117 (getMaxMeleeDamage)"
+                     },
+    "attackFactor":  {
+                         "offensive":  1,
+                         "balanced":  1.2,
+                         "defensive":  2,
+                         "effect":  "divide o dano: postura defensiva corta o dano pela metade",
+                         "source":  "src/player.cpp:409 (getAttackFactor)"
+                     },
+    "spellDamage":  {
+                        "note":  "coeficientes por spell em spells.json, no campo formula.family",
+                        "families":  {
+                                         "levelMagic":  {
+                                                            "formula":  "min = level/levelDivisor + magicLevel*aMin + bMin ; max = idem com aMax/bMax",
+                                                            "usedBy":  "magias de conjurador: escalam com magic level"
+                                                        },
+                                         "skillAttack":  {
+                                                             "formula":  "min = level/levelDivisor + (skill * attackValue * aMin) + bMin ; max = idem com aMax/bMax",
+                                                             "usedBy":  "golpes de arma: escalam com a skill da arma e o ataque do equipamento"
+                                                         },
+                                         "flat":  {
+                                                      "formula":  "min/max constantes, sem escala",
+                                                      "usedBy":  "magias de treino/iniciante"
+                                                  },
+                                         "custom":  {
+                                                        "formula":  "expressao propria preservada em formula.minExpr/maxExpr",
+                                                        "usedBy":  "casos especiais (ex. escala por skill de distancia)"
+                                                    }
+                                     },
+                        "source":  "data/scripts/spells/attack/*.lua (onGetFormulaValues)"
+                    },
+    "elements":  {
+                     "scale":  "percent",
+                     "note":  "positivo = resistencia (reduz o dano nessa porcentagem); negativo = vulnerabilidade"
+                 },
+    "lootChance":  {
+                       "scale":  100000,
+                       "note":  "chance crua do servidor; p = chance/100000"
+                   },
+    "expStages":  [
+                      {
+                          "minLevel":  1,
+                          "maxLevel":  8,
+                          "multiplier":  7
+                      },
+                      {
+                          "minLevel":  9,
+                          "maxLevel":  20,
+                          "multiplier":  6
+                      },
+                      {
+                          "minLevel":  21,
+                          "maxLevel":  50,
+                          "multiplier":  5
+                      },
+                      {
+                          "minLevel":  51,
+                          "maxLevel":  100,
+                          "multiplier":  4
+                      },
+                      {
+                          "minLevel":  101,
+                          "maxLevel":  null,
+                          "multiplier":  5
+                      }
+                  ]
+}

@@ -1,0 +1,361 @@
+{
+    "_meta":  {
+                  "derivedFrom":  "The Forgotten Server (otland/forgottenserver), GPLv2",
+                  "sourceDataAsOf":  "2026-10-18",
+                  "contentPolicy":  "Somente numeros, formulas e descritores mecanicos. Sem nomes, descricoes ou assets de origem.",
+                  "generatedBy":  "tools/extract-mechanics.ps1"
+              },
+    "classes":  [
+                    {
+                        "id":  0,
+                        "codename":  "class_0",
+                        "archetype":  "neutral",
+                        "gainPerLevel":  {
+                                             "hp":  5,
+                                             "mana":  5,
+                                             "capacity":  10
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  6,
+                                                 "amount":  1
+                                             },
+                                      "mana":  {
+                                                   "ticks":  6,
+                                                   "amount":  1
+                                               }
+                                  },
+                        "manaMultiplier":  4,
+                        "magicShield":  false,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.5,
+                                                 "club":  2,
+                                                 "sword":  2,
+                                                 "axe":  2,
+                                                 "distance":  2,
+                                                 "shielding":  1.5,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  1,
+                        "codename":  "class_1",
+                        "archetype":  "caster",
+                        "gainPerLevel":  {
+                                             "hp":  5,
+                                             "mana":  30,
+                                             "capacity":  10
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  6,
+                                                 "amount":  5
+                                             },
+                                      "mana":  {
+                                                   "ticks":  3,
+                                                   "amount":  5
+                                               }
+                                  },
+                        "manaMultiplier":  1.1,
+                        "magicShield":  true,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.5,
+                                                 "club":  2,
+                                                 "sword":  2,
+                                                 "axe":  2,
+                                                 "distance":  2,
+                                                 "shielding":  1.5,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  2,
+                        "codename":  "class_2",
+                        "archetype":  "caster",
+                        "gainPerLevel":  {
+                                             "hp":  5,
+                                             "mana":  30,
+                                             "capacity":  10
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  6,
+                                                 "amount":  5
+                                             },
+                                      "mana":  {
+                                                   "ticks":  3,
+                                                   "amount":  5
+                                               }
+                                  },
+                        "manaMultiplier":  1.1,
+                        "magicShield":  true,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.5,
+                                                 "club":  1.8,
+                                                 "sword":  1.8,
+                                                 "axe":  1.8,
+                                                 "distance":  1.8,
+                                                 "shielding":  1.5,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  3,
+                        "codename":  "class_3",
+                        "archetype":  "hybrid",
+                        "gainPerLevel":  {
+                                             "hp":  10,
+                                             "mana":  15,
+                                             "capacity":  20
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  4,
+                                                 "amount":  5
+                                             },
+                                      "mana":  {
+                                                   "ticks":  4,
+                                                   "amount":  5
+                                               }
+                                  },
+                        "manaMultiplier":  1.4,
+                        "magicShield":  false,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.2,
+                                                 "club":  1.2,
+                                                 "sword":  1.2,
+                                                 "axe":  1.2,
+                                                 "distance":  1.1,
+                                                 "shielding":  1.1,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  4,
+                        "codename":  "class_4",
+                        "archetype":  "tank",
+                        "gainPerLevel":  {
+                                             "hp":  15,
+                                             "mana":  5,
+                                             "capacity":  25
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  3,
+                                                 "amount":  5
+                                             },
+                                      "mana":  {
+                                                   "ticks":  6,
+                                                   "amount":  5
+                                               }
+                                  },
+                        "manaMultiplier":  3,
+                        "magicShield":  false,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.1,
+                                                 "club":  1.1,
+                                                 "sword":  1.1,
+                                                 "axe":  1.1,
+                                                 "distance":  1.4,
+                                                 "shielding":  1.1,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  5,
+                        "codename":  "class_5",
+                        "archetype":  "caster",
+                        "gainPerLevel":  {
+                                             "hp":  5,
+                                             "mana":  30,
+                                             "capacity":  10
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  4,
+                                                 "amount":  10
+                                             },
+                                      "mana":  {
+                                                   "ticks":  2,
+                                                   "amount":  10
+                                               }
+                                  },
+                        "manaMultiplier":  1.1,
+                        "magicShield":  true,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.5,
+                                                 "club":  2,
+                                                 "sword":  2,
+                                                 "axe":  2,
+                                                 "distance":  2,
+                                                 "shielding":  1.5,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  6,
+                        "codename":  "class_6",
+                        "archetype":  "caster",
+                        "gainPerLevel":  {
+                                             "hp":  5,
+                                             "mana":  30,
+                                             "capacity":  10
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  4,
+                                                 "amount":  10
+                                             },
+                                      "mana":  {
+                                                   "ticks":  2,
+                                                   "amount":  10
+                                               }
+                                  },
+                        "manaMultiplier":  1.1,
+                        "magicShield":  true,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.5,
+                                                 "club":  1.8,
+                                                 "sword":  1.8,
+                                                 "axe":  1.8,
+                                                 "distance":  1.8,
+                                                 "shielding":  1.5,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  7,
+                        "codename":  "class_7",
+                        "archetype":  "hybrid",
+                        "gainPerLevel":  {
+                                             "hp":  10,
+                                             "mana":  15,
+                                             "capacity":  20
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  3,
+                                                 "amount":  10
+                                             },
+                                      "mana":  {
+                                                   "ticks":  3,
+                                                   "amount":  10
+                                               }
+                                  },
+                        "manaMultiplier":  1.4,
+                        "magicShield":  false,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.2,
+                                                 "club":  1.2,
+                                                 "sword":  1.2,
+                                                 "axe":  1.2,
+                                                 "distance":  1.1,
+                                                 "shielding":  1.1,
+                                                 "fishing":  1.1
+                                             }
+                    },
+                    {
+                        "id":  8,
+                        "codename":  "class_8",
+                        "archetype":  "tank",
+                        "gainPerLevel":  {
+                                             "hp":  15,
+                                             "mana":  5,
+                                             "capacity":  25
+                                         },
+                        "regen":  {
+                                      "hp":  {
+                                                 "ticks":  2,
+                                                 "amount":  10
+                                             },
+                                      "mana":  {
+                                                   "ticks":  4,
+                                                   "amount":  10
+                                               }
+                                  },
+                        "manaMultiplier":  3,
+                        "magicShield":  false,
+                        "attackSpeedMs":  2000,
+                        "baseSpeed":  220,
+                        "damage":  {
+                                       "melee":  1,
+                                       "distance":  1,
+                                       "defense":  1,
+                                       "armor":  1
+                                   },
+                        "skillMultipliers":  {
+                                                 "fist":  1.1,
+                                                 "club":  1.1,
+                                                 "sword":  1.1,
+                                                 "axe":  1.1,
+                                                 "distance":  1.4,
+                                                 "shielding":  1.1,
+                                                 "fishing":  1.1
+                                             }
+                    }
+                ]
+}

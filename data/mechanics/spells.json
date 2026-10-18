@@ -1,0 +1,886 @@
+{
+    "_meta":  {
+                  "derivedFrom":  "The Forgotten Server (otland/forgottenserver), GPLv2",
+                  "sourceDataAsOf":  "2026-10-18",
+                  "contentPolicy":  "Somente numeros, formulas e descritores mecanicos. Sem nomes, descricoes ou assets de origem.",
+                  "generatedBy":  "tools/extract-mechanics.ps1"
+              },
+    "spells":  [
+                   {
+                       "codename":  "s006",
+                       "damageType":  "ice",
+                       "requiresLevel":  1,
+                       "manaCost":  8,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.3,
+                                       "bMin":  2,
+                                       "aMax":  0.45,
+                                       "bMax":  3
+                                   },
+                       "manaEfficiencyAtMl50":  2.66
+                   },
+                   {
+                       "codename":  "s005",
+                       "damageType":  "energy",
+                       "requiresLevel":  1,
+                       "manaCost":  6,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.4,
+                                       "bMin":  2,
+                                       "aMax":  0.8,
+                                       "bMax":  5
+                                   },
+                       "manaEfficiencyAtMl50":  5.58
+                   },
+                   {
+                       "codename":  "s036",
+                       "damageType":  "fire",
+                       "requiresLevel":  1,
+                       "manaCost":  8,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.3,
+                                       "bMin":  2,
+                                       "aMax":  0.45,
+                                       "bMax":  3
+                                   },
+                       "manaEfficiencyAtMl50":  2.66
+                   },
+                   {
+                       "codename":  "s032",
+                       "damageType":  "earth",
+                       "requiresLevel":  1,
+                       "manaCost":  6,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.4,
+                                       "bMin":  2,
+                                       "aMax":  0.8,
+                                       "bMax":  5
+                                   },
+                       "manaEfficiencyAtMl50":  5.58
+                   },
+                   {
+                       "codename":  "s034",
+                       "damageType":  "fire",
+                       "requiresLevel":  1,
+                       "manaCost":  5,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "flat",
+                                       "levelDivisor":  null,
+                                       "aMin":  0,
+                                       "bMin":  11,
+                                       "aMax":  0,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s002",
+                       "damageType":  "fire",
+                       "requiresLevel":  8,
+                       "manaCost":  6,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "flat",
+                                       "levelDivisor":  null,
+                                       "aMin":  0,
+                                       "bMin":  10,
+                                       "aMax":  0,
+                                       "bMax":  20
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s013",
+                       "damageType":  "energy",
+                       "requiresLevel":  12,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.4,
+                                       "bMin":  8,
+                                       "aMax":  2.2,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  5.05
+                   },
+                   {
+                       "codename":  "s043",
+                       "damageType":  "earth",
+                       "requiresLevel":  13,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.4,
+                                       "bMin":  8,
+                                       "aMax":  2.2,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  5.05
+                   },
+                   {
+                       "codename":  "s020",
+                       "damageType":  "fire",
+                       "requiresLevel":  14,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.4,
+                                       "bMin":  8,
+                                       "aMax":  2.2,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  5.05
+                   },
+                   {
+                       "codename":  "s027",
+                       "damageType":  "ice",
+                       "requiresLevel":  15,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.4,
+                                       "bMin":  8,
+                                       "aMax":  2.2,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  5.05
+                   },
+                   {
+                       "codename":  "s033",
+                       "damageType":  "physical",
+                       "requiresLevel":  16,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.6,
+                                       "bMin":  9,
+                                       "aMax":  2.4,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  5.58
+                   },
+                   {
+                       "codename":  "s008",
+                       "damageType":  "death",
+                       "requiresLevel":  16,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.4,
+                                       "bMin":  8,
+                                       "aMax":  2.2,
+                                       "bMax":  14
+                                   },
+                       "manaEfficiencyAtMl50":  5.05
+                   },
+                   {
+                       "codename":  "s004",
+                       "damageType":  "physical",
+                       "requiresLevel":  16,
+                       "manaCost":  30,
+                       "cooldownMs":  6000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.02,
+                                       "bMin":  4,
+                                       "aMax":  0.04,
+                                       "bMax":  9
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s019",
+                       "damageType":  "fire",
+                       "requiresLevel":  18,
+                       "manaCost":  25,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.2,
+                                       "bMin":  7,
+                                       "aMax":  2,
+                                       "bMax":  12
+                                   },
+                       "manaEfficiencyAtMl50":  3.58
+                   },
+                   {
+                       "codename":  "s028",
+                       "damageType":  "ice",
+                       "requiresLevel":  18,
+                       "manaCost":  25,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.8,
+                                       "bMin":  5,
+                                       "aMax":  2,
+                                       "bMax":  12
+                                   },
+                       "manaEfficiencyAtMl50":  3.14
+                   },
+                   {
+                       "codename":  "s017",
+                       "damageType":  "physical",
+                       "requiresLevel":  23,
+                       "manaCost":  25,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(player:getLevel() / 5) + distanceSkill * 0.7",
+                                       "maxExpr":  "(player:getLevel() / 5) + distanceSkill + 5"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s012",
+                       "damageType":  "energy",
+                       "requiresLevel":  23,
+                       "manaCost":  40,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.8,
+                                       "bMin":  11,
+                                       "aMax":  3,
+                                       "bMax":  19
+                                   },
+                       "manaEfficiencyAtMl50":  3.38
+                   },
+                   {
+                       "codename":  "s029",
+                       "damageType":  "fire",
+                       "requiresLevel":  26,
+                       "manaCost":  30,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.3) + 2",
+                                       "maxExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.6) + 4"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s049",
+                       "damageType":  "physical",
+                       "requiresLevel":  28,
+                       "manaCost":  40,
+                       "cooldownMs":  6000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.01,
+                                       "bMin":  1,
+                                       "aMax":  0.03,
+                                       "bMax":  6
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s022",
+                       "damageType":  "energy",
+                       "requiresLevel":  29,
+                       "manaCost":  110,
+                       "cooldownMs":  6000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  3.6,
+                                       "bMin":  22,
+                                       "aMax":  6,
+                                       "bMax":  37
+                                   },
+                       "manaEfficiencyAtMl50":  2.45
+                   },
+                   {
+                       "codename":  "s024",
+                       "damageType":  "physical",
+                       "requiresLevel":  33,
+                       "manaCost":  160,
+                       "cooldownMs":  8000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.02,
+                                       "bMin":  4,
+                                       "aMax":  0.03,
+                                       "bMax":  6
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s011",
+                       "damageType":  "energy",
+                       "requiresLevel":  34,
+                       "manaCost":  30,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.15) + 1",
+                                       "maxExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.25) + 1"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s003",
+                       "damageType":  "physical",
+                       "requiresLevel":  35,
+                       "manaCost":  115,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.03,
+                                       "bMin":  7,
+                                       "aMax":  0.05,
+                                       "bMax":  11
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s044",
+                       "damageType":  "earth",
+                       "requiresLevel":  38,
+                       "manaCost":  170,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  3.25,
+                                       "bMin":  5,
+                                       "aMax":  6.75,
+                                       "bMax":  30
+                                   },
+                       "manaEfficiencyAtMl50":  1.57
+                   },
+                   {
+                       "codename":  "s014",
+                       "damageType":  "energy",
+                       "requiresLevel":  38,
+                       "manaCost":  170,
+                       "cooldownMs":  8000,
+                       "aoe":  true,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4.5,
+                                       "bMin":  20,
+                                       "aMax":  7.6,
+                                       "bMax":  48
+                                   },
+                       "manaEfficiencyAtMl50":  1.98
+                   },
+                   {
+                       "codename":  "s023",
+                       "damageType":  "fire",
+                       "requiresLevel":  38,
+                       "manaCost":  120,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  2.8,
+                                       "bMin":  16,
+                                       "aMax":  4.4,
+                                       "bMax":  28
+                                   },
+                       "manaEfficiencyAtMl50":  1.68
+                   },
+                   {
+                       "codename":  "s041",
+                       "damageType":  "ice",
+                       "requiresLevel":  40,
+                       "manaCost":  170,
+                       "cooldownMs":  8000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4.5,
+                                       "bMin":  20,
+                                       "aMax":  7.6,
+                                       "bMax":  48
+                                   },
+                       "manaEfficiencyAtMl50":  1.98
+                   },
+                   {
+                       "codename":  "s030",
+                       "damageType":  "physical",
+                       "requiresLevel":  40,
+                       "manaCost":  30,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(creature:getLevel() / 80) + (skill * 0.2) + 2",
+                                       "maxExpr":  "(creature:getLevel() / 80) + (skill * 0.4) + 2"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s010",
+                       "damageType":  "holy",
+                       "requiresLevel":  40,
+                       "manaCost":  20,
+                       "cooldownMs":  2000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  1.9,
+                                       "bMin":  8,
+                                       "aMax":  3,
+                                       "bMax":  18
+                                   },
+                       "manaEfficiencyAtMl50":  6.78
+                   },
+                   {
+                       "codename":  "s015",
+                       "damageType":  "earth",
+                       "requiresLevel":  50,
+                       "manaCost":  30,
+                       "cooldownMs":  40000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.55) + 6",
+                                       "maxExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.75) + 7"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s009",
+                       "damageType":  "holy",
+                       "requiresLevel":  50,
+                       "manaCost":  160,
+                       "cooldownMs":  4000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  5,
+                                       "bMin":  25,
+                                       "aMax":  6.2,
+                                       "bMax":  45
+                                   },
+                       "manaEfficiencyAtMl50":  1.97
+                   },
+                   {
+                       "codename":  "s050",
+                       "damageType":  "earth",
+                       "requiresLevel":  55,
+                       "manaCost":  700,
+                       "cooldownMs":  40000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  3,
+                                       "bMin":  32,
+                                       "aMax":  9,
+                                       "bMax":  40
+                                   },
+                       "manaEfficiencyAtMl50":  0.48
+                   },
+                   {
+                       "codename":  "s031",
+                       "damageType":  "energy",
+                       "requiresLevel":  55,
+                       "manaCost":  60,
+                       "cooldownMs":  8000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  2.2,
+                                       "bMin":  12,
+                                       "aMax":  3.4,
+                                       "bMax":  21
+                                   },
+                       "manaEfficiencyAtMl50":  2.61
+                   },
+                   {
+                       "codename":  "s035",
+                       "damageType":  "energy",
+                       "requiresLevel":  55,
+                       "manaCost":  600,
+                       "cooldownMs":  40000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4,
+                                       "bMin":  75,
+                                       "aMax":  10,
+                                       "bMax":  150
+                                   },
+                       "manaEfficiencyAtMl50":  0.77
+                   },
+                   {
+                       "codename":  "s025",
+                       "damageType":  "fire",
+                       "requiresLevel":  60,
+                       "manaCost":  1100,
+                       "cooldownMs":  40000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  8,
+                                       "bMin":  50,
+                                       "aMax":  12,
+                                       "bMax":  75
+                                   },
+                       "manaEfficiencyAtMl50":  0.51
+                   },
+                   {
+                       "codename":  "s016",
+                       "damageType":  "ice",
+                       "requiresLevel":  60,
+                       "manaCost":  1050,
+                       "cooldownMs":  40000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  5.5,
+                                       "bMin":  25,
+                                       "aMax":  11,
+                                       "bMax":  50
+                                   },
+                       "manaEfficiencyAtMl50":  0.43
+                   },
+                   {
+                       "codename":  "s021",
+                       "damageType":  "physical",
+                       "requiresLevel":  70,
+                       "manaCost":  200,
+                       "cooldownMs":  6000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.04,
+                                       "bMin":  11,
+                                       "aMax":  0.08,
+                                       "bMax":  21
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s042",
+                       "damageType":  "earth",
+                       "requiresLevel":  70,
+                       "manaCost":  60,
+                       "cooldownMs":  8000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  2.8,
+                                       "bMin":  16,
+                                       "aMax":  4.4,
+                                       "bMax":  28
+                                   },
+                       "manaEfficiencyAtMl50":  3.37
+                   },
+                   {
+                       "codename":  "s039",
+                       "damageType":  "fire",
+                       "requiresLevel":  70,
+                       "manaCost":  60,
+                       "cooldownMs":  8000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  2.8,
+                                       "bMin":  16,
+                                       "aMax":  4.4,
+                                       "bMax":  28
+                                   },
+                       "manaEfficiencyAtMl50":  3.37
+                   },
+                   {
+                       "codename":  "s026",
+                       "damageType":  "holy",
+                       "requiresLevel":  70,
+                       "manaCost":  30,
+                       "cooldownMs":  40000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.3) + 2",
+                                       "maxExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.5) + 3"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s007",
+                       "damageType":  "death",
+                       "requiresLevel":  75,
+                       "manaCost":  30,
+                       "cooldownMs":  40000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.5) + 7",
+                                       "maxExpr":  "(creature:getLevel() / 80) + (creature:getMagicLevel() * 0.9) + 8"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s040",
+                       "damageType":  "ice",
+                       "requiresLevel":  80,
+                       "manaCost":  60,
+                       "cooldownMs":  8000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  2.8,
+                                       "bMin":  16,
+                                       "aMax":  4.4,
+                                       "bMax":  28
+                                   },
+                       "manaEfficiencyAtMl50":  3.37
+                   },
+                   {
+                       "codename":  "s037",
+                       "damageType":  "energy",
+                       "requiresLevel":  80,
+                       "manaCost":  60,
+                       "cooldownMs":  8000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  2.8,
+                                       "bMin":  16,
+                                       "aMax":  4.4,
+                                       "bMax":  28
+                                   },
+                       "manaEfficiencyAtMl50":  3.37
+                   },
+                   {
+                       "codename":  "s048",
+                       "damageType":  "earth",
+                       "requiresLevel":  90,
+                       "manaCost":  100,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4.5,
+                                       "bMin":  35,
+                                       "aMax":  7.3,
+                                       "bMax":  55
+                                   },
+                       "manaEfficiencyAtMl50":  3.4
+                   },
+                   {
+                       "codename":  "s046",
+                       "damageType":  "fire",
+                       "requiresLevel":  90,
+                       "manaCost":  100,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4.5,
+                                       "bMin":  35,
+                                       "aMax":  7.3,
+                                       "bMax":  55
+                                   },
+                       "manaEfficiencyAtMl50":  3.4
+                   },
+                   {
+                       "codename":  "s038",
+                       "damageType":  "physical",
+                       "requiresLevel":  90,
+                       "manaCost":  55,
+                       "cooldownMs":  8000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "custom",
+                                       "minExpr":  "(player:getLevel() / 5) + distanceSkill + 7",
+                                       "maxExpr":  "(player:getLevel() / 5) + (distanceSkill * 1.5) + 13"
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s018",
+                       "damageType":  "physical",
+                       "requiresLevel":  90,
+                       "manaCost":  340,
+                       "cooldownMs":  6000,
+                       "aoe":  true,
+                       "needsTarget":  false,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.06,
+                                       "bMin":  13,
+                                       "aMax":  0.11,
+                                       "bMax":  27
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   },
+                   {
+                       "codename":  "s045",
+                       "damageType":  "energy",
+                       "requiresLevel":  100,
+                       "manaCost":  100,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4.5,
+                                       "bMin":  35,
+                                       "aMax":  7.3,
+                                       "bMax":  55
+                                   },
+                       "manaEfficiencyAtMl50":  3.4
+                   },
+                   {
+                       "codename":  "s047",
+                       "damageType":  "ice",
+                       "requiresLevel":  100,
+                       "manaCost":  100,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "levelMagic",
+                                       "levelDivisor":  5,
+                                       "aMin":  4.5,
+                                       "bMin":  35,
+                                       "aMax":  7.3,
+                                       "bMax":  55
+                                   },
+                       "manaEfficiencyAtMl50":  3.4
+                   },
+                   {
+                       "codename":  "s001",
+                       "damageType":  "physical",
+                       "requiresLevel":  110,
+                       "manaCost":  300,
+                       "cooldownMs":  30000,
+                       "aoe":  false,
+                       "needsTarget":  true,
+                       "formula":  {
+                                       "family":  "skillAttack",
+                                       "levelDivisor":  5,
+                                       "aMin":  0.06,
+                                       "bMin":  13,
+                                       "aMax":  0.14,
+                                       "bMax":  34
+                                   },
+                       "manaEfficiencyAtMl50":  null
+                   }
+               ]
+}

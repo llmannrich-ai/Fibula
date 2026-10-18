@@ -1,0 +1,181 @@
+{
+    "_meta":  {
+                  "derivedFrom":  "The Forgotten Server (otland/forgottenserver), GPLv2",
+                  "sourceDataAsOf":  "2026-10-18",
+                  "contentPolicy":  "Somente numeros, formulas e descritores mecanicos. Sem nomes, descricoes ou assets de origem.",
+                  "generatedBy":  "tools/extract-mechanics.ps1"
+              },
+    "_note":  "Bandas calculadas apenas sobre inimigos de combate (exp \u003e 0). As 217 entradas utilitarias (tier 0) ficam em enemies.json com combat=false.",
+    "tiers":  [
+                  {
+                      "tier":  1,
+                      "count":  42,
+                      "hp":  {
+                                 "min":  15,
+                                 "median":  50,
+                                 "max":  600
+                             },
+                      "dps":  {
+                                  "min":  0,
+                                  "median":  4.2,
+                                  "max":  103.5
+                              },
+                      "exp":  {
+                                  "min":  1,
+                                  "median":  15,
+                                  "max":  24
+                              },
+                      "expPerHp":  0.3,
+                      "roles":  {
+                                    "melee":  34,
+                                    "ranged":  5,
+                                    "caster":  1,
+                                    "summoner-caster":  1,
+                                    "caster-healer":  1
+                                }
+                  },
+                  {
+                      "tier":  2,
+                      "count":  145,
+                      "hp":  {
+                                 "min":  45,
+                                 "median":  135,
+                                 "max":  10000
+                             },
+                      "dps":  {
+                                  "min":  0,
+                                  "median":  12.5,
+                                  "max":  149.8
+                              },
+                      "exp":  {
+                                  "min":  25,
+                                  "median":  60,
+                                  "max":  145
+                              },
+                      "expPerHp":  0.444,
+                      "roles":  {
+                                    "melee":  59,
+                                    "ranged":  41,
+                                    "caster":  29,
+                                    "caster-healer":  6,
+                                    "melee-healer":  5,
+                                    "summoner-caster":  4,
+                                    "summoner":  1
+                                }
+                  },
+                  {
+                      "tier":  3,
+                      "count":  249,
+                      "hp":  {
+                                 "min":  80,
+                                 "median":  505,
+                                 "max":  190000
+                             },
+                      "dps":  {
+                                  "min":  0,
+                                  "median":  38.4,
+                                  "max":  287.2
+                              },
+                      "exp":  {
+                                  "min":  150,
+                                  "median":  320,
+                                  "max":  795
+                              },
+                      "expPerHp":  0.634,
+                      "roles":  {
+                                    "ranged":  50,
+                                    "melee":  49,
+                                    "caster-healer":  48,
+                                    "caster":  48,
+                                    "summoner-caster":  39,
+                                    "melee-healer":  9,
+                                    "summoner":  6
+                                }
+                  },
+                  {
+                      "tier":  4,
+                      "count":  275,
+                      "hp":  {
+                                 "min":  750,
+                                 "median":  2350,
+                                 "max":  10000000
+                             },
+                      "dps":  {
+                                  "min":  0,
+                                  "median":  87.6,
+                                  "max":  543.6
+                              },
+                      "exp":  {
+                                  "min":  800,
+                                  "median":  1700,
+                                  "max":  3900
+                              },
+                      "expPerHp":  0.723,
+                      "roles":  {
+                                    "caster-healer":  96,
+                                    "caster":  69,
+                                    "ranged":  46,
+                                    "summoner-caster":  26,
+                                    "melee":  21,
+                                    "melee-healer":  14,
+                                    "summoner":  3
+                                }
+                  },
+                  {
+                      "tier":  5,
+                      "count":  163,
+                      "hp":  {
+                                 "min":  2800,
+                                 "median":  8500,
+                                 "max":  285000
+                             },
+                      "dps":  {
+                                  "min":  11.2,
+                                  "median":  188.6,
+                                  "max":  843.4
+                              },
+                      "exp":  {
+                                  "min":  4000,
+                                  "median":  6650,
+                                  "max":  19000
+                              },
+                      "expPerHp":  0.782,
+                      "roles":  {
+                                    "caster":  62,
+                                    "caster-healer":  59,
+                                    "summoner-caster":  30,
+                                    "ranged":  6,
+                                    "melee":  3,
+                                    "melee-healer":  2,
+                                    "summoner":  1
+                                }
+                  },
+                  {
+                      "tier":  6,
+                      "count":  75,
+                      "hp":  {
+                                 "min":  1000,
+                                 "median":  110000,
+                                 "max":  800000
+                             },
+                      "dps":  {
+                                  "min":  0,
+                                  "median":  475.6,
+                                  "max":  2005
+                              },
+                      "exp":  {
+                                  "min":  20000,
+                                  "median":  45000,
+                                  "max":  1000000
+                              },
+                      "expPerHp":  0.409,
+                      "roles":  {
+                                    "caster-healer":  31,
+                                    "caster":  21,
+                                    "summoner-caster":  18,
+                                    "melee":  3,
+                                    "ranged":  2
+                                }
+                  }
+              ]
+}
