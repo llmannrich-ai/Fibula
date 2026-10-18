@@ -18,6 +18,27 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 00:20 UTC — Desenvolvedor
+
+**Item desenvolvido:** aviso de falha do save. `index.html`: variável `saveFalhou`, sonda de gravação na carga, `persist()` marca a falha, faixa `#mAviso` no menu (+7 linhas). `tools/testar.mjs`: opção `bloqueiaSave` no caso e dois casos novos.
+
+**Validação:** `node tools/testar.mjs` — 10/10 casos, sintaxe OK. O caso `save-bloqueado` falha contra o `index.html` anterior (confirmado com `FIBULA_JOGO`) e passa com a mudança. Save sem alteração de formato.
+
+**Análise:**
+- O teste da migração v1→v2 já existia (`migracao-save`, 20 asserções); não dupliquei.
+- A sonda grava e remove uma chave auxiliar (`masmorra-runas-v2-sonda`) na carga, porque `persist()` só roda depois de uma incursão e o menu abriria sem aviso para quem já nasce bloqueado.
+- Navegador que lança no `getItem` (não só no `setItem`) também cai na sonda.
+
+**Roadmap:** item em `Concluído`; pipeline de sprites OTSP promovido a `Agora`.
+
+**Pendências e riscos:**
+- O aviso só é reavaliado ao abrir o menu; falha no meio da incursão aparece na volta ao menu.
+- O branch remoto `teste-ci-quebrada` continua lá por decisão do dono (pode ficar).
+
+**Próximo passo recomendado:** pipeline dos sprites OTSP (`tools/` + `assets/` + `assets/CREDITOS.md`), sem trocar o desenho do jogo.
+
+---
+
 ## 2026-10-18 23:50 UTC
 
 **Item desenvolvido:** Harness de teste headless no repositório —

@@ -96,6 +96,7 @@ body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bon
 
 /* Telas */
 .screen{position:absolute;inset:0;z-index:5;display:grid;place-items:center;overflow:auto;padding-block:16px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:radial-gradient(ellipse at 50% 30%,rgba(14,12,21,.5),rgba(14,12,21,.95) 70%)}
+.aviso{margin:0;padding:8px 10px;border:1px solid var(--warn);border-radius:4px;color:var(--warn);font:600 13px/1.35 var(--f-body)}
 .panel{width:min(100%,420px);background:rgba(26,23,34,.94);border:1px solid var(--line);border-radius:6px;padding:22px;display:grid;gap:16px;box-shadow:0 18px 50px rgba(0,0,0,.5)}
 .eyebrow{margin:0;font:600 12px var(--f-body);text-transform:uppercase;letter-spacing:.14em;color:var(--muted)}
 h1,h2{margin:0;font-family:var(--f-display);font-weight:700;line-height:1;color:var(--torch);text-wrap:balance}
@@ -224,6 +225,7 @@ h2.lost{color:var(--hp)}
       <p class="eyebrow" id="mEye">Protótipo · Etapa 3</p>
       <h1>Masmorra de Runas</h1>
       <p class="lede">Entre, cace, encha o saco de loot e saia vivo pelo portal. Se morrer, o loot que você carrega fica para trás.</p>
+      <p class="aviso" id="mAviso" role="status" hidden>Seu progresso não está sendo salvo neste navegador (aba anônima ou armazenamento bloqueado). Ao fechar a aba, ele se perde.</p>
       <dl class="stats">
         <div><dt>Nível</dt><dd id="sLvl">1</dd></div>
         <div><dt>Magia</dt><dd id="sMag">0</dd></div>
@@ -431,7 +433,9 @@ try{
     }
   }
 }catch(e){}
-const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){}};
+let saveFalhou=false; // vira true se o navegador recusou gravar: o menu avisa
+try{localStorage.setItem(KEY+'-sonda','1');localStorage.removeItem(KEY+'-sonda')}catch(e){saveFalhou=true}
+const persist=()=>{try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){saveFalhou=true}};
 const ch=()=>save.chars[save.classe];
 const KL=()=>CLASSES[save.classe];
 
@@ -1122,6 +1126,7 @@ function showMenu(){
   $('#mEye').textContent=`Protótipo · Etapa 3 · ${KL().nome}`;
   $('#sLvl').textContent=c.lvl;$('#sMag').textContent=c.mag;$('#sPer').textContent=c.per;
   $('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;$('#sSlots').textContent=nSlots();
+  $('#mAviso').hidden=!saveFalhou;
   $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
   soTela(menu);
   if(!G||G.active){newRun()}
