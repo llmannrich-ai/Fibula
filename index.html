@@ -55,6 +55,8 @@ body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bon
 #mini{width:96px;height:96px;border:1px solid var(--line);border-radius:3px;background:rgba(8,7,12,.85)}
 .map span{font:600 12px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
 .map span.open{color:var(--torch)}
+.compass{font-size:20px;color:var(--torch);line-height:1;text-align:center}
+.compass b{display:inline-block;transition:transform .15s linear}
 
 #log{position:absolute;left:max(16px,env(safe-area-inset-left,0px));bottom:200px;width:min(66vw,330px);display:flex;flex-direction:column;gap:2px;font:600 13px/1.25 var(--f-body)}
 .ln{color:var(--loot);animation:fadeout 8s forwards}
@@ -203,6 +205,7 @@ h2.lost{color:var(--hp)}
       <div class="map">
         <div class="clock out" id="clock"><strong id="timeT">6:00</strong></div>
         <canvas id="mini"></canvas>
+        <div class="compass out" id="compass" hidden><b id="compassArrow">➤</b></div>
         <span class="out" id="portalT">Portal em 1:30</span>
       </div>
     </div>
@@ -309,6 +312,7 @@ const RM=matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rnd=n=>Math.floor(Math.random()*n),rr=(a,b)=>a+Math.random()*(b-a),ri=(a,b)=>a+rnd(b-a+1);
 const clamp=(v,a,b)=>v<a?a:v>b?b:v,hyp=Math.hypot;
 const fmt=s=>{s=Math.max(0,Math.ceil(s));return Math.floor(s/60)+':'+String(s%60).padStart(2,'0')};
+const fmtEl=s=>fmt(Math.floor(Math.max(0,s)));
 let W=0,H=0,DPR=1,MS=96;
 function resize(){
   DPR=Math.min(2,window.devicePixelRatio||1);
@@ -497,24 +501,29 @@ function corridor(g,a,b){
   if(Math.random()<.5){sx();sy()}else{sy();sx()}
   carve(g,x,y);carve(g,x+1,y);carve(g,x,y+1);
 }
+function carveRooms(g,rooms){
+  for(const r of rooms)for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++)g[j*MW+i]=0;
+  for(let i=1;i<rooms.length;i++){
+    let best=0,bd=1e9;
+    for(let j=0;j<i;j++){const d=hyp(rooms[i].cx-rooms[j].cx,rooms[i].cy-rooms[j].cy);if(d<bd){bd=d;best=j}}
+    corridor(g,rooms[best],rooms[i]);
+  }
+  for(let k=0;k<3;k++)corridor(g,rooms[rnd(rooms.length)],rooms[rnd(rooms.length)]);
+}
 function genMap(){
-  for(;;){
+  let fallback=null;
+  for(let attempt=0;attempt<50;attempt++){
     const g=new Uint8Array(MW*MH).fill(1),rooms=[];
     for(let t=0;t<600&&rooms.length<15;t++){
       const w=ri(5,10),h=ri(5,9),x=ri(2,MW-w-3),y=ri(2,MH-h-3);
       if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y))continue;
       rooms.push({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)});
     }
-    if(rooms.length<9)continue;
-    for(const r of rooms)for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++)g[j*MW+i]=0;
-    for(let i=1;i<rooms.length;i++){
-      let best=0,bd=1e9;
-      for(let j=0;j<i;j++){const d=hyp(rooms[i].cx-rooms[j].cx,rooms[i].cy-rooms[j].cy);if(d<bd){bd=d;best=j}}
-      corridor(g,rooms[best],rooms[i]);
-    }
-    for(let k=0;k<3;k++)corridor(g,rooms[rnd(rooms.length)],rooms[rnd(rooms.length)]);
+    if(rooms.length<9){if(!fallback||rooms.length>fallback.rooms.length)fallback={g,rooms};continue}
+    carveRooms(g,rooms);
     return{g,rooms};
   }
+  const{g,rooms}=fallback;carveRooms(g,rooms);return{g,rooms};
 }
 const hash=(x,y)=>{let h=(Math.imul(x,73856093)^Math.imul(y,19349663))>>>0;h=Math.imul(h^(h>>>13),1274126177)>>>0;return h^(h>>>16)};
 
@@ -539,7 +548,7 @@ function newRun(){
   const p={x:(s.cx+.5)*T,y:(s.cy+.5)*T,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+save.up.bolsa,flash:0,walk:0,swing:0,swingA:0,swingR:0};
   G={g,rooms,seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),flowT:0,p,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
-     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null};
+     t:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0};
   for(const r of rooms){
     if(r===s)continue;
     const d=r.d/md,n=ri(2,3)+(r.w*r.h>50?1:0);
@@ -886,7 +895,7 @@ function updateProj(dt){
   }
 }
 function finish(kind){
-  if(G.over)return;G.over=true;G.end=kind;soltaTudo();
+  if(G.over)return;G.over=true;G.end=kind;G.dur=G.t;soltaTudo();
   G.sealed=0;
   if(kind==='extraiu'){save.cofre+=G.bagVal;save.ext++;save.best=Math.max(save.best,G.bagVal)}
   else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed}
@@ -1088,6 +1097,7 @@ function drawMini(){
 /* ---------- HUD ---------- */
 const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),clsT:$('#clsT'),magT:$('#magT'),perT:$('#perT'),
   bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bPot:$('#bPot'),potN:$('#potN'),
+  compass:$('#compass'),compassArrow:$('#compassArrow'),
   slots:[$('#s0'),$('#s1'),$('#s2'),$('#s3')]};
 const setT=(el,v)=>{if(el.textContent!==v)el.textContent=v};
 function montaBotoes(){ // chamado ao entrar na incursão: os espaços mudam com o nível
@@ -1110,6 +1120,8 @@ function hud(){
   setT(E.clsT,KL().nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
   setT(E.bagT,String(G.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
+  const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
+  if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
   E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
   for(let i=0;i<4;i++){
     const b=E.slots[i];if(b.hidden)continue;
@@ -1250,7 +1262,7 @@ function showEnd(){
   $('#eTrain').textContent=(G.magGain||G.perGain)
     ? [G.magGain&&`+${G.magGain} de Magia`,G.perGain&&`+${G.perGain} de Perícia`].filter(Boolean).join(' · ')
     : `Magia ${c.mag} · Perícia ${c.per}`;
-  $('#eTime').textContent=fmt(G.t);$('#eCofre').textContent=`${save.cofre} ouro`;
+  $('#eTime').textContent=fmtEl(G.dur);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
   const rows=Object.entries(G.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
   if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}

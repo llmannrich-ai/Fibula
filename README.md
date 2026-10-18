@@ -9,6 +9,7 @@ Protótipo jogável de um RPG de extração para celular.
 - Arraste o lado esquerdo da tela para andar.
 - Segure um botão de habilidade para repeti-la assim que ela sair da recarga. **Poção** cura.
 - O portal de saída abre aos 1:30. Fique 2,5 s nele para extrair. Se morrer, perde o loot do saco.
+- Com o portal aberto, uma bússola aparece ao lado do minimapa apontando a direção dele.
 - Teclado: WASD anda, **J K L I** são os quatro espaços de habilidade, **P** bebe poção.
 
 ## Classes e habilidades (Etapa 3)
