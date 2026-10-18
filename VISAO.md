@@ -65,9 +65,10 @@ conectadas. Depende de três coisas:
   movem, um recorde que não é seu. Tudo isso funciona de forma assíncrona, sem
   servidor e sem jogo em rede.
 
-Fibula não é um MMO e provavelmente nunca vai ser. Mas a sensação de habitar um
-mundo compartilhado é construível com persistência e com rastro, e é isso que
-perseguimos.
+A sensação de habitar um mundo compartilhado começa com persistência e rastro,
+sem rede. A partir da F2 do [PRD](docs/PRD.md) ela ganha gente de verdade:
+co-op em tempo real nas incursões e, depois, uma cidade compartilhada. O rastro
+assíncrono continua valendo para quem joga sozinho.
 
 ### 3. Celular de verdade, uma mão só, retrato
 
@@ -110,13 +111,16 @@ já definido.
 ## Não-objetivos
 
 Estes são explícitos para poupar discussão. Nada aqui entra sem o Leonardo mudar
-este arquivo primeiro.
+este arquivo primeiro. Revisados em 2026-10-18 para a direção comercial com
+multiplayer definida no [PRD](docs/PRD.md), que decide escopo e fase.
 
-- **Multijogador em rede.** O "sentir MMO" do pilar 2 é feito com persistência e
-  rastro assíncrono. Servidor, conta, chat e grupo estão fora.
+- **Mundo aberto contínuo e PvP aberto.** O multiplayer entra por fases (co-op
+  em salas de até 4, depois cidade compartilhada — ver [PRD](docs/PRD.md)). Um
+  MMO de mapa contínuo e PvP livre continuam fora.
 - **Energia, vidas ou qualquer portão de tempo real.** Contraria o pilar 4.
-- **Compra que vira poder.** O jogo não tem monetização; se um dia tiver, não é
-  vendendo vantagem.
+- **Compra que vira poder.** O Fibula será comercial (F4 do PRD), mas dinheiro
+  só compra estética e conveniência — nunca dano, vida, loot ou proteção contra
+  a morte.
 - **Facilitar a morte para reter jogador.** Modo sem penalidade, revive por
   anúncio, checkpoint no meio da incursão: tudo isso apaga o pilar 1.
 - **Fidelidade de museu ao Tibia.** Não queremos os onze slots de equipamento, a
@@ -126,8 +130,9 @@ este arquivo primeiro.
   que abrir em dois segundos num 3G ruim. Existe hoje exatamente uma exceção
   herdada — a folha de fontes do Google — e ela é dívida a pagar, não licença
   para a segunda.
-- **Rastreamento do jogador.** Sem analytics, sem telemetria, sem cookie de
-  terceiro. O save é local e é dele.
+- **Rastreamento invasivo.** Sem cookie de terceiro, sem SDK de anúncio, sem
+  vender dado. A partir da F1 existe telemetria própria e mínima (eventos de
+  jogo da seção 12 do PRD), dentro da LGPD.
 
 ## Tom
 
