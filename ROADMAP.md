@@ -223,6 +223,15 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-18 — Conteúdo do jogo fora do motor** (`191e80e`). Classes,
+  habilidades, melhorias do Mercador, inimigos, itens, loot e progressão em
+  [`data/game/content.json`](data/game/content.json), carregado antes do jogo
+  iniciar e validado no carregamento (seções, referências cruzadas e pesos das
+  bandas). Balancear deixa de exigir edição de código. Duas consequências para
+  quem vier depois: o `index.html` **não abre mais direto do disco** (o
+  `fetch` é bloqueado em `file://`), então `tools/serve.ps1` virou necessário
+  para teste local; e o IIFE ficou assíncrono, porque a migração de save chama
+  `slotsIniciais()` e já precisa de `SPELLS` no topo do script.
 - **2026-10-18 — Etapa 3: classes, habilidades e evolução** (`1639d2d`).
   Quatro classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por taxa de
   crescimento e não por lista de poderes, grimório com slots de habilidade

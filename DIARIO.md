@@ -18,6 +18,29 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-18 20:00 UTC — Sessão manual
+
+**Item desenvolvido:** conteúdo do jogo fora do motor (`191e80e`). Classes, habilidades, melhorias, inimigos, itens, loot e progressão em `data/game/content.json`, com validação no carregamento. Não era item do roadmap: veio de um pedido direto do Leonardo, que também trouxe a base de `data/mechanics/` e `tools/extract-mechanics.ps1` (já na `main` pelo ciclo).
+
+**Validação:** quatro harness headless contra o `index.html` desta entrega — combate, extração, menu com loja e grimório, e morte — com `data-errs="` **ausente** nos quatro. Números conferidos contra os dados do JSON, não só "abriu sem erro": vida 151 do Feiticeiro nível 12 (`hp 85 + ghp 6 × 11`); Vigor a 120 e cofre 1000 → 880; vida 166 na incursão seguinte à compra; Grimório com 3 espaços no nível 12 e 6 habilidades da classe; extração levando o cofre de 1000 a 1200 em 0:05; morte em 0/85 perdendo os 200 de loot semeados. O `SINTAXE_OK` **não** foi produzido: não há Node nesta máquina. Os harness cobrem o caso, porque um erro de parse apareceria como `data-errs`.
+
+**Análise:**
+- A migração de save da Etapa 2 chama `novoChar()` → `slotsIniciais()` no topo do script, o que já lê `SPELLS` e `SLOT_LVL`. Por isso carregar os dados tarde não servia: o IIFE teve de virar assíncrono e aguardar antes de qualquer coisa.
+- As 24 habilidades foram movidas por geração, não à mão: um script extrai o texto dos literais do `index.html`, o JS avalia e o resultado vira JSON. Transcrição manual de 24 registros com 12 campos cada erra em silêncio.
+- A progressão de inimigos por profundidade continuava com números fixos no código (`1+.35*d`, bandas `.6/.4`); agora está no arquivo. Distribuição medida em 20 mil amostras por banda bate com a anterior.
+
+**Roadmap:** só `Concluído` ganhou entrada. `Agora` ficou intocado de propósito — a ferramenta de teste headless é item do ciclo.
+
+**Pendências e riscos:**
+- **O item em `Agora` muda de forma por causa desta entrega.** As cópias de teste **não rodam mais em `file://`**: o jogo busca o `content.json` por `fetch`, e o navegador bloqueia isso em arquivo do disco, mesmo com `--allow-file-access-from-files`. O script Node terá de servir a pasta por HTTP (há `tools/serve.ps1`) e apontar o Chromium para `http://localhost`.
+- Duas armadilhas que custaram tempo e vão custar de novo: as linhas do `#log` se apagam sozinhas em 8,2 s e o log guarda só 5, então um amostrador que **sobrescreve** o resultado lê vazio no fim da corrida — tem de acumular; e `--dump-dom` capturado com `&` no PowerShell volta vazio, precisa de `Start-Process -RedirectStandardOutput`.
+- O harness usado aqui é Python e vive fora do repositório (scratchpad da sessão). Não é o script Node que o roadmap pede; serve como referência do que testar, não como entrega.
+- Não testei: incursão de 6 minutos inteira (os harness encurtam `RUN`), troca de habilidade no Grimório, e recarregar a página para conferir persistência do save.
+- Esta sessão e o ciclo automático escreveram na `main` em paralelo duas vezes. Na primeira, o ciclo descartou a externalização ao resolver o conflito do `index.html` e documentou o contrário no README; esta entrega a reaplica sobre a Etapa 3. Se a decisão certa for manter os dados inline, é `git revert` deste commit — mas então o README precisa voltar atrás também.
+- O carimbo da entrada anterior (22:00 UTC) está à frente do relógio real (20:00 UTC nesta execução), o que embaralha a ordenação por horário.
+
+**Próximo passo recomendado:** seguir com a ferramenta de teste headless de `Agora`, já nascendo sobre HTTP, e cobrir os três casos que ficaram sem teste (incursão inteira, troca no Grimório, persistência após recarga).
+
 ## 2026-10-18 22:00 UTC — Produto
 
 **Item desenvolvido:** primeira execução do agente de Produto. Só `ROADMAP.md`; nenhuma linha de jogo. `Agora` virou a ferramenta de teste headless em `tools/`; `Próximo` ganhou os itens técnicos da F0 (CI, aviso de save + teste da migração, pipeline OTSP, RNG com semente) à frente de morte-com-XP e Selo.
