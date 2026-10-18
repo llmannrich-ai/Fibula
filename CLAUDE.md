@@ -192,7 +192,9 @@ A Etapa 3 trouxe o modelo do Tibia, e ele é a coisa mais importante de entender
 antes de mexer em progressão: **classe não é lista de poderes, é taxa de
 crescimento.** As mesmas coisas custam preços diferentes para cada classe.
 
-- **Nível** (`ch().lvl`, `xp`) — sobe matando, custo em `xpNeed()`. Define vida,
+- **Nível** (`ch().lvl`, `xp`) — sobe matando, custo em `xpNeed()` (curva e
+  perda na morte em `progression.xp` do `content.json`; a morte leva uma fatia
+  do `xp` do nível, nunca o nível). Define vida,
   mana e quais habilidades e slots estão liberados.
 - **Magia** (`mag`, `manaG`) — sobe **gastando mana**, custo exponencial em
   `manaPraMag()` com o `mMult` da classe.

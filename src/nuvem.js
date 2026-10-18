@@ -9,11 +9,11 @@
    por último (save.em); no primeiro login de um aparelho vence o que tem mais
    incursões, para um save novo nunca apagar um antigo; num aparelho que era de
    outra conta vence sempre a nuvem, para uma conta não herdar a outra. */
-import {normaliza,save,setSave} from './sim/progresso.js?v=0.5.0';
-import {G} from './sim/incursao.js?v=0.5.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.5.0';
-import {menu,showMenu} from './telas.js?v=0.5.0';
-import {$} from './dom.js?v=0.5.0';
+import {normaliza,save,setSave} from './sim/progresso.js?v=0.6.0';
+import {G} from './sim/incursao.js?v=0.6.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.6.0';
+import {menu,showMenu} from './telas.js?v=0.6.0';
+import {$} from './dom.js?v=0.6.0';
 
 const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';

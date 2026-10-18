@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.5.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.6.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -26,7 +26,11 @@ export const setSave=s=>{save=s};
 export const ch=()=>save.chars[save.classe];
 export const KL=()=>CLASSES[save.classe];
 
-export const xpNeed=l=>Math.round(40*Math.pow(l,1.6));
+/* curva e perda na morte vêm de progression.xp no content.json */
+export const xpNeed=l=>Math.round(PROG.xp.base*Math.pow(l,PROG.xp.exp));
+/* a morte leva uma fatia do XP do nível atual, nunca o nível */
+export const pctPerdaXp=()=>Math.round(PROG.xp.deathLoss*100);
+export const perdaXp=()=>Math.floor(Math.max(0,ch().xp)*PROG.xp.deathLoss);
 /* custo exponencial de Magia e Perícia — mesma forma das fórmulas de
    vocation.cpp (1600*manaMultiplier^(ml-1) e skillBase*mult^(nivel-11)),
    com as bases encolhidas para a escala de uma incursão de 6 minutos */

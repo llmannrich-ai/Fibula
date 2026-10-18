@@ -14,33 +14,20 @@ não tem como saber que terminou.
 
 ## Agora
 
-### Peso de verdade na morte: perder parte do XP, não só o saco
+### Sair cedo precisa ser uma jogada válida
 
-**Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
-experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
-sair de graça: no começo da incursão não existe decisão nenhuma, porque não há
-nada a perder. O risco só começa a existir depois do primeiro loot bom.
+**Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
+ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
+testar: o portal custar uma fatia do saco se usado cedo, ou o valor do loot
+crescer com o tempo de permanência, ou o portal ter uma janela que fecha e
+reabre. Precisa de teste de jogo, não só de implementação.
 
-O que fazer: morrer passa a custar também uma fatia do progresso dentro do nível
-atual (candidato inicial: 25% do XP acumulado no nível, sem nunca descer de
-nível). Precisa aparecer em três lugares — aviso no menu antes de entrar, linha
-própria na tela final mostrando quanto foi perdido, e barra de XP no HUD que
-reflete a perda ao reabrir.
+Com a morte custando XP (0.6.0), ficar até o fim já ficou mais caro para quem
+morre; meça de novo antes de escolher, porque parte do problema pode ter
+mudado.
 
-Cuidado com o pilar 1 na parte da recuperação: se a fatia fizer o jogador
-recuar mais de duas incursões, está alta demais. Comece em 25%, jogue, ajuste.
-
-Não implemente proteção contra isso no Mercador nesta etapa — o Selo de
-resguardo cobre loot, e misturar as duas coisas confunde a leitura.
-
-Depois da Etapa 3 existem **três** moedas de progressão (nível, magia e
-perícia), e no Tibia a morte mordia todas. Comece só pelo XP do nível: é a mais
-legível das três e já cria a hesitação que falta. Magia e perícia ficam para
-uma revisão posterior, com o diário registrando a decisão.
-
-**Pronto quando:** morrer reduz o XP do nível atual, a tela final mostra a perda
-em linha própria, o menu avisa a regra antes de entrar, e o save sobrevive a um
-recarregamento com o valor reduzido.
+**Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
+sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
 
 **Fase:** jogo, em paralelo à F0.
 
@@ -53,40 +40,7 @@ Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
 custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
 da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
 
-### 1. Curva de nível rápida demais
-
-**Pilar 5** (e princípio 3 do PRD: progressão lenta e visível). No playtest de
-18/10 o Cavaleiro chegou ao nível 7 em poucas incursões. A conta confirma:
-`xpNeed()` pede só 1.286 de XP do nível 1 ao 6, e um Guardião sozinho dá cerca
-de 300 (220 × 1,4 da profundidade). Nível que sobe em uma tarde esvazia o
-grind que o Tibia tinha de bom e abre o grimório rápido demais.
-
-O que fazer: medir com a simulação no Node quanto XP uma incursão típica dá em
-cada nível, definir um alvo (candidato: nível 8, o terceiro espaço, depois de
-~15 incursões) e ajustar. A curva `40·nível^1,6` está no código
-(`src/sim/progresso.js`); se for mexer nela, leve o coeficiente e o expoente
-para `progression` no `content.json`, como os outros números de balanceamento.
-
-**Pronto quando:** o diário registra o XP por incursão medido antes e depois,
-a curva (ou o XP dos monstros) foi ajustada no `content.json`, e o caso
-`nivel-na-incursao` do harness continua passando (ajustado se o número mudou).
-
-**Fase:** jogo, em paralelo à F0.
-
-### 2. Sair cedo precisa ser uma jogada válida
-
-**Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
-ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
-testar: o portal custar uma fatia do saco se usado cedo, ou o valor do loot
-crescer com o tempo de permanência, ou o portal ter uma janela que fecha e
-reabre. Precisa de teste de jogo, não só de implementação.
-
-**Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
-sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
-
-**Fase:** jogo, em paralelo à F0.
-
-### 3. Passo fixo na simulação
+### 1. Passo fixo na simulação
 
 **Pilar 4** (base técnica da F2). O `update()` roda no `dt` de cada quadro, até
 50 ms. O servidor da F2 precisa do mesmo resultado em qualquer máquina: a
@@ -98,7 +52,7 @@ gerador com semente.
 com passos de quadro diferentes (por exemplo, 16 ms e 50 ms) para a mesma
 semente, e o jogo no navegador continua igual.
 
-### 4. Tela de créditos no jogo
+### 2. Tela de créditos no jogo
 
 **Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
 `assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
@@ -108,7 +62,7 @@ autores.
 **Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
 licença e link para os autores, e há caso no `tools/testar.mjs`.
 
-### 5. PWA instalável
+### 3. PWA instalável
 
 **Pilar 3.** Manifesto e service worker para instalar na tela inicial e abrir
 offline, com o último conteúdo baixado. As fontes já são do sistema, então não
@@ -118,7 +72,7 @@ há folha externa para embutir. Sem biblioteca.
 o jogo abre sem rede depois da primeira visita, e um caso no harness confere
 que o manifesto e o service worker carregam.
 
-### 6. Revisar a economia do Selo de resguardo
+### 4. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -197,6 +151,19 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 ---
 
 ## Concluído
+
+- **2026-10-18 — A morte custa XP, e a curva de nível ficou lenta (0.6.0)**
+  *(os itens "Peso de verdade na morte" e "Curva de nível rápida demais",
+  juntos a pedido do Leonardo: 25% de um nível barato não pesava nada)*.
+  Medido com a simulação no Node: a masmorra inteira vale ~1.680 de XP e uma
+  incursão típica ~840, e não cresce com o nível do personagem. Curva antiga
+  `40·L^1,6`: nível 8 em ~3,4 incursões. Curva nova `520·L^0,9`, em
+  `progression.xp` do `content.json`: nível 8 em ~15, nível 18 em ~75.
+  Morrer (ou ficar soterrado) leva 25% do XP do nível atual, nunca o nível
+  (`deathLoss`); no pior caso isso custa 2 incursões até o nível 17. O menu
+  avisa o preço em XP antes de entrar, a tela final mostra "Experiência
+  perdida" em linha própria, e o save guarda o valor reduzido. Casos `morte`
+  e `incursao-extracao` e a simulação no Node conferem; sabotagem barrada.
 
 - **2026-10-18 — Versão 0.5.0 no ar, com versão nos endereços**. O menu mostra
   a versão do jogo (antes dizia "Etapa 3"), e todo módulo e o atlas são

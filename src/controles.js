@@ -1,12 +1,12 @@
 /* ---------- controles ----------
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
    nada daqui direto: o laço pede leEntrada() e passa o resultado a update(). */
-import {hyp} from './sim/base.js?v=0.5.0';
-import {G} from './sim/incursao.js?v=0.5.0';
-import {drinkPot} from './sim/combate.js?v=0.5.0';
-import {W,H} from './desenho.js?v=0.5.0';
-import {E} from './hud.js?v=0.5.0';
-import {$,app} from './dom.js?v=0.5.0';
+import {hyp} from './sim/base.js?v=0.6.0';
+import {G} from './sim/incursao.js?v=0.6.0';
+import {drinkPot} from './sim/combate.js?v=0.6.0';
+import {W,H} from './desenho.js?v=0.6.0';
+import {E} from './hud.js?v=0.6.0';
+import {$,app} from './dom.js?v=0.6.0';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};

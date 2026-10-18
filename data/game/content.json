@@ -990,6 +990,12 @@
         "orc"
       ]
     },
+    "xp": {
+      "_note": "Experiencia para passar do nivel L ao L+1: base * L^exp. Medido em 18/10/2026 com a simulacao no Node: a masmorra inteira vale ~1.680 de XP, e uma incursao tipica (metade dela) ~840. Com 520 e 0,9 o nivel 8 (terceiro espaco) chega depois de ~15 incursoes. deathLoss e a fatia do XP acumulado no nivel atual que a morte (ou o desabamento) leva, sem nunca descer de nivel; com esta curva, perder 25% custa no maximo 2 incursoes ate o nivel 17.",
+      "base": 520,
+      "exp": 0.9,
+      "deathLoss": 0.25
+    },
     "perRoom": {
       "min": 2,
       "max": 3,

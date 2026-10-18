@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.5.0';
-import {EL_COR,MT,PROG} from './dados.js?v=0.5.0';
-import {save,ch,KL,stats,sealPct,guardaSaco} from './progresso.js?v=0.5.0';
-import {genMap,pecas} from './mapa.js?v=0.5.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.5.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.6.0';
+import {EL_COR,MT,PROG} from './dados.js?v=0.6.0';
+import {save,ch,KL,stats,sealPct,guardaSaco,perdaXp} from './progresso.js?v=0.6.0';
+import {genMap,pecas} from './mapa.js?v=0.6.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.6.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -188,9 +188,10 @@ function updateProj(dt){
 }
 export function finish(kind){
   if(G.over)return;G.over=true;G.end=kind;G.dur=G.t;
-  G.sealed=0;G.ouroExt=0;G.pecas=0;
+  G.sealed=0;G.ouroExt=0;G.pecas=0;G.xpPerdido=0;
   if(kind==='extraiu'){const r=guardaSaco(G.bag);G.ouroExt=r.ouro;G.pecas=r.pecas;save.ext++;save.best=Math.max(save.best,G.bagVal)}
-  else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed}
+  else{save.deaths++;G.sealed=Math.round(G.bagVal*sealPct());if(G.sealed)save.cofre+=G.sealed;
+    G.xpPerdido=perdaXp();ch().xp-=G.xpPerdido}
   saida.persist();
   if(kind!=='extraiu')shake(8);
   saida.fim(kind);

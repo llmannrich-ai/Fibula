@@ -1,14 +1,14 @@
 /* ---------- telas ----------
    Acampamento, personagens, grimório, equipamento, tela final e Mercador. */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.5.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus} from './sim/dados.js?v=0.5.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender} from './sim/progresso.js?v=0.5.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.5.0';
-import {persist,saveFalhou} from './salvar.js?v=0.5.0';
-import {desenhaConta} from './nuvem.js?v=0.5.0';
-import {logEl,log,montaBotoes,setT} from './hud.js?v=0.5.0';
-import {icone} from './arte.js?v=0.5.0';
-import {$,app} from './dom.js?v=0.5.0';
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.6.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus} from './sim/dados.js?v=0.6.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.6.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.6.0';
+import {persist,saveFalhou} from './salvar.js?v=0.6.0';
+import {desenhaConta} from './nuvem.js?v=0.6.0';
+import {logEl,log,montaBotoes,setT} from './hud.js?v=0.6.0';
+import {icone} from './arte.js?v=0.6.0';
+import {$,app} from './dom.js?v=0.6.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS];
@@ -21,6 +21,9 @@ export function showMenu(){
   $('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;$('#sSlots').textContent=nSlots();
   $('#mAviso').hidden=!saveFalhou;desenhaConta();
   $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
+  /* pilar 1: o preço da morte, em número, antes de entrar */
+  const pd=perdaXp();
+  $('#mRisco').textContent=`Morrer também custa ${pctPerdaXp()}% da experiência do nível atual, nunca o nível. Hoje: ${pd?pd+' xp':'nada, o nível está vazio'}.`;
   soTela(menu);
   if(!G||G.active){newRun()}
 }
@@ -192,12 +195,14 @@ export function showEnd(){
   $('#endText').textContent=ok?(G.pecas
       ?`Você saiu pelo portal com ${G.bagVal} de ouro em loot. ${G.ouroExt} viraram ouro no cofre, e ${G.pecas} peça${G.pecas>1?'s':''} de equipamento ${G.pecas>1?'esperam':'espera'} lá para vestir ou vender.`
       :`Você saiu pelo portal com ${G.bagVal} de ouro em loot. Tudo foi para o cofre.`)
-    :k==='morreu'?'O loot que você carregava ficou na masmorra. A experiência ganha foi mantida.'
-    :'A masmorra desabou antes de você chegar ao portal. O loot ficou para trás. A experiência foi mantida.';
+    :k==='morreu'?`O loot que você carregava ficou na masmorra, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
+    :`A masmorra desabou antes de você chegar ao portal. O loot ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
   const l=$('#eLoot');l.textContent=`${G.bagVal} ouro · ${ok?'guardado':'perdido'}`;l.className=ok?'ok':'bad';
   const sealOn=!ok&&G.sealed>0,sl=$('#eSeal');
   $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;
   if(sealOn){sl.textContent=`+${G.sealed} ouro (${Math.round(sealPct()*100)}%)`;sl.className='ok'}
+  const xl=$('#eXpPerda');$('#eXpPerdaDt').hidden=ok;xl.hidden=ok;
+  if(!ok){xl.textContent=`−${G.xpPerdido} xp (${pctPerdaXp()}% do nível)`;xl.className='bad'}
   const c=ch();
   $('#eKills').textContent=G.kills;$('#eXp').textContent=`+${G.xpGain} (nível ${c.lvl})`;
   $('#eTrain').textContent=(G.magGain||G.perGain)

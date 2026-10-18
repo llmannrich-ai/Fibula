@@ -521,6 +521,16 @@ async function testaSimulacao() {
     novoSave(); I.newRun(); const s1 = I.G.semente; I.newRun(); const s2 = I.G.semente;
     if (s1 === s2) falhas.push(`sem semente, duas incursões seguidas sortearam a mesma (${s1})`);
   } catch (e) { falhas.push('newRun() sem semente quebrou: ' + e.message); }
+  /* a morte leva 25% do XP do nível (progression.xp.deathLoss), nunca o nível;
+     extrair não leva nada */
+  try {
+    for (const [fim, xp0, esperado] of [['morreu', 1000, 750], ['desabou', 101, 76], ['extraiu', 1000, 1000]]) {
+      novoSave(); P.ch().lvl = 4; P.ch().xp = xp0; I.newRun(9); I.finish(fim);
+      if (P.ch().xp !== esperado || P.ch().lvl !== 4 || I.G.xpPerdido !== xp0 - esperado) falhas.push(`${fim} com ${xp0} de XP deixou ${P.ch().xp} no nível ${P.ch().lvl} (esperado ${esperado} no 4)`);
+    }
+    if (P.xpNeed(1) !== 520 || P.xpNeed(8) !== 3379) falhas.push(`a curva não veio do content.json: xpNeed(1)=${P.xpNeed(1)}, xpNeed(8)=${P.xpNeed(8)}`);
+  } catch (e) { falhas.push('a perda de XP na morte quebrou: ' + e.message); }
+  finally { for (const k of Object.keys(saida)) saida[k] = () => {}; }
   try {
     const sv = P.SAVE0(); sv.classe = 'cavaleiro'; sv.chars.cavaleiro = P.novoChar('cavaleiro'); P.setSave(sv);
     const r = P.guardaSaco({ouro: 50, dente: 2, cota: 1});
@@ -690,6 +700,7 @@ const CASOS = [
     ok('o treino foi registrado', (txt('#eTrain')||'').length>0, txt('#eTrain'));
     ok('o tempo na masmorra foi registrado', (txt('#eTime')||'')!=='', txt('#eTime'));
     ok('o selo não aparece em extração', $('#eSeal').hidden);
+    ok('extrair não custa experiência', $('#eXpPerda').hidden&&$('#eXpPerdaDt').hidden);
     ok('o saco foi detalhado item por item', todos('#endItems li').length>=1, todos('#endItems li').length);
 `,
   },
@@ -749,7 +760,7 @@ const CASOS = [
   },
   {
     nome: 'morte',
-    o_que: 'morte: tela final, perda do saco e Selo de resguardo devolvendo 40%',
+    o_que: 'morte: tela final, perda do saco, Selo de resguardo devolvendo 40% e 25% do XP do nível perdidos',
     semente: 3,
     patches: [P.tempo(12, 3), P.saco, P.spawnNaEntrada],
     conteudo: [A.ratoLetal],
@@ -757,9 +768,10 @@ const CASOS = [
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 2},
       classe: 'feiticeiro',
-      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], equip: {arma: 'machado', armadura: null, amuleto: null}}},
+      chars: {feiticeiro: {lvl: 1, xp: 400, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], equip: {arma: 'machado', armadura: null, amuleto: null}}},
     }},
     roteiro: `
+    ok('o menu avisa o preço da morte antes de entrar', /25% da experiência do nível.*Hoje: 100 xp\\./.test(txt('#mRisco')||''), txt('#mRisco'));
     clica($('#play'));
     await quadros(2);
     ok('a incursão começou', $('#app').classList.contains('playing'));
@@ -777,6 +789,14 @@ const CASOS = [
     ok('só o resguardado entrou no cofre', sv()&&sv().cofre===80, sv()&&sv().cofre);
     ok('a tela final mostra o cofre com o resguardo', txt('#eCofre')==='80 ouro', txt('#eCofre'));
     ok('o equipamento vestido não cai na morte', sv()&&sv().chars.feiticeiro.equip.arma==='machado', sv()&&JSON.stringify(sv().chars.feiticeiro.equip));
+    var ganho=+((/^\\+([0-9]+)/.exec(txt('#eXp')||'')||[])[1]),perda=/^−([0-9]+) xp \\(25% do nível\\)$/.exec(txt('#eXpPerda')||'');
+    ok('a tela final mostra a experiência perdida em linha própria', !$('#eXpPerda').hidden&&!$('#eXpPerdaDt').hidden&&!!perda, txt('#eXpPerda'));
+    ok('a perda é 25% do XP do nível na hora da morte', !!perda&&+perda[1]===Math.floor((400+ganho)*0.25), txt('#eXpPerda')+' / ganho '+ganho);
+    ok('o save guardou o XP já reduzido, sem descer de nível', sv()&&sv().chars.feiticeiro.lvl===1&&!!perda&&sv().chars.feiticeiro.xp===400+ganho-(+perda[1]), sv()&&JSON.stringify(sv().chars.feiticeiro));
+    ok('o texto final fala da experiência perdida', /25% da experiência/.test(txt('#endText')||''), txt('#endText'));
+    clica($('#toMenu'));
+    await quadros(2);
+    ok('de volta ao menu, o aviso já conta o XP reduzido', (txt('#mRisco')||'').indexOf('Hoje: '+Math.floor(sv().chars.feiticeiro.xp*0.25)+' xp.')>=0, txt('#mRisco'));
 `,
   },
   {
@@ -885,13 +905,14 @@ const CASOS = [
     semente: 23,
     limite: 90000,
     patches: [P.tempo(30, 25), P.spawnNaEntrada],
-    /* xpNeed(8) é 1114: a primeira morte de rato estoura o nível 9, que é onde
-       o Feiticeiro aprende Onda de Fogo e ganha o terceiro espaço */
+    /* xpNeed(8) é 3379 (progression.xp do content.json): a primeira morte de
+       rato estoura o nível 9, que é onde o Feiticeiro aprende Onda de Fogo e
+       ganha o terceiro espaço */
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'feiticeiro',
-      chars: {feiticeiro: {lvl: 8, xp: 1113, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null]}},
+      chars: {feiticeiro: {lvl: 8, xp: 3378, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null]}},
     }},
     roteiro: `
     clica($('#play'));

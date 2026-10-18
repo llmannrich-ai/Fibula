@@ -3,17 +3,17 @@
    (src/sim/, sem DOM) às telas, ao desenho e ao save, e roda o laço.
    O carregamento do conteúdo é a primeira coisa que acontece porque a migração
    de save chama slotsIniciais() e portanto já precisa de SPELLS e SLOT_LVL. */
-import {saida} from './sim/base.js?v=0.5.0';
-import {carrega} from './sim/dados.js?v=0.5.0';
-import {G,update,parado} from './sim/incursao.js?v=0.5.0';
-import {carregaSave,persist} from './salvar.js?v=0.5.0';
-import {puxa} from './nuvem.js?v=0.5.0';
-import {carregaArte} from './arte.js?v=0.5.0';
-import {W,H,resize,render,drawMini} from './desenho.js?v=0.5.0';
-import {log,banner,montaIcones,montaBotoes,hud} from './hud.js?v=0.5.0';
-import {showMenu,showPick,showEnd,pickS,endS,conteudoFalhou} from './telas.js?v=0.5.0';
-import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.5.0';
-import {app} from './dom.js?v=0.5.0';
+import {saida} from './sim/base.js?v=0.6.0';
+import {carrega} from './sim/dados.js?v=0.6.0';
+import {G,update,parado} from './sim/incursao.js?v=0.6.0';
+import {carregaSave,persist} from './salvar.js?v=0.6.0';
+import {puxa} from './nuvem.js?v=0.6.0';
+import {carregaArte} from './arte.js?v=0.6.0';
+import {W,H,resize,render,drawMini} from './desenho.js?v=0.6.0';
+import {log,banner,montaIcones,montaBotoes,hud} from './hud.js?v=0.6.0';
+import {showMenu,showPick,showEnd,pickS,endS,conteudoFalhou} from './telas.js?v=0.6.0';
+import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.6.0';
+import {app} from './dom.js?v=0.6.0';
 
 /* ---------- conteúdo do jogo (data/game/content.json) ---------- */
 const DATA_URL='data/game/content.json';
