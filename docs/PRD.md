@@ -1,16 +1,25 @@
 # PRD - Fibula
 
-> Documento de requisitos do produto. É a fonte de verdade para o dono e para os
-> agentes de IA que desenvolvem o jogo. Quando o ROADMAP, o código ou a
-> instrução de um agente contradisser este documento, vale este documento — e o
-> agente abre uma issue `decisao-do-dono` apontando a contradição.
+> Documento de requisitos do produto: **o quê** o Fibula vai ser e **em que
+> ordem**. Os outros guias se encaixam nele:
+>
+> | Documento | Responde | Em conflito |
+> |---|---|---|
+> | `docs/PRD.md` (este) | O quê, para quem, em que fase | Vence |
+> | [`VISAO.md`](../VISAO.md) | Por quê: pilares de jogo, tom, teste das quatro perguntas | Cede ao PRD em escopo de produto |
+> | [`CLAUDE.md`](../CLAUDE.md) | Como: arquitetura, convenções, testes, git | Cede aos dois |
+> | `ROADMAP.md` / `DIARIO.md` | Próximo item / o que cada execução fez | Cedem a todos |
+>
+> Ao achar uma contradição, o agente segue o documento de cima e abre uma issue
+> `decisao-do-dono` apontando o trecho a corrigir.
 
 | Campo | Valor |
 |---|---|
 | Dono do produto | Leonardo |
-| Versão | 0.2 |
+| Versão | 0.3 |
 | Data | 2026-10-18 |
 | Status | Aprovado para a F0. Decisões pendentes na seção 15, todas com padrão definido. |
+| Mudanças da 0.3 | Ponto de partida refeito sobre a Etapa 3 e os guias novos; direção comercial com multiplayer confirmada; divisão do `index.html` em andamento noutra sessão; commit direto na `main` até a CI existir; sprites em `assets/`. |
 
 ---
 
@@ -24,34 +33,41 @@ curtas que cabe no dia de quem joga pelo celular.
 **Frase-guia:** *"Tibia no bolso: 5 minutos de masmorra com amigos, um
 personagem para a vida toda."*
 
-## 2. Ponto de partida (análise do repositório em 2026-10-18)
+## 2. Ponto de partida (análise da `main` em 2026-10-18, 19h40 UTC)
 
-O que existe hoje em `main`, publicado em https://llmannrich-ai.github.io/Fibula/:
+O que existe hoje, publicado em https://llmannrich-ai.github.io/Fibula/:
 
 | Item | Estado |
 |---|---|
-| Código | Um único `index.html` (~870 linhas): HTML, CSS e JS sem build, dentro de uma IIFE. Nenhuma dependência, nenhum teste, nenhuma CI. |
-| Jogo | Incursão single-player de até 6 min num mapa 64×64 gerado proceduralmente; portal de extração abre em 1:30; 5 monstros + chefe; Faísca, Runa e Poção; joystick virtual; minimapa e bússola. |
-| Progressão | Nível e XP persistentes; cofre de ouro; Mercador com 5 melhorias permanentes. Uma só vocação ("Feiticeiro", fixa no HTML). |
-| Save | `localStorage`, chave `masmorra-runas-v1`, carregado com valores padrão para campos ausentes. Falha de gravação é silenciosa. |
-| Arte | Formas desenhadas em código no canvas. Nenhum arquivo de imagem. |
-| Agente atual | Tarefa agendada "Fibula - ciclo de analise e desenvolvimento" (a cada 2 h, commit direto na `main`, instruções guardadas na própria tarefa). Produziu a bússola (PR #1) e a guarda do `genMap()`. |
+| Código | Um único `index.html` com ~1.380 linhas (eram 870 de manhã): HTML, CSS e JS sem build, organizado por marcadores de seção. Nenhum teste automatizado, nenhuma CI. Uma dependência externa: Google Fonts. |
+| Jogo | Incursão single-player de até 6 min, mapa 64×64 gerado na hora, portal em 1:30, 5 monstros + Guardião, campo de fluxo para perseguição, joystick virtual, minimapa e bússola. |
+| Progressão (Etapa 3) | 4 classes (Feiticeiro, Druida, Caçador, Cavaleiro) definidas por **taxa de crescimento**; grimório com slots liberados por nível; três moedas do Tibia — nível (abate), magia (mana gasta), perícia (golpes). Cofre e Mercador com 5 melhorias. |
+| Save | `localStorage`, chave `masmorra-runas-v2` (conta na raiz, personagem por classe em `chars`), com migração automática da v1. Falha de gravação ainda é silenciosa. |
+| Arte | Formas desenhadas em código no canvas; cor por classe. |
+| Guias | `CLAUDE.md` (como trabalhar), `VISAO.md` (pilares e não-objetivos), `AGENTS.md` (ponteiro), `docs/analise-tibia-habilidades.md` (fórmulas do Forgotten Server), `ROADMAP.md` com pilar por item, `DIARIO.md` com formato de 7 partes. |
+| Agentes | Tarefa agendada "Fibula - ciclo de analise e desenvolvimento" a cada 2 h, commit direto na `main`, instruções guardadas na própria tarefa. Sessões manuais (computador e celular) trabalham em paralelo na mesma `main`. |
+| Em andamento | Divisão do `index.html` em arquivos, numa sessão separada do dono. |
 
-**Problemas estruturais que bloqueiam o resto do PRD:**
+**Problemas estruturais que o PRD precisa resolver:**
 
 1. **Simulação misturada com desenho e DOM.** Regras de combate, loot e XP
-   estão em funções que também mexem em `G.fx`, `log()` e `banner()`. Um
-   servidor autoritativo (F2) e testes automáticos precisam rodar as regras sem
-   tela.
-2. **Aleatoriedade não reproduzível.** `Math.random()` é usado direto em mapa,
-   spawn, dano e loot. Sem gerador com semente não há teste determinístico,
-   simulação de balanceamento nem reconciliação entre cliente e servidor.
-3. **Passo de tempo variável.** `update(dt)` usa o `dt` do quadro. Em rede, o
-   servidor precisa de passo fixo (ex.: 20 Hz).
-4. **Nenhuma rede de segurança além de `node --check`.** Erros de lógica e de
-   tela só aparecem quando alguém joga.
-5. **Instruções do agente fora do repositório.** Mudar o comportamento do
-   agente exige editar a tarefa agendada à mão; não há histórico nem revisão.
+   chamam `log()`, `banner()` e mexem em `G.fx`. Servidor (F2) e testes
+   precisam rodar as regras sem tela. A divisão em andamento deve criar essa
+   fronteira (seção 10).
+2. **Aleatoriedade não reproduzível.** `Math.random()` direto em mapa, spawn,
+   dano e loot. Sem semente não há teste determinístico, simulação de
+   balanceamento nem reconciliação cliente/servidor.
+3. **Passo de tempo variável.** `update(dt)` usa o `dt` do quadro; o servidor
+   precisa de passo fixo.
+4. **Teste só manual ou por harness improvisado.** O `CLAUDE.md` descreve um
+   teste headless montado à mão a cada execução; nada roda sozinho.
+5. **Várias frentes escrevendo na `main` ao mesmo tempo.** Já houve conflito
+   entre a rotina e uma sessão manual no `ROADMAP.md` e no `DIARIO.md`, e o
+   `index.html` cresceu 60% num dia por sessões diferentes.
+6. **Guias em conflito com a direção comercial.** O `VISAO.md` listava rede,
+   contas, monetização e telemetria como não-objetivos; o `CLAUDE.md` proíbe
+   arquivo separado. A 0.3 deste PRD resolve a direção; os guias são
+   atualizados conforme a seção 13.6.
 
 ## 3. Objetivos do produto
 
@@ -109,14 +125,17 @@ O que existe hoje em `main`, publicado em https://llmannrich-ai.github.io/Fibula
 ## 7. Escopo funcional
 
 ### 7.1 Personagem
-- Nome único, aparência (outfit do pacote de arte) e **vocação**: 4 no
-  lançamento, com nomes próprios (padrão na seção 15).
-- Curva de XP lenta; atributos derivados (vida, mana, dano, defesa).
-- 3 habilidades ativas + 1 consumível na tela da incursão, liberadas por nível e
-  vocação.
+- **Já existe (Etapa 3):** 4 classes — Feiticeiro, Druida, Caçador, Cavaleiro —
+  diferenciadas por taxa de crescimento; três moedas (nível, magia, perícia);
+  grimório com slots por nível. Fórmulas em `docs/analise-tibia-habilidades.md`.
+- **Falta:** nome do personagem, aparência (outfit do pacote de arte), vários
+  personagens por conta (F1) e personagem no servidor (F1/F2).
+- Na tela da incursão: no máximo 3 habilidades ativas + 1 consumível (pilar 3
+  do `VISAO.md`).
 
 ### 7.2 Itens e equipamento
-- Slots: arma, escudo/foco, elmo, armadura, calça, botas, amuleto, anel.
+- Começa com 3 slots (arma, armadura, amuleto), como no `ROADMAP.md`. Pode
+  crescer até 6, nunca aos 11 do Tibia (não-objetivo do `VISAO.md`).
 - Raridades: comum, incomum, raro, épico, com atributos sorteados em faixas.
 - Equipamento vestido não cai na morte; só o saco.
 - Venda para NPC; mercado entre jogadores na F3.
@@ -169,6 +188,12 @@ mantido pela comunidade OpenTibia, licença **Creative Commons Atribuição 4.0
   32 px com fundo magenta (#FF00FF) como transparência; categorias
   `creatures` (8 folhas), `equipment`, `tiles`, `walls`, `doors`, `nature`,
   `town` e `misc`; criaturas com 4 direções e quadros de caminhada.
+- **Onde ficam:** pasta `assets/` no repositório, servida pelo próprio GitHub
+  Pages no mesmo endereço do jogo. Isso não é dependência externa — não há
+  outro servidor nem biblioteca. A regra do `CLAUDE.md` que proibia arquivo
+  separado existia para o jogo abrir instantâneo e caber inteiro na leitura de
+  um agente; sprites carregados por bioma, em atlas pequenos, preservam o
+  primeiro motivo, e imagens não precisam ser lidas pelos agentes.
 - **Regras para os agentes:**
   1. Copiar para `assets/otsp/` apenas as folhas usadas, com `LICENSE.txt` e
      `AUTHORS.md` do pacote.
@@ -192,7 +217,7 @@ sem impedir o multiplayer.
 | Camada | Escolha | Motivo |
 |---|---|---|
 | Linguagem | JavaScript moderno com módulos ES, checado por `tsc --checkJs` (tipos em JSDoc) | Tipagem para os agentes sem passo de build; o mesmo código roda no navegador e no Node |
-| Estrutura | `index.html` (raiz) · `src/sim/` (regras puras) · `src/client/` (render, input, telas) · `src/data/` (monstros, itens, textos) · `server/` (F2) · `tests/` · `tools/` · `assets/` | Separa o que o servidor precisa do que é tela |
+| Estrutura | **Divisão em andamento noutra sessão do dono.** Os agentes não refazem nem reorganizam essa divisão; adaptam-se ao que ela entregar. O que o PRD exige dela: regras de jogo (simulação) em módulos sem DOM, separadas de desenho, entrada e telas; tabelas de dados (`CLASSES`, `SPELLS`, `MT`, `ITEMS`, `LOOT`, `UP`) num lugar só; `index.html` continua na raiz. Pastas novas previstas: `server/` (F2), `tests/`, `tools/`, `assets/` | O que o servidor precisa fica separado do que é tela |
 | Cliente | Canvas 2D próprio, sprites em atlas, PWA (manifest + service worker) | Evolução do que já funciona; instalável na tela inicial |
 | Publicação | GitHub Pages a partir da `main` (sem build) | Já funciona; nada para configurar |
 | Testes | `node --test` (regras, save, geração de mapa com semente) + Playwright em viewport 360×640 (fluxos: menu → incursão → extração/morte → mercador) | Zero dependência para o núcleo; Chromium já existe no ambiente dos agentes |
@@ -211,7 +236,7 @@ pesquisa sem código.
 
 | Fase | Entrega | Pronto quando |
 |---|---|---|
-| **F0 · Fundação** | (1) Módulos ES e separação sim/render. (2) RNG com semente e passo fixo. (3) Testes + CI + proteção da `main`. (4) Save versionado com migração e aviso de falha. (5) Sprites OTSP no lugar das formas atuais. (6) PWA instalável. | Jogo jogável no Pages com sprites; mesma semente gera o mesmo mapa e o mesmo resultado nos testes; CI obrigatória para mesclar; save antigo migra sem perda (teste automatizado); Playwright cobre o fluxo completo em 360×640 |
+| **F0 · Fundação** | (1) Divisão do `index.html` (sessão do dono, em andamento) e fronteira sim/render. (2) RNG com semente e passo fixo. (3) Testes + CI + proteção da `main`. (4) Aviso de falha de save e teste da migração v1→v2. (5) Sprites OTSP no lugar das formas atuais. (6) Fontes embutidas e PWA instalável. Itens de jogo do `ROADMAP.md` continuam em paralelo. | Jogo jogável no Pages com sprites; mesma semente gera o mesmo mapa e o mesmo resultado nos testes; CI obrigatória para mesclar; save antigo migra sem perda (teste automatizado); Playwright cobre o fluxo completo em 360×640 |
 | **F1 · Personagem** | Contas Supabase, save no servidor, 4 vocações, equipamento com slots, 2º bioma, créditos, telemetria mínima | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op** | Servidor autoritativo, salas de 1 a 4, convite por link, reconexão | 4 celulares completam incursão juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Hub compartilhado, chat com filtro, grupos, guildas, mercado | 100 simultâneos estáveis em teste de carga; moderação básica (denúncia, silenciar, banir) |
@@ -237,8 +262,13 @@ pesquisa sem código.
 | **Balanceamento** | Roda simulações com semente (economia, dificuldade, XP) e abre issues com números | 1×/semana (a partir do fim da F0) | Não |
 
 ### 13.2 Regras comuns
-1. **Nenhum commit direto na `main`**, exceto `ROADMAP.md` e `DIARIO.md`. Todo
-   código entra por PR com CI verde.
+1. **Transição de processo (decisão de 2026-10-18):**
+   - **Até a CI existir e a `main` estar protegida (C3):** commit direto na
+     `main`, como hoje, com os portões do `CLAUDE.md` (sintaxe, teste
+     headless, `git fetch` antes de escrever em `ROADMAP.md`/`DIARIO.md`).
+     Criar a CI é o primeiro item técnico da F0.
+   - **Depois:** nenhum commit direto na `main`, exceto `ROADMAP.md` e
+     `DIARIO.md`. Todo código entra por PR com CI verde, e o Revisor mescla.
 2. **Uma issue por PR**, com menos de ~400 linhas alteradas (exceção registrada
    no PR).
 3. **PRs sensíveis esperam o dono** (rótulo `precisa-do-dono`): formato do save
@@ -271,7 +301,24 @@ pesquisa sem código.
 - O agente atual (seção 2) é desligado quando os quatro agentes novos
   estiverem criados.
 
-### 13.5 Papel do dono, pelo celular
+### 13.5 Convivência com sessões manuais
+O dono também desenvolve em sessões manuais (computador e celular). Para não
+colidir:
+- Sessão manual que vai mexer em algo grande cria uma issue `em-andamento`
+  descrevendo o escopo; agentes não tocam nos mesmos arquivos ou seções
+  enquanto ela estiver aberta.
+- A divisão do `index.html` (seção 10) é tratada assim: até ela chegar na
+  `main`, agentes só fazem mudanças pequenas no `index.html`, e nenhuma
+  reorganização.
+
+### 13.6 Atualização dos guias
+- `VISAO.md`: não-objetivos de rede, contas, monetização e telemetria
+  removidos na 0.3 deste PRD (ver o próprio arquivo).
+- `CLAUDE.md`: a regra "um arquivo" e a seção de testes serão reescritas pela
+  sessão que faz a divisão, quando ela chegar na `main`. Até lá, vale o
+  `CLAUDE.md` atual para *como* mexer no código.
+
+### 13.7 Papel do dono, pelo celular
 - Responder issues `decisao-do-dono` (meta: em até 72 h).
 - Aprovar PRs `precisa-do-dono`.
 - Jogar a versão no ar ao fim de cada fase e abrir issues `feedback` (texto
@@ -302,11 +349,10 @@ sem resposta em 72 h, exceto as marcadas como sensíveis.
 | # | Decisão | Padrão se o dono não responder | Precisa responder até |
 |---|---|---|---|
 | D1 | PvP | Arenas opcionais na F3+; nunca PvP aberto | Início da F3 |
-| D2 | Nomes e identidade das 4 vocações | Agente de Produto propõe 3 conjuntos em issue; aplica o primeiro | Início da F1 |
-| D3 | Teto mensal de infraestrutura (**sensível**) | Nenhum gasto até o dono definir; trabalho de F2 para no deploy | Início da F2 |
-| D4 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord/Reddit); dono convida | Fim da F0 |
-| D5 | Nome comercial (**sensível**) | Manter "Fibula" até verificação no INPI | Início da F4 |
-| D6 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Criação das tarefas (C1) |
+| D2 | Teto mensal de infraestrutura (**sensível**) | Nenhum gasto até o dono definir; trabalho de F2 para no deploy | Início da F2 |
+| D3 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord/Reddit); dono convida | Fim da F0 |
+| D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificação no INPI | Início da F4 |
+| D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Criação das tarefas (C1) |
 
 ## 16. Fora do escopo
 
@@ -327,4 +373,4 @@ sem resposta em 72 h, exceto as marcadas como sensíveis.
 | Lacunas no pacote de arte | Médio | Ordem de preenchimento da seção 9 |
 | Trapaça e economia quebrada | Alto | Servidor autoritativo a partir da F2 |
 | Retenção baixa | Alto | Testadores reais na F1 antes de investir no multiplayer |
-| Custo de servidor | Médio | Teto definido pelo dono (D3); teste de carga na F3 |
+| Custo de servidor | Médio | Teto definido pelo dono (D2); teste de carga na F3 |
