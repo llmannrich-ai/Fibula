@@ -9,6 +9,7 @@ Protótipo jogável de um RPG de extração para celular.
 - Arraste o lado esquerdo da tela para andar.
 - Segure **Faísca** para atacar o monstro mais próximo; **Runa** causa dano em área; **Poção** cura.
 - O portal de saída abre aos 1:30. Fique 2,5 s nele para extrair. Se morrer, perde o loot do saco.
+- Com o portal aberto, uma bússola aparece ao lado do minimapa apontando a direção dele.
 - Teclado: WASD anda, J Faísca, K Runa, L Poção.
 
 ## Entre incursões (Etapa 2)

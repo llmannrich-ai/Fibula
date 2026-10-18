@@ -1,11 +1,13 @@
 # Roadmap do Fibula
 
 Contrato entre execuções do ciclo automático. `Agora` tem **um** item por vez.
-Ao concluir, mova para `Concluído` com a data e promova o primeiro de `Próximo`.
+Ao concluir, mova para `Concluído` com a data e o commit, e promova o primeiro
+de `Próximo`.
 
 Todo item aqui precisa ter passado pelas quatro perguntas de
 [VISAO.md](VISAO.md), e cada um declara o pilar que serve. Item sem pilar não
-entra na lista.
+entra na lista. Cada item também diz **quando está pronto** — sem isso o ciclo
+automático não tem como saber que terminou.
 
 ---
 
@@ -14,9 +16,9 @@ entra na lista.
 ### Peso de verdade na morte: perder parte do XP, não só o saco
 
 **Pilar 1.** Hoje a morte custa apenas o loot que estava no saco, e a
-experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio sair
-de graça: no começo da incursão não existe decisão nenhuma, porque não há nada a
-perder. O risco só começa a existir depois do primeiro loot bom.
+experiência ganha na incursão fica inteira. Isso faz morrer com o saco vazio
+sair de graça: no começo da incursão não existe decisão nenhuma, porque não há
+nada a perder. O risco só começa a existir depois do primeiro loot bom.
 
 O que fazer: morrer passa a custar também uma fatia do progresso dentro do nível
 atual (candidato inicial: 25% do XP acumulado no nível, sem nunca descer de
@@ -30,11 +32,35 @@ recuar mais de duas incursões, está alta demais. Comece em 25%, jogue, ajuste.
 Não implemente proteção contra isso no Mercador nesta etapa — o Selo de
 resguardo cobre loot, e misturar as duas coisas confunde a leitura.
 
+**Pronto quando:** morrer reduz o XP do nível atual, a tela final mostra a perda
+em linha própria, o menu avisa a regra antes de entrar, e o save sobrevive a um
+recarregamento com o valor reduzido.
+
 ---
 
 ## Próximo
 
-### 1. Escolha de risco na entrada: três profundidades
+### 1. Aviso quando o save não persiste
+
+**Pilar 5.** Em modo privado, ou com `localStorage` bloqueado, o progresso
+simplesmente não é salvo e o jogador não é avisado — ele joga, evolui e perde
+tudo ao fechar. O `catch` de `persist()` está vazio. Progresso que não persiste
+não é progresso, e isso ataca o pilar 5 na raiz.
+
+**Pronto quando:** um aviso no menu aparece se `persist()` tiver falhado ao
+menos uma vez, sem alterar o formato do save.
+
+### 2. Revisar a economia do Selo de resguardo
+
+**Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
+reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
+para proteger. Fica mais urgente depois que a morte passar a custar XP, porque
+as duas coisas somadas mudam a conta toda.
+
+**Pronto quando:** custo ou percentual ajustado, com a justificativa escrita no
+diário.
+
+### 3. Escolha de risco na entrada: três profundidades
 
 **Pilares 2 e 4.** Antes de entrar, o jogador escolhe entre três profundidades,
 cada uma com multiplicador de dano dos monstros e de valor do loot. O mundo
@@ -42,30 +68,67 @@ deixa de se ajustar ao jogador: a profundidade funda é entrável no nível 1 e 
 burrice entrar. É a forma mais barata de criar a sensação de mundo indiferente,
 e transforma cada incursão numa decisão antes mesmo de começar.
 
-### 2. Equipamento persistente com três slots
+**Pronto quando:** as três opções aparecem no menu, afetam `spawn()` e a tabela
+de loot, e a escolha some do caminho de quem só quer jogar (uma fica como
+padrão).
+
+### 4. Equipamento persistente com três slots
 
 **Pilares 2 e 5.** Arma, armadura e amuleto. O loot raro que hoje é só número
 (espada enferrujada, amuleto tribal, gema rubra) passa a ter uso: equipar em vez
 de vender. Isso dá ao jogador o momento Tibia de encontrar algo que muda o
-personagem, e cria um segundo ralo para o cofre, já que o Mercador pode vender
-e melhorar equipamento.
+personagem, e cria um segundo ralo para o cofre.
 
 Atenção ao pilar 3: no máximo três slots, tela própria, nenhum arrastar e soltar.
 
-### 3. Lugares com nome em vez de uma masmorra genérica
+**Pronto quando:** os três slots persistem no save, afetam `stats()`, e dá para
+equipar e desequipar numa tela só, com o dedo.
 
-**Pilar 2.** Três mapas com tema, paleta e lista de monstros próprios — Esgoto,
-Cripta, Acampamento Orc — escolhidos no menu. Reaproveita `genMap()` com
-parâmetros diferentes e troca a tabela de spawn. O jogador passa a dizer para
-onde vai.
-
-### 4. Sair cedo precisa ser uma jogada válida
+### 5. Sair cedo precisa ser uma jogada válida
 
 **Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
 ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
 testar: o portal custar uma fatia do saco se usado cedo, ou o valor do loot
 crescer com o tempo de permanência, ou o portal ter uma janela que fecha e
 reabre. Precisa de teste de jogo, não só de implementação.
+
+**Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
+sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
+
+### 6. Lugares com nome em vez de uma masmorra genérica
+
+**Pilar 2.** Três mapas com tema, paleta e lista de monstros próprios — Esgoto,
+Cripta, Acampamento Orc — escolhidos no menu. Reaproveita `genMap()` com
+parâmetros diferentes e troca a tabela de spawn. O jogador passa a dizer para
+onde vai.
+
+**Pronto quando:** os três lugares têm nome no menu, monstros distintos e paleta
+distinta.
+
+### 7. Monstro novo para variar a sala do Guardião
+
+**Pilar 2.** Hoje só orc e xamã acompanham o chefe, então a sala final é sempre
+igual. Um acompanhante raro com loot próprio dá à sala do Guardião a chance de
+surpreender.
+
+**Pronto quando:** um monstro novo aparece ocasionalmente nessa sala, com
+entrada própria em `MT` e em `LOOT`.
+
+### 8. Revisar a escala de HP dos monstros em níveis altos
+
+**Pilar 4.** Monstros escalam com `save.lvl`, o que pode tornar a incursão lenta
+e repetitiva para jogador avançado — e incursão lenta briga direto com o teto de
+dez minutos.
+
+**Pronto quando:** a curva foi revisada contra dois ou três níveis de referência
+e o resultado está no diário.
+
+### 9. Log legível em tela estreita
+
+**Pilar 3.** O `#log` usa `width:min(66vw,330px)` sobre o canvas; o
+empilhamento abaixo de 340px de largura nunca foi verificado.
+
+**Pronto quando:** testado num viewport de 320px e ajustado se preciso.
 
 ---
 
@@ -77,6 +140,11 @@ reabre. Precisa de teste de jogo, não só de implementação.
   (pilar 3). Duas saídas: embutir os dois pesos como `@font-face` com fonte em
   base64 no próprio arquivo, ou trocar por pilha de fontes do sistema e aceitar
   a perda estética. Pré-requisito para o PWA abrir offline de verdade.
+- **Harness de teste no repositório** — um script em `tools/` que gere os dois
+  harness headless descritos no [CLAUDE.md](CLAUDE.md) (menu com loja, e
+  incursão ativa) e retorne código de saída diferente de zero quando o
+  `data-errs` aparecer. Hoje cada execução monta o `test.html` do zero, o que
+  convida a pular o teste.
 - **Rastro assíncrono de outros jogadores** — placar local, marca de morte no
   mapa onde a última incursão terminou, recorde a ser batido. Sensação de MMO
   sem rede (pilar 2).
@@ -96,14 +164,16 @@ reabre. Precisa de teste de jogo, não só de implementação.
 
 ## Concluído
 
-- **2026-10-18 — Etapa 1: protótipo jogável.** Incursão de 6 minutos com mapa
-  gerado, cinco tipos de monstro mais o Guardião do Portal, campo de fluxo para
-  perseguição, loot por tabela de raridade, portal de extração aos 1:30, morte
-  com perda do saco, HUD, minimapa e joystick virtual.
-- **2026-10-18 — Etapa 2: cofre e Mercador.** O ouro extraído passa a ir para o
-  cofre, e o cofre tem onde ser gasto: cinco melhorias permanentes com preço
-  geométrico (Vigor, Foco, Poder arcano, Bolsa de poções, Selo de resguardo).
-- **2026-10-18 — Correção do tempo exibido na tela final.**
-- **2026-10-18 — Base de orientação para IA.** `CLAUDE.md`, `VISAO.md`,
-  `ROADMAP.md` e `DIARIO.md`, para que sessões manuais e o ciclo automático
-  trabalhem com o mesmo contrato.
+- **2026-10-18 — Base de orientação para IA** (`e13649f`). `CLAUDE.md`,
+  `VISAO.md`, `AGENTS.md`, e formato para `ROADMAP.md` e `DIARIO.md`.
+- **2026-10-18 — Guarda contra loop infinito em `genMap()`** (`f6c53ef`).
+  Limite de tentativas e fallback para o melhor mapa encontrado.
+- **2026-10-18 — Bússola apontando para o portal** (`fb877b1`, PR #1).
+- **2026-10-18 — Correção do tempo exibido na tela final** (`9a7e4db`).
+- **2026-10-18 — Etapa 2: cofre e Mercador** (`ca4b5e7`). O ouro extraído passa
+  a ir para o cofre, e o cofre tem onde ser gasto: cinco melhorias permanentes
+  com preço geométrico.
+- **2026-10-18 — Etapa 1: protótipo jogável** (`b451196`). Incursão de 6 minutos
+  com mapa gerado, cinco tipos de monstro mais o Guardião do Portal, campo de
+  fluxo para perseguição, loot por raridade, portal de extração, morte com
+  perda do saco, HUD, minimapa e joystick virtual.

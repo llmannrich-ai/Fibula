@@ -20,7 +20,7 @@ raiz do repositório).
 
 ## Regra número um: um arquivo, uma dependência
 
-Todo o jogo é o [index.html](index.html) — hoje ~860 linhas. Não há build, não
+Todo o jogo é o [index.html](index.html) — hoje ~870 linhas. Não há build, não
 há `package.json`, não há import, não há arquivo `.js` ou `.css` separado. O
 GitHub Pages serve o arquivo cru, e o `.nojekyll` existe para ele não ser
 processado.
@@ -41,12 +41,15 @@ Leonardo antes de fazer.
 
 ## Mapa do index.html
 
+Os números abaixo valem para o arquivo de 871 linhas de 18/10/2026 e envelhecem
+a cada commit — se divergirem, confie nos marcadores de seção, que são estáveis.
+
 | Linhas | Bloco | Conteúdo |
 |---|---|---|
-| 3–132 | `<head>` | meta de viewport e de app móvel, estilo crítico inline (11), título, fontes externas (13–15) |
-| 16–130 | `<style>` | todo o CSS: HUD, telas, botões, joystick |
-| 133–213 | markup | `#app`, canvas, HUD, `#menu`, `#end`, `#shop`, `#joy` |
-| 214–858 | `<script>` | o jogo, numa IIFE em modo estrito |
+| 3–134 | `<head>` | meta de viewport e de app móvel, estilo crítico inline (11), título, fontes externas (13–15) |
+| 16–132 | `<style>` | todo o CSS: HUD, telas, botões, joystick, bússola |
+| 135–216 | markup | `#app`, canvas, HUD, `#compass`, `#menu`, `#end`, `#shop`, `#joy` |
+| 217–868 | `<script>` | o jogo, numa IIFE em modo estrito |
 
 O script é dividido por comentários de seção `/* ---------- nome ---------- */`.
 **Mantenha essa divisão** e coloque código novo na seção certa:
@@ -54,7 +57,7 @@ O script é dividido por comentários de seção `/* ---------- nome ---------- 
 - **progresso salvo** — `KEY`, `save`, `persist()`, `xpNeed()`, `stats()`
 - **melhorias permanentes** — tabela `UP`, `upCost()`, `sealPct()`
 - **dados do jogo** — tabelas `MT` (monstros), `ITEMS`, `LOOT`
-- **mapa** — `genMap()`, `corridor()`, `carve()`
+- **mapa** — `genMap()`, `carveRooms()`, `corridor()`, `carve()`
 - **estado da incursão** — `newRun()`, `spawn()`, `pickType()`
 - **física** — `solid()`, `blocked()`, `move()`, `buildFlow()`, `reveal()`
 - **efeitos e mensagens** — `log()`, `banner()`, `num()`, `shake()`, `spark()`
@@ -192,7 +195,13 @@ Dois arquivos são o contrato entre execuções, ambos na raiz da `main`:
   `Concluído`. `Agora` tem **um** item. Ao terminar, mova para `Concluído` com a
   data e promova o próximo.
 - **[DIARIO.md](DIARIO.md)** — uma entrada por execução, mais recente no topo,
-  máximo 20. Diga o que mudou, o que você testou e o que ficou torto.
+  máximo 20. O formato das sete partes está no cabeçalho do próprio arquivo;
+  siga-o. A parte que mais importa é **Pendências e riscos**: é o que a próxima
+  execução precisa saber e não vai descobrir lendo o código.
+
+Antes de escrever em qualquer um dos dois, faça `git fetch` e leia a versão da
+`main`. Já aconteceu de uma sessão manual e o ciclo automático escreverem os
+dois arquivos em paralelo e ser preciso mesclar à mão.
 
 Mensagem de commit em português, no imperativo, descrevendo o efeito para o
 jogador — não o arquivo tocado. "Adiciona o Mercador: o cofre agora tem onde ser
