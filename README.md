@@ -81,15 +81,28 @@ A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
 convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os
 não-objetivos), [ROADMAP.md](ROADMAP.md) e [DIARIO.md](DIARIO.md).
 
-Além disso, [`data/mechanics/`](data/mechanics/README.md) guarda uma base de
-referência de combate, classes, itens e inimigos, derivada de um servidor open
-source por [`tools/extract-mechanics.ps1`](tools/extract-mechanics.ps1). É
-material de consulta para balanceamento: **o jogo não lê esses arquivos em
-runtime**.
+O conteúdo do jogo não fica no motor. Classes, habilidades, melhorias do
+Mercador, inimigos, itens, loot e progressão moram em
+[`data/game/content.json`](data/game/content.json), que o `index.html` carrega
+antes de iniciar. Ajustar balanceamento — o custo de uma melhoria, o dano de
+uma habilidade, a vida de um monstro, a composição das salas — é editar esse
+arquivo, sem tocar em código. O carregamento valida o arquivo antes de liberar
+o jogo: se uma tabela de loot citar um item que não existe, ou os pesos de uma
+banda não somarem 1, o menu diz o que está errado em vez de abrir uma masmorra
+quebrada.
 
-Para servir a pasta por HTTP num teste local (opcional — o `index.html` também
-abre direto do disco):
+Além disso, [`data/mechanics/`](data/mechanics/README.md) guarda a base de
+referência de onde saiu esse balanceamento — combate, classes, itens e
+inimigos de um servidor open source, extraídos por
+[`tools/extract-mechanics.ps1`](tools/extract-mechanics.ps1). É material de
+consulta: **o jogo não lê esses arquivos em runtime**, só o `content.json`.
+
+Como o jogo busca o `content.json` por rede, **abrir o `index.html` direto do
+disco não funciona** — o navegador bloqueia `fetch` em `file://` e o menu
+avisa. Para rodar local, sirva a pasta por HTTP:
 
 ```bash
 powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 ```
+
+e abra http://localhost:8080/. No GitHub Pages funciona direto.

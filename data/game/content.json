@@ -1,0 +1,950 @@
+{
+  "_meta": {
+    "about": "Conteudo do Fibula: classes, habilidades, melhorias, inimigos, itens, loot e progressao. Carregado em runtime por index.html.",
+    "schemaVersion": 2,
+    "aviso": "Gerado a partir dos literais que estavam no index.html. Ajuste de balanceamento se faz aqui, sem tocar no motor.",
+    "tierReference": "O campo tier de cada inimigo aponta a banda equivalente em ../mechanics/tiers.json (por HP).",
+    "lootFormat": "[chaveDoItem, probabilidade, quantidadeMin, quantidadeMax]",
+    "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)"
+  },
+  "classes": {
+    "feiticeiro": {
+      "nome": "Feiticeiro",
+      "tag": "Fogo e energia",
+      "hp": 85,
+      "mp": 95,
+      "ghp": 6,
+      "gmp": 16,
+      "rhp": 1,
+      "rmp": 8.5,
+      "mMult": 1.09,
+      "pMult": 2,
+      "red": 0,
+      "desc": "Pouca vida, muita mana. Dano bruto e área. Cresce em Magia mais rápido que qualquer um.",
+      "sil": "mago",
+      "cor": {
+        "manto": "#3a3f8f",
+        "gola": "#2a2d6e",
+        "arma": "#8a6640",
+        "orbe": "#ffd27a"
+      }
+    },
+    "druida": {
+      "nome": "Druida",
+      "tag": "Gelo e terra",
+      "hp": 92,
+      "mp": 88,
+      "ghp": 7,
+      "gmp": 15,
+      "rhp": 1.1,
+      "rmp": 8,
+      "mMult": 1.09,
+      "pMult": 1.8,
+      "red": 0.06,
+      "desc": "A única classe que se cura sozinha. Controla o campo com lentidão e veneno.",
+      "sil": "mago",
+      "cor": {
+        "manto": "#2f6b46",
+        "gola": "#215033",
+        "arma": "#6f5a3a",
+        "orbe": "#9cf0c0"
+      }
+    },
+    "cacador": {
+      "nome": "Caçador",
+      "tag": "Distância",
+      "hp": 110,
+      "mp": 70,
+      "ghp": 11,
+      "gmp": 10,
+      "rhp": 1.6,
+      "rmp": 5.5,
+      "mMult": 1.22,
+      "pMult": 1.2,
+      "red": 0.14,
+      "desc": "Alcance longo e pés rápidos. Escala em Perícia, mas precisa de Magia para os golpes sagrados.",
+      "sil": "arqueiro",
+      "cor": {
+        "manto": "#4a6b2f",
+        "gola": "#35501f",
+        "arma": "#7a5a36",
+        "orbe": "#d9c7a0"
+      }
+    },
+    "cavaleiro": {
+      "nome": "Cavaleiro",
+      "tag": "Corpo a corpo",
+      "hp": 135,
+      "mp": 45,
+      "ghp": 17,
+      "gmp": 4,
+      "rhp": 2.6,
+      "rmp": 2.6,
+      "mMult": 1.9,
+      "pMult": 1.1,
+      "red": 0.28,
+      "desc": "Bate de graça e aguenta pancada. Mana curta: as técnicas são raras e pesadas.",
+      "sil": "guerreiro",
+      "cor": {
+        "manto": "#6b6577",
+        "gola": "#4e4958",
+        "arma": "#b9b3a4",
+        "orbe": "#ffb84d"
+      }
+    }
+  },
+  "classOrder": [
+    "feiticeiro",
+    "druida",
+    "cacador",
+    "cavaleiro"
+  ],
+  "slotLevels": [
+    1,
+    1,
+    8,
+    18
+  ],
+  "spells": {
+    "faisca": {
+      "c": "feiticeiro",
+      "n": "Faísca",
+      "k": "Faísca",
+      "w": "adori flam",
+      "lvl": 1,
+      "mana": 5,
+      "cd": 0.45,
+      "g": "ataque",
+      "gcd": 0.35,
+      "esc": "mag",
+      "t": "proj",
+      "el": "fogo",
+      "a1": 2,
+      "a2": 3.2,
+      "b1": 6,
+      "b2": 10,
+      "alc": 7,
+      "d": "Dardo de fogo que persegue o alvo mais próximo."
+    },
+    "flam": {
+      "c": "feiticeiro",
+      "n": "Golpe Flamejante",
+      "k": "Chamas",
+      "w": "exori flam",
+      "lvl": 4,
+      "mana": 22,
+      "cd": 2,
+      "g": "ataque",
+      "gcd": 1.2,
+      "esc": "mag",
+      "t": "proj",
+      "el": "fogo",
+      "a1": 4,
+      "a2": 6,
+      "b1": 10,
+      "b2": 16,
+      "alc": 7,
+      "dot": {
+        "dur": 4,
+        "f": 0.14
+      },
+      "d": "Impacto de fogo que deixa o alvo queimando por 4 s."
+    },
+    "ondafogo": {
+      "c": "feiticeiro",
+      "n": "Onda de Fogo",
+      "k": "Onda",
+      "w": "exevo flam hur",
+      "lvl": 9,
+      "mana": 42,
+      "cd": 4,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "mag",
+      "t": "cone",
+      "el": "fogo",
+      "a1": 3.2,
+      "a2": 4.8,
+      "b1": 8,
+      "b2": 12,
+      "raio": 118,
+      "ang": 1.15,
+      "d": "Leque de chamas na direção em que você olha."
+    },
+    "bolaenergia": {
+      "c": "feiticeiro",
+      "n": "Bola de Energia",
+      "k": "Bola",
+      "w": "adevo mas vis",
+      "lvl": 15,
+      "mana": 55,
+      "cd": 5,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "mag",
+      "t": "bomba",
+      "el": "energia",
+      "a1": 5,
+      "a2": 7.5,
+      "b1": 14,
+      "b2": 22,
+      "alc": 6.5,
+      "raio": 76,
+      "d": "Esfera arremessada que explode em área."
+    },
+    "relampago": {
+      "c": "feiticeiro",
+      "n": "Relâmpago",
+      "k": "Raio",
+      "w": "exori vis",
+      "lvl": 22,
+      "mana": 70,
+      "cd": 7,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "mag",
+      "t": "feixe",
+      "el": "energia",
+      "a1": 6,
+      "a2": 9,
+      "b1": 18,
+      "b2": 26,
+      "raio": 300,
+      "d": "Raio reto que atravessa tudo na linha de visão."
+    },
+    "nucleo": {
+      "c": "feiticeiro",
+      "n": "Núcleo Infernal",
+      "k": "Núcleo",
+      "w": "exevo gran mas flam",
+      "lvl": 32,
+      "mana": 170,
+      "cd": 26,
+      "g": "ataque",
+      "gcd": 2,
+      "esc": "mag",
+      "t": "aura",
+      "el": "fogo",
+      "a1": 9,
+      "a2": 13,
+      "b1": 30,
+      "b2": 45,
+      "raio": 152,
+      "dot": {
+        "dur": 5,
+        "f": 0.1
+      },
+      "d": "Erupção ao seu redor. Tudo que sobrevive sai queimando."
+    },
+    "gelo": {
+      "c": "druida",
+      "n": "Fagulha Gélida",
+      "k": "Fagulha",
+      "w": "adori frigo",
+      "lvl": 1,
+      "mana": 5,
+      "cd": 0.45,
+      "g": "ataque",
+      "gcd": 0.35,
+      "esc": "mag",
+      "t": "proj",
+      "el": "gelo",
+      "a1": 1.8,
+      "a2": 2.9,
+      "b1": 5,
+      "b2": 9,
+      "alc": 7,
+      "lento": {
+        "dur": 1.2,
+        "f": 0.72
+      },
+      "d": "Estilhaço de gelo que ainda por cima retarda o alvo."
+    },
+    "exura": {
+      "c": "druida",
+      "n": "Cura Leve",
+      "k": "Cura",
+      "w": "exura",
+      "lvl": 3,
+      "mana": 24,
+      "cd": 1.6,
+      "g": "cura",
+      "gcd": 1,
+      "esc": "mag",
+      "t": "cura",
+      "a1": 3,
+      "a2": 4,
+      "b1": 14,
+      "b2": 20,
+      "d": "Fecha ferimentos. Escala com Magia, não com poções."
+    },
+    "tera": {
+      "c": "druida",
+      "n": "Golpe de Terra",
+      "k": "Terra",
+      "w": "exori tera",
+      "lvl": 7,
+      "mana": 22,
+      "cd": 2,
+      "g": "ataque",
+      "gcd": 1.2,
+      "esc": "mag",
+      "t": "proj",
+      "el": "terra",
+      "a1": 3.6,
+      "a2": 5.4,
+      "b1": 9,
+      "b2": 14,
+      "alc": 7,
+      "dot": {
+        "dur": 6,
+        "f": 0.1
+      },
+      "d": "Lama venenosa: dano menor, mas corrói por 6 s."
+    },
+    "avalanche": {
+      "c": "druida",
+      "n": "Avalanche",
+      "k": "Avalanche",
+      "w": "adevo mas frigo",
+      "lvl": 13,
+      "mana": 50,
+      "cd": 4.5,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "mag",
+      "t": "bomba",
+      "el": "gelo",
+      "a1": 4.4,
+      "a2": 6.6,
+      "b1": 12,
+      "b2": 18,
+      "alc": 6.5,
+      "raio": 78,
+      "lento": {
+        "dur": 2.5,
+        "f": 0.5
+      },
+      "d": "Queda de gelo em área que deixa tudo lento."
+    },
+    "raizes": {
+      "c": "druida",
+      "n": "Raízes Vorazes",
+      "k": "Raízes",
+      "w": "exevo tera hur",
+      "lvl": 20,
+      "mana": 62,
+      "cd": 8,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "mag",
+      "t": "aura",
+      "el": "terra",
+      "a1": 5.2,
+      "a2": 7.8,
+      "b1": 15,
+      "b2": 22,
+      "raio": 124,
+      "lento": {
+        "dur": 3,
+        "f": 0.28
+      },
+      "d": "Raízes prendem quase no lugar tudo ao seu redor."
+    },
+    "inverno": {
+      "c": "druida",
+      "n": "Inverno Eterno",
+      "k": "Inverno",
+      "w": "exevo gran mas frigo",
+      "lvl": 32,
+      "mana": 165,
+      "cd": 26,
+      "g": "ataque",
+      "gcd": 2,
+      "esc": "mag",
+      "t": "aura",
+      "el": "gelo",
+      "a1": 8.4,
+      "a2": 12.2,
+      "b1": 28,
+      "b2": 42,
+      "raio": 152,
+      "lento": {
+        "dur": 4,
+        "f": 0.45
+      },
+      "d": "O chão congela num raio enorme."
+    },
+    "flecha": {
+      "c": "cacador",
+      "n": "Flecha Conjurada",
+      "k": "Flecha",
+      "w": "exevo con",
+      "lvl": 1,
+      "mana": 3,
+      "cd": 0.42,
+      "g": "ataque",
+      "gcd": 0.32,
+      "esc": "per",
+      "t": "proj",
+      "el": "fisico",
+      "a1": 0.9,
+      "a2": 1.5,
+      "b1": 3,
+      "b2": 6,
+      "alc": 9,
+      "d": "Alcance maior que o de qualquer magia. Escala com Perícia."
+    },
+    "lanca": {
+      "c": "cacador",
+      "n": "Lança Etérea",
+      "k": "Lança",
+      "w": "exori con",
+      "lvl": 5,
+      "mana": 26,
+      "cd": 2,
+      "g": "ataque",
+      "gcd": 1.2,
+      "esc": "per",
+      "t": "feixe",
+      "el": "fisico",
+      "a1": 1.8,
+      "a2": 2.9,
+      "b1": 8,
+      "b2": 13,
+      "raio": 210,
+      "max": 3,
+      "d": "Perfura até três inimigos em linha."
+    },
+    "missil": {
+      "c": "cacador",
+      "n": "Míssil Divino",
+      "k": "Míssil",
+      "w": "exori san",
+      "lvl": 11,
+      "mana": 24,
+      "cd": 2.2,
+      "g": "ataque",
+      "gcd": 1.2,
+      "esc": "mag",
+      "t": "proj",
+      "el": "sagrado",
+      "a1": 3,
+      "a2": 4.6,
+      "b1": 8,
+      "b2": 13,
+      "alc": 8,
+      "d": "Escala com Magia: o motivo de um caçador também treinar magia."
+    },
+    "pes": {
+      "c": "cacador",
+      "n": "Pés Ligeiros",
+      "k": "Pés",
+      "w": "utani tempo hur",
+      "lvl": 17,
+      "mana": 55,
+      "cd": 14,
+      "g": "apoio",
+      "gcd": 1,
+      "t": "buff",
+      "buff": {
+        "velo": 0.5,
+        "dur": 8
+      },
+      "d": "+50% de velocidade por 8 s. Serve para chegar ao portal."
+    },
+    "caldeira": {
+      "c": "cacador",
+      "n": "Caldeira Divina",
+      "k": "Caldeira",
+      "w": "exevo mas san",
+      "lvl": 24,
+      "mana": 95,
+      "cd": 5,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "mag",
+      "t": "aura",
+      "el": "sagrado",
+      "a1": 4.6,
+      "a2": 6.8,
+      "b1": 14,
+      "b2": 20,
+      "raio": 124,
+      "d": "Explosão sagrada ao seu redor, para quando cercarem você."
+    },
+    "atirador": {
+      "c": "cacador",
+      "n": "Atirador de Elite",
+      "k": "Atirador",
+      "w": "utito tempo san",
+      "lvl": 32,
+      "mana": 130,
+      "cd": 24,
+      "g": "apoio",
+      "gcd": 1,
+      "t": "buff",
+      "buff": {
+        "dano": 0.6,
+        "alc": 3,
+        "dur": 10
+      },
+      "d": "+60% de dano e +3 de alcance por 10 s."
+    },
+    "golpe": {
+      "c": "cavaleiro",
+      "n": "Golpe",
+      "k": "Golpe",
+      "w": "",
+      "lvl": 1,
+      "mana": 0,
+      "cd": 0.55,
+      "g": "ataque",
+      "gcd": 0.4,
+      "esc": "per",
+      "t": "melee",
+      "el": "fisico",
+      "a1": 0.8,
+      "a2": 1.3,
+      "b1": 2,
+      "b2": 4,
+      "raio": 48,
+      "ang": 1.1,
+      "d": "Não custa mana. O cavaleiro luta de graça; a mana é só para técnicas."
+    },
+    "brutal": {
+      "c": "cavaleiro",
+      "n": "Golpe Brutal",
+      "k": "Brutal",
+      "w": "exori ico",
+      "lvl": 4,
+      "mana": 24,
+      "cd": 5,
+      "g": "ataque",
+      "gcd": 1.2,
+      "esc": "per",
+      "t": "melee",
+      "el": "fisico",
+      "a1": 1.8,
+      "a2": 3,
+      "b1": 6,
+      "b2": 12,
+      "raio": 54,
+      "ang": 0.8,
+      "unico": true,
+      "d": "Um golpe só, no alvo da frente, com peso de três."
+    },
+    "furia": {
+      "c": "cavaleiro",
+      "n": "Fúria",
+      "k": "Fúria",
+      "w": "exori",
+      "lvl": 10,
+      "mana": 34,
+      "cd": 4,
+      "g": "ataque",
+      "gcd": 1.4,
+      "esc": "per",
+      "t": "aura",
+      "el": "fisico",
+      "a1": 1.3,
+      "a2": 2.1,
+      "b1": 5,
+      "b2": 9,
+      "raio": 64,
+      "d": "Gira a arma e atinge tudo colado em você."
+    },
+    "provocar": {
+      "c": "cavaleiro",
+      "n": "Provocar",
+      "k": "Provocar",
+      "w": "exeta res",
+      "lvl": 16,
+      "mana": 30,
+      "cd": 13,
+      "g": "apoio",
+      "gcd": 1,
+      "t": "buff",
+      "taunt": 200,
+      "buff": {
+        "arm": 0.4,
+        "dur": 6
+      },
+      "d": "Puxa a atenção de tudo por perto e reduz em 40% o dano que você recebe por 6 s."
+    },
+    "abalo": {
+      "c": "cavaleiro",
+      "n": "Abalo Sísmico",
+      "k": "Abalo",
+      "w": "exori mas",
+      "lvl": 22,
+      "mana": 52,
+      "cd": 8,
+      "g": "ataque",
+      "gcd": 1.6,
+      "esc": "per",
+      "t": "aura",
+      "el": "fisico",
+      "a1": 1.6,
+      "a2": 2.6,
+      "b1": 8,
+      "b2": 14,
+      "raio": 112,
+      "lento": {
+        "dur": 2.5,
+        "f": 0.45
+      },
+      "d": "O chão treme: dano em volta e tudo sai mancando."
+    },
+    "anulacao": {
+      "c": "cavaleiro",
+      "n": "Aniquilação",
+      "k": "Aniquilar",
+      "w": "exori gran ico",
+      "lvl": 32,
+      "mana": 75,
+      "cd": 26,
+      "g": "ataque",
+      "gcd": 2,
+      "esc": "per",
+      "t": "melee",
+      "el": "fisico",
+      "a1": 1.5,
+      "a2": 2.4,
+      "b1": 7,
+      "b2": 12,
+      "raio": 56,
+      "ang": 0.9,
+      "unico": true,
+      "multi": 4,
+      "d": "Quatro golpes encadeados no mesmo alvo."
+    }
+  },
+  "upgrades": {
+    "vigor": {
+      "nome": "Vigor",
+      "desc": "+15 de vida máxima",
+      "max": 8,
+      "base": 120,
+      "mult": 1.55
+    },
+    "foco": {
+      "nome": "Foco",
+      "desc": "+10 de mana máxima",
+      "max": 8,
+      "base": 100,
+      "mult": 1.55
+    },
+    "poder": {
+      "nome": "Poder arcano",
+      "desc": "+8% de dano em todas as habilidades",
+      "max": 8,
+      "base": 150,
+      "mult": 1.65
+    },
+    "bolsa": {
+      "nome": "Bolsa de poções",
+      "desc": "+1 poção em cada incursão",
+      "max": 4,
+      "base": 180,
+      "mult": 1.8
+    },
+    "seguro": {
+      "nome": "Selo de resguardo",
+      "desc": "guarda 20% do loot do saco se você morrer",
+      "max": 3,
+      "base": 300,
+      "mult": 2
+    }
+  },
+  "enemies": {
+    "rato": {
+      "nome": "Rato",
+      "hp": 22,
+      "spd": 72,
+      "dmg": 4,
+      "xp": 6,
+      "r": 9,
+      "atk": 0.9,
+      "tier": 1
+    },
+    "aranha": {
+      "nome": "Aranha",
+      "hp": 34,
+      "spd": 106,
+      "dmg": 6,
+      "xp": 12,
+      "r": 10,
+      "atk": 0.8,
+      "tier": 1
+    },
+    "esqueleto": {
+      "nome": "Esqueleto",
+      "hp": 62,
+      "spd": 62,
+      "dmg": 10,
+      "xp": 24,
+      "r": 11,
+      "atk": 1.1,
+      "tier": 2
+    },
+    "orc": {
+      "nome": "Orc",
+      "hp": 95,
+      "spd": 74,
+      "dmg": 14,
+      "xp": 40,
+      "r": 13,
+      "atk": 1.2,
+      "tier": 2
+    },
+    "xama": {
+      "nome": "Xamã Orc",
+      "hp": 58,
+      "spd": 58,
+      "dmg": 12,
+      "xp": 46,
+      "r": 12,
+      "atk": 1.9,
+      "ranged": true,
+      "tier": 2
+    },
+    "guardiao": {
+      "nome": "Guardião do Portal",
+      "hp": 520,
+      "spd": 54,
+      "dmg": 24,
+      "xp": 220,
+      "r": 20,
+      "atk": 1.4,
+      "boss": true,
+      "tier": 3
+    }
+  },
+  "items": {
+    "ouro": {
+      "nome": "ouro",
+      "val": 1,
+      "rar": 0
+    },
+    "dente": {
+      "nome": "dente de rato",
+      "val": 3,
+      "rar": 0
+    },
+    "seda": {
+      "nome": "seda de aranha",
+      "val": 8,
+      "rar": 0
+    },
+    "osso": {
+      "nome": "osso antigo",
+      "val": 10,
+      "rar": 0
+    },
+    "espada": {
+      "nome": "espada enferrujada",
+      "val": 20,
+      "rar": 0
+    },
+    "machado": {
+      "nome": "machado rachado",
+      "val": 28,
+      "rar": 0
+    },
+    "erva": {
+      "nome": "erva rara",
+      "val": 15,
+      "rar": 0
+    },
+    "amuleto": {
+      "nome": "amuleto tribal",
+      "val": 60,
+      "rar": 1
+    },
+    "gema": {
+      "nome": "gema rubra",
+      "val": 120,
+      "rar": 1
+    },
+    "coroa": {
+      "nome": "coroa do guardião",
+      "val": 500,
+      "rar": 2
+    }
+  },
+  "loot": {
+    "rato": [
+      [
+        "ouro",
+        0.9,
+        1,
+        4
+      ],
+      [
+        "dente",
+        0.5,
+        1,
+        1
+      ]
+    ],
+    "aranha": [
+      [
+        "ouro",
+        0.85,
+        2,
+        8
+      ],
+      [
+        "seda",
+        0.4,
+        1,
+        2
+      ],
+      [
+        "gema",
+        0.03,
+        1,
+        1
+      ]
+    ],
+    "esqueleto": [
+      [
+        "ouro",
+        0.9,
+        5,
+        14
+      ],
+      [
+        "osso",
+        0.5,
+        1,
+        2
+      ],
+      [
+        "espada",
+        0.15,
+        1,
+        1
+      ]
+    ],
+    "orc": [
+      [
+        "ouro",
+        0.9,
+        8,
+        24
+      ],
+      [
+        "machado",
+        0.25,
+        1,
+        1
+      ],
+      [
+        "amuleto",
+        0.06,
+        1,
+        1
+      ]
+    ],
+    "xama": [
+      [
+        "ouro",
+        0.9,
+        10,
+        25
+      ],
+      [
+        "erva",
+        0.35,
+        1,
+        2
+      ],
+      [
+        "amuleto",
+        0.1,
+        1,
+        1
+      ],
+      [
+        "gema",
+        0.05,
+        1,
+        1
+      ]
+    ],
+    "guardiao": [
+      [
+        "ouro",
+        1,
+        80,
+        150
+      ],
+      [
+        "coroa",
+        1,
+        1,
+        1
+      ],
+      [
+        "gema",
+        0.6,
+        1,
+        2
+      ]
+    ]
+  },
+  "progression": {
+    "_note": "depth = distancia da sala ate a entrada, normalizada em 0..1. A composicao de papeis muda com a profundidade, que e o padrao da escada extraida: tier 1 e quase todo corpo-a-corpo, tiers altos trazem ataque a distancia.",
+    "bands": [
+      {
+        "untilDepth": 0.35,
+        "tier": 1,
+        "weights": {
+          "rato": 0.6,
+          "aranha": 0.4
+        }
+      },
+      {
+        "untilDepth": 0.7,
+        "tier": 2,
+        "weights": {
+          "aranha": 0.35,
+          "esqueleto": 0.35,
+          "orc": 0.3
+        }
+      },
+      {
+        "untilDepth": 1.01,
+        "tier": 3,
+        "weights": {
+          "esqueleto": 0.35,
+          "orc": 0.35,
+          "xama": 0.3
+        }
+      }
+    ],
+    "scaling": {
+      "_note": "Crescimento comprimido de proposito: a fonte cresce ~2.7x de HP e ~3x de dps entre tiers vizinhos, o que nao cabe numa incursao curta. A troca de inimigo carrega o resto do salto.",
+      "hpPerDepth": 0.35,
+      "dmgPerDepth": 0.25,
+      "xpPerDepth": 0.4,
+      "hpPerCharLevel": 0.05,
+      "bossLevelFactor": 1.5
+    },
+    "boss": {
+      "type": "guardiao",
+      "escort": [
+        "xama",
+        "orc"
+      ]
+    },
+    "perRoom": {
+      "min": 2,
+      "max": 3,
+      "largeRoomArea": 50,
+      "largeRoomBonus": 1
+    }
+  }
+}

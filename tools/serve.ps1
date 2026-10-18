@@ -2,9 +2,10 @@
 <#
   serve.ps1 - servidor estatico minimo para rodar o Fibula localmente.
 
-  O index.html abre direto do disco, entao este servidor e opcional. Serve para
-  testar em condicoes iguais as do GitHub Pages (mesma origem, mesmos cabecalhos)
-  ou para abrir o jogo de outro aparelho na mesma rede:
+  Necessario para rodar local: o jogo carrega data/game/content.json por fetch, e
+  o navegador bloqueia isso quando a pagina e aberta direto do disco (file://).
+  Serve tambem para testar em condicoes iguais as do GitHub Pages (mesma origem,
+  mesmos cabecalhos) e para abrir o jogo de outro aparelho na mesma rede:
 
     powershell -ExecutionPolicy Bypass -File tools/serve.ps1
 
