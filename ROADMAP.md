@@ -115,6 +115,14 @@ pode desenhar pelo `.otbm` também.
 
 ## Depois
 
+- **Atlas em WebP sem perda** (pilar 5; **precisa de decisão do Leonardo**)
+  — medido em 19/10/2026: o mesmo atlas cai de 793 KB (PNG) para 422 KB
+  (WebP sem perda, os mesmos pixels), quase metade do download. O filtro de
+  linha do PNG não ajuda (794 KB). O Node não grava WebP: o `tools/sprites.mjs`
+  passaria a chamar o `cwebp` ou o Pillow, uma ferramenta de fora só na
+  montagem do atlas. **Pronto quando:** o atlas sai em WebP, o orçamento de
+  download cai e os casos `arte` e `rede-4g` passam.
+
 - **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
   raro com loot próprio; entrada em `MT` e em `LOOT`.
 - **Log legível em tela estreita** (pilar 5) — o `#log` usa

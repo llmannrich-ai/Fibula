@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 15:04 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** nenhum publicado. Pedido do Leonardo: filtro de linha no PNG do atlas. Implementado em `tools/sprites.mjs` (os cinco filtros do PNG, um para todas as linhas ou o melhor por linha, com deflate 9) e **desfeito**, porque não reduz: 794 KB contra os 793 KB de hoje.
+
+**Validação:** medições no atlas atual (1024×2144, 48.810 cores, alfa só 0 ou 255): sem filtro 794 KB; Sub 968 KB; Up 982 KB; estratégias `Z_FILTERED` e `Z_RLE` piores; PNG "otimizado" do Pillow 1.026 KB. **WebP sem perda: 422 KB (−47%), os mesmos pixels.** PNG com paleta de 256 cores: 279 KB, mas com perda de cor (o atlas tem 48 mil cores). Os itens com padrão (chão em 16 variações) são 16% dos pixels.
+
+**Análise:** pixel art com transparência já comprime bem sem filtro; o ganho de verdade está no formato. O WebP sem perda é aceito por todo navegador do público (Chrome do Android; Safari desde o iOS 14), mas o Node não tem codificador: gerar o atlas em WebP pede uma ferramenta de fora (o `cwebp` do Google ou o Pillow) no passo de montagem, só em `tools/`, nunca no navegador do jogador.
+
+**Roadmap:** entrou em `Depois` "Atlas em WebP sem perda", à espera da decisão do Leonardo sobre a ferramenta.
+
+**Pendências e riscos:** nenhum código mudou.
+
+**Próximo passo recomendado:** o Leonardo decidir se o `tools/sprites.mjs` pode chamar o `cwebp` (ou o Pillow) para gravar o atlas em WebP.
+
 ## 2026-10-19 12:06 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** orçamento de download vigiado (0.43.1), pedido do Leonardo ("temos que ter um mecanismo para garantir a velocidade rápida de download"). `tools/testar.mjs`: `orcamento()` mede antes dos casos o que o jogador baixa, como a rede leva (gzip no texto), e reprova acima de 1,8 MB (aviso em 1,2 MB); o coletor serve os casos com `rede: '4g'` a 9 Mbit/s com 170 ms por pedido e banda dividida; o caso `rede-4g` mede a primeira tela e a arte, com limite de 3 s, e imprime os dois tempos. Números em `ORCAMENTO`. O caso achou a arte em 3.298 ms: o atlas só começava depois do `content.json`, e a imagem depois do `atlas.json`. `src/arte.js` passou a pedir os dois ao carregar o módulo, em paralelo (`pede()`).
@@ -320,19 +334,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 - Gema e coroa só viram ouro no Banco; não há NPC que compre loot avulso, de propósito por enquanto.
 
 **Próximo passo recomendado:** o Leonardo jogar duas caçadas seguidas sem passar no Banco e morrer na segunda, para sentir se a perda está legível; decidir se fechar o app deve contar como morte.
-
-## 2026-10-20 00:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** peça vestida na caçada ganha origem também na morte (0.26.1), a pedido do Leonardo (o item 1 das pendências da 0.26.0). Migração `tools/supabase/005_vestidas.sql`, aplicada no banco pelo conector: a `caca_fim` (mesma assinatura) dá origem, na morte ou no desabamento, às peças que o cliente manda em `p_saco`, no máximo 3 e dentro dos limites de 30 por caçada e 60 por dia; passar do limite não desfaz a morte, só zera as peças. O cliente manda na morte `vestidasDaCaca(p)` (`src/sim/combate.js`): o saldo positivo de `p.troca`, as vestidas do saco que ainda estão no corpo.
-
-**Validação:** `node tools/testar.mjs` — 33/33, com o caso novo `vestida-morte` (vestir a espada do saco pela Mochila, morrer: a caçada fecha com `{"espada":1}`, a origem sobe e a espada segue vestida) e a conferência no Node de `vestidasDaCaca()`. Sabotagem (morte mandando `{}`) barrada. No banco: a função nova está no ar e o `anon` continua executando.
-
-**Análise:** compatível com o cliente antigo, que manda `{}` na morte. O Supabase falso dos testes passou a imitar a regra (até 3 peças fora da extração).
-
-**Roadmap:** sem mudança.
-
-**Pendências e riscos:**
-- Quem forjar a chamada ganha origem para até 3 peças por morte, sem o piso de 85 s da extração; o teto diário de 60 continua valendo. Não testei a função contra o banco de verdade com uma caçada real (só a leitura da definição e da permissão).
-- Peça vestida, tirada para o saco e morta perde-se, como o resto do saco, mas a origem dela (se tinha) fica sobrando no lastro: inofensivo, como já era com venda ao Banco.
-
-**Próximo passo recomendado:** o Leonardo vestir uma peça na caçada, morrer e anunciá-la na Feira.
