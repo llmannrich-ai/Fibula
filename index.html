@@ -225,6 +225,12 @@ h2.lost{color:var(--hp)}
 #eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
 #eqList .btns{display:grid;gap:5px;flex:0 0 auto}
 #endItems small{color:var(--muted);font-size:10px}
+.fg{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.fg .sp{border-left-color:var(--torch)}
+.fg .sp.r1{border-left-color:var(--rare)} .fg .sp.r2{border-left-color:var(--epic)}
+.fg .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+.fg .btns{display:grid;gap:5px;flex:0 0 auto}
+.fg .meta.ok{color:var(--loot)}
 
 /* Cidade: o mesmo joystick da incursão, o HUD de cima trocado pelo da cidade */
 #app.cidade .hud{opacity:1}
@@ -448,6 +454,23 @@ h2.lost{color:var(--hp)}
     </div>
   </div>
 
+  <div class="screen" id="forja" hidden>
+    <div class="panel">
+      <p class="eyebrow">Forja</p>
+      <h2>Gordon</h2>
+      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais extraídos ficam aqui no depósito, que é da conta; morrer com eles no saco perde, como o resto.</p>
+      <div class="vault"><span>Ouro no cofre</span><b id="fgGold">0</b></div>
+      <p class="mmsg" id="fgMsg" role="status"></p>
+      <h3 class="sub">Encomenda</h3>
+      <ul class="fg" id="fgMissao"></ul>
+      <h3 class="sub">À venda</h3>
+      <ul class="fg" id="fgLoja"></ul>
+      <h3 class="sub">Materiais no depósito</h3>
+      <ul class="fg" id="fgMats"></ul>
+      <button class="ghost voltar" id="fgBack">Voltar ao acampamento</button>
+    </div>
+  </div>
+
   <div class="screen" id="mkt" hidden>
     <div class="panel">
       <p class="eyebrow">Mercado entre jogadores</p>
@@ -511,7 +534,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.13.0"></script>
+<script type="module" src="src/main.js?v=0.14.0"></script>
 
 </body>
 </html>

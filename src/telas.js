@@ -1,20 +1,21 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
-   caça, tela final, Mercador e Feira (mercado entre jogadores). */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.13.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.13.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.13.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.13.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.13.0';
-import {persist,saveFalhou} from './salvar.js?v=0.13.0';
-import {desenhaConta,temConta,mercado} from './nuvem.js?v=0.13.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.13.0';
-import {icone} from './arte.js?v=0.13.0';
-import {$,app} from './dom.js?v=0.13.0';
-import {retrato} from './desenho.js?v=0.13.0';
+   caça, tela final, Mercador, Feira (mercado entre jogadores) e Forja (o
+   Gordon). */
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.14.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.14.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.14.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.14.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.14.0';
+import {persist,saveFalhou} from './salvar.js?v=0.14.0';
+import {desenhaConta,temConta,mercado} from './nuvem.js?v=0.14.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.14.0';
+import {icone} from './arte.js?v=0.14.0';
+import {$,app} from './dom.js?v=0.14.0';
+import {retrato} from './desenho.js?v=0.14.0';
 
-export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt');
-const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS];
+export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja');
+const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS];
 /* V.cidade: a cidade é o fundo (está nela, ou numa tela aberta a partir dela);
    senão o fundo é a masmorra. As telas de dentro voltam para onde vieram. */
 export const V={cidade:false};
@@ -68,7 +69,7 @@ export function showCidade(como){
 }
 export function abreNpc(k){
   const a=CITY.npcs[k].abre;
-  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else showHunts();
+  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else showHunts();
 }
 function showHunts(){
   const ul=$('#huntList'),c=ch();ul.textContent='';
@@ -247,8 +248,10 @@ export function showEnd(){
   const p=G.p,k=p.fora||G.end,ok=k==='extraiu';
   $('#endEye').textContent=ok?'Incursão concluída':'Fim da incursão';
   const t=$('#endTitle');t.textContent=ok?'Extraído!':k==='morreu'?'Você morreu':'Soterrado';t.classList.toggle('lost',!ok);
-  $('#endText').textContent=ok?(p.pecas
-      ?`Você saiu pelo portal com ${p.bagVal} de ouro em loot. ${p.ouroExt} viraram ouro no cofre, e ${p.pecas} peça${p.pecas>1?'s':''} de equipamento ${p.pecas>1?'esperam':'espera'} lá para vestir ou vender.`
+  $('#endText').textContent=ok?(p.pecas||p.mats
+      ?`Você saiu pelo portal com ${p.bagVal} de ouro em loot. ${p.ouroExt} viraram ouro no cofre`+
+        (p.pecas?`, ${p.pecas} peça${p.pecas>1?'s':''} de equipamento ${p.pecas>1?'esperam':'espera'} no Banco para vestir ou vender`:'')+
+        (p.mats?`, ${p.mats} ${p.mats>1?'materiais foram':'material foi'} para o depósito do Gordon, na Forja`:'')+'.'
       :`Você saiu pelo portal com ${p.bagVal} de ouro em loot. Tudo foi para o cofre.`)
     :k==='morreu'?`O loot que você carregava ficou na masmorra, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
     :`A masmorra desabou antes de você chegar ao portal. O loot ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
@@ -301,6 +304,51 @@ function buy(k){
   save.cofre-=cost;save.up[k]=n+1;persist();drawShop();
 }
 function showShop(){drawShop();soTela(shopS)}
+
+/* ---------- forja (Gordon) ----------
+   A encomenda da vez, a loja que as encomendas liberam e o depósito de
+   materiais. A regra (preços, o que se entrega, o que está liberado) é de
+   src/sim/progresso.js e do content.json. */
+const fgLi=(k,cls)=>{const li=document.createElement('li');li.className='sp'+(cls?' '+cls:'');const ic=k&&icoItem(k);if(ic)li.appendChild(ic);return li};
+const fgInfo=(t,p,m,mcls)=>{const d=document.createElement('div');d.className='info';
+  const h=document.createElement('h3');h.textContent=t;d.appendChild(h);
+  if(p){const e=document.createElement('p');e.textContent=p;d.appendChild(e)}
+  if(m){const e=document.createElement('div');e.className='meta'+(mcls?' '+mcls:'');e.textContent=m;d.appendChild(e)}
+  return d};
+const fgBt=(t,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-label',rot);b.disabled=!!off;if(!off)b.addEventListener('click',fn);return b};
+const fgVazio=(ul,t)=>{const li=document.createElement('li');li.className='vazio';li.textContent=t;ul.appendChild(li)};
+function msgFg(t){$('#fgMsg').textContent=t}
+function drawForja(){
+  setT($('#fgGold'),String(save.cofre));
+  const um=$('#fgMissao'),m=missao();um.textContent='';
+  if(!m)fgVazio(um,'Gordon não tem mais encomendas. Tudo o que ele sabe forjar está à venda.');
+  else{const li=fgLi(null);
+    const falta=Object.entries(m.pede).map(([k,q])=>`${ITEMS[k].nome} ${Math.min(save.mats[k]|0,q)}/${q}`).join(' · ');
+    li.append(fgInfo(`${save.forja+1}/${FORJA.missoes.length} · ${m.nome}`,m.fala,falta,podeEntregar()?'ok':''));
+    const lib=FORJA.loja.filter(o=>o.missao===save.forja+1).map(o=>ITEMS[o.item].nome).join(' e ');
+    li.appendChild(fgBt('entregar',`Entregar a encomenda ${m.nome}`+(lib?` e liberar ${lib}`:''),()=>{
+      if(entregar()){persist();drawForja();msgFg(lib?`Gordon pegou os materiais. Na loja agora: ${lib}.`:'Gordon pegou os materiais.')}},!podeEntregar()));
+    um.appendChild(li)}
+  const ul=$('#fgLoja');ul.textContent='';
+  for(const o of FORJA.loja){const it=ITEMS[o.item],livre=o.missao<=save.forja;
+    const li=fgLi(o.item,'r'+it.rar+(livre?'':' locked'));
+    li.append(fgInfo(it.nome,`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`,livre?'':`depois da encomenda ${o.missao}`));
+    li.appendChild(fgBt(`${o.preco} ouro`,livre?`Comprar ${it.nome} por ${o.preco} de ouro`:`${it.nome}: liberada depois da encomenda ${o.missao}`,()=>{
+      if(comprarForja(o.item)){persist();drawForja();msgFg(`${it.nome} foi para o cofre. Vista no Banco.`)}},!livre||save.cofre<o.preco));
+    ul.appendChild(li)}
+  const ml=$('#fgMats');ml.textContent='';
+  const rows=Object.keys(FORJA.compra).filter(k=>save.mats[k]>0);
+  if(!rows.length)fgVazio(ml,'Nada guardado. Dente, seda, osso e erva que você extrair vêm para cá.');
+  for(const k of rows){const q=save.mats[k],pr=FORJA.compra[k],res=Math.min(q,reservado(k)),sobra=q-res;
+    const li=fgLi(k);
+    li.append(fgInfo(`${ITEMS[k].nome} ×${q}`,`Gordon paga ${pr} de ouro cada`,res?`${res} para a encomenda`:''));
+    const bt=document.createElement('div');bt.className='btns';
+    const vende=n=>()=>{const o=venderMat(k,n);if(o){persist();drawForja();msgFg(`Gordon pagou ${o} de ouro.`)}};
+    bt.append(fgBt(`vender 1 · ${pr}`,`Vender 1 ${ITEMS[k].nome} por ${pr} de ouro`,vende(1)),
+      fgBt(`sobra · ${sobra*pr}`,`Vender ${sobra} ${ITEMS[k].nome}, o que a encomenda não usa, por ${sobra*pr} de ouro`,vende(sobra),!sobra));
+    bt.lastChild.className='rm';li.appendChild(bt);ml.appendChild(li)}
+}
+function showForja(){msgFg('');drawForja();soTela(forjaS)}
 
 /* ---------- feira (mercado entre jogadores) ----------
    O livro de ofertas e o match são do banco (src/nuvem.js, mercado()); aqui é
@@ -456,7 +504,7 @@ $('#mpLadoV').addEventListener('click',()=>abrePeca(MK.peca,'venda'));
 $('#mpOk').addEventListener('click',anuncia);
 $('#mpVolta').addEventListener('click',()=>{MK.peca=null;msgMk('');desenhaFeira()});
 
-for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack'])$(id).addEventListener('click',volta);
+for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#fgBack'])$(id).addEventListener('click',volta);
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
 $('#toGrim').addEventListener('click',drawGrim);

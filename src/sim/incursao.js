@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.13.0';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.13.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel} from './progresso.js?v=0.13.0';
-import {genMap,pecas} from './mapa.js?v=0.13.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.13.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.14.0';
+import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.14.0';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel} from './progresso.js?v=0.14.0';
+import {genMap,pecas} from './mapa.js?v=0.14.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.14.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -42,7 +42,7 @@ function novoJogador(f,i,s){
   const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+f.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
-    pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,xpPerdido:0};
+    pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
   poeNoSqm(p,s.cx+o[0],s.cy+o[1]);return p;
 }
 /* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
@@ -282,7 +282,7 @@ function updateProj(dt){
    não volta, e a sala acaba quando não sobra ninguém dentro */
 export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
-  if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag);p.ouroExt=r.ouro;p.pecas=r.pecas;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
+  if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag);p.ouroExt=r.ouro;p.pecas=r.pecas;p.mats=r.mats;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
   else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   for(const q of G.ps)if(!q.fora)return;

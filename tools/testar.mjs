@@ -141,6 +141,8 @@ const P = {
   saco: (h) => patch(h, 'pch:0,bag:{},bagVal:0,', 'pch:0,bag:{ouro:200},bagVal:200,', 'saco semeado'),
   /* o mesmo saco com uma espada (20): equipamento vai para o cofre como peça */
   sacoEquip: (h) => patch(h, 'pch:0,bag:{},bagVal:0,', 'pch:0,bag:{ouro:200,espada:1},bagVal:220,', 'saco semeado com espada'),
+  /* o saco com duas sedas (8 cada): material do Gordon vai para o depósito */
+  sacoMat: (h) => patch(h, 'pch:0,bag:{},bagVal:0,', 'pch:0,bag:{ouro:200,seda:2},bagVal:216,', 'saco semeado com seda'),
   /* portal na sala de entrada: no headless não há quem arraste o joystick até
      a sala do Guardião, e o que está sob teste é a extração, não a caminhada */
   portalNaEntrada: (h) => patch(h, 'portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false}',
@@ -591,13 +593,35 @@ async function testaSimulacao() {
   finally { for (const k of Object.keys(saida)) saida[k] = () => {}; }
   try {
     const sv = P.SAVE0(); sv.classe = 'cavaleiro'; sv.chars.cavaleiro = P.novoChar('cavaleiro'); P.setSave(sv);
-    const r = P.guardaSaco({ouro: 50, dente: 2, cota: 1});
-    if (r.ouro !== 56 || r.pecas !== 1 || sv.cofre !== 56 || sv.itens.cota !== 1) falhas.push(`guardaSaco: ${JSON.stringify(r)} / ${JSON.stringify(sv)}`);
+    /* gema vira ouro, cota vai para o Banco, dente vai para o depósito do Gordon */
+    const r = P.guardaSaco({ouro: 50, dente: 2, gema: 1, cota: 1});
+    if (r.ouro !== 170 || r.pecas !== 1 || r.mats !== 2 || sv.cofre !== 170 || sv.itens.cota !== 1 || sv.mats.dente !== 2) falhas.push(`guardaSaco: ${JSON.stringify(r)} / ${JSON.stringify(sv)}`);
     const red0 = P.eqBonus('red');
     if (!P.equipar('cota') || sv.chars.cavaleiro.equip.armadura !== 'cota' || sv.itens.cota || P.eqBonus('red') - red0 !== 0.08) falhas.push('equipar a cota não vestiu nem somou a defesa');
     if (P.vender('cota')) falhas.push('vendeu uma peça que não estava no cofre');
-    if (!P.desequipar('armadura') || !P.vender('cota') || sv.cofre !== 146) falhas.push(`devolver e vender a cota: cofre ${sv.cofre}`);
+    if (!P.desequipar('armadura') || !P.vender('cota') || sv.cofre !== 260) falhas.push(`devolver e vender a cota: cofre ${sv.cofre}`);
   } catch (e) { falhas.push('o cofre quebrou no Node: ' + e.message); }
+  /* a forja do Gordon: encomenda só com o material todo, consome o que pede e
+     libera a loja; venda de material barata; o save cru é limpo */
+  try {
+    const F = JSON.parse(CONTEUDO).forja, m0 = F.missoes[0];
+    const sv = P.SAVE0(); sv.classe = 'cavaleiro'; sv.chars.cavaleiro = P.novoChar('cavaleiro'); P.setSave(sv);
+    const lib1 = F.loja.find((o) => o.missao === 1);
+    if (P.comprarForja(lib1.item)) falhas.push('a forja vendeu peça de encomenda não entregue');
+    for (const [k, q] of Object.entries(m0.pede)) sv.mats[k] = q - 1;
+    if (P.podeEntregar() || P.entregar() || sv.forja !== 0) falhas.push('a forja aceitou encomenda incompleta');
+    for (const [k, q] of Object.entries(m0.pede)) sv.mats[k] = q + 2;
+    if (!P.entregar() || sv.forja !== 1 || Object.keys(m0.pede).some((k) => sv.mats[k] !== 2)) falhas.push(`entregar não consumiu o pedido: ${JSON.stringify(sv.mats)} / ${sv.forja}`);
+    const k0 = Object.keys(m0.pede)[0], pr = F.compra[k0];
+    if (P.venderMat(k0, 5) !== 2 * pr || sv.cofre !== 2 * pr || sv.mats[k0]) falhas.push(`venderMat: cofre ${sv.cofre}, sobrou ${sv.mats[k0]}`);
+    if (P.venderMat('gema', 1) || P.venderMat(k0, 1)) falhas.push('venderMat vendeu o que não é material ou não está no depósito');
+    if (P.comprarForja(lib1.item)) falhas.push('a forja vendeu sem ouro');
+    sv.cofre = lib1.preco;
+    if (!P.comprarForja(lib1.item) || sv.cofre !== 0 || sv.itens[lib1.item] !== 1) falhas.push('comprar na forja não pôs a peça no cofre');
+    const n = P.normaliza({classe: 'cavaleiro', chars: {}, mats: {seda: 3, gema: 2, cota: 1, sumiu: 4, osso: -1}, forja: 99});
+    if (JSON.stringify(n.mats) !== '{"seda":3}' || n.forja !== F.missoes.length) falhas.push(`normaliza da forja: ${JSON.stringify(n.mats)} / ${n.forja}`);
+    for (const o of F.loja) if (o.preco <= JSON.parse(CONTEUDO).items[o.item].val) falhas.push(`a forja vende ${o.item} abaixo do Banco`);
+  } catch (e) { falhas.push('a forja quebrou no Node: ' + e.message); }
   if (a) {
     if (a.r.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.r.fim} após ${a.r.passos} passos`);
     if (!(a.r.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a.r)})`);
@@ -741,7 +765,7 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,corretor,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,corretor,gordon,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
     /* anda por sqm: oeste até a coluna da porta (5), parando no centro dela */
@@ -1126,6 +1150,59 @@ const CASOS = [
 `,
   },
   {
+    nome: 'forja',
+    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e poupa o da encomenda; extrair leva o material ao depósito',
+    semente: 11,
+    limite: 90000,
+    patches: [P.tempo(20, 10), P.sacoMat, P.portalNaEntrada],
+    save: {'masmorra-runas-v2': {
+      cofre: 300, itens: {}, mats: {dente: 3, seda: 6, osso: 2, gema: 1}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    var loja=function(nome){return todos('#fgLoja li.sp').filter(function(li){return li.querySelector('h3').textContent===nome})[0]};
+    var mat=function(nome){return todos('#fgMats li.sp').filter(function(li){return li.querySelector('h3').textContent.indexOf(nome)===0})[0]};
+    clica($('#play'));
+    ok('o Gordon está na cidade', Cd.C.npcs.some(function(n){return n.k==='gordon'}));
+    Tl.abreNpc('gordon');
+    ok('o Gordon abre a Forja', visivel('#forja')&&txt('#forja h2')==='Gordon', txt('#forja h2'));
+    ok('a Forja mostra o cofre', txt('#fgGold')==='300', txt('#fgGold'));
+    ok('a primeira encomenda diz o que falta', (txt('#fgMissao')||'').indexOf('dente de rato 3/3 · seda de aranha 4/4')>=0, txt('#fgMissao'));
+    ok('o depósito ignora o que o Gordon não compra', !mat('gema')&&todos('#fgMats li.sp').length===3, todos('#fgMats li.sp').length);
+    ok('a seda separa o que a encomenda usa', /4 para a encomenda/.test(mat('seda').textContent)&&mat('seda').querySelectorAll('button')[1].textContent==='sobra · 8', mat('seda').textContent);
+    ok('o dente não tem sobra para vender', mat('dente').querySelectorAll('button')[1].disabled);
+    ok('a maça só sai depois da encomenda 1', loja('maça cravejada').querySelector('button').disabled&&/depois da encomenda 1/.test(loja('maça cravejada').textContent), loja('maça cravejada').textContent);
+    clica(mat('seda').querySelectorAll('button')[1]);
+    ok('vender a sobra paga 4 por seda e guarda a da encomenda', sv().cofre===308&&sv().mats.seda===4&&/pagou 8/.test(txt('#fgMsg')), sv().cofre+' / '+JSON.stringify(sv().mats));
+    clica($('#fgMissao button'));
+    ok('entregar consome o pedido e avança a encomenda', sv().forja===1&&!sv().mats.seda&&!sv().mats.dente&&sv().mats.osso===2, sv().forja+' / '+JSON.stringify(sv().mats));
+    ok('o Gordon diz o que liberou', /maça cravejada/.test(txt('#fgMsg')||''), txt('#fgMsg'));
+    ok('a segunda encomenda aparece incompleta', (txt('#fgMissao h3')||'').indexOf('2/4')===0&&$('#fgMissao button').disabled, txt('#fgMissao'));
+    clica(loja('maça cravejada').querySelector('button'));
+    ok('comprar a maça debita 220 e põe a peça no cofre', sv().cofre===88&&sv().itens.maca===1, sv().cofre+' / '+JSON.stringify(sv().itens));
+    ok('sem ouro, a couraça de 90 fica bloqueada', loja('couraça de couro').querySelector('button').disabled);
+    clica($('#fgBack'));
+    Tl.abreNpc('banqueiro');
+    ok('a maça comprada está no Banco para vestir', todos('#eqList li.sp h3').some(function(h){return h.textContent==='maça cravejada'}), txt('#eqList'));
+    clica($('#eqBack'));
+    cacar();
+    await quadros(2);
+    clica($('#bMochila'));
+    var sd=todos('#moGrade .cel:not(:disabled)').filter(function(b){return b.dataset.k==='seda'})[0];
+    clica(sd);
+    ok('a mochila diz que a seda vai para o Gordon', /depósito do Gordon/.test(txt('#moInfo')||''), txt('#moInfo'));
+    clica($('#bMochila'));
+    tecla('keydown','KeyJ');
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    tecla('keyup','KeyJ');
+    ok('saiu pelo portal', acabou&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    ok('a seda foi para o depósito, não para o ouro', sv().mats.seda>=2&&sv().cofre>=288, JSON.stringify(sv().mats)+' / '+sv().cofre);
+    ok('a tela final avisa do material', /para o depósito do Gordon/.test(txt('#endText')||''), txt('#endText'));
+`,
+  },
+  {
     nome: 'incursao-extracao',
     o_que: 'incursão de ponta a ponta: combate, portal, extração, cofre creditado e equipamento guardado como peça',
     semente: 11,
@@ -1156,10 +1233,11 @@ const CASOS = [
     ok('o saco foi guardado', !!m&&m[2]==='guardado', txt('#eLoot'));
     var loot=m?+m[1]:-1;
     ok('o saco semeado veio junto', loot>=220, loot);
-    var VAL={espada:20,machado:28,amuleto:60,couraca:30,cota:90},pecas=0;
+    var VAL={espada:20,machado:28,amuleto:60,couraca:30,cota:90,dente:3,seda:8,osso:10,erva:15},pecas=0;
     for(var k in (sv()&&sv().itens)||{})pecas+=VAL[k]*sv().itens[k];
+    for(var k in (sv()&&sv().mats)||{})pecas+=VAL[k]*sv().mats[k];
     ok('a espada foi para o cofre como peça, não como ouro', sv()&&sv().itens&&sv().itens.espada>=1, sv()&&JSON.stringify(sv().itens));
-    ok('ouro no cofre + peças no cofre = valor do saco', sv()&&sv().cofre+pecas===loot, sv()&&(sv().cofre+' + '+pecas+' de '+loot));
+    ok('ouro no cofre + peças e materiais guardados = valor do saco', sv()&&sv().cofre+pecas===loot, sv()&&(sv().cofre+' + '+pecas+' de '+loot));
     ok('a tela final mostra o mesmo cofre', txt('#eCofre')===sv().cofre+' ouro', txt('#eCofre'));
     ok('a tela final avisa das peças no cofre', /peças? de equipamento/.test(txt('#endText')||''), txt('#endText'));
     ok('a espada aparece marcada como arma', todos('#endItems li small').some(function(x){return x.textContent==='arma'}), todos('#endItems li small').length);
@@ -1602,7 +1680,7 @@ const CASOS = [
     ok('a caixa entrou no cofre e no save', sv().cofre===340&&txt('#mktGold')==='340', sv().cofre+' / '+txt('#mktGold'));
     ok('o save guarda a marca do mercado', sv().mkt===window.__nuvem.dados.mkt&&sv().mkt>=1, sv().mkt);
     var lis=todos('#mktItens li');
-    ok('a lista tem só as peças de equipamento do jogo (item desconhecido do livro fica fora)', lis.length===5&&!/bogus/.test(txt('#mktItens')), lis.length);
+    ok('a lista tem só as peças de equipamento do jogo (item desconhecido do livro fica fora)', lis.length===9&&!/bogus/.test(txt('#mktItens')), lis.length);
     ok('a espada mostra os dois lados do livro e o cofre', /2 no cofre/.test(lis[0].textContent)&&/vendem a partir de 25/.test(lis[0].textContent)&&/compram até 18/.test(lis[0].textContent), lis[0].textContent);
     ok('suas ofertas listam a compra de cota', /Compra: cota de malha a 50/.test(txt('#mktMinhas')||''), txt('#mktMinhas'));
     clica(lis[0].querySelector('button'));
@@ -1627,7 +1705,7 @@ const CASOS = [
     clica(todos('#mktMinhas li button')[0]);
     var cancelou=await ate(function(){return /voltaram ao cofre/.test(txt('#mktMsg')||'')},300);
     ok('cancelar devolve o ouro preso', cancelou&&/50 de ouro voltaram/.test(txt('#mktMsg'))&&sv().cofre===350, txt('#mktMsg')+' / '+sv().cofre);
-    clica(todos('#mktItens li button')[3]);
+    clica(todos('#mktItens li button')[6]);
     ok('a cota abre', txt('#mpNome')==='cota de malha', txt('#mpNome'));
     $('#mpQtd').value='100';$('#mpQtd').dispatchEvent(new Event('input'));
     ok('sem ouro, o botão não anuncia e o resumo diz quanto falta', $('#mpOk').disabled&&/Faltam/.test(txt('#mpRes')||''), txt('#mpRes'));
