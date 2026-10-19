@@ -33,54 +33,33 @@ function spr(n,d,f,x,y){
 function circle(c,x,y,r){c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}
 const rgba=(h,a)=>{const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
 function nearFloor(x,y){for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const a=x+i,b=y+j;if(a>=0&&b>=0&&a<MW&&b<MH&&G.g[b*MW+a]===0)return true}return false}
-/* a arte de cada mapa de caça (hunts.<k>.arte no content.json): o sprite do
-   chão, o conjunto de parede, as cores do desenho sem sprites, quanto a
-   escuridão cobre e se há tochas. Montada uma vez por mapa, fora do laço */
+/* a arte de cada mapa de caça (hunts.<k>.arte no content.json): as cores do
+   desenho sem sprites e quanto a escuridão cobre. Montada uma vez por mapa */
 const ARTE_C={};
 function arteDe(k){
   if(ARTE_C[k])return ARTE_C[k];
   const a=(HUNTS[k]&&HUNTS[k].arte)||{},c=a.cor||{};
-  return ARTE_C[k]={chao:a.chao?'chao_'+a.chao:'chao',par:a.par?PECA.map(n=>n&&a.par+n.slice(3)):PECA,
-    c1:c.chao1||'#221e2b',c2:c.chao2||'#1e1a26',pa:c.par||'#3a3445',escuro:`rgba(6,5,10,${typeof a.escuro==='number'?a.escuro:.82})`,tochas:a.tochas!==false,
-    var:a.variantes||[],obj:a.objetos||{},det:a.detalhes||[],borda:a.borda||null};
+  return ARTE_C[k]={c1:c.chao1||'#221e2b',c2:c.chao2||'#1e1a26',pa:c.par||'#3a3445',escuro:`rgba(6,5,10,${typeof a.escuro==='number'?a.escuro:.82})`,
+    tochas:HUNTS[k].mapa.pilhas.some(t=>/^.l/.test(t))};
 }
-/* ---------- o mapa vestido ----------
-   O que o desenho põe em cada sqm, montado uma vez por masmorra (fora do
-   laço): a variante do chão, o detalhe por onde se anda (teia no canto,
-   pedrinha, ossada) e o sprite de cada objeto sólido do lugar (G.obj, da
-   regra). Tudo sai de um hash do sqm e da semente, então o mesmo lugar com a
-   mesma semente se veste igual em todo aparelho da sala. Só enfeita: a regra
-   não lê nada daqui */
-const VM={G:null,nomes:[],chao:new Uint16Array(MW*MH),det:new Uint16Array(MW*MH),ob:new Uint16Array(MW*MH),arv:new Uint16Array(MW*MH)};
-function vesteMapa(){
-  if(VM.G===G)return VM;VM.G=G;
-  const AR=arteDe(G.caca),g=G.g,nomes=VM.nomes=[AR.chao],id=n=>{let i=nomes.indexOf(n);if(i<0){i=nomes.length;nomes.push(n)}return i},
-    sm=G.semente>>>0,hs=(x,y,k)=>(hash(x+(sm&4095)*67+k*7919,y+(sm>>>12)*31+k*104729)>>>0)/4294967296,
-    lista=(HUNTS[G.caca].mapa&&HUNTS[G.caca].mapa.objetos)||[],chao=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&g[y*MW+x]!==1,
-    par=(x,y)=>x>=0&&y>=0&&x<MW&&y<MH&&g[y*MW+x]===1;
-  VM.det.fill(0);VM.ob.fill(0);VM.arv.fill(0);
-  for(let y=0;y<MH;y++)for(let x=0;x<MW;x++){const i=y*MW+x;
-    VM.chao[i]=0;
-    if(g[i]===1){
-      /* lugar aberto (a Ilha): a rocha vira chão de fora com árvores, e a
-         árvore só falta longe do chão, para o mato parecer mato */
-      if(AR.borda){const b=AR.borda,f=b.fundo||[AR.chao],a=b.arvores||[];
-        VM.chao[i]=id(f[hs(x,y,1)*f.length|0]);
-        let perto=false;for(let j=-1;j<=1;j++)for(let k=-1;k<=1;k++)if(chao(x+k,y+j)&&g[(y+j)*MW+x+k]===0)perto=true;
-        if(a.length&&(perto||hs(x,y,2)<.55))VM.arv[i]=id(a[hs(x,y,3)*a.length|0])+1}
-      continue}
-    let r=hs(x,y,4);for(const[n,f]of AR.var){if(r<f){VM.chao[i]=id(n);break}r-=f}
-    if(g[i]===2){const o=lista[G.obj[i]-1],v=o&&AR.obj[o.k];if(v)VM.ob[i]=id(v[hs(x,y,5)*v.length|0])+1;continue}
-    const pn=par(x,y-1),pw=par(x-1,y),pp=pn||pw||par(x+1,y)||par(x,y+1);
-    for(let k=0;k<AR.det.length;k++){const d=AR.det[k];
-      if(d.onde==='canto'?!(pn&&pw):d.onde==='parede'?!pp:false)continue;
-      if(hs(x,y,10+k)<d.p){VM.det[i]=id(d.s[hs(x,y,40+k)*d.s.length|0])+1;break}}
+/* ---------- o mapa fixo ----------
+   Cada sqm é uma pilha de itens do OTSP (G.pilhas, de hunts.<k>.mapa; ver
+   leMapa em src/sim/mapa.js), desenhada como o cliente do Tibia: o chão e o
+   que é rente ao chão (borda, pedrinha, mancha) primeiro; parede, objeto e
+   o que é maior que o sqm (árvore, teia de canto) junto das criaturas, linha
+   por linha. Sprite com padrão (grama, água) escolhe o desenho pelo sqm, e o
+   animado anda com o tempo. As listas saem uma vez por mapa, fora do laço */
+const PM={G:null};
+function preparaPilhas(){
+  if(PM.G===G)return;PM.G=G;
+  const it=id=>{const n='t'+id,s=ART.s[n];return s?{n,px:s.px||1,py:s.py||1,g:s.w>T||s.h>T}:null};
+  for(const P of G.pilhas){
+    const ch=P.chao?it(P.chao):null,its=P.itens.map(it).filter(Boolean);
+    P.fl=[...(ch?[ch]:[]),...(P.k==='c'?its.filter(q=>!q.g):[])];
+    P.al=P.k==='c'?its.filter(q=>q.g):its;
   }
-  return VM;
 }
-/* sprite maior que o sqm (teia de canto, ossada grande) desenha junto das
-   paredes, para cobrir a parede de trás como no Tibia */
-const grande=n=>{const s=ART.s[n];return !!s&&(s.w>T||s.h>T)};
+function item(q,x,y,cx,cy){const s=ART.s[q.n];spr(q.n,(y%q.py)*q.px+(x%q.px),s.f>1?Math.floor(G.t*4+x*7+y*3)%s.f:0,cx,cy)}
 function outText(t,x,y,col){ctx.lineWidth=3;ctx.lineJoin='round';ctx.strokeStyle='#000';ctx.strokeText(t,x,y);ctx.fillStyle=col;ctx.fillText(t,x,y)}
 /* nome e barra de vida como no Tibia: Verdana em negrito e a cor da faixa de vida */
 const FONTE_MAPA='700 11px Verdana,Tahoma,sans-serif';
@@ -369,14 +348,13 @@ function cena(){
   G.torches.length=0;
   /* cada jogador da sala com o equipamento dele, vestido no boneco */
   const A=ART.ok,jogador=q=>drawPlayer(q,!!q.fora&&q.fora!=='extraiu',bf('arm',q),q.c&&q.c.equip),AR=arteDe(G.caca);ctx.imageSmoothingEnabled=false;
-  const V=A?vesteMapa():null;
-  if(A)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
-    /* com os sprites: o chão e o detalhe pequeno aqui, as paredes, os objetos
-       e o detalhe grande depois, linha a linha junto com as criaturas */
-    const h=hash(x,y),cx=x*T+T/2,cy=y*T+T/2,i=y*MW+x;
-    if(G.g[i]!==1||AR.borda){spr(V.nomes[V.chao[i]],0,0,cx,cy);const d=V.det[i];if(d&&!grande(V.nomes[d-1]))spr(V.nomes[d-1],0,0,cx,cy)}
-    else if(AR.tochas&&G.par[i]===2&&h%19===0&&y+1<MH&&G.g[(y+1)*MW+x]===0)G.torches.push({x:cx-6,y:cy-14});
-  }
+  if(A){preparaPilhas();for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
+    /* com os sprites: o chão e o que é rente a ele aqui; o resto depois,
+       linha a linha junto com as criaturas */
+    const cx=x*T+T/2,cy=y*T+T/2,P=G.pilhas[G.pi[y*MW+x]];
+    for(const q of P.fl)item(q,x,y,cx,cy);
+    if(P.luz)G.torches.push({x:cx-6,y:cy-14});
+  }}
   else for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     const px=x*T,py=y*T,h=hash(x,y);
     if(G.g[y*MW+x]!==1){
@@ -442,10 +420,7 @@ function cena(){
     let k=0;
     for(let y=y0;y<=y1;y++){
       for(let x=x0;x<=x1;x++){const i=y*MW+x,cx=x*T+T/2,cy=y*T+T/2;
-        if(AR.borda){if(V.arv[i])spr(V.nomes[V.arv[i]-1],0,0,cx,cy)}else{const q=G.par[i];if(q)spr(AR.par[q],0,0,cx,cy)}
-        const d=V.det[i];if(d&&grande(V.nomes[d-1]))spr(V.nomes[d-1],0,0,cx,cy);
-        if(V.ob[i])spr(V.nomes[V.ob[i]-1],0,0,cx,cy)}
-      for(const t of G.torches)if((t.y/T|0)===y)spr('tocha',0,0,t.x+6,t.y+14);
+        for(const q of G.pilhas[G.pi[i]].al)item(q,x,y,cx,cy)}
       while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?jogador(e.pl):drawMon(e.m)}
     }
     while(k<ents.length){const e=ents[k++];e.pl?jogador(e.pl):drawMon(e.m)}

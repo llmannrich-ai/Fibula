@@ -6,3 +6,4 @@ api key supabase.txt
 *.secret.txt
 .env
 .env.*
+mapas-rme/

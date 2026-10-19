@@ -4,6 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
+import {MW,MH} from './base.js?v=0.37.0';
+import {ALFA} from './mapa.js?v=0.37.0';
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
@@ -107,17 +109,22 @@ export function validaConteudo(c){
     }
     if(h.bands!==undefined&&(!Array.isArray(h.bands)||!h.bands.length))throw new Error(`mapa de caça ${k}: bands vazio`);
     if(h.boss!==undefined)for(const e of [h.boss.type,...(h.boss.escort||[])])if(!tem(c.enemies,e))throw new Error(`mapa de caça ${k}: chefe cita inimigo inexistente: ${e}`);
-    const m=h.mapa,par=v=>Array.isArray(v)&&v.length===2&&v.every(Number.isInteger)&&v[0]>=2&&v[0]<=v[1];
-    if(m!==undefined&&!(m&&par(m.salas)&&par(m.w)&&par(m.h)&&m.w[1]<=16&&m.h[1]<=16&&Number.isInteger(m.atalhos)&&m.atalhos>=0))throw new Error(`mapa de caça ${k}: mapa precisa de salas, w e h ([mínimo, máximo], até 16) e atalhos`);
-    if(m&&m.objetos!==undefined){
-      if(!Array.isArray(m.objetos)||m.objetos.length>200)throw new Error(`mapa de caça ${k}: objetos precisa ser uma lista`);
-      for(const o of m.objetos)if(!o||typeof o.k!=='string'||!['parede','canto','meio'].includes(o.onde)||!(typeof o.p==='number'&&o.p>0&&o.p<=1))
-        throw new Error(`mapa de caça ${k}: cada objeto precisa de k, onde (parede, canto ou meio) e p (de 0 a 1)`);
-    }
-    const ar=h.arte||{};
-    for(const[n,v]of Object.entries(ar.objetos||{}))if(!Array.isArray(v)||!v.length||v.some(x=>typeof x!=='string'))throw new Error(`mapa de caça ${k}: arte.objetos.${n} precisa ser uma lista de sprites`);
-    for(const d of ar.detalhes||[])if(!d||!Array.isArray(d.s)||!d.s.length||!['parede','canto','livre'].includes(d.onde)||!(typeof d.p==='number'&&d.p>0&&d.p<=1))
-      throw new Error(`mapa de caça ${k}: cada detalhe precisa de s (sprites), onde (parede, canto ou livre) e p (de 0 a 1)`);
+    /* o mapa fixo (pilar 2; formato em leMapa, src/sim/mapa.js) */
+    const m=h.mapa,E=t=>{throw new Error(`mapa de caça ${k}: ${t}`)};
+    if(!m||typeof m!=='object')E('sem mapa (gere o rascunho com tools/mapas.mjs ou importe do editor com tools/otbm.mjs)');
+    if(m.w!==MW||m.h!==MH)E(`o mapa precisa ter ${MW}×${MH} sqm`);
+    if(!Array.isArray(m.pilhas)||!m.pilhas.length||m.pilhas.length>4096||m.pilhas.some(t=>typeof t!=='string'||!/^[cpov]l? \d+( \d+)*$/.test(t)))E('pilhas precisa ser uma lista de "<c|p|o|v> <chão> <itens...>"');
+    if(!Array.isArray(m.grade)||m.grade.length!==MH||m.grade.some(l=>typeof l!=='string'||l.length!==2*MW))E(`grade precisa de ${MH} linhas de ${2*MW} caracteres`);
+    const kAt=(x,y)=>{const l=m.grade[y],n=ALFA.indexOf(l[2*x])*64+ALFA.indexOf(l[2*x+1]);return x>=0&&y>=0&&x<MW&&y<MH&&n>=0&&n<m.pilhas.length?m.pilhas[n][0]:null};
+    for(let y=0;y<MH;y++)for(let x=0;x<MW;x++)if(!kAt(x,y))E(`o sqm ${x},${y} aponta para uma pilha que não existe`);
+    const xy=t=>typeof t==='string'?t.trim().split(/\s+/):[],[ex,ey]=xy(m.entrada).map(Number);
+    if(!(Number.isInteger(ex)&&Number.isInteger(ey))||[[0,0],[1,0],[-1,0],[0,1]].some(([i,j])=>kAt(ex+i,ey+j)!=='c'))E('a entrada (e os sqm em volta, onde o grupo aparece) precisa ser chão');
+    if(!Array.isArray(m.spawn)||!m.spawn.length)E('spawn precisa de ao menos um monstro');
+    const vistos=new Set(),bossK=(h.boss||c.progression.boss).type;
+    for(const t of m.spawn){const[x,y,e]=xy(t);
+      if(!tem(c.enemies,e))E(`spawn cita monstro inexistente: ${e}`);
+      if(kAt(+x,+y)!=='c'||vistos.has(x+','+y))E(`spawn de ${e} fora do chão ou repetido em ${x},${y}`);vistos.add(x+','+y)}
+    if(!m.spawn.some(t=>xy(t)[2]===bossK))E(`o chefe (${bossK}) não está no spawn`);
   }
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='cacadas'&&!hs.some(([,h])=>h.npc===k))throw new Error(`o NPC ${k} abre cacadas, mas nenhum mapa de caça é dele`);
   const f=c.forja,inteiro=v=>Number.isInteger(v)&&v>0;

@@ -62,36 +62,10 @@ const ARTE = {
   cad_vespa: {i: 2237}, cad_lagarta: {i: 2237}, cad_leao: {i: 2228}, cad_troll: {i: 2234}, cad_dragao: {i: 2231},
   cad_fantasma: {i: 2233}, cad_mumia: {i: 2233}, cad_necromante: {i: 2227}, cad_sombra: {i: 2231},
   cad_feiticeiro: {i: 2246}, cad_druida: {i: 2703}, cad_cacador: {i: 2227}, cad_cavaleiro: {i: 2227},
-  /* masmorra: chão, pedrinhas e o conjunto de parede de pedra */
-  chao: {i: 140}, cascalho: {i: 1614}, cascalho2: {i: 1617},
-  par_v: {i: 534}, par_h: {i: 535}, par_poste: {i: 536}, par_canto: {i: 537},
-  tocha: {i: 1253}, portal: {i: 1122},
-  /* chão e parede de cada mapa de caça (hunts.<k>.arte no content.json):
-     o Esgoto de laje e pedra com musgo, a Ilha de areia e arenito, a Cripta
-     de pedra escura e pedra rolada */
-  chao_esg: {i: 165}, esg_v: {i: 723}, esg_h: {i: 724}, esg_poste: {i: 725}, esg_canto: {i: 726},
-  chao_ilha: {i: 128}, ilha_v: {i: 552}, ilha_h: {i: 553}, ilha_poste: {i: 554}, ilha_canto: {i: 555},
-  chao_cripta: {i: 160}, cripta_v: {i: 542}, cripta_h: {i: 543}, cripta_poste: {i: 544}, cripta_canto: {i: 545},
-  /* variantes de chão, misturadas pelo desenho como o Tibia mistura lajes */
-  chao2: {i: 142}, chao_cripta2: {i: 161}, chao_ilha2: {i: 129},
-  /* objetos sólidos dos mapas de caça (hunts.<k>.mapa.objetos e arte.objetos
-     no content.json): ocupam o sqm, como no Tibia */
-  obj_pilar: {i: 1130}, obj_rocha: {i: 1641}, obj_rocha2: {i: 1642}, obj_rocha3: {i: 1643},
-  obj_musgo: {i: 1622}, obj_musgo2: {i: 1623}, obj_pedrao: {i: 1624}, obj_pedrao2: {i: 1625},
-  obj_estatua2: {i: 1159}, obj_gargula: {i: 1157}, obj_sarcofago: {i: 1146}, obj_altar: {i: 1152},
-  obj_palmeira: {i: 2584}, obj_cacto: {i: 2583}, obj_cacto2: {i: 2585},
-  /* árvores que fecham a Ilha no lugar de parede */
-  arv_1: {i: 1521}, arv_2: {i: 1523}, arv_3: {i: 1532},
-  /* detalhes do chão, por onde se anda (arte.detalhes): teias nos cantos,
-     pedrinhas, sangue, ossadas, a grade do esgoto, cogumelos, lodo, tufos */
-  det_teia1: {i: 1271}, det_teia2: {i: 1272}, det_teia3: {i: 1273}, det_teia4: {i: 1274},
-  det_pedra1: {i: 1598}, det_pedra2: {i: 1599}, det_pedra3: {i: 1600}, det_pedra4: {i: 1603}, det_pedra5: {i: 1604},
-  det_musgo: {i: 1610}, det_sangue1: {i: 2223}, det_sangue2: {i: 2225}, det_resto1: {i: 2229}, det_resto2: {i: 2230},
-  det_ossada: {i: 2232}, det_ossada2: {i: 2248}, det_grade: {i: 999}, det_lodo: {i: 1619}, det_vela: {i: 1178},
-  det_cogu1: {i: 1401}, det_cogu2: {i: 1402}, det_cogu3: {i: 1403},
-  det_tufo1: {i: 1425}, det_tufo2: {i: 1427}, det_tufo3: {i: 1430}, det_tufo4: {i: 1434},
-  det_planta1: {i: 1316}, det_planta2: {i: 1317}, det_planta3: {i: 1325}, det_planta4: {i: 1326},
-  det_graveto1: {i: 1440}, det_graveto2: {i: 1441}, det_graveto3: {i: 1442},
+  /* o portal da masmorra e o conjunto de parede de pedra (a cidade usa) */
+  par_v: {i: 534}, par_h: {i: 535}, par_poste: {i: 536}, par_canto: {i: 537}, portal: {i: 1122},
+  /* os mapas de caça não estão aqui: cada item das pilhas de hunts.<k>.mapa
+     entra sozinho como t<id>, com os padrões e os quadros (ver itensDosMapas) */
   /* cidade: chão de grama, rua de pedra, assoalho das casas, água, árvores e
      os NPCs das casas (as chaves de city.npcs no content.json) */
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
@@ -131,6 +105,17 @@ const ARTE = {
   mi_fogo: {m: 4}, mi_gelo: {m: 13}, mi_terra: {m: 5}, mi_fisico: {m: 2}, mi_lanca: {m: 1},
   mi_energia: {m: 8, tom: 60}, mi_sagrado: {m: 8, tom: -150}, mi_xama: {m: 10},
 };
+
+/* os itens das pilhas dos mapas de caça (hunts.<k>.mapa.pilhas no
+   content.json), como t<id>, com todos os padrões (pad): o mapa fixo é
+   desenhado no Remere's Map Editor e pode usar qualquer item do pacote */
+function itensDosMapas() {
+  const c = JSON.parse(readFileSync(join(RAIZ, 'data', 'game', 'content.json'), 'utf8')), ids = new Set();
+  for (const [k, h] of Object.entries(c.hunts)) if (k[0] !== '_' && h.mapa)
+    for (const t of h.mapa.pilhas) for (const n of t.split(/\s+/).slice(1).map(Number)) if (n) ids.add(n);
+  for (const id of [...ids].sort((a, b) => a - b)) ARTE['t' + id] = {i: id, pad: true};
+}
+itensDosMapas();
 
 /* ---------- leitura do pacote ---------- */
 function otspDir() {
@@ -257,10 +242,16 @@ function quadros(t, spr, def) {
     linhas = [0, 1, 2, 3].map((x) => Array.from({length: nf}, (_, f) => quadro(spr, c, {x, f})));
   } else if (tipo === 'm') linhas = DIR8.map(([x, y]) => [quadro(spr, c, {x, y})]);
   /* efeitos grandes do pacote começam com quadros vazios: saem do atlas */
+  /* item de mapa: uma linha por padrão (o sqm escolhe pelo x e y, como no
+     Tibia), com até 8 quadros de animação */
+  else if (def.pad) {
+    linhas = [];
+    for (let y = 0; y < c.py; y++) for (let x = 0; x < c.px; x++) linhas.push(Array.from({length: Math.min(8, c.fr)}, (_, f) => quadro(spr, c, {x, y, f})));
+  }
   else linhas = [Array.from({length: c.fr}, (_, f) => quadro(spr, c, {f})).filter((q) => q.d.some((v, k) => k % 4 === 3 && v))];
   if (def.tom) for (const l of linhas) for (const q of l) giraMatiz(q, def.tom);
   const [ox, oy] = c.a[0x19] || [0, 0];
-  return {linhas, ox, oy};
+  return {linhas, ox, oy, px: def.pad ? c.px : 0, py: def.pad ? c.py : 0};
 }
 
 /* ---------- PNG sem biblioteca ---------- */
@@ -286,8 +277,8 @@ function png(img) {
 function atlas(t, spr) {
   const LARG = 1024;
   const itens = Object.entries(ARTE).map(([nome, def]) => {
-    const {linhas, ox, oy} = quadros(t, spr, def), q = linhas[0][0];
-    return {nome, linhas, ox, oy, w: q.w, h: q.h, W: q.w * linhas[0].length, H: q.h * linhas.length};
+    const {linhas, ox, oy, px, py} = quadros(t, spr, def), q = linhas[0][0];
+    return {nome, linhas, ox, oy, px, py, w: q.w, h: q.h, W: q.w * linhas[0].length, H: q.h * linhas.length};
   });
   /* prateleiras, do mais alto para o mais baixo; o nome desempata para a ordem
      não depender de nada além da tabela */
@@ -301,7 +292,7 @@ function atlas(t, spr) {
   const img = novaImg(LARG, y + alt), mapa = {};
   for (const it of itens) {
     it.linhas.forEach((l, d) => l.forEach((q, f) => cola(img, q, it.x + f * it.w, it.y + d * it.h)));
-    mapa[it.nome] = {x: it.x, y: it.y, w: it.w, h: it.h, d: it.linhas.length, f: it.linhas[0].length, ox: it.ox, oy: it.oy};
+    mapa[it.nome] = {x: it.x, y: it.y, w: it.w, h: it.h, d: it.linhas.length, f: it.linhas[0].length, ox: it.ox, oy: it.oy, ...(it.px ? {px: it.px, py: it.py} : {})};
   }
   return {img, mapa};
 }

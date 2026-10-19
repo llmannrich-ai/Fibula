@@ -2,20 +2,13 @@
 import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.37.0';
 import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.37.0';
 import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.37.0';
-import {genMap,pecas} from './mapa.js?v=0.37.0';
+import {leMapa,pecas} from './mapa.js?v=0.37.0';
 import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito} from './combate.js?v=0.37.0';
 
 export let G=null;
 export const setG=v=>{G=v};
-/* a tabela de spawn e o chefe são do mapa de caça (G.caca); sem eles, os de progression */
-const bandas=()=>HUNTS[G.caca].bands||PROG.bands,chefe=()=>HUNTS[G.caca].boss||PROG.boss;
-function pickType(d){
-  const bs=bandas(),b=bs.find(b=>d<b.untilDepth)||bs[bs.length-1];
-  const linhas=Object.entries(b.weights);
-  let r=sorte();
-  for(const[k,w]of linhas){if(r<w)return k;r-=w}
-  return linhas[linhas.length-1][0];
-}
+/* o chefe é do mapa de caça (G.caca); sem ele, o de progression */
+const chefe=()=>HUNTS[G.caca].boss||PROG.boss;
 function spawn(k,r,d,boss){
   const n0=G.mons.length;spawn0(k,r,d,boss);if(G.mons.length>n0)G.mons[n0].sala=r.i;
 }
@@ -26,10 +19,9 @@ function spawn0(k,r,d,boss){
   /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce. O
      chefe nasce sempre: com o sqm dele ocupado, vai para o livre mais perto
      do centro da sala (sem sorteio, para não mudar a masmorra de ninguém) */
-  let tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
-  if(boss&&(G.ocu[ty*MW+tx]||G.g[ty*MW+tx])){let bd=1e9;
-    for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++){const d=(i-r.cx)**2+(j-r.cy+1)**2;if(!G.ocu[j*MW+i]&&!G.g[j*MW+i]&&d<bd){bd=d;tx=i;ty=j}}}
-  /* nem em cima de um objeto do lugar (pilar, rocha) */
+  /* o mapa é fixo: cada monstro tem o ponto dele, sempre o mesmo sqm */
+  let tx=r.cx,ty=r.cy;
+  /* ponto ocupado (um jogador, outro monstro): espera o próximo respawn */
   if(G.ocu[ty*MW+tx]||G.g[ty*MW+tx])return;G.ocu[ty*MW+tx]=1;
   const hp=Math.round(t.hp*hpm);
   G.mons.push({id:G.nid++,k,t,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
@@ -68,31 +60,24 @@ function novoJogador(f,i,s){
    sorteia uma nova (é o caso normal do jogador). fichas são os jogadores;
    sem elas, o personagem do save sozinho. aberta é a masmorra da sala (ver
    "masmorra aberta" abaixo): sem tempo, com a porta na sala de entrada.
-   caca é o mapa de caça (hunts no content.json): a mesma semente no mesmo
-   mapa de caça dá a mesma masmorra */
+   caca é o mapa de caça (hunts no content.json). O mapa e os pontos de
+   spawn são fixos (pilar 2): a semente só sorteia o que acontece na caçada
+   (dano, loot, movimento), nunca o lugar */
 export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false,caca){
   semeia(s0);caca=cacaDe(caca);
-  const {g,rooms,obj}=genMap(HUNTS[caca].mapa),s=rooms[0];
-  let pr=s,md=1;
-  for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
+  /* rooms[0] é a porta; cada ponto de spawn é uma "sala" de um monstro,
+     com a profundidade dele (a distância andando desde a porta) */
+  const M=leMapa(HUNTS[caca].mapa),g=M.g.slice(),e=M.entrada,s={x:e.x-1,y:e.y-1,w:3,h:3,cx:e.x,cy:e.y},
+    rooms=[s,...M.pontos.map(q=>({x:q.x,y:q.y,w:1,h:1,cx:q.x,cy:q.y,tipo:q.k,prof:MT[q.k].boss?1:q.prof,base:1,esp:0}))],
+    pr=rooms.find(r=>r.tipo&&MT[r.tipo].boss)||rooms[rooms.length-1];
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
-  G={g,rooms,obj,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
+  G={g,pi:M.pi,pilhas:M.pilhas,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
      nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
      t:0,kills:0,caca,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
   rooms.forEach((r,i)=>{r.i=i});
-  for(const r of rooms){
-    if(r===s)continue;
-    const pr2=PROG.perRoom,d=r.d/md,base=ri(pr2.min,pr2.max)+(r.w*r.h>pr2.largeRoomArea?pr2.largeRoomBonus:0),
-      n=base;
-    r.base=base;r.prof=d;r.esp=0;
-    for(let k=0;k<n;k++)spawn(pickType(d),r,d,false);
-  }
-  pr.chefe=true;
-  const bs=chefe();
-  spawn(bs.type,pr,1,true);
-  spawn(bs.escort[rnd(bs.escort.length)],pr,1,false);
+  for(const r of rooms)if(r.tipo)spawn(r.tipo,r,r.prof,!!MT[r.tipo].boss);
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=0;
   revela();
 }
@@ -365,16 +350,14 @@ function repovoa(dt){
   const pas=G.respT;G.respT=0;
   const R=PROG.respawn,dentro=G.ps.filter(p=>!p.fora),perto=R.clearTiles*T;
   for(const r of G.rooms){
-    if(r.base===undefined&&!r.chefe)continue;
-    /* a sala do chefe tem os monstros dela mais o chefe e a escolta */
-    const vivos=G.mons.filter(m=>m.sala===r.i),alvo=(r.base||0)+(r.chefe?2:0);
+    if(!r.tipo)continue;
+    /* cada ponto renasce o monstro dele, como o spawn do Tibia */
+    const vivos=G.mons.filter(m=>m.sala===r.i),alvo=r.base;
     if(vivos.length>=alvo){r.esp=0;continue}
     r.esp=(r.esp||0)+pas;
     if(r.esp<R.seconds||dentro.some(p=>hyp(p.x-(r.cx+.5)*T,p.y-(r.cy+.5)*T)<perto))continue;
     r.esp=0;
-    let falta=alvo-vivos.length;
-    if(r.chefe&&!vivos.some(m=>m.t.boss)){const bs=chefe();spawn(bs.type,r,1,true);spawn(bs.escort[rnd(bs.escort.length)],r,1,false);falta-=2}
-    for(;falta>0;falta--)spawn(pickType(r.prof),r,r.prof,false);
+    for(let falta=alvo-vivos.length;falta>0;falta--)spawn(r.tipo,r,r.prof,!!MT[r.tipo].boss);
   }
 }
 /* a sala acaba para todos que ainda estão nela (o desabamento, ou o teste) */

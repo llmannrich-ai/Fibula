@@ -1,4 +1,10 @@
-/* ---------- mapa ---------- */
+/* ---------- mapa ----------
+   Os mapas de caça são fixos (decisão do Leonardo, 19/10/2026): cada lugar
+   tem o mapa dele em hunts.<k>.mapa no content.json, desenhado no Remere's
+   Map Editor com os sprites do OTSP e convertido por tools/otbm.mjs (ou
+   gerado como rascunho por tools/mapas.mjs). leMapa() lê esse mapa; o
+   gerador (genMap, objetos) ficou só para o rascunho, e pecas() serve também
+   à cidade. */
 import {MW,MH,rnd,ri,hyp,sorte,semente} from './base.js?v=0.37.0';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
@@ -100,4 +106,32 @@ export function pecas(g,w=MW,h=MH){
     P[y*w+x]=hz&&v?4:hz?2:v?1:ch(x+1,y+1)?3:ch(x-1,y+1)?2:ch(x+1,y-1)?1:ch(x-1,y-1)?4:0;
   }
   return P;
+}
+
+/* ---------- mapa fixo ----------
+   pilhas: uma por tipo de sqm, "<k> <chão> <itens...>", ids do OTSP de baixo
+   para cima; k é c (chão), p (parede ou água: sólido), o (objeto sólido sobre
+   chão) ou v (vazio), com um l a mais quando algum item dá luz (tocha). chão
+   0 é sem chão. grade: MH linhas de MW sqm, dois caracteres por sqm (o número
+   da pilha em base 64, ALFA). entrada: "x y", onde fica a porta. spawn:
+   "x y monstro", um monstro por ponto, sempre o mesmo, no mesmo sqm */
+export const ALFA='0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_';
+const G_DE={c:0,p:1,o:2,v:1};
+const CACHE=new WeakMap();
+export function lePilha(t){const a=String(t).trim().split(/\s+/);
+  return{k:a[0][0],luz:a[0][1]==='l',chao:+a[1]||0,itens:a.slice(2).map(Number)}}
+export function leMapa(m){
+  if(CACHE.has(m))return CACHE.get(m);
+  const pilhas=m.pilhas.map(lePilha),pi=new Uint16Array(MW*MH),g=new Uint8Array(MW*MH);
+  for(let y=0;y<MH;y++){const l=m.grade[y];
+    for(let x=0;x<MW;x++){const i=y*MW+x,n=ALFA.indexOf(l[2*x])*64+ALFA.indexOf(l[2*x+1]);pi[i]=n;g[i]=G_DE[pilhas[n].k]}}
+  const xy=t=>t.trim().split(/\s+/).map(Number),[ex,ey]=xy(m.entrada);
+  /* profundidade de cada ponto: a distância andando desde a porta, de 0 a 1 */
+  const dist=new Int16Array(MW*MH).fill(-1),fila=[ey*MW+ex];dist[fila[0]]=0;
+  for(let h=0;h<fila.length;h++){const c=fila[h],x=c%MW;
+    for(const d of [x>0?-1:0,x<MW-1?1:0,-MW,MW]){const k=c+d;if(d&&k>=0&&k<MW*MH&&dist[k]<0&&g[k]===0){dist[k]=dist[c]+1;fila.push(k)}}}
+  const pontos=(m.spawn||[]).map(t=>{const a=t.trim().split(/\s+/);return{x:+a[0],y:+a[1],k:a[2]}});
+  let md=1;for(const q of pontos)md=Math.max(md,dist[q.y*MW+q.x]);
+  for(const q of pontos)q.prof=Math.max(0,dist[q.y*MW+q.x])/md;
+  const r={g,pi,pilhas,entrada:{x:ex,y:ey},pontos,dist};CACHE.set(m,r);return r;
 }

@@ -156,7 +156,9 @@ const P = {
   /* a voz (src/voz.js) sem STUN: nenhum caso sai para a rede, e os dois lados
      da conexão estão no mesmo navegador */
   semStun: (h) => patch(h, "export const STUN=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];", 'export const STUN=[];', 'voz sem STUN'),
-  spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
+  /* monstros colados na porta (o mapa fixo não tem nenhum ali): dois
+     pontos a 2 sqm da entrada, com o monstro mais fraco do lugar */
+  spawnNaEntrada: (h) => patch(h, 'rooms.forEach((r,i)=>{r.i=i});', 'const k0=M.pontos.map(q=>q.k).filter(k=>!MT[k].boss).sort((a,b)=>MT[a].hp-MT[b].hp)[0];for(const[dx,dy]of[[2,0],[-2,0]]){const x=e.x+dx,y=e.y+dy;if(!g[y*MW+x])rooms.push({x,y,w:1,h:1,cx:x,cy:y,tipo:k0,prof:0,base:1,esp:0})}rooms.forEach((r,i)=>{r.i=i});', 'spawn na entrada'),
   /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
      mas nada sai para a rede). Imita as funções do login simples
      (tools/supabase/002_login_simples.sql): window.__nuvem.dados é o save do
@@ -549,6 +551,8 @@ async function testaSimulacao() {
   const {carrega} = await import(url('dados.js'));
   const P = await import(url('progresso.js'));
   const I = await import(url('incursao.js'));
+  const Mp = await import(url('mapa.js'));
+  const OT = await import(pathToFileURL(join(dirname(fileURLToPath(import.meta.url)), 'otbm.mjs')).href);
   const Cb = await import(url('combate.js'));
   carrega(JSON.parse(CONTEUDO));
 
@@ -594,7 +598,7 @@ async function testaSimulacao() {
     if (a.r.semente !== 7) falhas.push(`a incursão não guardou a semente (G.semente=${a.r.semente})`);
     if (a.foto !== b.foto) falhas.push('mesma semente, masmorras diferentes');
     if (JSON.stringify(a.r) !== JSON.stringify(b.r)) falhas.push(`mesma semente, resultados diferentes: ${JSON.stringify(a.r)} / ${JSON.stringify(b.r)}`);
-    if (a.foto.split('|')[0] === c.foto.split('|')[0]) falhas.push('sementes 7 e 8 deram o mesmo mapa');
+    if (a.foto.split('|')[0] !== c.foto.split('|')[0]) falhas.push('sementes 7 e 8 deram mapas diferentes: o mapa é fixo (pilar 2)');
     if (JSON.stringify(a.r) !== JSON.stringify(d.r)) falhas.push(`os efeitos mexeram na regra: ${JSON.stringify(a.r)} / ${JSON.stringify(d.r)}`);
     /* passo fixo: 20, 60 ou quadros irregulares, a mesma incursão */
     if (JSON.stringify(a.r) !== JSON.stringify(e.r)) falhas.push(`o resultado depende do quadro (50 ms × 1/60 s): ${JSON.stringify(a.r)} / ${JSON.stringify(e.r)}`);
@@ -920,10 +924,12 @@ async function testaSimulacao() {
     if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
     if (!ruim((c) => { c.hunts.esgoto.npc = 'mercador'; })) falhas.push('mapa de caça levado por quem não abre cacadas foi aceito');
     if (!ruim((c) => { c.hunts.ilha.bands[0].weights = {grifo: 1}; })) falhas.push('mapa de caça com monstro inexistente foi aceito');
-    if (!ruim((c) => { c.hunts.cripta.mapa.w = [5, 40]; })) falhas.push('mapa de caça com sala maior que o mapa foi aceito');
+    if (!ruim((c) => { delete c.hunts.cripta.mapa; })) falhas.push('lugar de caça sem mapa fixo foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.grade[3] = c.hunts.cripta.mapa.grade[3].slice(2); })) falhas.push('mapa fixo com linha curta foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.spawn.push('0 0 esqueleto'); })) falhas.push('spawn fora do chão foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.spawn = c.hunts.cripta.mapa.spawn.filter((t) => !t.endsWith(' sombra')); })) falhas.push('mapa sem o chefe no spawn foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.entrada = '0 0'; })) falhas.push('entrada fora do chão foi aceita');
     if (!ruim((c) => { c.hunts.ilha.npc = 'guia'; })) falhas.push('NPC que abre cacadas sem mapa de caça nenhum foi aceito');
-    if (!ruim((c) => { c.hunts.cripta.mapa.objetos = [{k: 'pilar', onde: 'teto', p: 0.1}]; })) falhas.push('objeto de mapa com onde desconhecido foi aceito');
-    if (!ruim((c) => { c.hunts.cripta.arte.detalhes = [{s: [], onde: 'livre', p: 0.1}]; })) falhas.push('detalhe de mapa sem sprite foi aceito');
     const C3 = Cd.entraCidade('capitao'); Cd.updateCidade(0.05, parado);
     if (C3.perto !== 'capitao') falhas.push(`voltar da ilha não pôs o jogador ao lado do Capitão (${C3.perto})`);
     /* os mapas de caça: cada um com os monstros e o chefe dele, a mesma
@@ -941,31 +947,31 @@ async function testaSimulacao() {
       novoSave(); I.newRun(51, undefined, false, k);
       if (retrato() !== a) falhas.push(`mesma semente no mapa ${k}, masmorras diferentes`);
       fotos[k] = a.split('|')[0];
-      /* os objetos do lugar (mapa.objetos): existem, são os mesmos para a
-         mesma semente, ninguém nasce em cima deles e nenhum fecha caminho:
-         todo chão continua alcançável a partir da entrada */
+      /* o mapa é fixo (pilar 2): outra semente dá o mesmo mapa e os mesmos
+         monstros nos mesmos sqm; ninguém nasce em parede ou objeto; todo
+         ponto de spawn se alcança andando da porta; e a ida e volta pelo
+         formato do Remere's Map Editor (tools/otbm.mjs) devolve o mesmo mapa */
       {
-        const G = I.G, objs = [], chao = [];
-        for (let i = 0; i < G.g.length; i++) { if (G.g[i] === 2) objs.push(i + ':' + G.obj[i]); if (G.g[i] === 0) chao.push(i); }
-        if (h.mapa && h.mapa.objetos && !objs.length) falhas.push(`o mapa ${k} tem objetos no content.json e nenhum na masmorra`);
-        if (objs.some((o) => !+o.split(':')[1])) falhas.push(`o mapa ${k} tem sqm sólido de objeto sem objeto`);
-        const em = G.mons.filter((m) => G.g[m.ty * 64 + m.tx] !== 0).map((m) => m.k);
+        const G = I.G, mons = (g) => g.mons.map((m) => `${m.k}@${m.tx},${m.ty}:${m.mhp}`).sort().join(';');
+        const m1 = mons(G), g1 = fnv(G.g);
+        novoSave(); I.newRun(9876, undefined, false, k);
+        if (fnv(I.G.g) !== g1) falhas.push(`no mapa ${k}, outra semente deu outro mapa`);
+        if (mons(I.G) !== m1) falhas.push(`no mapa ${k}, outra semente pôs outros monstros (pilar 2)`);
+        const em = I.G.mons.filter((m) => I.G.g[m.ty * 64 + m.tx] !== 0).map((m) => m.k);
         if (em.length) falhas.push(`no mapa ${k}, monstro nascido em cima de parede ou objeto: ${em}`);
-        if (G.ps.some((q) => G.g[q.ty * 64 + q.tx] !== 0)) falhas.push(`no mapa ${k}, o jogador começou em cima de um objeto`);
-        const vis = new Uint8Array(G.g.length), fila = [G.ps[0].ty * 64 + G.ps[0].tx]; vis[fila[0]] = 1;
-        while (fila.length) { const c = fila.pop(), x = c % 64; for (const d of [x > 0 ? -1 : 0, x < 63 ? 1 : 0, -64, 64]) { const n = c + d; if (d && n >= 0 && n < G.g.length && !vis[n] && G.g[n] === 0) { vis[n] = 1; fila.push(n); } } }
-        const preso = chao.filter((i) => !vis[i]).length;
-        if (preso) falhas.push(`no mapa ${k}, os objetos isolaram ${preso} sqm de chão`);
-        novoSave(); I.newRun(51, undefined, false, k);
-        const objs2 = []; for (let i = 0; i < I.G.g.length; i++) if (I.G.g[i] === 2) objs2.push(i + ':' + I.G.obj[i]);
-        if (objs2.join() !== objs.join()) falhas.push(`mesma semente no mapa ${k}, objetos diferentes`);
+        if (I.G.ps.some((q) => I.G.g[q.ty * 64 + q.tx] !== 0)) falhas.push(`no mapa ${k}, o jogador começou fora do chão`);
+        const M = Mp.leMapa(h.mapa), longe = M.pontos.filter((q) => M.dist[q.y * 64 + q.x] < 0).length;
+        if (longe) falhas.push(`no mapa ${k}, ${longe} ponto(s) de spawn não se alcançam da porta`);
+        const m2 = OT.importa(OT.exporta(h, k + '-spawn.xml'), OT.spawnXml(h, JSON.parse(CONTEUDO).enemies), JSON.parse(CONTEUDO).enemies);
+        if ((m2.entrada !== h.mapa.entrada || m2.spawn.join() !== h.mapa.spawn.join() ||
+          [...Mp.leMapa(m2).pi].some((n, i) => m2.pilhas[n] !== h.mapa.pilhas[M.pi[i]]))) falhas.push(`no mapa ${k}, exportar e importar pelo .otbm mudou o mapa`);
       }
       I.G.active = true; let fim = null; saida.fim = (x) => { fim = x; };
       for (let i = 0; i < 40; i++) I.passo(0.05, {x: 0, y: 0, held: [true, true, false, false]});
       I.finish('desabou');
       if (fim !== 'desabou') falhas.push(`a incursão no mapa ${k} não terminou (${fim})`);
     }
-    if (new Set(Object.values(fotos)).size !== Object.keys(fotos).length) falhas.push('mapas de caça diferentes com a mesma semente deram o mesmo mapa');
+    if (new Set(Object.values(fotos)).size !== Object.keys(fotos).length) falhas.push('mapas de caça diferentes deram o mesmo mapa');
     novoSave(); I.newRun(51, undefined, false, 'constructor');
     if (I.G.caca !== 'runas' || retrato().split('|')[0] !== fotos.runas) falhas.push(`mapa de caça que não existe não virou a Masmorra de Runas (${I.G.caca})`);
     /* sem mapa de caça, a Masmorra de Runas de sempre: o mesmo mapa da semente */
@@ -1314,7 +1320,7 @@ const CASOS = [
     var lado=!I.solid(q.tx,q.ty+1)&&!I.solid(q.tx,q.ty+2)?1:-1;
     RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty+lado,f:0,h:0,pot:0});await quadros(4);
     RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty+2*lado,f:0,h:0,pot:0});
-    var ty0=q.ty,chegou=await ate(function(){return q.ty===ty0+lado&&!q.sd},60);
+    var ty0=q.ty,chegou=await ate(function(){return q.ty===ty0+2*lado&&!q.sd},80);
     ok('o anfitrião leva o convidado até o sqm que ele conta', chegou, ty0+' → '+q.ty);
     var ne=RT.salaMandadas('estado').length-e0,dtj=I.G.t-t0;
     ok('com convidado dentro, o retrato vai a uns 10 por segundo', ne>=Math.floor(dtj/0.1)-1&&ne<=Math.ceil(dtj/0.1)+1, ne+' em '+dtj.toFixed(2)+' s');
