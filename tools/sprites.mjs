@@ -63,8 +63,8 @@ const ARTE = {
      os NPCs das casas (as chaves de city.npcs no content.json) */
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
   arvore: {i: 1507}, arvore2: {i: 1504},
-  npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45},
-  npc_quitandeira: {o: 17}, npc_boticaria: {o: 21}, npc_mago: {o: 10}, npc_ferreiro: {o: 44},
+  npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45}, npc_gordon: {o: 21},
+  npc_quitandeira: {o: 17}, npc_boticaria: {o: 44}, npc_mago: {o: 10},
   /* cidade: chão da praça, ponte, terra da horta, o que cresce por cima
      (flores e horta, por onde se anda) e os objetos sólidos (OBJETOS em
      src/sim/dados.js, obj_<nome>) */
@@ -83,6 +83,7 @@ const ARTE = {
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},
   it_espada: {i: 1712}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
   it_gema: {i: 2211}, it_coroa: {i: 1984}, it_couraca: {i: 1998}, it_cota: {i: 2034}, pocao: {i: 2129},
+  it_maca: {i: 1811}, it_gibao: {i: 2010}, it_machadoguerra: {i: 1844}, it_placas: {i: 2053},
   /* efeitos de impacto por elemento */
   ef_fisico: {e: 1}, ef_fogo: {e: 6}, ef_gelo: {e: 7}, ef_cura: {e: 2},
   ef_energia: {e: 2, tom: 120}, ef_sagrado: {e: 2, tom: -140}, ef_terra: {e: 3, tom: -170},

@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.14.0';
-import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.14.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.14.0';
-import {G,solid} from './sim/incursao.js?v=0.14.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.14.0';
-import {bf} from './sim/combate.js?v=0.14.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.14.0';
-import {$,app,RM} from './dom.js?v=0.14.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.20.0';
+import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.20.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.20.0';
+import {G,solid} from './sim/incursao.js?v=0.20.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.20.0';
+import {bf} from './sim/combate.js?v=0.20.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.20.0';
+import {$,app,RM} from './dom.js?v=0.20.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
@@ -358,7 +358,7 @@ function cena(){
   const vis=G.mons.filter(m=>m.x>cx-40&&m.x<cx+W+40&&m.y>cy-40&&m.y<cy+H+40);
   const ents=vis.map(m=>({y:m.y,m}));
   /* os jogadores da sala também; quem saiu pelo portal some */
-  for(const q of G.ps)if(q.fora!=='extraiu')ents.push({y:q.y,pl:q});
+  for(const q of G.ps)if(q.fora!=='extraiu'&&q.fora!=='fora')ents.push({y:q.y,pl:q});
   ents.sort((a,b)=>a.y-b.y);
   if(A){
     /* ordem do cliente do Tibia: linha por linha, as paredes da linha e depois
@@ -411,7 +411,7 @@ function cena(){
   }
   ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(dark,0,0);
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(G.active&&RUN-G.t<=60&&!G.over){const a=.18+.1*Math.sin(G.t*4);const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(216,72,63,0)');g.addColorStop(1,`rgba(216,72,63,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+  if(G.active&&!G.aberta&&RUN-G.t<=60&&!G.over){const a=.18+.1*Math.sin(G.t*4);const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(216,72,63,0)');g.addColorStop(1,`rgba(216,72,63,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
   // nomes, vida e números (por cima da escuridão)
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   ctx.textAlign='center';ctx.textBaseline='alphabetic';
@@ -439,7 +439,7 @@ function cena(){
    árvores e quem está na linha). Sem a arte, cores chapadas. */
 const CHAO_C=['grama','','rua','assoalho','grama','agua','rua','praca','ponte','grama','terra'],
   COR_C=['#3e6b2b','#5a5650','#6d675d','#6b4a2a','#3e6b2b','#2b5f93','#6d675d','#7d7a70','#8a6a3a','#3e6b2b','#5b3d22'];
-const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c',quitandeira:'#e0dccf',boticaria:'#3c3a44',mago:'#2f4f9a',ferreiro:'#8d8a84'};
+const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c',gordon:'#3a3632',quitandeira:'#e0dccf',boticaria:'#3c3a44',mago:'#2f4f9a'};
 /* o que cresce no chão (flores, horta) e os objetos, sem a arte: cor e forma */
 const FLOR=['flor1','flor2','flor3','flor4'],COR_FLOR=['#7f8cff','#f2d24b','#e0483a','#f6e9a0'];
 const COR_OBJ={fonte:'#8fb4d8',poco:'#6e6a62',barril:'#7a4a22',caixote:'#a87c45',estatua:'#a9a59b',arbusto:'#2f6a2a',cerejeira:'#e7a0b8',frutifera:'#3b6e2b',forno:'#3a3633',estante:'#6b4a2a',banca:'#9a6a35',lenha:'#8a6a3a'};
@@ -498,6 +498,7 @@ export function renderCidade(){
         ctx.strokeStyle='#ffd68a';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(mx,my,13,9,0,0,TAU);ctx.stroke()}
       else if(C.obj[i])drawObj(LISTA_OBJ[C.obj[i]-1],mx,my,hash(x,y));
     }
+    for(const c of C.chao)if(c.y===y&&(!A||!spr('it_'+c.k,0,0,(c.x+.5)*T,(c.y+.5)*T))){ctx.fillStyle='#d9c7a0';ctx.fillRect(c.x*T+11,c.y*T+11,10,10)}
     for(const n of C.npcs)if((n.y/T|0)===y)drawNpc(n,p);
     linhaC=y;C.outros.forEach(outroNaLinha);
     if((p.y/T|0)===y)drawPlayer(p,false,false,ch().equip);

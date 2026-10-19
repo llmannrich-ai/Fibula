@@ -11,11 +11,11 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave} from './sim/progresso.js?v=0.14.0';
-import {G} from './sim/incursao.js?v=0.14.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.14.0';
-import {menu,showMenu} from './telas.js?v=0.14.0';
-import {$} from './dom.js?v=0.14.0';
+import {normaliza,soPecas,save,setSave} from './sim/progresso.js?v=0.20.0';
+import {G} from './sim/incursao.js?v=0.20.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.20.0';
+import {menu,showMenu} from './telas.js?v=0.20.0';
+import {$} from './dom.js?v=0.20.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
@@ -64,7 +64,7 @@ export async function puxa(forca){
     const ligado=save.dono===sessao.uid,outro=!!save.dono&&!ligado;
     const adota=!!d&&(forca||(ligado?(d.em||0)>(save.em||0):outro||(d.runs|0)>=(save.runs|0)));
     if(adota){setSave(normaliza(d));save.dono=sessao.uid;try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){marcaFalha()}}
-    nuvem.pronto=true;nuvem.erro=false;
+    nuvem.pronto=true;nuvem.erro=false;esvazia();
     if(!adota){save.dono=sessao.uid;persist()}
     if(!menu.hidden)showMenu();else desenhaConta();
   }catch(e){nuvem.erro=true;desenhaConta();setTimeout(()=>puxa(forca),30000)}
@@ -80,6 +80,7 @@ export async function mercado(fn,args){
   if(!sessao)throw new Error('conta');
   if(!nuvem.pronto)throw new Error('nuvem');
   const muda=fn!=='mercado_livro';
+  await esvazia();
   if(muda){clearTimeout(nuvem.timer);await nuvem.voo;if(nuvem.sujo)await empurra();if(nuvem.sujo)throw new Error('rede')}
   let r;try{r=await rpc(fn,Object.assign({p_token:sessao.tk},args))}catch(e){throw new Error('rede')}
   if(!r.ok){const m=await erroRpc(r);if(m==='sessao')sessaoMorta();throw new Error(m||'rede')}
@@ -87,7 +88,47 @@ export async function mercado(fn,args){
   if(muda){save.cofre=Math.max(0,d.cofre|0);save.itens=soPecas(d.itens);save.mkt=d.mkt|0;persist()}
   return d;
 }
-/* o nome de usuário da conta ligada, ou null: é o nome que os outros veem na cidade */
+/* ---------- origem do loot ----------
+   O banco só deixa anunciar o que tem origem registrada
+   (tools/supabase/004_origem.sql): a caçada abre no banco ao começar
+   (caca_comecar) e fecha ao acabar (caca_fim), com o saco que sobrou na
+   extração ou o ouro do Selo na morte; a venda ao Banco também avisa
+   (lastro_banco). O que não chegou por falta de rede espera numa fila no
+   aparelho e vai antes da próxima operação da Feira. */
+const KEYF=KEY+'-fila';
+let fila=[];try{fila=JSON.parse(localStorage.getItem(KEYF)||'[]')||[]}catch(e){}
+const guardaFila=()=>{try{localStorage.setItem(KEYF,JSON.stringify(fila))}catch(e){}};
+let esvaziando=null;
+/* manda a fila em ordem; para no primeiro erro de rede, descarta o que o
+   banco recusou (caçada já fechada, sessão de outra conta) */
+function esvazia(){
+  if(esvaziando)return esvaziando;
+  return esvaziando=(async()=>{
+    while(fila.length&&sessao){
+      const f=fila[0];
+      if(f.uid===sessao.uid){
+        let r;try{r=await rpc(f.fn,Object.assign({p_token:sessao.tk},f.args))}catch(e){break}
+        if(!r.ok&&r.status>=500)break;
+      }
+      fila.shift();guardaFila();
+    }
+  })().finally(()=>{esvaziando=null});
+}
+const enfila=(fn,args)=>{if(!sessao)return;fila.push({fn,args,uid:sessao.uid});guardaFila();esvazia()};
+const caca={id:null};
+export const cacaId=()=>caca.id;
+export async function cacaComeca(){
+  caca.id=null;if(!sessao||!nuvem.pronto)return;
+  try{const r=await rpc('caca_comecar',{p_token:sessao.tk});if(r.ok)caca.id=await r.json()}catch(e){}
+}
+/* kind: extraiu, morreu ou desabou; p: o jogador deste aparelho */
+export function cacaFim(kind,p){
+  if(!caca.id)return;
+  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?soPecas(p.bag):{},p_ouro:kind==='extraiu'?p.ouroExt|0:p.sealed|0});
+  caca.id=null;
+}
+export const lastroBanco=(k,val)=>enfila('lastro_banco',{p_item:k,p_val:val});
+/* o nome de usuário da conta ligada: é o nome que os outros veem na cidade */
 export const quemSou=()=>sessao?sessao.usuario||null:null;
 export function desenhaConta(){
   const box=$('#mConta');box.hidden=!SB_KEY;if(!SB_KEY)return;

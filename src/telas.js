@@ -1,23 +1,23 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
-   caça, tela final, Mercador, lojas de provisões e Feira (mercado entre
-   jogadores). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.14.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,SUP} from './sim/dados.js?v=0.14.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,podeComprar,compra,gastaProv} from './sim/progresso.js?v=0.14.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.14.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.14.0';
-import {persist,saveFalhou} from './salvar.js?v=0.14.0';
-import {desenhaConta,temConta,mercado} from './nuvem.js?v=0.14.0';
-import {rede,SALAS} from './rede.js?v=0.14.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,comecaGrupo,correndo,refazFicha} from './sala.js?v=0.14.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.14.0';
-import {icone} from './arte.js?v=0.14.0';
-import {$,app} from './dom.js?v=0.14.0';
-import {retrato} from './desenho.js?v=0.14.0';
+   caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
+   jogadores) e Forja (o Gordon). */
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.20.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP} from './sim/dados.js?v=0.20.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv} from './sim/progresso.js?v=0.20.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.20.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.20.0';
+import {persist,saveFalhou} from './salvar.js?v=0.20.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.20.0';
+import {rede,SALAS} from './rede.js?v=0.20.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.20.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.20.0';
+import {icone} from './arte.js?v=0.20.0';
+import {$,app} from './dom.js?v=0.20.0';
+import {retrato} from './desenho.js?v=0.20.0';
 
-export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),lojaS=$('#loja');
-const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,lojaS];
+export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
+const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
 /* V.cidade: a cidade é o fundo (está nela, ou numa tela aberta a partir dela);
    senão o fundo é a masmorra. As telas de dentro voltam para onde vieram. */
 export const V={cidade:false};
@@ -40,7 +40,8 @@ export function showMenu(){
   $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
   $('#mRisco').textContent=risco();
   soTela(menu);
-  if(!G||G.active){newRun()}
+  /* a masmorra da sala roda no aparelho do anfitrião enquanto a sala existir */
+  if(!G||(G.active&&!(G.sala&&SALA.papel==='anfitriao'))){newRun()}
 }
 /* ?semente=12345 (ou um texto qualquer) no endereço fixa a masmorra de toda
    incursão desta aba: para reproduzir um problema pelo número que a tela final
@@ -57,9 +58,9 @@ export function start(prepara){
   /* as provisões que este jogador levou saem do estoque agora */
   const levou=G.p&&G.p.prov&&Object.keys(G.p.prov).length?listaProv(G.p.prov):'';
   if(levou)gastaProv(G.p.prov);
-  G.active=true;save.runs++;persist();montaBotoes();
+  G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
-  log(G.ps.length>1?`Vocês entraram na masmorra, ${G.ps.length} juntos. O portal abre em 1:30, e cada um sai por ele quando quiser.`:'Você entrou na masmorra. O portal abre em 1:30.','info');
+  log(G.aberta?'Você entrou pela porta da sala. A masmorra não tem tempo: volte à porta, na sala de entrada, para sair com o saco.':'Você entrou na masmorra. O portal abre em 1:30.','info');
   if(levou)log(`Você levou ${levou}.`,'info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
@@ -77,43 +78,42 @@ export function showCidade(como){
 }
 export function abreNpc(k){
   const a=CITY.npcs[k].abre;
-  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='loja')showLoja(k);else showHunts();
+  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else if(a==='loja')showLoja(k);else showHunts();
 }
 /* ---------- lojas de provisões ----------
-   Uma tela para todas: o NPC diz o que vende (vende, no content.json). Peça
-   vai para o cofre; provisão fica guardada e vai inteira na próxima caçada */
+   Uma tela para todas: o NPC diz o que vende (vende, no content.json). A
+   provisão fica guardada e vai inteira na próxima caçada */
 const listaProv=o=>Object.entries(o).map(([k,q])=>q>1?`${q} × ${SUP[k].nome}`:SUP[k].nome).join(', ');
 const leva=()=>Object.keys(save.prov).length?`Na próxima caçada você leva: ${listaProv(save.prov)}. Vai tudo, extraindo ou morrendo.`:'Nada guardado para a próxima caçada.';
 let lojaDe=null;
 function drawLoja(){
-  const n=CITY.npcs[lojaDe],soPeca=n.vende.every(k=>SUP[k].peca);
+  const n=CITY.npcs[lojaDe];
   setT($('#ljCasa'),n.casa);setT($('#ljNome'),n.nome);setT($('#ljGold'),String(save.cofre));
-  setT($('#ljFala'),n.fala+(soPeca?' Vista no Banco.':' Provisão vale para uma caçada só.'));
-  const lv=$('#ljLeva');lv.hidden=soPeca;setT(lv,leva());
+  setT($('#ljFala'),n.fala+' Provisão vale para uma caçada só.');setT($('#ljLeva'),leva());
   const ul=$('#ljList');ul.textContent='';
   for(const k of n.vende){
     const s=SUP[k],por=podeComprar(k),tem=save.prov[k]||0;
     const li=document.createElement('li');li.className='up';
     const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');
-    if(icone(ic,s.peca?'it_'+s.peca:'sup_'+k,0,0,32))li.appendChild(ic);
+    if(icone(ic,'sup_'+k,0,0,32))li.appendChild(ic);
     const info=document.createElement('div');info.className='info';
     const h=document.createElement('h3');h.textContent=s.nome;
-    const d=document.createElement('p');d.textContent=s.peca?`${fmtBonus(ITEMS[s.peca])}. ${s.desc}`:s.desc;
-    info.append(h,d);
-    if(!s.peca){const m=document.createElement('p');m.className='meta';
-      m.textContent=por&&por!=='ouro'&&por!=='max'?`Você já leva ${SUP[por].nome}: uma por caçada.`:s.max>1?`Guardadas: ${tem} de ${s.max}`:tem?'Guardada para a próxima caçada.':'';
-      if(m.textContent)info.appendChild(m)}
+    const d=document.createElement('p');d.textContent=s.desc;
+    const m=document.createElement('p');m.className='meta';
+    m.textContent=por&&por!=='ouro'&&por!=='max'?`Você já leva ${SUP[por].nome}: uma por caçada.`:s.max>1?`Guardadas: ${tem} de ${s.max}`:tem?'Guardada para a próxima caçada.':'';
+    info.append(h,d);if(m.textContent)info.appendChild(m);
     const b=document.createElement('button');b.type='button';
     const cheio=por==='max';b.className=cheio?'buy max':'buy';
     b.textContent=cheio?(s.max>1?'cheio':'guardada'):s.preco+' ouro';b.disabled=!!por;
     b.setAttribute('aria-label',cheio?`${s.nome}: já guardou o máximo para a próxima caçada`:`Comprar ${s.nome} por ${s.preco} de ouro`);
-    b.addEventListener('click',()=>{if(compra(k)){persist();refazFicha();drawLoja()}});
+    b.addEventListener('click',()=>{if(compra(k)){persist();drawLoja()}});
     li.append(info,b);ul.appendChild(li);
   }
 }
 function showLoja(k){lojaDe=k;drawLoja();soTela(lojaS)}
-/* a incursão da sala: o anfitrião leva quem está nela */
-const comGrupo=()=>start(()=>{const s=SEM_URL!==undefined?SEM_URL:novaSemente();newRun(s,comecaGrupo(s));G.sala=true});
+/* a porta da sala: o anfitrião entra na masmorra que o aparelho dele já roda;
+   o convidado pede, e a incursão começa quando a resposta chega (src/main.js) */
+const pelaPorta=()=>{if(SALA.papel==='anfitriao'){start(()=>{entraPorta()})}else if(entraPorta())showHunts()};
 const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent=txt;b.setAttribute('aria-label',rot);b.disabled=!!off;b.addEventListener('click',fn);return b};
 /* ---------- sala no Guia de caça ----------
    Criar sala, ver as abertas de quem está na cidade e entrar, ou, dentro de
@@ -121,16 +121,18 @@ const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='
 function desenhaSala(){
   const box=$('#hSala');box.textContent='';
   const h=document.createElement('h3'),p=document.createElement('p'),ul=document.createElement('ul'),ac=document.createElement('div');ac.className='acoes';
-  const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})`).join(', ');
+  const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})${dentro(m.id)?' na masmorra':''}`).join(', ');
+  const porta=()=>botao('Entrar pela porta','Entrar na masmorra da sala pela porta',pelaPorta,SALA.estado!=='ligado'||(SALA.papel==='convidado'&&!SALA.membros.length));
   if(SALA.papel==='anfitriao'){
+    const n=SALA.membros.filter(m=>m.id!==SALA.id&&dentro(m.id)).length;
     h.textContent=`Sua sala · ${SALA.membros.length}/${MAX}`;
-    p.textContent=correndo()?'A incursão do grupo ainda está em andamento.':`Na sala: ${nomes()}. Ao entrar num lugar abaixo, todos vão juntos.`;
-    ac.append(botao('Fechar sala','Fechar a sala',()=>{saiDaSala();showHunts()},correndo()));
+    p.textContent=`Na sala: ${nomes()}. A masmorra dela não tem tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+(n?` Fechar a sala tira quem está lá dentro, sem resultado.`:'');
+    ac.append(porta(),botao('Fechar sala','Fechar a sala e a masmorra dela',()=>{saiDaSala();showHunts()}));
   }else if(SALA.papel==='convidado'){
     const a=SALA.membros[0];
     h.textContent=a?`Sala de ${a.nome} · ${SALA.membros.length}/${MAX}`:'Entrando na sala…';
-    p.textContent=a?`Na sala: ${nomes()}. Espere o anfitrião começar; enquanto isso, ande pela cidade à vontade.`:'Esperando o anfitrião responder.';
-    ac.append(botao('Sair da sala','Sair da sala',()=>{saiDaSala();showHunts()}));
+    p.textContent=a?`Na sala: ${nomes()}. A masmorra não tem tempo: entre e saia pela porta quando quiser.`:'Esperando o anfitrião responder.';
+    ac.append(porta(),botao('Sair da sala','Sair da sala',()=>{saiDaSala();showHunts()}));
   }else{
     h.textContent='Caçar em grupo';
     if(rede.estado!=='ligado'){p.textContent=rede.estado==='sem rede'?'Sem conexão com a cidade agora: dá para caçar sozinho.':'Conectando à cidade…'}
@@ -159,9 +161,8 @@ function showHunts(){
     meta.textContent=`nível recomendado ${h.nivel}`+(c.lvl<h.nivel?' · acima do seu':'');
     info.append(t,p,meta);
     const b=document.createElement('button');b.type='button';
-    /* na sala, quem escolhe o lugar e começa é o anfitrião */
-    if(SALA.papel==='convidado'){b.textContent='o anfitrião escolhe';b.disabled=true}
-    else if(SALA.papel==='anfitriao'){b.textContent=correndo()?'em andamento':'entrar com o grupo';b.disabled=correndo();b.addEventListener('click',comGrupo)}
+    /* quem está numa sala caça na masmorra dela, pela porta */
+    if(SALA.papel){b.textContent='só fora da sala';b.disabled=true}
     else{b.textContent='entrar';b.addEventListener('click',()=>start())}
     b.setAttribute('aria-label',`Entrar em ${h.nome}`);
     li.append(info,b);ul.appendChild(li);
@@ -205,6 +206,8 @@ export function showPick(){
   soTela(pickS);
 }
 function escolher(k){
+  /* trocar de personagem tira da sala: a ficha que está lá é a do outro */
+  if(SALA.papel)saiDaSala();
   if(!save.chars[k])save.chars[k]=novoChar(k);
   save.classe=k;persist();setG(null);volta();
 }
@@ -317,7 +320,7 @@ function drawEquip(){
     else b1.addEventListener('click',()=>{if(equipar(k)){persist();drawEquip()}});
     const b2=document.createElement('button');b2.type='button';b2.className='rm';b2.textContent=`vender ${it.val}`;
     b2.setAttribute('aria-label',`Vender ${it.nome} por ${it.val} de ouro`);
-    b2.addEventListener('click',()=>{if(vender(k)){persist();drawEquip()}});
+    b2.addEventListener('click',()=>{if(vender(k)){lastroBanco(k,it.val);persist();drawEquip()}});
     bt.append(b1,b2);li.append(info,bt);ul.appendChild(li);
   }
   soTela(equipS);
@@ -328,8 +331,10 @@ export function showEnd(){
   const p=G.p,k=p.fora||G.end,ok=k==='extraiu';
   $('#endEye').textContent=ok?'Incursão concluída':'Fim da incursão';
   const t=$('#endTitle');t.textContent=ok?'Extraído!':k==='morreu'?'Você morreu':'Soterrado';t.classList.toggle('lost',!ok);
-  $('#endText').textContent=ok?(p.pecas
-      ?`Você saiu pelo portal com ${p.bagVal} de ouro em loot. ${p.ouroExt} viraram ouro no cofre, e ${p.pecas} peça${p.pecas>1?'s':''} de equipamento ${p.pecas>1?'esperam':'espera'} lá para vestir ou vender.`
+  $('#endText').textContent=ok?(p.pecas||p.mats
+      ?`Você saiu pelo portal com ${p.bagVal} de ouro em loot. ${p.ouroExt} viraram ouro no cofre`+
+        (p.pecas?`, ${p.pecas} peça${p.pecas>1?'s':''} de equipamento ${p.pecas>1?'esperam':'espera'} no Banco para vestir ou vender`:'')+
+        (p.mats?`, ${p.mats} ${p.mats>1?'materiais foram':'material foi'} para o depósito do Gordon, na Forja`:'')+'.'
       :`Você saiu pelo portal com ${p.bagVal} de ouro em loot. Tudo foi para o cofre.`)
     :k==='morreu'?`O loot que você carregava ficou na masmorra, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
     :`A masmorra desabou antes de você chegar ao portal. O loot ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
@@ -383,6 +388,51 @@ function buy(k){
 }
 function showShop(){drawShop();soTela(shopS)}
 
+/* ---------- forja (Gordon) ----------
+   A encomenda da vez, a loja que as encomendas liberam e o depósito de
+   materiais. A regra (preços, o que se entrega, o que está liberado) é de
+   src/sim/progresso.js e do content.json. */
+const fgLi=(k,cls)=>{const li=document.createElement('li');li.className='sp'+(cls?' '+cls:'');const ic=k&&icoItem(k);if(ic)li.appendChild(ic);return li};
+const fgInfo=(t,p,m,mcls)=>{const d=document.createElement('div');d.className='info';
+  const h=document.createElement('h3');h.textContent=t;d.appendChild(h);
+  if(p){const e=document.createElement('p');e.textContent=p;d.appendChild(e)}
+  if(m){const e=document.createElement('div');e.className='meta'+(mcls?' '+mcls:'');e.textContent=m;d.appendChild(e)}
+  return d};
+const fgBt=(t,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.textContent=t;b.setAttribute('aria-label',rot);b.disabled=!!off;if(!off)b.addEventListener('click',fn);return b};
+const fgVazio=(ul,t)=>{const li=document.createElement('li');li.className='vazio';li.textContent=t;ul.appendChild(li)};
+function msgFg(t){$('#fgMsg').textContent=t}
+function drawForja(){
+  setT($('#fgGold'),String(save.cofre));
+  const um=$('#fgMissao'),m=missao();um.textContent='';
+  if(!m)fgVazio(um,'Gordon não tem mais encomendas. Tudo o que ele sabe forjar está à venda.');
+  else{const li=fgLi(null);
+    const falta=Object.entries(m.pede).map(([k,q])=>`${ITEMS[k].nome} ${Math.min(save.mats[k]|0,q)}/${q}`).join(' · ');
+    li.append(fgInfo(`${save.forja+1}/${FORJA.missoes.length} · ${m.nome}`,m.fala,falta,podeEntregar()?'ok':''));
+    const lib=FORJA.loja.filter(o=>o.missao===save.forja+1).map(o=>ITEMS[o.item].nome).join(' e ');
+    li.appendChild(fgBt('entregar',`Entregar a encomenda ${m.nome}`+(lib?` e liberar ${lib}`:''),()=>{
+      if(entregar()){persist();drawForja();msgFg(lib?`Gordon pegou os materiais. Na loja agora: ${lib}.`:'Gordon pegou os materiais.')}},!podeEntregar()));
+    um.appendChild(li)}
+  const ul=$('#fgLoja');ul.textContent='';
+  for(const o of FORJA.loja){const it=ITEMS[o.item],livre=o.missao<=save.forja;
+    const li=fgLi(o.item,'r'+it.rar+(livre?'':' locked'));
+    li.append(fgInfo(it.nome,`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`,livre?'':`depois da encomenda ${o.missao}`));
+    li.appendChild(fgBt(`${o.preco} ouro`,livre?`Comprar ${it.nome} por ${o.preco} de ouro`:`${it.nome}: liberada depois da encomenda ${o.missao}`,()=>{
+      if(comprarForja(o.item)){persist();drawForja();msgFg(`${it.nome} foi para o cofre. Vista no Banco.`)}},!livre||save.cofre<o.preco));
+    ul.appendChild(li)}
+  const ml=$('#fgMats');ml.textContent='';
+  const rows=Object.keys(FORJA.compra).filter(k=>save.mats[k]>0);
+  if(!rows.length)fgVazio(ml,'Nada guardado. Dente, seda, osso e erva que você extrair vêm para cá.');
+  for(const k of rows){const q=save.mats[k],pr=FORJA.compra[k],res=Math.min(q,reservado(k)),sobra=q-res;
+    const li=fgLi(k);
+    li.append(fgInfo(`${ITEMS[k].nome} ×${q}`,`Gordon paga ${pr} de ouro cada`,res?`${res} para a encomenda`:''));
+    const bt=document.createElement('div');bt.className='btns';
+    const vende=n=>()=>{const o=venderMat(k,n);if(o){persist();drawForja();msgFg(`Gordon pagou ${o} de ouro.`)}};
+    bt.append(fgBt(`vender 1 · ${pr}`,`Vender 1 ${ITEMS[k].nome} por ${pr} de ouro`,vende(1)),
+      fgBt(`sobra · ${sobra*pr}`,`Vender ${sobra} ${ITEMS[k].nome}, o que a encomenda não usa, por ${sobra*pr} de ouro`,vende(sobra),!sobra));
+    bt.lastChild.className='rm';li.appendChild(bt);ml.appendChild(li)}
+}
+function showForja(){msgFg('');drawForja();soTela(forjaS)}
+
 /* ---------- feira (mercado entre jogadores) ----------
    O livro de ofertas e o match são do banco (src/nuvem.js, mercado()); aqui é
    só a tela. Duas vistas na mesma tela, nada de arrastar (pilar 3): a lista
@@ -395,13 +445,23 @@ const MSG_MK={conta:'Para negociar com outros jogadores, entre com uma conta no 
   sessao:'Sua sessão expirou. Entre de novo no acampamento.',sem_save:'Seu progresso ainda não subiu para a nuvem. Tente de novo em instantes.',
   sem_ouro:'Falta ouro no cofre para essa compra.',sem_peca:'Você não tem essa quantidade da peça no cofre.',
   limite:'Você já tem 10 ofertas abertas. Cancele uma para anunciar outra.',preco:'O preço vai de 1 a 1.000.000 de ouro por peça.',
-  qtd:'A quantidade vai de 1 a 100.',ordem:'Essa oferta já fechou ou foi cancelada.'};
+  qtd:'A quantidade vai de 1 a 100.',ordem:'Essa oferta já fechou ou foi cancelada.',
+  sem_origem:'O banco não tem registro de onde isso veio. Só se negocia o que foi extraído, comprado, recebido na Feira ou vendido ao Banco com a conta ligada.',
+  caca:'Esta caçada não foi registrada no banco (sem rede quando começou). Extraia e venda do cofre.',
+  caca_cedo:'A caçada acabou de começar. Espere alguns segundos para vender do saco.',
+  saco_limite:'Limite de peças vindas de caçada atingido (30 por caçada, 60 por dia).'};
+/* o que o banco aceita: o menor entre o save e a origem registrada */
+const origem=()=>(MK.livro&&MK.livro.lastro)||{ouro:0,itens:{}};
+const vendaveis=k=>Math.min(save.itens[k]|0,origem().itens[k]|0);
+const ouroUtil=()=>Math.min(save.cofre,origem().ouro|0);
 const pecasDaFeira=()=>Object.keys(ITEMS).filter(k=>ITEMS[k].slot).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a].slot)-SLOTS_EQ.indexOf(ITEMS[b].slot)||ITEMS[a].val-ITEMS[b].val);
 const livroDe=k=>(MK.livro&&MK.livro.itens[k])||{venda:[],compra:[],ultimo:null,dia:0};
 const taxaMk=()=>MK.livro?MK.livro.taxa:2;
 const taxaDe=t=>Math.ceil(t*taxaMk()/100);
 const msgMk=(t,ruim)=>{const m=$('#mktMsg');m.textContent=t||'';m.className='mmsg'+(ruim?' ruim':'')};
 const erroMk=e=>msgMk(MSG_MK[e.message]||MSG_MK.rede,true);
+/* a mesma mensagem para a venda do saco, na Mochila */
+export const erroFeira=c=>MSG_MK[c]||MSG_MK.rede;
 const nPecas=(q,k)=>q>1?`${q} × ${ITEMS[k].nome}`:ITEMS[k].nome;
 /* o que outros jogadores pagaram ou entregaram enquanto você não estava */
 const fmtRecebido=r=>{const p=[];if(r.ouro>0)p.push(`${r.ouro} de ouro`);
@@ -422,6 +482,8 @@ async function showFeira(){
 }
 function desenhaFeira(){
   setT($('#mktGold'),String(save.cofre));$('#mktTaxa').textContent=taxaMk();
+  const og=$('#mktOrig'),ou=ouroUtil();og.hidden=!MK.livro||ou>=save.cofre;
+  og.textContent=`Com origem registrada: ${ou} de ouro. Só esse pode comprar na Feira.`;
   $('#mktLista').hidden=!!MK.peca;$('#mktPeca').hidden=!MK.peca;mktS.classList.toggle('peca',!!MK.peca);
   if(MK.peca)return desenhaPeca();
   const ul=$('#mktItens');ul.textContent='';
@@ -430,7 +492,8 @@ function desenhaFeira(){
     const li=document.createElement('li');li.className='sp r'+it.rar;
     const ic=icoItem(k);if(ic)li.appendChild(ic);
     const info=document.createElement('div');info.className='info';
-    const h=document.createElement('h3');h.textContent=it.nome+(tem?` · ${tem} no cofre`:'');
+    const vd=vendaveis(k);
+    const h=document.createElement('h3');h.textContent=it.nome+(tem?` · ${tem} no cofre`+(MK.livro&&vd<tem?`, ${vd} com origem`:''):'');
     const p=document.createElement('p');
     p.textContent=[l.venda.length&&`vendem a partir de ${l.venda[0][0]}`,l.compra.length&&`compram até ${l.compra[0][0]}`].filter(Boolean).join(' · ')||'Ninguém anuncia agora.';
     const meta=document.createElement('div');meta.className='meta';
@@ -462,7 +525,7 @@ function desenhaFeira(){
 /* preço sugerido: o melhor do outro lado (aceitar é o caso comum), senão o
    que o Banco paga pela peça */
 function abrePeca(k,lado){
-  MK.peca=k;MK.lado=lado||(save.itens[k]?'venda':'compra');
+  MK.peca=k;MK.lado=lado||(vendaveis(k)?'venda':'compra');
   const l=livroDe(k),o=MK.lado==='compra'?l.venda:l.compra;
   $('#mpPreco').value=o.length?o[0][0]:ITEMS[k].val;$('#mpQtd').value=1;
   msgMk('');desenhaFeira();
@@ -473,7 +536,8 @@ function desenhaPeca(){
   const k=MK.peca,it=ITEMS[k],l=livroDe(k),tem=save.itens[k]|0;
   const ic=$('#mpIco');ic.hidden=!icone(ic,'it_'+k);
   $('#mpNome').textContent=it.nome;
-  $('#mpInfo').textContent=`${SLOT_NOME[it.slot]} · ${fmtBonus(it)} · ${tem} no cofre`+(l.ultimo?` · último negócio ${l.ultimo}`:'');
+  const vd=vendaveis(k);
+  $('#mpInfo').textContent=`${SLOT_NOME[it.slot]} · ${fmtBonus(it)} · ${tem} no cofre`+(vd<tem?` (${vd} com origem)`:'')+(l.ultimo?` · último negócio ${l.ultimo}`:'');
   for(const[id,lista,lado]of[['#mpVenda',l.venda,'compra'],['#mpCompra',l.compra,'venda']]){
     const ul=$(id);ul.textContent='';
     if(!lista.length){const li=document.createElement('li');li.className='nada';li.textContent='ninguém';ul.appendChild(li)}
@@ -491,19 +555,21 @@ function desenhaPeca(){
 /* o que vai acontecer, em número, antes de tocar em Anunciar (pilar 1: o
    jogador sabe o preço antes de arriscar) */
 function resumoPeca(){
-  const k=MK.peca,pr=lePreco(),q=leQtd(),tem=save.itens[k]|0,l=livroDe(k);
+  const k=MK.peca,pr=lePreco(),q=leQtd(),tem=save.itens[k]|0,vd=vendaveis(k),ou=ouroUtil(),l=livroDe(k);
   const valido=pr>=1&&pr<=1e6&&q>=1&&q<=100;let t,pode=valido&&!MK.ocupado;
   if(!valido)t='Preço de 1 a 1.000.000 e quantidade de 1 a 100.';
   else if(MK.lado==='compra'){const tot=pr*q;
     t=save.cofre<tot?`Faltam ${tot-save.cofre} de ouro no cofre para reservar ${tot}.`
+      :ou<tot?`Só ${ou} de ouro têm origem registrada no banco; a reserva seria ${tot}.`
       :`Reserva ${tot} de ouro do cofre. Compra das vendas mais baratas, até ${pr} por peça, e a diferença volta.`+
        (l.venda.length&&l.venda[0][0]<=pr?'':' Ninguém vende por esse preço agora: a oferta fica no livro.');
-    if(save.cofre<tot)pode=false}
+    if(ou<tot)pode=false}
   else{const tot=pr*q,tx=taxaDe(tot);
     t=tem<q?`Você tem ${tem} no cofre.`
+      :vd<q?`Só ${vd} ${vd===1?'tem':'têm'} origem registrada no banco. Peça de antes da conta ou de save editado não se negocia.`
       :`Se vender tudo a ${pr}, recebe ${tot-tx} de ouro (taxa de ${tx}). Se alguém já paga mais, você recebe o preço dele.`+
        (l.compra.length&&l.compra[0][0]>=pr?'':' Ninguém compra por esse preço agora: a oferta fica no livro.');
-    if(tem<q)pode=false}
+    if(vd<q)pode=false}
   $('#mpRes').textContent=t;
   const b=$('#mpOk');b.disabled=!pode;b.textContent=MK.lado==='compra'?'Anunciar compra':'Anunciar venda';
 }
@@ -511,7 +577,7 @@ async function anuncia(){
   const k=MK.peca,lado=MK.lado,pr=lePreco(),q=leQtd();
   if(MK.ocupado)return;MK.ocupado=true;resumoPeca();msgMk('Anunciando…');
   try{
-    const r=await mercado('mercado_anunciar',{p_lado:lado,p_item:k,p_preco:pr,p_qtd:q});
+    const r=await mercado('mercado_anunciar',{p_lado:lado,p_item:k,p_preco:pr,p_qtd:q,p_caca:null,p_saco:null});
     const t=[fmtRecebido(r.recebido)];
     if(r.feitos)t.push(lado==='compra'?`Comprou ${nPecas(r.feitos,k)} por ${r.ouro} de ouro.`:`Vendeu ${nPecas(r.feitos,k)}: entraram ${r.ouro} de ouro no cofre (taxa de ${r.taxa}).`);
     if(r.resta)t.push(`${r.resta} ${r.resta>1?'ficaram':'ficou'} anunciada${r.resta>1?'s':''} no livro a ${pr}.`);
@@ -537,7 +603,7 @@ $('#mpLadoV').addEventListener('click',()=>abrePeca(MK.peca,'venda'));
 $('#mpOk').addEventListener('click',anuncia);
 $('#mpVolta').addEventListener('click',()=>{MK.peca=null;msgMk('');desenhaFeira()});
 
-for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#ljBack'])$(id).addEventListener('click',volta);
+for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#fgBack','#ljBack'])$(id).addEventListener('click',volta);
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
 $('#toGrim').addEventListener('click',drawGrim);

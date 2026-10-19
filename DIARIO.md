@@ -18,6 +18,121 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 02:40 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a cidade cinco vezes maior e as lojas de provisões (0.20.0), a pedido do Leonardo ("amplie o mapa da cidade para cerca de 5 vezes; insira NPCs que vendem itens como mercado de alimentos, poções e magias"). Mapa de 54×38 (2.052 sqm, era 408): praça com fonte e canteiros, templo com estátuas, rio com duas pontes, Torre dos magos do outro lado, pomar, horta, poço, casas de moradores, Quitanda e Feira a céu aberto. Chãos novos (`:` praça, `=` ponte, `v` flores, `h` horta) e objetos sólidos (`OBJETOS` em `src/sim/dados.js`: fonte, poço, barril, caixote, estátua, arbusto, cerejeira, frutífera, forno, estante, banca, lenha), que ficam sobre o chão do vizinho como os NPCs. Mapa da cidade no canto (`drawMiniCidade()`). Três NPCs com `abre: "loja"` e uma tela só (`showLoja()`): Quitandeira (refeição: regenera vida e/ou mana a caçada toda, uma por vez), Boticária (poção a mais, até 5; elixir de pressa no primeiro minuto) e Mestre de magias (runas de pele de pedra, fúria e olho de águia nos primeiros 90 s). Provisões em `supplies` no `content.json`, guardadas em `save.prov`, levadas pela ficha (`prov`) e gastas no `start()`. O buff da provisão mora em `p.sup` e soma ao das habilidades em vez de ser trocado. 15 sprites novos do OTSP no atlas.
+
+**Validação:** `node tools/testar.mjs` — 31/31, com o caso novo `lojas` (comprar, uma refeição por vez, máximo por provisão, o Guia mostra o que vai, a caçada começa com as poções, a regeneração e a runa, e o estoque zera) e, no Node, compra, aparo do save e da ficha de fora, efeito na caçada, buff somando ao do Provocar e acabando no tempo, e o conteúdo torto recusado. Duas sabotagens barradas (o `start()` não gastar o estoque; a comida não regenerar). Telas conferidas com Chromium em 390×844 e o mapa inteiro em 1728×1216, com e sem o atlas.
+
+**Análise:** a `main` andou da 0.14 para a 0.19 durante o trabalho; a mescla trouxe a Forja do Gordon, que tornava redundante um Ferreiro que eu tinha feito (removido: o Gordon foi para a forja do mapa novo, letra `F`), e as peças de teste do chão (realocadas na praça, em volta do `@`; a conferência de `city.chao` aceita os chãos novos). Na sala sem tempo, o convidado manda a ficha a cada entrada (`entro`), então as provisões dele vão atualizadas sem mensagem nova.
+
+**Roadmap:** item novo em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **Andar pesa mais.** Do `@` ao Banco são ~30 sqm (~15 s); ao Guia, ~16 sqm. A volta da caçada é ao lado do Guia, mas as lojas ficam no caminho, não na porta. Se incomodar, a saída é encurtar a cidade em volta do portão, não teleporte.
+- **Balanceamento das provisões é chute.** Preços de 15 a 80 de ouro; a runa da fúria (+20% de dano por 90 s) e a poção (+1, até 5) são as mais fortes. Medir com o agente de Balanceamento antes de mexer na curva de ouro.
+- Na masmorra da sala, cada entrada pela porta gasta as provisões de novo (buff dos 90 s conta de cada entrada).
+- A arte do OTSP não tem pão nem lampião de rua: a cesta de frutas é uma maçã e os cantos da praça viraram arbustos floridos.
+
+**Próximo passo recomendado:** o Leonardo andar pela cidade no celular e dizer se o tamanho e as distâncias estão bons; depois, "Sair cedo" (`Agora`).
+
+## 2026-10-19 01:55 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a masmorra da sala sem tempo, com porta (0.19.0), a pedido do Leonardo ("entrada e saída por uma porta acessível por qualquer usuário; fecha quando quem criou fecha na cidade ou sai do programa"), com as três escolhas dele: sem tempo, monstros renascem, porta na sala de entrada. Modo "masmorra aberta" em `src/sim/incursao.js` (`newRun(s,fichas,true)`, `entra()`, `repovoa()`, `progression.respawn` no `content.json`); `src/sala.js` troca o "começar com o grupo" por `entraPorta()`/`porta`; o Guia de caça mostra quem está na masmorra e o botão "Entrar pela porta"; a presença da cidade segue com `longe` enquanto o anfitrião caça, para a sala não sumir da lista.
+
+**Validação:** `node tools/testar.mjs` — 27/27; os dois casos da sala reescritos para o fluxo novo (entrar, sair, voltar a entrar, anfitrião entrando depois, masmorra que não desaba, fechar com gente dentro). No Node: não desaba depois do tempo da solo, quem entra não sai sem querer pela porta, a sala repovoa em 60 s e não repovoa com jogador perto, sair pela porta guarda o saco e entrar de novo dá jogador novo. Quatro sabotagens barradas. Dois Chromium no Realtime de verdade, duas rodadas verdes: B entra sozinho com o anfitrião na cidade, anda e é visto, o anfitrião entra depois, B sai com o saco e volta, o anfitrião sai e fecha a sala, B volta à cidade. Tela conferida em 360×640.
+
+**Análise:** a masmorra da sala nasce com o grupo de um (o anfitrião), então tem menos monstros que antes na largada (~40 contra ~66 com dois); o respawn sobe o normal de cada sala com quem está dentro. Com a porta na entrada e sem tempo, o risco da sala é só o caminho de volta com o saco cheio.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono, PRD 15.1). `Agora` continua "sair cedo", que agora vale só para o solo.
+
+**Pendências e riscos:**
+- **Conflito com o pilar das partidas curtas**, aceito pelo Leonardo: na sala não há pressão de tempo; o solo continua com 6 minutos. Medir no playtest se a sala virou farm sem risco.
+- O anfitrião continua não podendo deixar o jogo em segundo plano: a masmorra congela para quem está dentro, e em 12 s eles voltam sem resultado.
+- O anfitrião não troca de personagem com a sala aberta (trocar fecha a sala).
+- A masmorra do anfitrião roda sem parar enquanto a sala existir; com a aba aberta horas, `G.t` cresce sem limite (inofensivo) e os cadáveres ficam capados em 60.
+- O Guardião renasce também: matar o chefe e esperar 60 s longe dele é farm. Se pesar, `progression.respawn` ganha um tempo próprio para o chefe.
+- Mesclado com a Forja, as peças no chão e o registro de caçada (0.18.0): cada entrada pela porta abre um registro de caçada na nuvem e cada saída fecha o dele. A **Mochila do convidado** mostra o saco local, que o retrato não sincroniza (só o valor): o saco de verdade é o do anfitrião e chega inteiro no resultado.
+
+**Próximo passo recomendado:** o Leonardo testar com um amigo: entrar em momentos diferentes, sair e voltar, e dizer se a sala sem tempo ficou boa; depois, "Sair cedo" (`Agora`).
+## 2026-10-19 16:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** Gordon e a Forja (0.18.0), a pedido do Leonardo ("vende armas e armaduras conforme você faz missões; compra quase qualquer item que cai dos monstros, barato; as missões são trazer loot para ele fabricar equipamento melhor"). NPC `city.npcs.gordon` (letra `F`, casa nova no canto sudoeste, sprite OTSP 21). Seção nova `forja` no `content.json`: `compra` (preço por material, cerca de metade do `val`), `missoes` (quatro encomendas em ordem) e `loja` (o que ele vende e a partir de qual encomenda). Regra em `src/sim/progresso.js` (`ehMat`, `entregar`, `venderMat`, `comprarForja`); tela `#forja` em `src/telas.js`. Quatro peças novas (maça cravejada, gibão acolchoado, machado de guerra, couraça de placas) com sprite no atlas. Save ganhou `mats` e `forja`, ambos da conta, normalizados.
+
+**Validação:** `node tools/testar.mjs` — 30/30, com o caso novo `forja` (19 asserções: encomenda incompleta barrada, entrega consome e libera, venda da sobra poupa o da encomenda, compra vai ao Banco, Mochila e tela final avisam do depósito, extração leva a seda ao depósito) e a forja na simulação do Node. Tela olhada em 390×844 com Playwright fora do repositório. Mesclada duas vezes com a `main` (0.16.0 e 0.17.0) durante a sessão.
+
+**Análise:** antes, todo item sem `slot` virava ouro na extração. Agora só gema e coroa viram; dente, seda, osso e erva vão para `save.mats`. Medido com 50 sementes no Node: a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas (~180 de ouro pelo `val`); uma incursão típica traz perto da metade.
+
+**Roadmap:** "Gordon e a Forja" em `Concluído`, fora da fila (pedido do dono). `Agora` não mudou.
+
+**Pendências e riscos:**
+- **Renda menor por incursão.** Quem só vende os materiais ao Gordon recebe ~metade do que a extração pagava antes por eles (~40 de ouro a menos numa incursão típica). É o "barato" pedido, mas mexe na economia: ajustar em `forja.compra` se a progressão ficar lenta.
+- **Origem na Feira.** Peça comprada do Gordon e ouro de material vendido a ele não têm origem no banco (`004_origem.sql`): servem para vestir e para o Mercador, mas não entram na Feira. Resolver pede uma função nova no Supabase (ex.: `lastro_forja`, que troca ouro com origem pela peça); não foi feita sem o Leonardo decidir.
+- Materiais não têm origem nem entram na Feira; também não estão na Mochila como vendáveis.
+- As quantidades das encomendas (dente 3+3, seda 4+10, osso 12+8, erva 6) foram estimadas pela simulação, não jogadas. O dente é o gargalo (só ~2 por masmorra inteira).
+
+**Próximo passo recomendado:** o Leonardo jogar umas incursões e dizer se o ritmo das encomendas e o preço do Gordon estão bons; decidir se a Forja entra na origem da Feira.
+
+---
+
+## 2026-10-19 13:40 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** peças de teste no chão da cidade (0.17.0), a pedido do Leonardo, para testar o equipamento sem caçar. `city.chao` no `content.json` (7 peças perto do `@`, validadas: item existe e o sqm é chão); `C.chao` em `entraCidade()`, pegar ao pisar em `updateCidade()`, `pegaDoChao()` em `progresso.js` e `save.chao` (o que a conta já pegou, completado por `normaliza()`); desenhadas com o sprite do item em `renderCidade()`.
+
+**Validação:** `node tools/testar.mjs` — 29/29, com o caso novo `chao-da-cidade` (pega andando, vai ao cofre, o save lembra, não reaparece, o Banco lista). Cidade conferida em 390×740.
+
+**Análise:** as peças não têm origem no banco (`004_origem.sql`), então não se anunciam na Feira nem viram lastro pela venda ao Banco; só dão ouro local ao serem vendidas ao Banco.
+
+**Roadmap:** sem mudança (ferramenta de teste).
+
+**Pendências e riscos:**
+- **É coisa de teste.** Para tirar, apagar `city.chao` do `content.json`. Cada conta pega uma vez: 7 peças, ~360 de ouro no Banco no máximo.
+- Quem já pegou e quer testar de novo precisa de save novo (ou apagar `chao` do save).
+
+**Próximo passo recomendado:** o Leonardo testar o equipamento no corpo com as peças; depois tirar `city.chao`.
+
+---
+
+## 2026-10-19 14:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** todo mundo uns 15% mais rápido (0.16.0), a pedido do Leonardo. Só dado: `progression.walk.ground` de 150 (o chão padrão do Tibia) para 130. Como o passo é proporcional ao chão e arredondado para cima em 50 ms, o ganho real vai de 9% a 17%: nível 1 de 550 para 500 ms (2 sqm/s), nível 50 de 400 para 350, nível 100 de 350 para 300; aranha 600→550, orc e esqueleto 800→700, xamã e Guardião 850→750, rato 900→800. Nível 200 fica em 250.
+
+**Validação:** `node tools/testar.mjs` — 28/28, com os valores esperados da fórmula ajustados na simulação no Node (nível 1 = 0,5 s, nível 200 = 0,25 s, velocidade 150 = 0,7 s, buff de 50% = 0,35 s, 1,8 s para leste = 4 sqm).
+
+**Análise:** trocar o chão mantém a proporção entre jogador e monstros e o arredondamento do Tibia; trocar o arredondamento para o mais próximo daria 20% a 40%, longe do pedido.
+
+**Roadmap:** sem mudança de fila.
+
+**Pendências e riscos:** a mesma de antes: medir mortes e XP por incursão com o ritmo novo.
+
+**Próximo passo recomendado:** o Leonardo jogar e dizer se o ritmo acertou.
+
+---
+
+## 2026-10-19 14:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** origem na Feira e venda do saco (0.15.0), a pedido do Leonardo ("anunciar somente o que o player tem no cofre ou no saco"). Duas decisões dele: o saco vende **livre** na caçada, mesmo que depois morra; e o banco **registra a origem**. `tools/supabase/004_origem.sql`: `mercado_lastro` (segundo saldo, só o banco mexe), `cacadas`, `fibula_marcos` (anistia uma vez só), `caca_comecar`, `caca_fim`, `lastro_banco`, `mercado_anunciar` de 7 argumentos (o de 5 virou atalho, para cliente em cache) e `mercado_livro`/`mercado_cancelar` com a origem. Cliente: fila de origem em `nuvem.js` (`masmorra-runas-v2-fila`), `cacaComeca()` no `start()`, `cacaFim()` no `saida.fim`, `lastroBanco()` na venda ao Banco; na Feira, "N com origem" e o ouro com origem; na Mochila, "Vender 1 na Feira" para peça do saco (`tiraDoSaco`/`poeNoSaco` em `combate.js`).
+
+**Validação:** SQL num Postgres 16 local com uma conta "antiga" (anistia de cofre, peças guardadas e vestidas) e uma criada depois com save editado (99.999 de ouro, 5 cotas): tudo dela barrado com `sem_origem`; venda do saco antes de 20 s barrada; peça fora do saco barrada; venda do saco casando a 100 com 98 de origem; extração com menos de 85 s fecha sem crédito; extração válida credita só chaves válidas; fechar duas vezes recusado; venda ao Banco uma vez só por peça; cancelamento devolvendo a origem. `node tools/testar.mjs` — 26/26, com `feira` (31 asserções) e o caso novo `feira-saco` (14). Produção: migração aplicada em cinco partes, anistia nas 3 contas, auxiliares sem acesso de `anon`, API real respondendo `sessao` nos dois formatos de `mercado_anunciar`.
+
+**Análise:** com o save gravado pelo cliente, o saldo do save não prova nada; a origem só cresce por caminhos que o banco registra. É a mesma ideia do servidor autoritativo, mas sem rodar a masmorra: o banco não sabe se a cota do saco caiu de verdade, então põe teto (30 peças por caçada, 60 por dia, 20.000 de ouro por caçada, extração só depois de 85 s).
+
+**Roadmap:** item em `Concluído`; decisão no PRD 15.1.
+
+**Pendências e riscos:**
+- Na sala de caçar junto (0.14.0, que entrou em paralelo) a venda do saco fica desligada: no convidado o saco é retrato do anfitrião e vender dele duplicaria a peça. Liberar exige o anfitrião aplicar a venda pela regra.
+- **Vender do saco tira o peso da morte** para quem vende antes de morrer (escolha do Leonardo). Medir no playtest se a morte ainda dói; o pilar 1 do VISAO.md fala justamente disso.
+- **Não é anti-trapaça completo:** quem forjar chamadas à API tira até os tetos por dia. Fechar de vez é o servidor da F2.
+- Quem jogou sem conta e criou conta depois não negocia o que tinha antes (não há como provar a origem). Pode gerar reclamação; a saída seria uma anistia nova, decisão do Leonardo.
+- A venda do saco mexe no estado da regra fora do `update()` (como `drinkPot()`); na F2 vira entrada.
+- Gasto no Mercador não baixa a origem: ela pode passar do cofre, e vale o menor dos dois.
+
+**Próximo passo recomendado:** o Leonardo testar no celular: caçar com conta, vender uma peça do saco pela Mochila, extrair e ver a origem na Feira.
+
+---
+
+---
+
 ## 2026-10-19 01:38 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** caçar junto (0.14.0), opção C do plano do multiplayer, a pedido do Leonardo ("criada na opção de entrar na masmorra na cidade; cada usuário pode criar uma sala; ela fica aberta até ele sair do jogo ou fechar"). Módulo novo `src/sala.js` (canal do Realtime por sala); seção "Caçar em grupo" no Guia de caça (criar, ver as abertas, entrar, sair, fechar); `retrato()`, `aplicaRetrato()` e `assiste()` em `src/sim/incursao.js`; `confereFicha()` em `src/sim/progresso.js`; `saida.sai(p)` para a tela final ser de cada jogador; o desenho mostra todos da sala com nome. Mesclada com o andar por sqm (`78b2abf`, sessão paralela) por commit de merge: a posição do convidado passou a ser o sqm, e o anfitrião o leva até lá pela regra (um sqm por passo, na velocidade do nível).
@@ -295,141 +410,3 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-18 23:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** sorteio com semente, item `Agora` (F0 2, primeira metade), a pedido do Leonardo ("fundação e princípio da essência do jogo"). `src/sim/base.js` ganhou o gerador (mulberry32) com `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`/`rnd()`/`rr()`/`ri()` (regra) e `frr()` (efeito). Todo `Math.random` da simulação saiu: corredor do mapa, banda de monstro, loot, passeio dos monstros. Efeitos (número de dano, faíscas, fumaça, tremor da câmera, direção e passo inicial do desenho do monstro) passaram para o sorteio de efeito. `newRun(s)` aceita a semente e a guarda em `G.semente`; a tela final mostra "Masmorra nº 12.345", e `?semente=` no endereço (número ou texto) repete a masmorra em toda incursão da aba.
-
-**Validação:** `node tools/testar.mjs` — 20/20 (simulação no Node + 18 casos de navegador + os 2 novos). O passo da simulação no Node agora prova: sequência do gerador presa (confere com a implementação de referência do mulberry32), `Math.random` sabotado durante a incursão, mesma semente → mesmo mapa, mesmos monstros e mesmo resultado, sementes 7 e 8 → mapas diferentes, efeitos extras não mudam a regra, efeitos não gastam sorteio da regra (sonda direta + checagem de toda linha `G.fx.push`), sem semente → sementes diferentes. No navegador, `semente-na-url` compara a imagem do canvas de duas incursões com a mesma semente (iguais) e `semente-variada` sem semente (diferentes). Cinco sabotagens via `FIBULA_JOGO` — `Math.random` no mapa, número de dano pelo sorteio da regra, constante do gerador trocada, semente fixa em 1, fumaça pelo sorteio da regra — todas saíram com código 1. A segunda não era pega pela primeira versão do teste; daí a sonda direta.
-
-**Análise:**
-- **Regra × efeito** é a decisão de desenho que importa: com um sorteio só, uma tela que desenha mais faíscas mudaria o loot do próximo monstro, e cliente e servidor divergiriam. Critério escrito no `CLAUDE.md`: "se isto mudar, o jogador ganha ou perde algo?"
-- A semente de cada incursão ainda vem de `Math.random` (`novaSemente()`), a única exceção permitida e checada pelo teste.
-- O mapa e a sala inicial se repetem sempre; a incursão **inteira** só se repete com o mesmo `dt` por quadro (no Node, 0,05 fixo). No celular, o `dt` varia: falta o passo fixo.
-- A sequência de sorteios mudou, então as masmorras dos casos antigos mudaram; os 18 casos continuaram passando sem ajuste.
-
-**Roadmap:** sorteio com semente em `Concluído`. `Agora` passa a ser a morte custar XP; o passo fixo é o item 3 do `Próximo`.
-
-**Pendências e riscos:**
-- **Passo fixo** (item 3) completa a F0 2; até lá, multiplayer e replay da incursão inteira não fecham.
-- Trocar o algoritmo do gerador, a ordem dos sorteios em `genMap()`/`newRun()` ou o critério de `sementeDe()` muda a masmorra de todas as sementes já mostradas a jogadores. Hoje não há nada guardado que dependa disso; quando houver "desafio da semana" ou replay, essas mudanças viram decisão do dono.
-- Uma sessão manual publicou o equipamento (`31b5a00`) em paralelo; esta mudança foi feita por cima dele, sem conflito.
-
-**Próximo passo recomendado:** a morte custar XP (`Agora`), depois a curva de nível medida com a simulação no Node, agora com semente de verdade.
-
----
-
-## 2026-10-18 23:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** equipamento persistente com três espaços (arma, armadura, amuleto) e cofre de peças da conta, a pedido do Leonardo, adiantado do `Depois`. Regra do Leonardo: **cada personagem tem o seu equipamento; o cofre é compartilhado por todos os personagens do login.** Na extração, item com `slot` no `content.json` vai para `save.itens` (raiz, da conta) como peça; o resto vira ouro como antes. Tela nova `Equipamento` no acampamento: três espaços grandes (tocar devolve ao cofre), a lista de peças do cofre com `vestir`/`trocar` e `vender <valor>`, e o total vestido com vida e mana resultantes.
-
-**Validação:** `node tools/testar.mjs` — 18/18. Caso novo `equipamento` (vestir, trocar, devolver, vender, trocar de personagem e ver espaços vazios com o mesmo cofre, bônus em `stats()` na incursão); `incursao-extracao` agora semeia uma espada e confere ouro + peças = valor do saco; `morte` confere que o vestido não cai; a simulação no Node testa `guardaSaco()`, `equipar()`, `desequipar()` e `vender()`. Portão conferido com cópia sabotada (`guardaSaco` mandando tudo para ouro): dois casos reprovaram. Tela conferida em 360×780 no Chromium.
-
-**Análise:**
-- Vender paga o `val` cheio do item, o mesmo que a extração pagava antes: quem só vende não perde nada, e quem veste troca ouro por poder. É a decisão "vestir ou vender" que o roadmap pedia.
-- Bônus somados: `dano` soma ao `pow` (mesma escala do Poder arcano, aditivo), `red` soma à armadura da classe em `hurtPlayer()` (o teto de 75% continua), `vida` e `mana` entram em `mhp`/`mmp`. Valores atuais: espada +6% de dano, machado +10%, couraça −4% de dano sofrido, cota −8%, amuleto tribal +15 vida e +15 mana.
-- Save: campos novos mesclados por `normaliza()`, sem subir a `KEY`; save antigo ganha `itens:{}` e `equip` vazio. Peça que sair do `content.json` some do cofre e do corpo em vez de quebrar a tela. A nuvem grava o JSON inteiro, então não houve mudança no Supabase.
-
-**Roadmap:** "Equipamento persistente com três slots" saiu do `Depois` para `Concluído`. `Agora` (gerador com semente) não mudou.
-
-**Pendências e riscos:**
-- **Sprites das armaduras:** resolvidos na mesma sessão (`it_couraca` = id 1998, `it_cota` = id 2034 do OTSP). A primeira versão desta entrada dizia que a nuvem não tinha o pacote, e estava errada: o `tools/sprites.mjs` baixa o OTSP sozinho do GitHub, e isso funciona na nuvem. Para achar sprite novo, rode `node tools/sprites.mjs --catalogo` e procure em `itens.png` (id = 100 + 16 × linha + coluna).
-- **Sem exigência de nível nem de classe** para vestir: um Feiticeiro nível 1 veste o machado. Aceitável com bônus pequenos; se entrarem peças fortes, precisa de `lvl` mínimo no item.
-- **Balanceamento a observar:** +10% de dano no machado é mais que um nível de Poder arcano (+8%, 150 de ouro). A cota cai em 35% das mortes do Guardião; se sobrar cota no cofre, ela só vira ouro.
-- A coroa e a gema continuam sendo só valor (viram ouro). O amuleto tribal, que antes valia 60 de ouro direto, agora pede uma venda manual.
-- O cliente ainda grava o save inteiro: editar `itens` no JSON trapaceia, como já era com o cofre.
-
-**Próximo passo recomendado:** avaliar se a Escolha de risco (profundidades) deve multiplicar a chance de peça, que é o que dá motivo para descer mais fundo.
-
-## 2026-10-18 22:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** alinhamento dos guias e decisões do dono num lugar só, a pedido do Leonardo depois do primeiro playtest. PRD 0.4 (estado real em 2, 7.1, 7.5, 9, 10, 11, 13 e 14; seção 15 virou a lista única de decisões, tomadas e pendentes), `CLAUDE.md` (ciclo dos agentes e decisão de testes), `VISAO.md` (fontes), `README.md` (save na nuvem), `docs/agentes/comum.md`, `revisor.md`, `desenvolvedor.md`, `balanceamento.md`. ROADMAP reordenado. Antes disso, correção da CI vermelha da divisão (`14cee97`): `dt` negativo no primeiro quadro em máquina lenta.
-
-**Validação:** CI verde em `14cee97` depois da correção; a falha foi reproduzida localmente atrasando a entrega dos `.js` em 600 ms (mana 76/95 e relógio 0:23 no código antigo, verde no novo). Commit desta entrada só de documentação.
-
-**Análise:**
-- **Decisões do Leonardo (18/10):** apagar os agentes duplicados; com o ciclo ligado, modo `direto` (CI como alarme); 4 espaços de habilidade, não 3; testes ficaram a critério da sessão — escolhido o harness único sem `package.json`, TypeScript ou Playwright como biblioteca, a reavaliar na F2. Tudo registrado na seção 15 do PRD.
-- **Agentes duplicados:** havia 2 Desenvolvedores, 2 Revisores e 2 Balanceamentos ativos (um conjunto das 19:59, na sessão fixa de cada agente, e outro das 20:29). Os 3 das 20:29 foram apagados; ficou uma tarefa por papel. As duas rotinas antigas seguem desligadas.
-- **Playtest e Supabase:** a conta `leo` tem 8 incursões (2 extrações, 3 mortes), Cavaleiro no nível 7. O Cavaleiro "já começou no 6" porque a conta nova, sem save na nuvem, herdou o save que o navegador do celular já tinha: é a regra de primeira entrada (PRD 7.5), não cache. O mesmo dado mostrou a curva de nível rápida demais (1.286 de XP até o nível 6; Guardião dá ~300) — virou o item 2 do `Próximo`.
-- Contradições resolvidas: rotina de 2 h no `CLAUDE.md` × 4 agentes; issues `pronta` no PRD × ROADMAP nos agentes; `tsc`/Playwright/`package.json` no PRD × harness único; 3 × 4 espaços; regra de fases × login antecipado; e-mail/Google × usuário e senha; Google Fonts citado como dependência depois de sair.
-
-**Roadmap:** `Agora` segue o gerador com semente. `Próximo` reordenado: morte custa XP, curva de nível (novo), sair cedo (subiu de `Depois`), passo fixo (novo, F0 2), créditos, PWA (saiu de `Outros`), Selo.
-
-**Pendências e riscos:**
-- **`modo.txt` continua `pausado`.** Só o Leonardo religa (D6 do PRD); ao religar, o modo é `direto`.
-- **Conta de teste `teste_claude_tmp`** no banco (sem uso). O conector não apaga dados; remover pelo painel do Supabase → `jogadores`.
-- D5 (modelo de cada agente): as tarefas estão com o modelo padrão; decidir ao religar.
-- A regra de primeira entrada copia o save do aparelho para a conta nova. Com testadores de fora num aparelho compartilhado, a conta nova herda o progresso de outra pessoa. Avaliar antes de convidar testadores.
-
-**Próximo passo recomendado:** Leonardo religa o ciclo (`direto`) quando quiser; o Desenvolvedor pega o gerador com semente, e o item de jogo seguinte é a morte custar XP.
-
-## 2026-10-18 22:10 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** divisão do `index.html` em módulos ES, decisão do Leonardo (opção A). F0 item 1 do PRD. O `<script>` saiu do `index.html` (de 1629 para 339 linhas, só estilo e markup) para `src/` (cliente: `main`, `salvar`, `nuvem`, `arte`, `desenho`, `hud`, `telas`, `controles`, `dom`) e `src/sim/` (simulação: `base`, `dados`, `progresso`, `mapa`, `incursao`, `combate`). Código movido sem mudar regra; o jogador não vê diferença.
-
-**Validação:** `node tools/testar.mjs` — 17/17: sintaxe dos 15 módulos, o passo novo "simulação no Node" (incursão inteira de 6 min, 7200 quadros, sem navegador, mesma semente dá o mesmo resultado) e os 16 casos de navegador de antes, sem mudar nenhum roteiro. O portão foi conferido com três cópias sabotadas via `FIBULA_JOGO`: erro de sintaxe num módulo, `save.cofre+=G.bagVal` removido e `document` dentro de `src/sim/` — as três saíram com código 1. Jogo aberto em 390×780 no Chromium: menu e incursão com sprites, sem erro no console.
-
-**Análise:**
-- **A fronteira:** `src/sim/` não toca em DOM, `localStorage`, canvas nem temporizador. O que antes era chamada direta (`log()`, `banner()`, `montaBotoes()`, `persist()`, `setTimeout(showEnd)`) virou o objeto `saida` de `src/sim/base.js`, preenchido em `src/main.js`. A entrada (joystick, teclado, botões seguros) chega em `update(dt, ent)`. O `prefers-reduced-motion` passou do `shake()` para o `render()` — mesmo efeito para o jogador.
-- **Estado compartilhado:** `G` e `save` são `export let` com `setG()` e `setSave()`, porque módulo ES não deixa reatribuir binding importado. Mexer em campo (`save.cofre+=…`) segue igual em qualquer lugar.
-- **Ciclo de import que quebrou na carga:** `salvar.js`↔`nuvem.js` dava `Cannot access 'KEY' before initialization`. A nuvem agora se registra com `aoGravar()`; regra registrada no `CLAUDE.md`.
-- **Harness:** módulo ES não carrega em `file://`, então as cópias passaram a ser servidas pelo mesmo servidor HTTP que já recebia o resultado; o `fetch` falso de `content.json` e `atlas.json` saiu (cada cópia leva os arquivos reais). Patches procuram em todas as fontes. O roteiro é um módulo que importa `./src/main.js`, para só começar depois do `await` do conteúdo.
-- Código morto removido: `BARRAS` (nunca lido). `podeLancar()` ficou, exportado, sem uso.
-
-**Roadmap:** divisão em `Concluído`. O item `Agora` (gerador com semente) perdeu a ressalva de esperar a divisão e aponta para `src/sim/base.js`. PRD (seções 2, 10, 13.5, 13.6), `comum.md` seção 3, `desenvolvedor.md` e `produto.md` atualizados: a restrição de "mudanças pequenas no `index.html`" caiu.
-
-**Pendências e riscos:**
-- **Passo fixo:** a simulação ainda roda no `dt` do quadro (até 50 ms). Para o servidor da F2 falta o passo fixo — item 2 da F0, junto do gerador com semente.
-- **Efeitos visuais ainda gastam `Math.random`** dentro da simulação (`num`, `spark`, `kill`). Quando o gerador com semente entrar, separar o aleatório de regra do aleatório de efeito, senão cliente e servidor divergem por causa de partícula.
-- O `tools/serve.ps1` precisa entregar `.js` como `text/javascript` (já entrega); servidor estático que mande outro tipo faz o módulo não carregar.
-- A entrada anterior deste diário está marcada 23:30 UTC, depois desta: relógio da outra sessão, não ordem real.
-
-**Próximo passo recomendado:** gerador com semente em `src/sim/base.js` e passo fixo no `update()`, aproveitando o teste da simulação no Node, que já compara duas execuções.
-
-## 2026-10-18 23:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** arte e layout do Tibia, a pedido do Leonardo ("puxar e alterar a parte de layout e de arte para ficar igual à do Tibia"). Cobre o item `Agora` (pipeline OTSP) e vai além do que ele dizia: o desenho foi trocado de fato. Arquivos novos: `tools/sprites.mjs`, `assets/otsp/` (atlas.png, atlas.json, LICENSE.txt, AUTHORS.md), `assets/CREDITOS.md`. Mudados: `index.html` (seção nova `arte`, `pecas()` no mapa, `render()`, CSS das telas e do HUD), `tools/testar.mjs` (atlas no prelúdio, casos `arte` e `sem-arte`).
-
-**Validação:** `node tools/testar.mjs` — 16/16, sintaxe OK, rodado de novo depois do merge com o login por usuário e senha. `node tools/sprites.mjs` duas vezes deu o mesmo MD5 do atlas. Telas conferidas em 390×844 com DPR 2 no Chromium (menu, escolha de classe, incursão com combate, portal aberto).
-
-**Análise:**
-- **Por que o .dat/.spr e não as folhas PNG:** as folhas do pacote são despejo do `.spr` em ordem de id, sem dizer qual peça de 32 px é de qual criatura, direção ou quadro. O `.dat` diz; o script monta criatura de 64 px, 4 direções e quadros de caminhada sem recorte à mão. O `.spr` já traz transparência, então não há magenta a converter. Desvio consciente da regra 1 da seção 9 do PRD ("copiar as folhas usadas"): o repositório guarda só o atlas gerado (205 KB) e o script baixa o pacote no commit fixado — copiar o `.spr` (9 MB) não faria sentido.
-- **Escolhas de sprite** (tabela `ARTE` no script): Feiticeiro = mago vermelho (15), Druida = mago verde (33), Caçador = caçador de couro (19), Cavaleiro = guerreiro de armadura (3); Rato = roedor (6), Aranha = besouro verde (8, o pacote não tem aranha), Esqueleto = criatura de ossos (22), Orc = goblin com tocha (7), Xamã = encapuzado com tocha (4), Guardião = demônio grande (46). Chão de terra (140), paredes de tijolo cinza (534–537), portal = poço de pedra (1122) com o brilho de teletransporte (efeito 2). O pacote tem só 15 efeitos úteis: energia, sagrado e terra são o brilho azul e a nuvem com o matiz girado no script.
-- **Paredes:** peça por bloco sólido em `pecas()`, com a regra de encaixe do Tibia (vertical, horizontal, poste no canto de cima à esquerda, canto onde a horizontal do oeste encontra a vertical do norte). O `render()` desenha linha a linha, parede e depois criatura, então a parede de baixo cobre o pé de quem encosta nela, como no Tibia. Testei também a rocha de montanha (956–961): fica bonita, mas cobre uma linha inteira de chão e esconde monstro — descartada por legibilidade no celular.
-- **Fontes:** o Google Fonts saiu. Verdana (a fonte do cliente do Tibia) no corpo e Palatino nos títulos, do sistema. No Android sem Verdana cai na sans do sistema.
-- Cadáver de cada monstro fica no chão (até 60, o mais antigo some). O saco de loot aparece ao lado quando há loot.
-
-**Roadmap:** item `Agora` em `Concluído` (com o que foi além); "Cortar a dependência de fontes externas" saiu de `Depois`. `Agora` virou o gerador com semente; entrou em `Próximo` a tela de créditos no jogo.
-
-**Pendências e riscos:**
-- **Créditos dentro do jogo:** a CC BY 4.0 exige atribuição; hoje está em `assets/CREDITOS.md` e no README. A seção 9 do PRD pede tela no jogo — virou o item 1 de `Próximo`.
-- **Dois caminhos de desenho:** com e sem atlas. Quem mexer no `render()` precisa manter os dois ou o `sem-arte` quebra. Se um dia o atlas for obrigatório, apagar o caminho antigo encolhe o arquivo em ~120 linhas.
-- **Nomes x sprites:** "Aranha" é um besouro e "Orc" é um goblin, porque o OTSP não tem aranha nem orc. Se incomodar, renomear no `content.json` é decisão do Leonardo.
-- O `index.html` foi a 1629 linhas; o limite combinado para discutir divisão é ~2000.
-- O PWA (outra metade do F0 item 6) precisa pôr `assets/otsp/atlas.*` no cache do service worker.
-
-**Próximo passo recomendado:** tela de créditos (pequena, fecha a atribuição) ou o gerador com semente, que está em `Agora`.
-
----
-
-## 2026-10-18 22:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** login simples com usuário e senha, sem e-mail, no lugar do link mágico, a pedido do Leonardo ("fase de teste, qualquer usuário, qualquer senha"). Banco: migração `login_simples` (`tools/supabase/002_login_simples.sql`), aplicada pelo conector. Jogo: seção `conta e save na nuvem` reescrita, com campos de usuário e senha e os botões Entrar e Criar conta.
-
-**Validação:** `node tools/testar.mjs` — 14/14, sintaxe OK. O caso `nuvem-entrar` foi refeito: campo vazio, senha errada, usuário repetido sem diferenciar maiúscula, conta nova, sessão guardada sem a senha, leitura e gravação com o token. Contra o banco real, por `curl` com a chave publishable: criar, duplicar (recusado), senha errada (recusada), entrar, ler vazio, gravar, ler, token falso (recusado), leitura direta das tabelas (recusada), função auxiliar (recusada), sair (token morto). O CORS a partir de `llmannrich-ai.github.io` está liberado. Menu conferido em 360 px.
-
-**Análise:**
-- O login não usa o Supabase Auth: são cinco funções `security definer` que conferem senha (bcrypt via `pgcrypto`) e token (o banco guarda só o sha256). As tabelas ficam fechadas para `anon`. Os avisos do Supabase sobre "função executável por anon" e "RLS sem política" são o desenho, não um furo; está explicado no `CLAUDE.md`.
-- A sessão guardada do login por e-mail (formato antigo, sem `tk`) agora é apagada do aparelho ao abrir o jogo. O teste novo pegou que ela só era ignorada.
-- O `save.dono` mudou de espaço de nomes: antes era o id do Supabase Auth, agora é o id de `public.jogadores`. Um aparelho ligado ao login antigo é tratado como "de outra conta" e adota o que estiver na nuvem.
-
-**Roadmap:** sem item novo; é ajuste do save na nuvem, já em `Concluído`.
-
-**Pendências e riscos:**
-- **Sem limite de tentativas e sem recuperação de senha.** Aceito para a fase de teste. Antes de abrir para desconhecidos, voltar ao Supabase Auth ou pôr limite de taxa.
-- **Conta `teste_claude_tmp` ficou no banco** (senha `1`, sessões encerradas, save `{"cofre":42}`). O `execute_sql` do conector expira em `delete`; apagar no painel (Table Editor → `jogadores`).
-- A tabela `public.saves` (login por e-mail) ficou sem uso. Não apagar sem decisão do Leonardo.
-- O PRD 7.5 ainda diz "link mágico e Google"; a troca é temporária e precisa voltar para lá ou o PRD mudar.
-
-**Próximo passo recomendado:** Leonardo cria uma conta no celular e confere o "Progresso salvo na nuvem"; o ciclo segue no pipeline de sprites OTSP.
-
----

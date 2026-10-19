@@ -1,11 +1,11 @@
 /* ---------- conteúdo do jogo (data/game/content.json) ----------
    Classes, habilidades, melhorias, inimigos, itens, loot, progressão, as
-   provisões, a cidade e os mapas de caça moram
+   provisões, a cidade, os mapas de caça e a forja do Gordon moram
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
 export function validaConteudo(c){
-  for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts'])
+  for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
   const tem=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
   if(!Array.isArray(c.classOrder)||!c.classOrder.length)throw new Error('classOrder vazio');
@@ -41,6 +41,7 @@ export function validaConteudo(c){
   const w=p.walk;
   if(!w||!['speedBase','speedPerLevel','speedMax','ground','diagonal','stepMs','wander'].every(k=>typeof w[k]==='number'&&w[k]>=0)||!(w.speedBase>0&&w.speedMax>=w.speedBase&&w.ground>0&&w.diagonal>=1&&w.stepMs>0&&w.wander>=1))throw new Error('progression.walk precisa de speedBase e speedMax (>= speedBase), speedPerLevel, ground, diagonal >= 1, stepMs e wander >= 1');
   for(const[k,e]of Object.entries(c.enemies))if(!(e.spd>0))throw new Error(`inimigo ${k} precisa de spd (velocidade do Tibia) positivo`);
+  if(!p.respawn||!(p.respawn.seconds>0)||!(p.respawn.clearTiles>=0))throw new Error('progression.respawn precisa de seconds positivo e clearTiles');
   const pt=p.party;
   if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
   for(const b of p.bands){
@@ -57,9 +58,8 @@ export function validaConteudo(c){
   const letras={};
   for(const[k,s]of Object.entries(c.supplies)){
     if(typeof s.nome!=='string'||!(Number.isInteger(s.preco)&&s.preco>0))throw new Error(`provisão ${k} sem nome ou preço inteiro positivo`);
-    if(s.peca!==undefined){if(!tem(c.items,s.peca)||!c.items[s.peca].slot)throw new Error(`provisão ${k} vende peça que não existe ou não se veste: ${s.peca}`);continue}
     const e=s.efeito;
-    if(!e||typeof e!=='object'||!Object.keys(e).length||!(Number.isInteger(s.max)&&s.max>=1))throw new Error(`provisão ${k} precisa de peca, ou de efeito e max inteiro >= 1`);
+    if(!e||typeof e!=='object'||!Object.keys(e).length||!(Number.isInteger(s.max)&&s.max>=1))throw new Error(`provisão ${k} precisa de efeito e de max inteiro >= 1`);
     for(const[a,v]of Object.entries(e)){
       if(a==='buff'){if(!v||!(v.dur>0)||!Object.keys(v).every(b=>b==='dur'||(BUFFS.includes(b)&&typeof v[b]==='number')))throw new Error(`provisão ${k} com buff inválido: ${BUFFS.join(', ')} e dur positivo`)}
       else if(!['pot','rhp','rmp'].includes(a)||!(typeof v==='number'&&v>0))throw new Error(`provisão ${k} com efeito inválido: ${a}`);
@@ -76,8 +76,29 @@ export function validaConteudo(c){
   if(chegada!==1)throw new Error(`city.mapa precisa de exatamente um @ (tem ${chegada})`);
   for(const[k,n]of Object.entries(ci.npcs))if(letras[n.letra]!==1)throw new Error(`o NPC ${k} (${n.letra}) aparece ${letras[n.letra]} vezes no mapa, e não uma`);
   for(const a of ABRE)if(!Object.values(ci.npcs).some(n=>n.abre===a))throw new Error(`nenhum NPC da cidade abre ${a}`);
+  for(const q of ci.chao||[]){
+    const l=M[q&&q.y],t=l&&typeof q.x==='number'?l[q.x]:undefined;
+    if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
+    if(!t||!',._@:=vh'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
+  }
   if(!Object.keys(c.hunts).length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
   for(const[k,h]of Object.entries(c.hunts))if(typeof h.nome!=='string'||typeof h.nivel!=='number')throw new Error(`mapa de caça ${k} sem nome ou nível`);
+  const f=c.forja,inteiro=v=>Number.isInteger(v)&&v>0;
+  if(!f.compra||typeof f.compra!=='object'||!Array.isArray(f.missoes)||!Array.isArray(f.loja))throw new Error('forja precisa de compra, missoes e loja');
+  for(const[k,v]of Object.entries(f.compra)){
+    if(!tem(c.items,k)||c.items[k].slot!==undefined||k==='ouro')throw new Error(`forja compra o que não é material: ${k}`);
+    if(!inteiro(v))throw new Error(`forja paga um preço inválido por ${k}`);
+  }
+  for(const[i,m]of f.missoes.entries()){
+    if(typeof m.nome!=='string'||!m.pede||!Object.keys(m.pede).length)throw new Error(`encomenda ${i+1} da forja sem nome ou sem pedido`);
+    for(const[k,q]of Object.entries(m.pede))if(!tem(f.compra,k)||!inteiro(q))throw new Error(`encomenda ${i+1} da forja pede ${k}, que o Gordon não compra, ou quantidade inválida`);
+  }
+  for(const o of f.loja){
+    const it=c.items[o.item];
+    if(!it||!it.slot)throw new Error(`forja vende o que não é equipamento: ${o.item}`);
+    if(!inteiro(o.preco)||o.preco<=it.val)throw new Error(`forja vende ${o.item} por ${o.preco}, e precisa ser mais que o val (${it.val})`);
+    if(!Number.isInteger(o.missao)||o.missao<0||o.missao>f.missoes.length)throw new Error(`forja libera ${o.item} numa encomenda que não existe: ${o.missao}`);
+  }
 }
 
 /* ---------- cidade e mapas de caça ----------
@@ -88,12 +109,12 @@ export function validaConteudo(c){
    a cidade (o nome é o sprite obj_<nome>); ficam sobre o chão do vizinho. */
 export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10};
 export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha'};
-export const ABRE=['mercador','banco','cacadas','mercado','loja'];
+export const ABRE=['mercador','banco','cacadas','mercado','forja','loja'];
 export let CITY,HUNTS;
 /* ---------- provisões ----------
-   O que as lojas da cidade vendem (supplies no content.json): peça, que vai
-   para o cofre, ou provisão, que vai inteira na próxima caçada. BUFFS são os
-   buffs que uma provisão pode dar, os mesmos das habilidades */
+   O que as lojas da cidade vendem (supplies no content.json): comida, poção
+   e runa, que vão inteiras na próxima caçada. BUFFS são os buffs que uma
+   provisão pode dar, os mesmos das habilidades */
 export let SUP;
 export const BUFFS=['velo','dano','arm','alc'];
 
@@ -124,6 +145,11 @@ export const slotsIniciais=(c,lvl)=>{
 export let UP,MT,ITEMS,LOOT,PROG;
 export const fmtItem=([k,q])=>k==='ouro'?`${q} de ouro`:(q>1?`${q} × ${ITEMS[k].nome}`:ITEMS[k].nome);
 
+/* ---------- forja do Gordon ----------
+   compra (preço por material), missoes (encomendas em ordem) e loja (o que
+   ele vende e a partir de qual encomenda); a regra mora em progresso.js. */
+export let FORJA;
+
 /* ---------- equipamento ----------
    Três espaços, nenhum a mais (pilar 3). Item com slot no content.json é
    equipável: na extração vai para o cofre da conta em vez de virar ouro. */
@@ -136,5 +162,5 @@ export const fmtBonus=it=>Object.entries(it.bonus||{}).map(([b,v])=>BONUS[b](v))
 export function carrega(c){
   validaConteudo(c);
   CLASSES=c.classes;CL_ORDEM=c.classOrder;SPELLS=c.spells;SLOT_LVL=c.slotLevels;
-  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=c.hunts;SUP=c.supplies;
+  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=c.hunts;FORJA=c.forja;SUP=c.supplies;
 }

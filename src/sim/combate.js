@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.14.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.14.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.14.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.14.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.20.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.20.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.20.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.20.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -158,7 +158,7 @@ export function explode(x,y,s,p){
 export function hitMon(m,d,col,p){
   if(m.hp<=0)return;
   m.hp-=d;m.flash=.12;m.aggro=true;num(m.x,m.y-m.r-8,d,col||'#ff6b5b');
-  if(p)m.dn[p.id]+=d;
+  if(p)m.dn[p.id]=(m.dn[p.id]||0)+d;
   if(m.hp<=0)kill(m);
 }
 function kill(m){
@@ -207,6 +207,11 @@ export function hurtPlayer(p,d){
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;sai(p,'morreu')}
 }
+/* venda do saco na Feira (src/hud.js): a peça sai do saco quando o jogador
+   anuncia e volta se o banco recusar. Quem chama é o cliente, com a resposta
+   da rede, fora do update() — como drinkPot(); na F2 vira entrada (ent) */
+export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
+export function poeNoSaco(p,k,q){p.bag[k]=(p.bag[k]|0)+q;p.bagVal+=ITEMS[k].val*q}
 export function pickup(d,i,p){
   let v=0;
   for(const[k,q]of d.items){p.bag[k]=(p.bag[k]||0)+q;v+=ITEMS[k].val*q}

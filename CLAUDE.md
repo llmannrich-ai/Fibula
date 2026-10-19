@@ -67,8 +67,8 @@ confundidas com precedente:
 
 | O quê | De onde | Se não carregar |
 |---|---|---|
-| [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot e progressão | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~250 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
+| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~340 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -129,8 +129,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
   `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`; da cidade,
-  `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de `city.mapa` é) e `ABRE`
-  (o que um NPC pode abrir). As tabelas
+  `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de chão ou obstáculo de
+  `city.mapa` é), `OBJETOS` (as letras dos enfeites sólidos: fonte, barril,
+  árvores…) e `ABRE` (o que um NPC pode abrir); das lojas de provisões, `SUP`
+  e `BUFFS`; da forja do Gordon, `FORJA` (`compra`, `missoes`,
+  `loja`). As tabelas
   são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
   valor, edite o JSON
 - `progresso.js` — **personagem e progressão**: o `save` em memória
@@ -138,11 +141,15 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
   `passoDaVel()` (a fórmula do passo do Tibia) e `durPasso()` (o passo do
-  personagem pelo nível)
+  personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
+  `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
+  **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
+  `soProv()`)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
-  `content.json`), a física da grade da cidade e `updateCidade(dt,ent)`, que
+  `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
+  vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
   anda e devolve o NPC ao alcance (`C.perto`). É regra, não tela: na F3 é o
   estado que o servidor da cidade compartilhada roda, e **os outros jogadores**
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
@@ -206,7 +213,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   por linha** as paredes da linha e quem está nela — a parede de baixo cobre o
   pé de quem encosta nela. Sem a arte, o caminho antigo (formas em código)
   fica intacto; mexa nos dois ou teste o `sem-arte`. A **cidade** tem o
-  `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`
+  `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`,
+  `drawObj()` (os objetos, com e sem a arte) e `drawMiniCidade()` (o mapa da
+  cidade no canto, com os NPCs em amarelo)
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
@@ -214,7 +223,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
-  **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
+  **forja** (`showForja()`, o Gordon: encomenda, loja e depósito de
+  materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
+  com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
   cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
   cidade voltam para ela (`volta()`)
@@ -313,9 +324,10 @@ começo do passo**. Regras:
 
 - **Velocidade do Tibia** (`progression.walk`): jogador `220 + 2·(nível−1)`,
   vezes o buff `velo`; monstro, o `spd` dele na mesma unidade, vezes a
-  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`
-  (nível 1 = 550 ms, 1,8 sqm/s; nível 100 = 350 ms; `spd` 150 = 800 ms),
-  arredondado para múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
+  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`,
+  com o chão `ground` 130 (o do Tibia é 150; ~15% mais rápido, pedido do
+  Leonardo): nível 1 = 500 ms, 2 sqm/s; nível 100 = 300 ms; `spd` 150 =
+  700 ms; arredondado para cima em múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
   não corta quina (`passoPara()` escorrega pelo eixo livre).
 - **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
   passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
@@ -337,9 +349,10 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
-O que é da conta (cofre de ouro, peças guardadas em `itens`, melhorias,
-estatísticas) fica na raiz; o que é do personagem (inclusive o equipamento
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
+próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
+fica na raiz; o que é do personagem (inclusive o equipamento
 vestido) fica em `chars`, um por classe. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
 em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save
@@ -384,6 +397,17 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   `save_gravar` recusa save com `mkt` menor (`'mercado'`) e o cliente relê a
   nuvem. Esquema em
   [tools/supabase/003_mercado.sql](tools/supabase/003_mercado.sql).
+- **Origem do que se negocia** — `public.mercado_lastro` é um segundo saldo
+  (ouro e peças) que só o banco mexe: extração de caçada registrada
+  (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
+  negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
+  tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
+  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
+  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
+  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql). O cliente
+  guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
@@ -393,10 +417,11 @@ O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
 `conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`, e as
 quatro da Feira (`mercado_livro`, `mercado_anunciar`, `mercado_cancelar`,
-`mercado_coletar`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
+`mercado_coletar`) e as três da origem (`caca_comecar`, `caca_fim`,
+`lastro_banco`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
 conferem senha ou token por dentro. As tabelas têm RLS ligada e nenhuma
 política, de propósito. Por isso os avisos de segurança do Supabase listam
-essas nove funções como "executáveis
+essas funções como "executáveis
 por anon" e as tabelas como "RLS sem política": é o desenho, não um furo. Se
 um aviso **novo** aparecer, aí sim investigue.
 
@@ -485,8 +510,22 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
 co-op na masmorra **sem servidor próprio**. No Guia de caça, qualquer um cria
-uma sala; quem está na cidade a vê e entra (até 4). A sala fica aberta até o
-anfitrião fechar ou sair do jogo, e serve para várias caçadas seguidas.
+uma sala; quem está na cidade a vê e entra (até 4).
+
+- **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
+  nasce com a sala, no aparelho do anfitrião, e fica aberta até ele fechar a
+  sala (só na cidade) ou sair do jogo. Ninguém é soterrado. É o modo
+  "masmorra aberta" de `src/sim/incursao.js` (`newRun(s, fichas, true)`).
+- **A porta** é o portal, na sala de entrada: qualquer membro entra por ela
+  quando quiser (Guia de caça → Entrar pela porta), com a caçada já em
+  andamento, e sai por ela com o saco, parado 2,5 s (só depois de se afastar
+  dela, `p.longe`). Quem sai ou morre pode entrar de novo, com ficha nova
+  (`entra()`). Fechar a sala tira quem está dentro, sem resultado.
+- **Os monstros renascem** como no Tibia (`progression.respawn`): sala da
+  masmorra com menos que o normal repovoa depois de 60 s, se ninguém estiver
+  a menos de 10 sqm dela. O normal cresce com quem está dentro.
+- Enquanto o anfitrião está na masmorra, a presença dele continua no canal da
+  cidade com `longe`, sem boneco, para a sala seguir na lista do Guia.
 
 - **O anfitrião é o servidor.** O aparelho dele roda a mesma `src/sim/` com
   uma ficha por jogador (`newRun(semente, fichas)`), recebe a entrada dos

@@ -227,6 +227,12 @@ h2.lost{color:var(--hp)}
 #eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
 #eqList .btns{display:grid;gap:5px;flex:0 0 auto}
 #endItems small{color:var(--muted);font-size:10px}
+.fg{list-style:none;margin:0;padding:0;display:grid;gap:7px}
+.fg .sp{border-left-color:var(--torch)}
+.fg .sp.r1{border-left-color:var(--rare)} .fg .sp.r2{border-left-color:var(--epic)}
+.fg .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+.fg .btns{display:grid;gap:5px;flex:0 0 auto}
+.fg .meta.ok{color:var(--loot)}
 
 /* Cidade: o mesmo joystick da incursão, o HUD de cima trocado pelo da cidade */
 #app.cidade .hud{opacity:1}
@@ -306,6 +312,7 @@ h2.lost{color:var(--hp)}
 .minfo{margin:0;min-height:2.8em;font:11px/1.4 var(--f-body);color:var(--muted)}
 .minfo b{color:var(--bone)} .minfo b.r1{color:var(--rare)} .minfo b.r2{color:var(--epic)}
 .mochila .risco{font-size:11px}
+.mvenda{display:grid;gap:6px} .mvenda[hidden]{display:none} .mvenda .cta{padding:10px;font-size:13px} .mvenda .passo{grid-template-columns:44px 1fr 44px} .mvenda .passo input{padding:6px}
 .mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
 /* tela baixa: a janela sobe por cima do minimapa e o boneco encolhe, para o saco caber sem rolar */
 @media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{grid-template-columns:repeat(5,auto);grid-template-rows:auto;justify-content:space-between}.doll .fig{grid-row:auto;grid-column:auto;order:2;width:52px;height:52px}.doll .fig .ico{transform:scale(.8)}.s-arma{order:1}.s-armadura{order:3}.s-saco{order:4}.minfo{min-height:0}}
@@ -350,10 +357,15 @@ h2.lost{color:var(--hp)}
       <div class="mbar"><span id="moEye">Mochila</span><button class="mx" id="moX" type="button" aria-label="Fechar a mochila">✕</button></div>
       <div class="doll" id="moDoll"></div>
       <p class="eqtot" id="moTot"></p>
-      <div class="mtit">Saco <span id="moVal"></span></div>
+      <div class="mtit"><span id="moTit">Saco</span> <span id="moVal"></span></div>
       <p class="risco" id="moRisco"></p>
       <div class="grade" id="moGrade"></div>
       <p class="minfo" id="moInfo" role="status"></p>
+      <div class="mvenda" id="moVenda" hidden>
+        <div class="passo"><button class="ghost" type="button" id="mvMenos" aria-label="Baixar o preço">−</button><input id="mvPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1" aria-label="Preço na Feira, por peça"><button class="ghost" type="button" id="mvMais" aria-label="Subir o preço">+</button></div>
+        <button class="cta" type="button" id="mvOk">Vender 1 na Feira</button>
+        <p class="minfo" id="mvMsg" role="status"></p>
+      </div>
     </div>
   </section>
 
@@ -472,12 +484,30 @@ h2.lost{color:var(--hp)}
     </div>
   </div>
 
+  <div class="screen" id="forja" hidden>
+    <div class="panel">
+      <p class="eyebrow">Forja</p>
+      <h2>Gordon</h2>
+      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais extraídos ficam aqui no depósito, que é da conta; morrer com eles no saco perde, como o resto.</p>
+      <div class="vault"><span>Ouro no cofre</span><b id="fgGold">0</b></div>
+      <p class="mmsg" id="fgMsg" role="status"></p>
+      <h3 class="sub">Encomenda</h3>
+      <ul class="fg" id="fgMissao"></ul>
+      <h3 class="sub">À venda</h3>
+      <ul class="fg" id="fgLoja"></ul>
+      <h3 class="sub">Materiais no depósito</h3>
+      <ul class="fg" id="fgMats"></ul>
+      <button class="ghost voltar" id="fgBack">Voltar ao acampamento</button>
+    </div>
+  </div>
+
   <div class="screen" id="mkt" hidden>
     <div class="panel">
       <p class="eyebrow">Mercado entre jogadores</p>
       <h2>Feira</h2>
-      <p class="lede">Diga o preço por peça. Se alguém já pede ou oferece esse preço, o negócio fecha na hora; senão a oferta fica no livro até alguém aceitar ou você cancelar. O que você anuncia sai do cofre enquanto a oferta existir, e a venda paga <span id="mktTaxa">2</span>% de taxa.</p>
+      <p class="lede">Diga o preço por peça. Se alguém já pede ou oferece esse preço, o negócio fecha na hora; senão a oferta fica no livro até alguém aceitar ou você cancelar. Só se anuncia o que tem origem registrada no banco: o que você extraiu, comprou ou recebeu aqui com a conta ligada. O que você anuncia sai do cofre enquanto a oferta existir, e a venda paga <span id="mktTaxa">2</span>% de taxa.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="mktGold">0</b></div>
+      <p class="mpRes" id="mktOrig" hidden></p>
       <p class="mmsg" id="mktMsg" role="status"></p>
       <div id="mktLista">
         <ul id="mktItens"></ul>
@@ -537,7 +567,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.14.0"></script>
+<script type="module" src="src/main.js?v=0.20.0"></script>
 
 </body>
 </html>

@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "about": "Conteudo do Fibula: classes, habilidades, melhorias, inimigos, itens, loot e progressao. Carregado em runtime por index.html.",
+    "about": "Conteudo do Fibula: classes, habilidades, melhorias, inimigos, itens, loot, progressao, a cidade e a forja do Gordon. Carregado em runtime por index.html.",
     "schemaVersion": 2,
     "aviso": "Gerado a partir dos literais que estavam no index.html. Ajuste de balanceamento se faz aqui, sem tocar no motor.",
     "tierReference": "O campo tier de cada inimigo aponta a banda equivalente em ../mechanics/tiers.json (por HP).",
@@ -8,7 +8,7 @@
     "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)",
     "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
     "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)",
-    "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Com peca, a compra e a peca (chave de items, com slot) e vai para o cofre. Com efeito, e uma provisao: fica guardada (ate max por cacada) e vai inteira na proxima cacada que comecar, extraindo ou morrendo. efeito: pot (pocoes a mais), rhp e rmp (vida e mana por segundo a mais durante a cacada), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada (uma refeicao). Icone: sup_<chave> no atlas; a peca usa o it_<peca>."
+    "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Cada uma e uma provisao: fica guardada (ate max por cacada) e vai inteira na proxima cacada que comecar, extraindo ou morrendo. efeito: pot (pocoes a mais), rhp e rmp (vida e mana por segundo a mais durante a cacada), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada (uma refeicao). Icone: sup_<chave> no atlas."
   },
   "classes": {
     "feiticeiro": {
@@ -815,6 +815,48 @@
         "cor": "#949daa",
         "malha": true
       }
+    },
+    "maca": {
+      "nome": "maça cravejada",
+      "val": 60,
+      "rar": 1,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.14
+      }
+    },
+    "gibao": {
+      "nome": "gibão acolchoado",
+      "val": 80,
+      "rar": 1,
+      "slot": "armadura",
+      "bonus": {
+        "red": 0.1
+      },
+      "veste": {
+        "cor": "#8a2f2a"
+      }
+    },
+    "machadoguerra": {
+      "nome": "machado de guerra",
+      "val": 150,
+      "rar": 1,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.18
+      }
+    },
+    "placas": {
+      "nome": "couraça de placas",
+      "val": 220,
+      "rar": 2,
+      "slot": "armadura",
+      "bonus": {
+        "red": 0.14
+      },
+      "veste": {
+        "cor": "#b7bec8"
+      }
     }
   },
   "loot": {
@@ -1003,11 +1045,11 @@
       ]
     },
     "walk": {
-      "_note": "Andar por sqm com a velocidade do Tibia (decisoes do Leonardo, 19/10/2026). Velocidade em unidades do Tibia: jogador = speedBase + speedPerLevel*(nivel-1), ate speedMax, vezes (1 + buff de velocidade); monstro = spd do inimigo (mesma unidade), vezes a lentidao. O passo vem da formula do Forgotten Server (creature.cpp): passo = 1000*ground / (857,36*ln(vel/2 + 261,29) - 4795,01), arredondado para cima em multiplos de stepMs. Com ground 150: nivel 1 (220) = 550 ms, 1,8 sqm/s; nivel 50 (318) = 400 ms; nivel 100 (418) = 350 ms; nivel 200 (618) = 250 ms. Monstro com spd 150 = 800 ms. Diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). wander: quantas vezes mais devagar o monstro anda a toa.",
+      "_note": "Andar por sqm com a velocidade do Tibia (decisoes do Leonardo, 19/10/2026). Velocidade em unidades do Tibia: jogador = speedBase + speedPerLevel*(nivel-1), ate speedMax, vezes (1 + buff de velocidade); monstro = spd do inimigo (mesma unidade), vezes a lentidao. O passo vem da formula do Forgotten Server (creature.cpp): passo = 1000*ground / (857,36*ln(vel/2 + 261,29) - 4795,01), arredondado para cima em multiplos de stepMs. O chao padrao do Tibia e 150; aqui 130, uns 15% mais rapido (pedido do Leonardo, 19/10/2026). Com ground 130: nivel 1 (220) = 500 ms, 2 sqm/s; nivel 50 (318) = 350 ms; nivel 100 (418) = 300 ms; nivel 200 (618) = 250 ms. Monstro com spd 150 = 700 ms. Diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). wander: quantas vezes mais devagar o monstro anda a toa.",
       "speedBase": 220,
       "speedPerLevel": 2,
       "speedMax": 1500,
-      "ground": 150,
+      "ground": 130,
       "diagonal": 1.4,
       "stepMs": 50,
       "wander": 1.5
@@ -1030,6 +1072,11 @@
       "bossHp": 0.8,
       "lootProtection": 10,
       "shareTiles": 9
+    },
+    "respawn": {
+      "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala cresce com quem esta dentro, pelas regras de party.",
+      "seconds": 60,
+      "clearTiles": 10
     }
   },
   "supplies": {
@@ -1130,29 +1177,49 @@
           "dur": 90
         }
       }
-    },
-    "f_espada": {
-      "nome": "Espada forjada",
-      "desc": "Vai para o cofre.",
-      "preco": 90,
-      "peca": "espada"
-    },
-    "f_machado": {
-      "nome": "Machado forjado",
-      "desc": "Vai para o cofre.",
-      "preco": 130,
-      "peca": "machado"
-    },
-    "f_couraca": {
-      "nome": "Couraça nova",
-      "desc": "Vai para o cofre.",
-      "preco": 140,
-      "peca": "couraca"
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
     "nome": "Cidade",
+    "_chao": "Pecas de teste no chao da cidade (pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao). Nao tem origem no banco, entao nao entra na Feira. Para tirar, apague a lista.",
+    "chao": [
+      {
+        "x": 23,
+        "y": 21,
+        "item": "espada"
+      },
+      {
+        "x": 29,
+        "y": 21,
+        "item": "machado"
+      },
+      {
+        "x": 22,
+        "y": 22,
+        "item": "couraca"
+      },
+      {
+        "x": 30,
+        "y": 22,
+        "item": "cota"
+      },
+      {
+        "x": 23,
+        "y": 23,
+        "item": "amuleto"
+      },
+      {
+        "x": 29,
+        "y": 23,
+        "item": "espada"
+      },
+      {
+        "x": 26,
+        "y": 22,
+        "item": "cota"
+      }
+    ],
     "mapa": [
       "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~AAAAAAAA",
       "AAAAAAA,,,A,AAAA,,,,AA,,,,A,,,A,A,,,A,,,,,A,~~A,AA,A,A",
@@ -1222,6 +1289,13 @@
         "abre": "mercado",
         "fala": "Aqui se compra e se vende entre jogadores. Diga o preço; se alguém aceitar, o negócio fecha na hora."
       },
+      "gordon": {
+        "letra": "F",
+        "nome": "Gordon",
+        "casa": "Forja",
+        "abre": "forja",
+        "fala": "Compro o que os bichos deixam, pago pouco. Me traga o que eu peço e eu forjo coisa melhor para você."
+      },
       "quitandeira": {
         "letra": "Q",
         "nome": "Quitandeira",
@@ -1257,18 +1331,6 @@
           "runa_furia",
           "runa_aguia"
         ]
-      },
-      "ferreiro": {
-        "letra": "F",
-        "nome": "Ferreiro",
-        "casa": "Forja",
-        "abre": "loja",
-        "fala": "Ferro novo, sem ferrugem de masmorra. O que eu forjo vai direto para o seu cofre.",
-        "vende": [
-          "f_espada",
-          "f_machado",
-          "f_couraca"
-        ]
       }
     }
   },
@@ -1278,5 +1340,79 @@
       "desc": "Corredores de pedra sob a cidade. Ratos e aranhas na entrada, orcs e o Guardião do Portal no fundo.",
       "nivel": 1
     }
+  },
+  "forja": {
+    "_note": "O Gordon, na Forja da cidade (pedido do Leonardo, 19/10/2026). compra: o preco que ele paga por unidade de cada material, de proposito abaixo do val; so esses itens deixam de virar ouro na extracao e vao para save.mats, o deposito de materiais da conta (gema e coroa continuam virando ouro). missoes: as encomendas, em ordem; entregar uma consome o que ela pede e soma 1 em save.forja. loja: o que ele vende por ouro do cofre a partir da encomenda numero missao (0 = desde o comeco); preco precisa ser maior que o val, senao comprar aqui e vender no Banco daria lucro. Medido em 19/10/2026 com a simulacao no Node (50 sementes): a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas; uma incursao tipica traz perto da metade, e as ervas so no fundo.",
+    "compra": {
+      "dente": 1,
+      "seda": 4,
+      "osso": 5,
+      "erva": 7
+    },
+    "missoes": [
+      {
+        "nome": "Cabo e couro",
+        "fala": "Uma maça precisa de cabo firme e couro na empunhadura. Dente de rato e seda de aranha servem.",
+        "pede": {
+          "dente": 3,
+          "seda": 4
+        }
+      },
+      {
+        "nome": "Forro de seda",
+        "fala": "Para um gibão que segura pancada, quero seda. Bastante seda.",
+        "pede": {
+          "seda": 10
+        }
+      },
+      {
+        "nome": "Osso para o cabo",
+        "fala": "Machado de guerra pede cabo de osso antigo. Os esqueletos têm de sobra.",
+        "pede": {
+          "osso": 12,
+          "dente": 3
+        }
+      },
+      {
+        "nome": "Têmpera de erva",
+        "fala": "Placa boa se tempera com erva rara. Os xamãs orcs guardam, lá no fundo.",
+        "pede": {
+          "erva": 6,
+          "osso": 8
+        }
+      }
+    ],
+    "loja": [
+      {
+        "item": "espada",
+        "preco": 60,
+        "missao": 0
+      },
+      {
+        "item": "couraca",
+        "preco": 90,
+        "missao": 0
+      },
+      {
+        "item": "maca",
+        "preco": 220,
+        "missao": 1
+      },
+      {
+        "item": "gibao",
+        "preco": 320,
+        "missao": 2
+      },
+      {
+        "item": "machadoguerra",
+        "preco": 600,
+        "missao": 3
+      },
+      {
+        "item": "placas",
+        "preco": 900,
+        "missao": 4
+      }
+    ]
   }
 }
