@@ -4,8 +4,8 @@
    não segura o jogo: enquanto não chega, ou se não chegar, o render() usa o
    desenho em código de antes. app.dataset.arte marca que chegou (o CSS usa
    para os ícones). */
-import {TAU} from './sim/base.js?v=0.9.1';
-import {app} from './dom.js?v=0.9.1';
+import {TAU} from './sim/base.js?v=0.10.0';
+import {app} from './dom.js?v=0.10.0';
 
 export const ART_URL='assets/otsp/';
 /* a imagem leva a versão do jogo (?v=, como os módulos): sem ela, um atlas
@@ -27,6 +27,9 @@ export function icone(el,n,d,f,caixa){
   el.style.width=cw+'px';el.style.height=chh+'px';
   el.style.backgroundImage=`url(${ART_URL}${PNG})`;el.style.backgroundSize=`${ART.w}px ${ART.h}px`;
   el.style.backgroundPosition=`${cw-s.w-(s.x+(f||0)*s.w)}px ${chh-s.h-(s.y+(d||0)*s.h)}px`;
+  /* caixa maior que o sprite: o fundo só pinta o canto do sprite, senão os
+     vizinhos do atlas aparecem junto (o cavaleiro de 32 px numa caixa de 64) */
+  el.style.padding=`${Math.max(0,chh-s.h)}px 0 0 ${Math.max(0,cw-s.w)}px`;el.style.backgroundClip='content-box';
   return true;
 }
 /* as quatro direções do Tibia: norte, leste, sul, oeste */
