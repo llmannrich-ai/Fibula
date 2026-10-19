@@ -233,7 +233,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
   com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
-  cidade → quem leva à caçada (o Guia, o Vigia do esgoto, o Capitão do porto,
+  cidade → quem leva à caçada (o Guia, a Grade do esgoto — um lugar no chão
+  da rua, não uma pessoa: `lugar: true` no NPC —, o Capitão do porto,
   cada um com os mapas dele, `showHunts(npc)`) → incursão → tela final → a
   cidade, ao lado de quem levou; as telas abertas na
   cidade voltam para ela (`volta()`)

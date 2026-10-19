@@ -71,6 +71,7 @@ export function validaConteudo(c){
   for(const[k,n]of Object.entries(ci.npcs||{})){
     if(typeof n.letra!=='string'||n.letra.length!==1||n.letra in LEGENDA||n.letra in OBJETOS)throw new Error(`NPC ${k} sem letra própria no mapa`);
     if(!ABRE.includes(n.abre))throw new Error(`NPC ${k} abre algo que não existe: ${n.abre}`);
+    if((n.lugar!==undefined&&typeof n.lugar!=='boolean')||(n.acao!==undefined&&(typeof n.acao!=='string'||!n.acao||n.acao.length>10)))throw new Error(`NPC ${k}: lugar é true ou false e acao é um texto curto`);
     if(n.abre==='loja'&&(!Array.isArray(n.vende)||!n.vende.length||n.vende.some(v=>!tem(c.supplies,v))))throw new Error(`a loja de ${k} precisa de vende com chaves de supplies`);
     letras[n.letra]=0;
   }

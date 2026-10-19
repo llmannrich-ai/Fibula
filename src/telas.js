@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.23.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.23.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.23.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.23.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.23.0';
-import {persist,saveFalhou} from './salvar.js?v=0.23.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.23.0';
-import {rede,SALAS} from './rede.js?v=0.23.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.23.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.23.0';
-import {icone} from './arte.js?v=0.23.0';
-import {$,app} from './dom.js?v=0.23.0';
-import {retrato} from './desenho.js?v=0.23.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.24.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.24.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.24.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.24.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.24.0';
+import {persist,saveFalhou} from './salvar.js?v=0.24.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.24.0';
+import {rede,SALAS} from './rede.js?v=0.24.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.24.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.24.0';
+import {icone} from './arte.js?v=0.24.0';
+import {$,app} from './dom.js?v=0.24.0';
+import {retrato} from './desenho.js?v=0.24.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -142,7 +142,7 @@ const pelaPorta=()=>{if(SALA.papel==='anfitriao'){start(()=>{entraPorta()})}else
 const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent=txt;b.setAttribute('aria-label',rot);b.disabled=!!off;b.addEventListener('click',fn);return b};
 /* ---------- sala no Guia de caça ----------
    Ver as salas abertas de quem está na cidade e entrar, ou, dentro de uma,
-   quem está nela. Cada NPC que abre cacadas (o Guia, o Vigia do esgoto, o
+   quem está nela. Cada NPC que abre cacadas (o Guia, a Grade do esgoto, o
    Capitão) mostra só as salas dos mapas de caça dele; criar sala é na linha
    do mapa. A sala fica aberta até o anfitrião fechar ou sair */
 let huntDe=null;

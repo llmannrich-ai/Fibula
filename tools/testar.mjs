@@ -837,7 +837,7 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,boticaria,capitao,corretor,gordon,guia,mago,mercador,quitandeira,vigia') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,boticaria,capitao,corretor,gordon,grade,guia,mago,mercador,quitandeira') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     /* objetos (fonte, barril…) são sólidos e ficam sobre o chão do vizinho; a ponte atravessa o rio */
     const iObj = M.join('').indexOf('f'), iPonte = M.join('').indexOf('=');
     if (!(iObj >= 0 && C.obj[iObj] && C.sol[iObj] && C.t[iObj] !== 1)) falhas.push(`a fonte não virou objeto sólido sobre chão (obj ${C.obj[iObj]}, sol ${C.sol[iObj]}, chão ${C.t[iObj]})`);
@@ -1063,7 +1063,7 @@ const CASOS = [
   },
   {
     nome: 'mapas-de-caca',
-    o_que: 'os outros mapas de caça: o Vigia leva ao Esgoto, o Capitão à Ilha, o Guia à Masmorra e à Cripta; cada um com os monstros dele e a volta ao lado de quem levou; a sala é de um mapa, e a porta dela fica com quem leva até lá',
+    o_que: 'os outros mapas de caça: a Grade do esgoto, na rua, leva ao Esgoto, o Capitão à Ilha, o Guia à Masmorra e à Cripta; cada um com os monstros dele e a volta ao lado de quem levou; a sala é de um mapa, e a porta dela fica com quem leva até lá',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1079,15 +1079,18 @@ const CASOS = [
     ok('o Guia leva à Masmorra de Runas e à Cripta', nomes()==='Masmorra de Runas, Cripta Antiga'&&txt('#hunts h2')==='Guia de caça', nomes());
     ok('cada lugar diz o que mora lá', /Guardião do Portal/.test(txt('#huntList')||'')&&/Senhora das Sombras/.test(txt('#huntList')||''), txt('#huntList .meta'));
     clica($('#huntBack'));
-    Tl.abreNpc('vigia');
-    ok('o Vigia do esgoto leva ao Esgoto', nomes()==='Esgoto'&&txt('#hunts h2')==='Vigia do esgoto'&&txt('#hunts .eyebrow')==='Grade do esgoto', nomes()+' / '+txt('#hunts h2'));
+    var gr=Cd.C.npcs.filter(function(n){return n.k==='grade'})[0];
+    ok('a grade do esgoto fica no chão: não bloqueia o caminho', gr&&!Cd.C.sol[(gr.y/32|0)*Cd.C.w+(gr.x/32|0)], gr&&JSON.stringify({x:gr.x,y:gr.y}));
+    Tl.abreNpc('grade');
+    ok('a Grade do esgoto leva ao Esgoto', nomes()==='Esgoto'&&txt('#hunts h2')==='Grade do esgoto'&&txt('#hunts .eyebrow')==='Rua do mercado', nomes()+' / '+txt('#hunts h2'));
     clica($('#huntList button'));await quadros(3);
     var tipos=I.G.mons.map(function(m){return m.k});
     ok('o Esgoto tem os bichos dele e a Centopeia-rainha', I.G.caca==='esgoto'&&tipos.indexOf('centopeia')>=0&&tipos.indexOf('orc')<0&&tipos.indexOf('guardiao')<0, I.G.caca+' / '+tipos.join());
     ok('a chegada é pela grade', /grade do esgoto/.test(txt('#log')||''), txt('#log'));
     I.finish('desabou');await ate(function(){return visivel('#end')},200);
     clica($('#toMenu'));await quadros(3);
-    ok('a volta do Esgoto é ao lado do Vigia', Cd.C.perto==='vigia'&&/subiu pela grade/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
+    ok('a volta do Esgoto é em cima da grade', Cd.C.perto==='grade'&&Cd.C.p.tx===(gr.x/32|0)&&Cd.C.p.ty===(gr.y/32|0)&&/subiu pela grade/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
+    ok('o botão diz Descer, não Falar', txt('#bFalar .nm')==='Descer'&&/^Descer: Grade do esgoto/.test($('#bFalar').getAttribute('aria-label')||''), txt('#bFalar .nm')+' / '+$('#bFalar').getAttribute('aria-label'));
     Tl.abreNpc('capitao');
     ok('o Capitão leva à Ilha da Enseada, acima do nível', nomes()==='Ilha da Enseada'&&/acima do seu/.test(txt('#huntList .meta')||''), nomes());
     var criar=todos('#huntList button').filter(function(b){return b.textContent==='criar sala'})[0];

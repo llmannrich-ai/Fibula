@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.24.0 (19/10/2026) | A entrada do Esgoto deixou de ser um vigia: agora é uma grade de ferro no chão da rua, perto do mercado. Pise nela (ou chegue perto) e toque em Descer; quem volta do Esgoto sai em cima dela |
 | 0.23.0 (19/10/2026) | A Mochila ganhou o corpo da janela de inventário do Tibia: três colunas com cada peça no lugar em que se usa (amuleto no pescoço, arma na mão, armadura no peito, o saco onde o Tibia põe a mochila), a silhueta do que vai em cada casa vazia e, ao lado, o boneco vestido, que gira ao toque |
 | 0.22.0 (19/10/2026) | Três lugares novos para caçar, cada um com monstros, chefe, chão e paredes próprios. O Vigia, na grade do esgoto perto do mercado, leva ao Esgoto (nível 1: morcegos, baratas, lesmas e a Centopeia-rainha). O Capitão, no porto, leva de navio à Ilha da Enseada (nível 8: vespas, lagartas que cospem, leões, trolls e um dragão). O Guia, além da Masmorra de Runas, leva à Cripta Antiga (nível 15: fantasmas, múmias, necromantes e a Senhora das Sombras). Dá para criar sala em qualquer um deles e chamar quem está na cidade |
 | 0.21.0 (19/10/2026) | Habilidades se aprendem com o Mestre de magias, como no Tibia: ao chegar no nível, pague o preço em ouro na Torre dos magos (150 ouro a Golpe Flamejante, 500 a Onda de Fogo, até 3.500 as de nível 32). A de nível 1 continua grátis, e quem já jogava fica com tudo que o nível dele liberava |

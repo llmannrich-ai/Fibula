@@ -6,10 +6,10 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.23.0';
-import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.23.0';
-import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.23.0';
-import {pecas} from './mapa.js?v=0.23.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.24.0';
+import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.24.0';
+import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.24.0';
+import {pecas} from './mapa.js?v=0.24.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho, 7 praça, 8 ponte, 9 flores, 10 horta) ou obstáculo (1 parede,
@@ -40,7 +40,8 @@ export function entraCidade(dePortao){
     const c=M[y][x],i=y*w+x;
     if(c==='@'){sx=x;sy=y}
     const k=npcDaLetra(c);
-    if(k){npcs.push({k,n:CITY.npcs[k],x:(x+.5)*T,y:(y+.5)*T});sol[i]=1;continue}
+    /* um lugar (lugar: true, a grade do esgoto) fica no chão: pisa-se nele */
+    if(k){npcs.push({k,n:CITY.npcs[k],x:(x+.5)*T,y:(y+.5)*T});sol[i]=CITY.npcs[k].lugar?0:1;continue}
     if(c in OBJETOS){obj[i]=LISTA_OBJ.indexOf(OBJETOS[c])+1;sol[i]=1;continue}
     t[i]=LEGENDA[c];sol[i]=SOLIDO[t[i]];tem[i]=1;
   }
@@ -50,7 +51,7 @@ export function entraCidade(dePortao){
   /* as paredes saem como as de uma sala da masmorra, com o assoalho (ou a
      pedra do templo) de dentro fazendo o papel do chão: o resto conta como rocha */
   for(let i=0;i<w*h;i++)fora[i]=t[i]===3||t[i]===7?0:1;
-  if(dePortao){const g=npcs.find(n=>n.k===dePortao)||npcs.find(n=>n.k===HUNTS[cacaDe()].npc);if(g){sx=g.x/T|0;sy=(g.y/T|0)-1}}
+  if(dePortao){const g=npcs.find(n=>n.k===dePortao)||npcs.find(n=>n.k===HUNTS[cacaDe()].npc);if(g){sx=g.x/T|0;sy=(g.y/T|0)-(g.n.lugar?0:1)}}
   C={w,h,t,sol,obj,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
   /* peças de teste no chão (city.chao): só as que esta conta ainda não pegou */
   C.chao=(CITY.chao||[]).filter(c=>!(save.chao&&save.chao[c.x+','+c.y])).map(c=>({x:c.x,y:c.y,k:c.item}));
