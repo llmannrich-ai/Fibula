@@ -1,17 +1,17 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador e Feira (mercado entre jogadores). */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.12.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.12.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.12.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.12.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.12.0';
-import {persist,saveFalhou} from './salvar.js?v=0.12.0';
-import {desenhaConta,temConta,mercado} from './nuvem.js?v=0.12.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.12.0';
-import {icone} from './arte.js?v=0.12.0';
-import {$,app} from './dom.js?v=0.12.0';
-import {retrato} from './desenho.js?v=0.12.0';
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.13.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.13.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.13.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.13.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.13.0';
+import {persist,saveFalhou} from './salvar.js?v=0.13.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.13.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.13.0';
+import {icone} from './arte.js?v=0.13.0';
+import {$,app} from './dom.js?v=0.13.0';
+import {retrato} from './desenho.js?v=0.13.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS];
@@ -49,7 +49,7 @@ const VERSAO=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'d
 /* por ora todos os mapas de caça do Guia levam à mesma masmorra gerada */
 function start(){
   V.cidade=false;
-  newRun(SEM_URL);G.active=true;save.runs++;persist();montaBotoes();
+  newRun(SEM_URL);G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
   log('Você entrou na masmorra. O portal abre em 1:30.','info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
@@ -236,7 +236,7 @@ function drawEquip(){
     else b1.addEventListener('click',()=>{if(equipar(k)){persist();drawEquip()}});
     const b2=document.createElement('button');b2.type='button';b2.className='rm';b2.textContent=`vender ${it.val}`;
     b2.setAttribute('aria-label',`Vender ${it.nome} por ${it.val} de ouro`);
-    b2.addEventListener('click',()=>{if(vender(k)){persist();drawEquip()}});
+    b2.addEventListener('click',()=>{if(vender(k)){lastroBanco(k,it.val);persist();drawEquip()}});
     bt.append(b1,b2);li.append(info,bt);ul.appendChild(li);
   }
   soTela(equipS);
@@ -314,13 +314,23 @@ const MSG_MK={conta:'Para negociar com outros jogadores, entre com uma conta no 
   sessao:'Sua sessão expirou. Entre de novo no acampamento.',sem_save:'Seu progresso ainda não subiu para a nuvem. Tente de novo em instantes.',
   sem_ouro:'Falta ouro no cofre para essa compra.',sem_peca:'Você não tem essa quantidade da peça no cofre.',
   limite:'Você já tem 10 ofertas abertas. Cancele uma para anunciar outra.',preco:'O preço vai de 1 a 1.000.000 de ouro por peça.',
-  qtd:'A quantidade vai de 1 a 100.',ordem:'Essa oferta já fechou ou foi cancelada.'};
+  qtd:'A quantidade vai de 1 a 100.',ordem:'Essa oferta já fechou ou foi cancelada.',
+  sem_origem:'O banco não tem registro de onde isso veio. Só se negocia o que foi extraído, comprado, recebido na Feira ou vendido ao Banco com a conta ligada.',
+  caca:'Esta caçada não foi registrada no banco (sem rede quando começou). Extraia e venda do cofre.',
+  caca_cedo:'A caçada acabou de começar. Espere alguns segundos para vender do saco.',
+  saco_limite:'Limite de peças vindas de caçada atingido (30 por caçada, 60 por dia).'};
+/* o que o banco aceita: o menor entre o save e a origem registrada */
+const origem=()=>(MK.livro&&MK.livro.lastro)||{ouro:0,itens:{}};
+const vendaveis=k=>Math.min(save.itens[k]|0,origem().itens[k]|0);
+const ouroUtil=()=>Math.min(save.cofre,origem().ouro|0);
 const pecasDaFeira=()=>Object.keys(ITEMS).filter(k=>ITEMS[k].slot).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a].slot)-SLOTS_EQ.indexOf(ITEMS[b].slot)||ITEMS[a].val-ITEMS[b].val);
 const livroDe=k=>(MK.livro&&MK.livro.itens[k])||{venda:[],compra:[],ultimo:null,dia:0};
 const taxaMk=()=>MK.livro?MK.livro.taxa:2;
 const taxaDe=t=>Math.ceil(t*taxaMk()/100);
 const msgMk=(t,ruim)=>{const m=$('#mktMsg');m.textContent=t||'';m.className='mmsg'+(ruim?' ruim':'')};
 const erroMk=e=>msgMk(MSG_MK[e.message]||MSG_MK.rede,true);
+/* a mesma mensagem para a venda do saco, na Mochila */
+export const erroFeira=c=>MSG_MK[c]||MSG_MK.rede;
 const nPecas=(q,k)=>q>1?`${q} × ${ITEMS[k].nome}`:ITEMS[k].nome;
 /* o que outros jogadores pagaram ou entregaram enquanto você não estava */
 const fmtRecebido=r=>{const p=[];if(r.ouro>0)p.push(`${r.ouro} de ouro`);
@@ -341,6 +351,8 @@ async function showFeira(){
 }
 function desenhaFeira(){
   setT($('#mktGold'),String(save.cofre));$('#mktTaxa').textContent=taxaMk();
+  const og=$('#mktOrig'),ou=ouroUtil();og.hidden=!MK.livro||ou>=save.cofre;
+  og.textContent=`Com origem registrada: ${ou} de ouro. Só esse pode comprar na Feira.`;
   $('#mktLista').hidden=!!MK.peca;$('#mktPeca').hidden=!MK.peca;mktS.classList.toggle('peca',!!MK.peca);
   if(MK.peca)return desenhaPeca();
   const ul=$('#mktItens');ul.textContent='';
@@ -349,7 +361,8 @@ function desenhaFeira(){
     const li=document.createElement('li');li.className='sp r'+it.rar;
     const ic=icoItem(k);if(ic)li.appendChild(ic);
     const info=document.createElement('div');info.className='info';
-    const h=document.createElement('h3');h.textContent=it.nome+(tem?` · ${tem} no cofre`:'');
+    const vd=vendaveis(k);
+    const h=document.createElement('h3');h.textContent=it.nome+(tem?` · ${tem} no cofre`+(MK.livro&&vd<tem?`, ${vd} com origem`:''):'');
     const p=document.createElement('p');
     p.textContent=[l.venda.length&&`vendem a partir de ${l.venda[0][0]}`,l.compra.length&&`compram até ${l.compra[0][0]}`].filter(Boolean).join(' · ')||'Ninguém anuncia agora.';
     const meta=document.createElement('div');meta.className='meta';
@@ -381,7 +394,7 @@ function desenhaFeira(){
 /* preço sugerido: o melhor do outro lado (aceitar é o caso comum), senão o
    que o Banco paga pela peça */
 function abrePeca(k,lado){
-  MK.peca=k;MK.lado=lado||(save.itens[k]?'venda':'compra');
+  MK.peca=k;MK.lado=lado||(vendaveis(k)?'venda':'compra');
   const l=livroDe(k),o=MK.lado==='compra'?l.venda:l.compra;
   $('#mpPreco').value=o.length?o[0][0]:ITEMS[k].val;$('#mpQtd').value=1;
   msgMk('');desenhaFeira();
@@ -392,7 +405,8 @@ function desenhaPeca(){
   const k=MK.peca,it=ITEMS[k],l=livroDe(k),tem=save.itens[k]|0;
   const ic=$('#mpIco');ic.hidden=!icone(ic,'it_'+k);
   $('#mpNome').textContent=it.nome;
-  $('#mpInfo').textContent=`${SLOT_NOME[it.slot]} · ${fmtBonus(it)} · ${tem} no cofre`+(l.ultimo?` · último negócio ${l.ultimo}`:'');
+  const vd=vendaveis(k);
+  $('#mpInfo').textContent=`${SLOT_NOME[it.slot]} · ${fmtBonus(it)} · ${tem} no cofre`+(vd<tem?` (${vd} com origem)`:'')+(l.ultimo?` · último negócio ${l.ultimo}`:'');
   for(const[id,lista,lado]of[['#mpVenda',l.venda,'compra'],['#mpCompra',l.compra,'venda']]){
     const ul=$(id);ul.textContent='';
     if(!lista.length){const li=document.createElement('li');li.className='nada';li.textContent='ninguém';ul.appendChild(li)}
@@ -410,19 +424,21 @@ function desenhaPeca(){
 /* o que vai acontecer, em número, antes de tocar em Anunciar (pilar 1: o
    jogador sabe o preço antes de arriscar) */
 function resumoPeca(){
-  const k=MK.peca,pr=lePreco(),q=leQtd(),tem=save.itens[k]|0,l=livroDe(k);
+  const k=MK.peca,pr=lePreco(),q=leQtd(),tem=save.itens[k]|0,vd=vendaveis(k),ou=ouroUtil(),l=livroDe(k);
   const valido=pr>=1&&pr<=1e6&&q>=1&&q<=100;let t,pode=valido&&!MK.ocupado;
   if(!valido)t='Preço de 1 a 1.000.000 e quantidade de 1 a 100.';
   else if(MK.lado==='compra'){const tot=pr*q;
     t=save.cofre<tot?`Faltam ${tot-save.cofre} de ouro no cofre para reservar ${tot}.`
+      :ou<tot?`Só ${ou} de ouro têm origem registrada no banco; a reserva seria ${tot}.`
       :`Reserva ${tot} de ouro do cofre. Compra das vendas mais baratas, até ${pr} por peça, e a diferença volta.`+
        (l.venda.length&&l.venda[0][0]<=pr?'':' Ninguém vende por esse preço agora: a oferta fica no livro.');
-    if(save.cofre<tot)pode=false}
+    if(ou<tot)pode=false}
   else{const tot=pr*q,tx=taxaDe(tot);
     t=tem<q?`Você tem ${tem} no cofre.`
+      :vd<q?`Só ${vd} ${vd===1?'tem':'têm'} origem registrada no banco. Peça de antes da conta ou de save editado não se negocia.`
       :`Se vender tudo a ${pr}, recebe ${tot-tx} de ouro (taxa de ${tx}). Se alguém já paga mais, você recebe o preço dele.`+
        (l.compra.length&&l.compra[0][0]>=pr?'':' Ninguém compra por esse preço agora: a oferta fica no livro.');
-    if(tem<q)pode=false}
+    if(vd<q)pode=false}
   $('#mpRes').textContent=t;
   const b=$('#mpOk');b.disabled=!pode;b.textContent=MK.lado==='compra'?'Anunciar compra':'Anunciar venda';
 }
@@ -430,7 +446,7 @@ async function anuncia(){
   const k=MK.peca,lado=MK.lado,pr=lePreco(),q=leQtd();
   if(MK.ocupado)return;MK.ocupado=true;resumoPeca();msgMk('Anunciando…');
   try{
-    const r=await mercado('mercado_anunciar',{p_lado:lado,p_item:k,p_preco:pr,p_qtd:q});
+    const r=await mercado('mercado_anunciar',{p_lado:lado,p_item:k,p_preco:pr,p_qtd:q,p_caca:null,p_saco:null});
     const t=[fmtRecebido(r.recebido)];
     if(r.feitos)t.push(lado==='compra'?`Comprou ${nPecas(r.feitos,k)} por ${r.ouro} de ouro.`:`Vendeu ${nPecas(r.feitos,k)}: entraram ${r.ouro} de ouro no cofre (taxa de ${r.taxa}).`);
     if(r.resta)t.push(`${r.resta} ${r.resta>1?'ficaram':'ficou'} anunciada${r.resta>1?'s':''} no livro a ${pr}.`);

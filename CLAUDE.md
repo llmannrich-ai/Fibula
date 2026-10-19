@@ -372,6 +372,17 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   `save_gravar` recusa save com `mkt` menor (`'mercado'`) e o cliente relê a
   nuvem. Esquema em
   [tools/supabase/003_mercado.sql](tools/supabase/003_mercado.sql).
+- **Origem do que se negocia** — `public.mercado_lastro` é um segundo saldo
+  (ouro e peças) que só o banco mexe: extração de caçada registrada
+  (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
+  negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
+  tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
+  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
+  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
+  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql). O cliente
+  guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
@@ -381,10 +392,11 @@ O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
 `conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`, e as
 quatro da Feira (`mercado_livro`, `mercado_anunciar`, `mercado_cancelar`,
-`mercado_coletar`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
+`mercado_coletar`) e as três da origem (`caca_comecar`, `caca_fim`,
+`lastro_banco`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
 conferem senha ou token por dentro. As tabelas têm RLS ligada e nenhuma
 política, de propósito. Por isso os avisos de segurança do Supabase listam
-essas nove funções como "executáveis
+essas funções como "executáveis
 por anon" e as tabelas como "RLS sem política": é o desenho, não um furo. Se
 um aviso **novo** aparecer, aí sim investigue.
 

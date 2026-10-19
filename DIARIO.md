@@ -18,6 +18,26 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 14:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** origem na Feira e venda do saco (0.13.0), a pedido do Leonardo ("anunciar somente o que o player tem no cofre ou no saco"). Duas decisões dele: o saco vende **livre** na caçada, mesmo que depois morra; e o banco **registra a origem**. `tools/supabase/004_origem.sql`: `mercado_lastro` (segundo saldo, só o banco mexe), `cacadas`, `fibula_marcos` (anistia uma vez só), `caca_comecar`, `caca_fim`, `lastro_banco`, `mercado_anunciar` de 7 argumentos (o de 5 virou atalho, para cliente em cache) e `mercado_livro`/`mercado_cancelar` com a origem. Cliente: fila de origem em `nuvem.js` (`masmorra-runas-v2-fila`), `cacaComeca()` no `start()`, `cacaFim()` no `saida.fim`, `lastroBanco()` na venda ao Banco; na Feira, "N com origem" e o ouro com origem; na Mochila, "Vender 1 na Feira" para peça do saco (`tiraDoSaco`/`poeNoSaco` em `combate.js`).
+
+**Validação:** SQL num Postgres 16 local com uma conta "antiga" (anistia de cofre, peças guardadas e vestidas) e uma criada depois com save editado (99.999 de ouro, 5 cotas): tudo dela barrado com `sem_origem`; venda do saco antes de 20 s barrada; peça fora do saco barrada; venda do saco casando a 100 com 98 de origem; extração com menos de 85 s fecha sem crédito; extração válida credita só chaves válidas; fechar duas vezes recusado; venda ao Banco uma vez só por peça; cancelamento devolvendo a origem. `node tools/testar.mjs` — 26/26, com `feira` (31 asserções) e o caso novo `feira-saco` (14). Produção: migração aplicada em cinco partes, anistia nas 3 contas, auxiliares sem acesso de `anon`, API real respondendo `sessao` nos dois formatos de `mercado_anunciar`.
+
+**Análise:** com o save gravado pelo cliente, o saldo do save não prova nada; a origem só cresce por caminhos que o banco registra. É a mesma ideia do servidor autoritativo, mas sem rodar a masmorra: o banco não sabe se a cota do saco caiu de verdade, então põe teto (30 peças por caçada, 60 por dia, 20.000 de ouro por caçada, extração só depois de 85 s).
+
+**Roadmap:** item em `Concluído`; decisão no PRD 15.1.
+
+**Pendências e riscos:**
+- **Vender do saco tira o peso da morte** para quem vende antes de morrer (escolha do Leonardo). Medir no playtest se a morte ainda dói; o pilar 1 do VISAO.md fala justamente disso.
+- **Não é anti-trapaça completo:** quem forjar chamadas à API tira até os tetos por dia. Fechar de vez é o servidor da F2.
+- Quem jogou sem conta e criou conta depois não negocia o que tinha antes (não há como provar a origem). Pode gerar reclamação; a saída seria uma anistia nova, decisão do Leonardo.
+- A venda do saco mexe no estado da regra fora do `update()` (como `drinkPot()`); na F2 vira entrada.
+- Gasto no Mercador não baixa a origem: ela pode passar do cofre, e vale o menor dos dois.
+
+**Próximo passo recomendado:** o Leonardo testar no celular: caçar com conta, vender uma peça do saco pela Mochila, extrair e ver a origem na Feira.
+
+---
 ## 2026-10-19 13:00 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** equipamento visível no personagem (0.12.0), a pedido do Leonardo. Nova seção "equipamento no corpo" em `src/desenho.js`: `mede()` lê os pixels de cada quadro da classe uma vez (topo, altura, pescoço, mãos e quais pixels do tronco são roupa, pela cor dominante da faixa), `vestido()` guarda em cache o quadro retingido pela armadura, `poeArma()` desenha o sprite do item na mão (atrás do corpo de costas, girando no golpe) e `poeAmuleto()` a pedra no peito. `retrato()` desenha o mesmo boneco em qualquer canvas: o Banco mostra o personagem vestido e gira ao toque. Dados em `items.<k>.veste` (`cor`, `malha`), validados na carga. Rede: a presença leva `eq`, reenviada quando muda no Banco; `poeOutro()` só aceita peça que existe e é daquele espaço. Sem a arte, o desenho em código ganhou a faixa da armadura e a pedra.
@@ -420,27 +440,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - O link mágico precisa ser aberto no mesmo aparelho em que foi pedido (o token volta no `#hash` da URL).
 
 **Próximo passo recomendado:** Leonardo configura o Auth e testa o login no próprio celular; o ciclo segue no pipeline de sprites OTSP.
-
----
-
-## 2026-10-18 21:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** conserto da CI vermelha na `main` desde `bb2143e`. Só `tools/testar.mjs` (e uma linha do `CLAUDE.md`); o `index.html` não mudou.
-
-**Validação:** `node tools/testar.mjs` — 10/10 casos, sintaxe OK, no Chromium de `/opt/pw-browsers`. Cópia com `save.cofre+=G.bagVal` removido via `FIBULA_JOGO`: `incursao-extracao` falhou e a saída foi 1, como devia.
-
-**Análise:** o merge do conteúdo externo com o harness deixou três quebras que nenhum dos dois lados via sozinho:
-1. O marcador do `<script>` procurava `(()=>{`, mas o IIFE virou `(async()=>{` com o `content.json`. A suíte parava antes de rodar qualquer caso.
-2. O `fetch` falso do prelúdio devolvia o `content.json` para **qualquer** URL, inclusive o `POST` do resultado para o coletor. Todo caso morria com "o roteiro não reportou". Agora só a URL do `content.json` é interceptada.
-3. O patch "rato letal" procurava a tabela `MT` no `index.html`, que saiu para o `content.json`. Virou ajuste de conteúdo: campo `conteudo` no caso, função `ajusta()` que estoura se o valor esperado não estiver lá (mesmo princípio dos patches de texto).
-
-**Roadmap:** sem mudança; `Agora` continua o pipeline de sprites OTSP.
-
-**Pendências e riscos:**
-- Mudanças no `content.json` que alterem `enemies.rato` quebram o caso `morte` de propósito; ajuste o `A.ratoLetal` junto.
-- A CI só ficou vermelha porque cada lado foi testado antes do merge, não depois. Quem mesclar `main` com trabalho paralelo precisa rodar `node tools/testar.mjs` **depois** do merge.
-- Supabase (F1) ainda não tem projeto do Fibula na conta; nada foi criado.
-
-**Próximo passo recomendado:** pipeline dos sprites OTSP, como estava.
-
----

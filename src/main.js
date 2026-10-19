@@ -3,19 +3,19 @@
    (src/sim/, sem DOM) às telas, ao desenho e ao save, e roda o laço.
    O carregamento do conteúdo é a primeira coisa que acontece porque a migração
    de save chama slotsIniciais() e portanto já precisa de SPELLS e SLOT_LVL. */
-import {saida} from './sim/base.js?v=0.12.0';
-import {carrega} from './sim/dados.js?v=0.12.0';
-import {G,passo,parado} from './sim/incursao.js?v=0.12.0';
-import {C,updateCidade} from './sim/cidade.js?v=0.12.0';
-import {carregaSave,persist} from './salvar.js?v=0.12.0';
-import {puxa} from './nuvem.js?v=0.12.0';
-import {carregaArte} from './arte.js?v=0.12.0';
-import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.12.0';
-import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.12.0';
-import {showMenu,showPick,showEnd,pickS,endS,equipS,desenhaBoneco,conteudoFalhou,V} from './telas.js?v=0.12.0';
-import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.12.0';
-import {quadro} from './rede.js?v=0.12.0';
-import {app} from './dom.js?v=0.12.0';
+import {saida} from './sim/base.js?v=0.13.0';
+import {carrega} from './sim/dados.js?v=0.13.0';
+import {G,passo,parado} from './sim/incursao.js?v=0.13.0';
+import {C,updateCidade} from './sim/cidade.js?v=0.13.0';
+import {carregaSave,persist} from './salvar.js?v=0.13.0';
+import {puxa,cacaFim} from './nuvem.js?v=0.13.0';
+import {carregaArte} from './arte.js?v=0.13.0';
+import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.13.0';
+import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.13.0';
+import {showMenu,showPick,showEnd,pickS,endS,equipS,desenhaBoneco,conteudoFalhou,V} from './telas.js?v=0.13.0';
+import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.13.0';
+import {quadro} from './rede.js?v=0.13.0';
+import {app} from './dom.js?v=0.13.0';
 
 /* ---------- conteúdo do jogo (data/game/content.json) ---------- */
 const DATA_URL='data/game/content.json';
@@ -35,7 +35,7 @@ if(pronto){
   const meu=p=>!p||!G||p===G.p;
   saida.log=(m,c,p)=>{if(meu(p))log(m,c)};saida.banner=(t,p)=>{if(meu(p))banner(t)};
   saida.nivel=p=>{if(meu(p))montaBotoes()};saida.persist=persist;
-  saida.fim=kind=>{soltaTudo();setTimeout(showEnd,kind==='extraiu'?450:1100)};
+  saida.fim=kind=>{if(G&&G.p)cacaFim(G.p.fora||kind,G.p);soltaTudo();setTimeout(showEnd,kind==='extraiu'?450:1100)};
 
   /* ---------- laço ---------- */
   let last=performance.now();

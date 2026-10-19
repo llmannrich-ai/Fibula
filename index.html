@@ -297,6 +297,7 @@ h2.lost{color:var(--hp)}
 .minfo{margin:0;min-height:2.8em;font:11px/1.4 var(--f-body);color:var(--muted)}
 .minfo b{color:var(--bone)} .minfo b.r1{color:var(--rare)} .minfo b.r2{color:var(--epic)}
 .mochila .risco{font-size:11px}
+.mvenda{display:grid;gap:6px} .mvenda[hidden]{display:none} .mvenda .cta{padding:10px;font-size:13px} .mvenda .passo{grid-template-columns:44px 1fr 44px} .mvenda .passo input{padding:6px}
 .mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
 /* tela baixa: a janela sobe por cima do minimapa e o boneco encolhe, para o saco caber sem rolar */
 @media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{grid-template-columns:repeat(5,auto);grid-template-rows:auto;justify-content:space-between}.doll .fig{grid-row:auto;grid-column:auto;order:2;width:52px;height:52px}.doll .fig .ico{transform:scale(.8)}.s-arma{order:1}.s-armadura{order:3}.s-saco{order:4}.minfo{min-height:0}}
@@ -345,6 +346,11 @@ h2.lost{color:var(--hp)}
       <p class="risco" id="moRisco"></p>
       <div class="grade" id="moGrade"></div>
       <p class="minfo" id="moInfo" role="status"></p>
+      <div class="mvenda" id="moVenda" hidden>
+        <div class="passo"><button class="ghost" type="button" id="mvMenos" aria-label="Baixar o preço">−</button><input id="mvPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1" aria-label="Preço na Feira, por peça"><button class="ghost" type="button" id="mvMais" aria-label="Subir o preço">+</button></div>
+        <button class="cta" type="button" id="mvOk">Vender 1 na Feira</button>
+        <p class="minfo" id="mvMsg" role="status"></p>
+      </div>
     </div>
   </section>
 
@@ -452,8 +458,9 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Mercado entre jogadores</p>
       <h2>Feira</h2>
-      <p class="lede">Diga o preço por peça. Se alguém já pede ou oferece esse preço, o negócio fecha na hora; senão a oferta fica no livro até alguém aceitar ou você cancelar. O que você anuncia sai do cofre enquanto a oferta existir, e a venda paga <span id="mktTaxa">2</span>% de taxa.</p>
+      <p class="lede">Diga o preço por peça. Se alguém já pede ou oferece esse preço, o negócio fecha na hora; senão a oferta fica no livro até alguém aceitar ou você cancelar. Só se anuncia o que tem origem registrada no banco: o que você extraiu, comprou ou recebeu aqui com a conta ligada. O que você anuncia sai do cofre enquanto a oferta existir, e a venda paga <span id="mktTaxa">2</span>% de taxa.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="mktGold">0</b></div>
+      <p class="mpRes" id="mktOrig" hidden></p>
       <p class="mmsg" id="mktMsg" role="status"></p>
       <div id="mktLista">
         <ul id="mktItens"></ul>
@@ -511,7 +518,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.12.0"></script>
+<script type="module" src="src/main.js?v=0.13.0"></script>
 
 </body>
 </html>

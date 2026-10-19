@@ -158,20 +158,27 @@ const P = {
      do jogador, mk.caixa o que espera para entrar no cofre. O match é o do
      primeiro nível do outro lado, que basta para a tela; o algoritmo de
      verdade é testado no SQL. N.forcaErro faz a próxima operação falhar com
-     a palavra-chave dada, e save_gravar recusa save com mkt mais velho. */
+     a palavra-chave dada, e save_gravar recusa save com mkt mais velho.
+     mk.lastro é a origem registrada (tools/supabase/004_origem.sql): anunciar
+     exige o saldo dela, e caca_comecar, caca_fim e lastro_banco a movem.
+     N.args guarda os argumentos da última chamada de cada função. */
   nuvem: (remoto, contas, mk) => (h) => patch(h,
     MODULO,
     `<script>
 window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0,
-  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100}, mk || {}))},chamadas:[],forcaErro:''};
+  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100, lastro: {ouro: 0, itens: {}}, caca: 500}, mk || {}))},chamadas:[],args:{},forcaErro:''};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
   const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
     erro=m=>r(400,{code:'P0001',message:m}),fn=u.split('/rpc/')[1];
   if(fn==='save_ler'){N.gets++;N.token=b.p_token;return b.p_token==='tk1'?r(200,N.dados):erro('sessao')}
   if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');
     if(N.dados&&(b.p_dados.mkt|0)<(N.dados.mkt|0))return erro('mercado');N.posts++;N.dados=b.p_dados;return r(204,null)}
-  if(fn.indexOf('mercado_')===0){if(b.p_token!=='tk1')return erro('sessao');N.chamadas.push(fn);const M=N.mk;
-    if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa});
+  if(/^(mercado|caca|lastro)_/.test(fn)){if(b.p_token!=='tk1')return erro('sessao');N.chamadas.push(fn);N.args[fn]=b;const M=N.mk,O=M.lastro,
+      poeO=(k,q)=>{O.itens[k]=(O.itens[k]|0)+q;if(O.itens[k]<=0)delete O.itens[k]};
+    if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa,lastro:O});
+    if(fn==='caca_comecar')return r(200,++M.caca);
+    if(fn==='caca_fim'){let n=0;if(b.p_desfecho==='extraiu')for(const k in b.p_saco){poeO(k,b.p_saco[k]);n+=b.p_saco[k]}O.ouro+=b.p_ouro;return r(200,{pecas:n,ouro:b.p_ouro})}
+    if(fn==='lastro_banco'){if(O.itens[b.p_item]>0){poeO(b.p_item,-1);O.ouro+=b.p_val}return r(204,null)}
     if(!N.dados)return erro('sem_save');
     if(N.forcaErro){const m=N.forcaErro;N.forcaErro='';return erro(m)}
     const D=N.dados,it=D.itens||(D.itens={}),poe=(k,q)=>{it[k]=(it[k]|0)+q;if(it[k]<=0)delete it[k]},rec={ouro:0,itens:{}};
@@ -179,11 +186,13 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
     const fim=x=>{D.mkt=(D.mkt|0)+1;D.em=Date.now();return r(200,Object.assign({cofre:D.cofre,itens:JSON.parse(JSON.stringify(it)),mkt:D.mkt,recebido:rec},x||{}))};
     if(fn==='mercado_coletar')return fim();
     if(fn==='mercado_cancelar'){const i=M.minhas.findIndex(o=>o.id===b.p_id);if(i<0)return erro('ordem');const o=M.minhas.splice(i,1)[0];
-      if(o.lado==='compra')D.cofre+=o.preco*o.resta;else poe(o.item,o.resta);return fim()}
+      if(o.lado==='compra'){D.cofre+=o.preco*o.resta;O.ouro+=o.preco*o.resta}else{poe(o.item,o.resta);poeO(o.item,o.resta)}return fim()}
     if(fn==='mercado_anunciar'){const k=b.p_item,pr=b.p_preco,q=b.p_qtd,compra=b.p_lado==='compra',L=M.itens[k]||{venda:[],compra:[]};
-      if(compra){if(D.cofre<pr*q)return erro('sem_ouro');D.cofre-=pr*q}else{if((it[k]|0)<q)return erro('sem_peca');poe(k,-q)}
+      if(compra){if(D.cofre<pr*q)return erro('sem_ouro');if(O.ouro<pr*q)return erro('sem_origem');D.cofre-=pr*q;O.ouro-=pr*q}
+      else if(b.p_caca){if(b.p_caca!==M.caca)return erro('caca');if(!(b.p_saco&&b.p_saco[k]>=q))return erro('sem_peca')}
+      else{if((it[k]|0)<q)return erro('sem_peca');if((O.itens[k]|0)<q)return erro('sem_origem');poe(k,-q);poeO(k,-q)}
       const op=compra?L.venda:L.compra,n0=op[0],f=n0&&(compra?n0[0]<=pr:n0[0]>=pr)?Math.min(q,n0[1]):0,tot=f?f*n0[0]:0,tx=compra?0:Math.ceil(tot*2/100);
-      if(f){if(compra){poe(k,f);D.cofre+=(pr-n0[0])*f}else D.cofre+=tot-tx;n0[1]-=f;if(!n0[1])op.shift()}
+      if(f){if(compra){poe(k,f);poeO(k,f);D.cofre+=(pr-n0[0])*f;O.ouro+=(pr-n0[0])*f}else{D.cofre+=tot-tx;O.ouro+=tot-tx}n0[1]-=f;if(!n0[1])op.shift()}
       const resta=q-f;if(resta)M.minhas.unshift({id:++M.seq,lado:b.p_lado,item:k,preco:pr,qtd:q,resta:resta});
       return fim({feitos:f,resta:resta,ouro:tot-tx,taxa:tx,ordem:resta?M.seq:null})}}
   if(fn==='conta_entrar'){N.login=b.p_usuario;return N.contas[b.p_usuario.toLowerCase()]===b.p_senha?r(200,{token:'tk1',id:'u1',usuario:b.p_usuario}):erro('credenciais')}
@@ -1582,9 +1591,11 @@ const CASOS = [
       itens: {espada: {venda: [[25, 1]], compra: [[18, 3]], ultimo: 22, dia: 4}, cota: {venda: [[70, 2]], compra: [], ultimo: null, dia: 0}, bogus: {venda: [[1, 1]], compra: [], ultimo: null, dia: 0}},
       minhas: [{id: 7, lado: 'compra', item: 'cota', preco: 50, qtd: 1, resta: 1}],
       caixa: {ouro: 40, itens: {}},
+      /* o machado está no cofre mas não tem origem: veio de antes da conta */
+      lastro: {ouro: 340, itens: {espada: 2}},
     })],
     save: {'masmorra-runas-v2': {
-      cofre: 300, itens: {espada: 2}, runs: 1, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      cofre: 300, itens: {espada: 2, machado: 1}, runs: 1, ext: 0, deaths: 0, best: 0, dono: 'u1',
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'feiticeiro',
       chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
@@ -1603,6 +1614,13 @@ const CASOS = [
     ok('a lista tem só as peças de equipamento do jogo (item desconhecido do livro fica fora)', lis.length===5&&!/bogus/.test(txt('#mktItens')), lis.length);
     ok('a espada mostra os dois lados do livro e o cofre', /2 no cofre/.test(lis[0].textContent)&&/vendem a partir de 25/.test(lis[0].textContent)&&/compram até 18/.test(lis[0].textContent), lis[0].textContent);
     ok('suas ofertas listam a compra de cota', /Compra: cota de malha a 50/.test(txt('#mktMinhas')||''), txt('#mktMinhas'));
+    ok('peça sem origem aparece como tal na lista', /machado rachado · 1 no cofre, 0 com origem/.test(lis[1].textContent), lis[1].textContent);
+    clica(lis[1].querySelector('button'));
+    ok('peça sem origem abre comprando', $('#mpLadoC').getAttribute('aria-pressed')==='true', $('#mpLadoC').getAttribute('aria-pressed'));
+    clica($('#mpLadoV'));
+    ok('vender peça sem origem fica bloqueado e explicado', $('#mpOk').disabled&&/Só 0 têm origem registrada/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpVolta'));
+    lis=todos('#mktItens li');
     clica(lis[0].querySelector('button'));
     ok('quem tem a peça abre vendendo, pelo melhor preço de compra', visivel('#mktPeca')&&$('#mpLadoV').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='18', $('#mpPreco').value);
     ok('o resumo diz o que recebe, já com a taxa', /recebe 17 de ouro \\(taxa de 1\\)/.test(txt('#mpRes')||''), txt('#mpRes'));
@@ -1636,14 +1654,72 @@ const CASOS = [
     clica($('#mpOk'));
     var recusou=await ate(function(){return /10 ofertas abertas/.test(txt('#mktMsg')||'')},300);
     ok('o erro do banco vira aviso legível e nada muda no cofre', recusou&&$('#mktMsg').classList.contains('ruim')&&sv().cofre===350, txt('#mktMsg'));
+    ok('a origem acompanhou os negócios', window.__nuvem.mk.lastro.ouro===350&&window.__nuvem.mk.lastro.itens.espada===1, JSON.stringify(window.__nuvem.mk.lastro));
+    /* parte do ouro do cofre sem origem: a Feira mostra quanto vale e barra a compra acima disso */
+    window.__nuvem.mk.lastro.ouro=60;
+    clica($('#mktBack'));Tl.abreNpc('corretor');
+    var leu=await ate(function(){return visivel('#mktOrig')},300);
+    ok('a Feira mostra o ouro com origem quando é menor que o cofre', leu&&/Com origem registrada: 60 de ouro/.test(txt('#mktOrig')), txt('#mktOrig'));
+    clica(todos('#mktItens li button')[3]);
+    $('#mpPreco').value='70';$('#mpQtd').value='1';$('#mpQtd').dispatchEvent(new Event('input'));
+    ok('comprar acima do ouro com origem fica bloqueado', $('#mpOk').disabled&&/Só 60 de ouro têm origem/.test(txt('#mpRes')||''), txt('#mpRes'));
+    window.__nuvem.mk.lastro.ouro=350;
     clica($('#mktBack'));
     /* outro aparelho negociou: a nuvem tem mkt maior, e a próxima gravação daqui é recusada */
     window.__nuvem.dados.mkt+=5;window.__nuvem.dados.cofre=999;
     Tl.abreNpc('banqueiro');
     clica(todos('#eqList button.rm')[0]);
     ${espera(2500)}
+    ok('a venda ao Banco avisa o banco da origem', window.__nuvem.args.lastro_banco&&window.__nuvem.args.lastro_banco.p_item==='machado'&&window.__nuvem.args.lastro_banco.p_val===28, JSON.stringify(window.__nuvem.args.lastro_banco));
     var trocou=await ate(function(){return sv()&&sv().cofre===999},300);
     ok('save mais velho que o mercado é recusado e o da nuvem entra', trocou&&sv().mkt===window.__nuvem.dados.mkt, sv()&&JSON.stringify([sv().cofre,sv().mkt,window.__nuvem.dados.mkt]));
+`,
+  },
+  {
+    nome: 'feira-saco',
+    o_que: 'com conta, a caçada abre no banco; a Mochila vende uma peça do saco na Feira (sai do saco, vai com a caçada e o saco); a extração fecha a caçada com o saco que sobrou e a peça vendida não volta ao cofre',
+    semente: 11,
+    limite: 90000,
+    patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.nuvem(null, {}, {lastro: {ouro: 0, itens: {}}})],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    },
+    'masmorra-runas-v2-sessao': {tk: 'tk1', uid: 'u1', usuario: 'ana'}},
+    roteiro: `
+    var pronto=await ate(function(){return /salvo na nuvem · ana/.test(txt('#contaT')||'')},300);
+    ok('a sessão guardada liga a nuvem', pronto, txt('#contaT'));
+    cacar();
+    var abriu=await ate(function(){return window.__nuvem.chamadas.indexOf('caca_comecar')>=0},200);
+    ok('a caçada abre no banco ao começar', abriu, window.__nuvem.chamadas.join());
+    await quadros(4);
+    ok('o saco entrou com a espada', txt('#bagT')==='220', txt('#bagT'));
+    clica($('#bMochila'));
+    var esp=todos('#moGrade .cel:not(:disabled)').filter(function(b){return /espada/.test(b.getAttribute('aria-label')||'')})[0];
+    ok('a espada está no saco da Mochila', !!esp);
+    clica(esp);
+    ok('peça do saco oferece a venda na Feira pelo valor dela', visivel('#moVenda')&&$('#mvPreco').value==='20', $('#mvPreco').value);
+    clica($('#mvMais'));
+    clica($('#mvOk'));
+    var vendeu=await ate(function(){return /anunciada na Feira a 21/.test(txt('#mvMsg')||'')},300);
+    ok('a venda do saco foi anunciada', vendeu, txt('#mvMsg'));
+    var a=window.__nuvem.args.mercado_anunciar||{};
+    ok('o anúncio leva a caçada e o saco de antes', a.p_caca===501&&a.p_saco&&a.p_saco.espada===1&&a.p_qtd===1&&a.p_lado==='venda', JSON.stringify(a));
+    ok('a espada saiu do saco e do valor dele', txt('#bagT')==='200'&&!todos('#moGrade .cel:not(:disabled)').some(function(b){return /espada/.test(b.getAttribute('aria-label')||'')}), txt('#bagT'));
+    ok('peça vestida não oferece venda', (clica(todos('#moDoll .cel')[0]),!visivel('#moVenda')));
+    clica($('#moX'));
+    tecla('keydown','KeyJ');
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    tecla('keyup','KeyJ');
+    ok('saiu pelo portal', acabou&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    var fim=await ate(function(){return !!window.__nuvem.args.caca_fim},300);
+    var f=window.__nuvem.args.caca_fim||{};
+    ok('a extração fecha a caçada no banco, sem a peça vendida', fim&&f.p_id===501&&f.p_desfecho==='extraiu'&&!(f.p_saco||{}).espada, JSON.stringify(f));
+    ok('o ouro extraído vai como origem', f.p_ouro>=200&&window.__nuvem.mk.lastro.ouro===f.p_ouro, f.p_ouro+' / '+window.__nuvem.mk.lastro.ouro);
+    ok('a espada vendida não volta ao cofre', sv()&&!(sv().itens||{}).espada, sv()&&JSON.stringify(sv().itens));
+    ok('a fila da origem esvaziou', (localStorage.getItem('masmorra-runas-v2-fila')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-fila'));
 `,
   },
   {
