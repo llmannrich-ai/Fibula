@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, Feira (mercado entre jogadores) e Forja (o
    Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.17.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.17.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.17.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.17.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.17.0';
-import {persist,saveFalhou} from './salvar.js?v=0.17.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.17.0';
-import {rede,SALAS} from './rede.js?v=0.17.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,comecaGrupo,correndo} from './sala.js?v=0.17.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.17.0';
-import {icone} from './arte.js?v=0.17.0';
-import {$,app} from './dom.js?v=0.17.0';
-import {retrato} from './desenho.js?v=0.17.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.18.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.18.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.18.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.18.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.18.0';
+import {persist,saveFalhou} from './salvar.js?v=0.18.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.18.0';
+import {rede,SALAS} from './rede.js?v=0.18.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,comecaGrupo,correndo} from './sala.js?v=0.18.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.18.0';
+import {icone} from './arte.js?v=0.18.0';
+import {$,app} from './dom.js?v=0.18.0';
+import {retrato} from './desenho.js?v=0.18.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS];

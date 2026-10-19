@@ -13,14 +13,14 @@
    Mensagens (broadcast): quero (convidado pede para entrar, com a ficha),
    membros (a lista), comeca (semente e fichas), ent (entrada do convidado),
    estado (o retrato), fim (o resultado de um convidado), log, fecha. */
-import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.17.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.17.0';
-import {G,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.17.0';
-import {drinkPot} from './sim/combate.js?v=0.17.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.17.0';
-import {rede,ID,anuncia} from './rede.js?v=0.17.0';
-import {persist} from './salvar.js?v=0.17.0';
-import {log} from './hud.js?v=0.17.0';
+import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.18.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.18.0';
+import {G,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.18.0';
+import {drinkPot} from './sim/combate.js?v=0.18.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.18.0';
+import {rede,ID,anuncia} from './rede.js?v=0.18.0';
+import {persist} from './salvar.js?v=0.18.0';
+import {log} from './hud.js?v=0.18.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40

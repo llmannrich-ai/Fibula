@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,listaDaClasse,slotsIniciais} from './dados.js?v=0.17.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,listaDaClasse,slotsIniciais} from './dados.js?v=0.18.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -22,7 +22,8 @@ export function confereFicha(f){
 export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),equip:EQ0()});
 /* cofre (ouro), itens (equipamento guardado), mats (materiais para o Gordon)
    e forja (encomendas entregues) são da conta; equip é de cada personagem */
-export const SAVE0=()=>({cofre:0,itens:{},mats:{},forja:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{}});
+/* chao: as peças do chão da cidade (city.chao) que esta conta já pegou, por id */
+export const SAVE0=()=>({cofre:0,itens:{},mats:{},forja:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{},chao:{}});
 /* só as peças que existem no content.json, com quantidade inteira positiva:
    vale para o save cru e para o cofre que o mercado da nuvem devolve */
 export const soPecas=o=>{const r={};for(const[k,q]of Object.entries(o||{}))if(ITEMS[k]&&ITEMS[k].slot&&q>0)r[k]=q|0;return r};
@@ -35,6 +36,7 @@ export const normaliza=s=>{const n=Object.assign(SAVE0(),s);n.up=Object.assign({
      content.json some em vez de quebrar a tela */
   n.itens=soPecas(s.itens);n.mats=soMats(s.mats);
   n.forja=Math.max(0,Math.min(FORJA.missoes.length,s.forja|0));
+  n.chao=s.chao&&typeof s.chao==='object'&&!Array.isArray(s.chao)?s.chao:{};
   for(const c of Object.values(n.chars)){const e=EQ0();
     for(const sl of SLOTS_EQ){const id=c.equip&&c.equip[sl];if(id&&ITEMS[id]&&ITEMS[id].slot===sl)e[sl]=id}
     c.equip=e}
@@ -89,6 +91,8 @@ export function equipar(k){
   const it=ITEMS[k],e=ch().equip;if(!it||!it.slot||!tiraDoCofre(k))return false;
   if(e[it.slot])poeNoCofre(e[it.slot]);e[it.slot]=k;return true}
 export function desequipar(sl){const e=ch().equip,k=e[sl];if(!k)return false;poeNoCofre(k);e[sl]=null;return true}
+/* peça do chão da cidade: vai para o cofre, uma vez por conta */
+export function pegaDoChao(id,k){if(!ITEMS[k]||save.chao[id])return false;save.chao[id]=1;poeNoCofre(k);return true}
 export function vender(k){if(!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
 /* extração: equipamento vai para o cofre como peça, material que o Gordon
    compra vai para o depósito de materiais, o resto vira ouro */

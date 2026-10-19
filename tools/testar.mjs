@@ -1249,6 +1249,33 @@ const CASOS = [
 `,
   },
   {
+    nome: 'chao-da-cidade',
+    o_que: 'peças de teste no chão da cidade: pisar leva ao cofre do Banco, uma vez por conta, e não voltam ao chão',
+    semente: 7,
+    conteudo: [c => { c.city.chao = [{x: 12, y: 11, item: 'espada'}, {x: 14, y: 11, item: 'cota'}]; }],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    clica($('#play'));await quadros(2);
+    ok('as duas peças estão no chão', Cd.C.chao.length===2, Cd.C.chao.length);
+    tecla('keydown','KeyD');
+    var pegou=await ate(function(){return Cd.C.chao.length===0},80);
+    tecla('keyup','KeyD');await quadros(8);
+    ok('andando por cima, pegou as duas', pegou, Cd.C.chao.length);
+    ok('foram para o cofre da conta', sv().itens.espada===1&&sv().itens.cota===1, JSON.stringify(sv().itens));
+    ok('o save lembra que já pegou', sv().chao['12,11']===1&&sv().chao['14,11']===1, JSON.stringify(sv().chao));
+    ok('o registro avisa', /Você pegou espada enferrujada/.test(txt('#log')||''), txt('#log'));
+    clica($('#cMenu'));await quadros(2);clica($('#play'));await quadros(2);
+    ok('voltando à cidade, não aparecem de novo', Cd.C.chao.length===0, Cd.C.chao.length);
+    Tl.abreNpc('banqueiro');
+    ok('o Banco lista as duas para vestir', todos('#eqList li.sp').length===2, todos('#eqList li.sp').length);
+`,
+  },
+  {
     nome: 'equipamento-no-corpo',
     o_que: 'o que o personagem veste aparece nele: retrato no Banco, cidade, incursão com golpe, e os outros jogadores veem pela presença',
     semente: 11,

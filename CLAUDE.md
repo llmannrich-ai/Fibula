@@ -130,7 +130,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
   `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`; da cidade,
   `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de `city.mapa` é) e `ABRE`
-  (o que um NPC pode abrir). As tabelas
+  (o que um NPC pode abrir); da forja do Gordon, `FORJA` (`compra`, `missoes`,
+  `loja`). As tabelas
   são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
   valor, edite o JSON
 - `progresso.js` — **personagem e progressão**: o `save` em memória
@@ -138,7 +139,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
   `passoDaVel()` (a fórmula do passo do Tibia) e `durPasso()` (o passo do
-  personagem pelo nível)
+  personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
+  `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
@@ -214,7 +216,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
-  **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
+  **forja** (`showForja()`, o Gordon: encomenda, loja e depósito de
+  materiais), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
   cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
   cidade voltam para ela (`volta()`)
@@ -338,9 +341,10 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
-O que é da conta (cofre de ouro, peças guardadas em `itens`, melhorias,
-estatísticas) fica na raiz; o que é do personagem (inclusive o equipamento
+`{cofre,itens:{<item>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+O que é da conta (cofre de ouro, peças guardadas em `itens`, materiais do
+Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
+fica na raiz; o que é do personagem (inclusive o equipamento
 vestido) fica em `chars`, um por classe. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
 em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save

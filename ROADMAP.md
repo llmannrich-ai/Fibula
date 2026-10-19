@@ -141,6 +141,14 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Gordon e a Forja (0.18.0)** *(pedido do Leonardo)*. NPC
+  novo na cidade (`city.npcs.gordon`, letra `F`, casa no canto sudoeste):
+  compra materiais barato, quatro encomendas em ordem, loja liberada por
+  encomenda; quatro peças novas no `content.json` e no atlas. Pilar 5: os
+  materiais nascem com dois ralos (encomenda e venda barata) e as peças são
+  ralo novo de ouro. Caso `forja` (19 asserções) e a forja na simulação do
+  Node.
+
 - **2026-10-19 — Origem na Feira e venda do saco (0.15.0)** *(decisão do
   Leonardo: anunciar só o que se tem no cofre ou no saco, com o banco
   conferindo a origem)*. Saldo de origem no banco (`mercado_lastro`),

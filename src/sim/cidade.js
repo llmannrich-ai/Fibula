@@ -5,10 +5,10 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.17.0';
-import {ch,durPasso} from './progresso.js?v=0.17.0';
-import {CITY,LEGENDA,CLASSES,PROG,ITEMS,SLOTS_EQ} from './dados.js?v=0.17.0';
-import {pecas} from './mapa.js?v=0.17.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.18.0';
+import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.18.0';
+import {CITY,LEGENDA,CLASSES,PROG,ITEMS,SLOTS_EQ} from './dados.js?v=0.18.0';
+import {pecas} from './mapa.js?v=0.18.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
@@ -34,6 +34,8 @@ export function entraCidade(dePortao){
   for(let i=0;i<w*h;i++)fora[i]=t[i]===3?0:1;
   if(dePortao){const g=npcs.find(n=>CITY.npcs[n.k].abre==='cacadas');if(g){sx=g.x/T|0;sy=(g.y/T|0)-1}}
   C={w,h,t,sol,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
+  /* peças de teste no chão (city.chao): só as que esta conta ainda não pegou */
+  C.chao=(CITY.chao||[]).filter(c=>!(save.chao&&save.chao[c.x+','+c.y])).map(c=>({x:c.x,y:c.y,k:c.item}));
   poeNoSqm(C.p,sx,sy);
   return C;
 }
@@ -53,6 +55,10 @@ export function updateCidade(dt,ent){
     else if(i>=0)p.face=Math.atan2(DIR8[i][1],DIR8[i][0]);
   }
   p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
+  /* pisou numa peça do chão: ela vai para o cofre do Banco */
+  for(let i=C.chao.length-1;i>=0;i--){const c=C.chao[i];if(c.x!==p.tx||c.y!==p.ty)continue;
+    C.chao.splice(i,1);
+    if(pegaDoChao(c.x+','+c.y,c.k)){saida.log(`Você pegou ${ITEMS[c.k].nome}. Está no cofre do Banco.`,'info');saida.persist()}}
   let melhor=null,md=T*1.75;
   for(const n of C.npcs){const d=hyp(n.x-p.x,n.y-p.y);if(d<md){md=d;melhor=n.k}}
   C.perto=melhor;
