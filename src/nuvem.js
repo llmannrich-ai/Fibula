@@ -14,7 +14,7 @@
 import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.27.0';
 import {ITEMS} from './sim/dados.js?v=0.27.0';
 import {G} from './sim/incursao.js?v=0.27.0';
-import {pecasDaCaca} from './sim/combate.js?v=0.27.0';
+import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.27.0';
 import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.27.0';
 import {menu,showMenu} from './telas.js?v=0.27.0';
 import {$} from './dom.js?v=0.27.0';
@@ -131,7 +131,7 @@ export function cacaFim(kind,p){
      Banco; material vai para o Gordon, sem origem */
   const b0=p.bag0||{};let ouro=0;
   for(const[k,q]of Object.entries(p.bag)){const n=q-(b0[k]|0);if(n>0&&!ITEMS[k].slot&&!ehMat(k))ouro+=ITEMS[k].val*n}
-  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?pecasDaCaca(p):{},p_ouro:kind==='extraiu'?ouro:p.sealed|0});
+  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?pecasDaCaca(p):vestidasDaCaca(p),p_ouro:kind==='extraiu'?ouro:p.sealed|0});
   caca.id=null;
 }
 export const lastroBanco=(k,val)=>enfila('lastro_banco',{p_item:k,p_val:val});

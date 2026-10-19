@@ -433,7 +433,9 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
   livre, mesmo que depois morra), dentro de limites de plausibilidade (30
   peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
-  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql). O cliente
+  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql); na morte, a
+  `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
+  [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
   guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.

@@ -233,6 +233,10 @@ export function vesteDoSaco(p,k){
 export const pecasDaCaca=p=>{const o={},b0=p.bag0||{},t=p.troca||{};
   for(const k of new Set([...Object.keys(p.bag),...Object.keys(t)])){if(!ITEMS[k].slot)continue;
     const n=(p.bag[k]|0)+(t[k]|0)-(b0[k]|0);if(n>0)o[k]=n}return o};
+/* na morte, só as vestidas da mochila que ainda estão no corpo e não tinham
+   entrado nela já com origem (p.bag0): o banco dá origem a elas (no máximo
+   uma por casa), e o resto da mochila se perde */
+export const vestidasDaCaca=p=>{const o={},b0=p.bag0||{};for(const[k,n]of Object.entries(p.troca||{})){const q=n-(b0[k]|0);if(q>0)o[k]=q}return o};
 export function tiraProSaco(p,sl){const e=p.c.equip,k=e[sl];if(!k||p.fora||!cabe(p.bag,k))return false;e[sl]=null;poeNoSaco(p,k,1);troca(p,k,-1);reveste(p);return true}
 /* o loot vai para a mochila até ela encher (progression.mochila); o que não
    cabe fica no chão, e o aviso sai uma vez por jogador em cada drop (d.av) */
