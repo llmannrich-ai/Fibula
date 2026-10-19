@@ -1403,7 +1403,7 @@ const CASOS = [
   },
   {
     nome: 'forja',
-    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e poupa o da encomenda; extrair leva o material ao depósito',
+    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e mostra o que a encomenda usa; extrair leva o material ao depósito',
     semente: 11,
     limite: 90000,
     patches: [P.tempo(20, 10), P.sacoMat, P.portalNaEntrada],
@@ -1423,11 +1423,10 @@ const CASOS = [
     ok('a Forja mostra o cofre', txt('#fgGold')==='300', txt('#fgGold'));
     ok('a primeira encomenda diz o que falta', (txt('#fgMissao')||'').indexOf('dente de rato 3/3 · seda de aranha 4/4')>=0, txt('#fgMissao'));
     ok('o depósito ignora o que o Gordon não compra', !mat('gema')&&todos('#fgMats li.sp').length===3, todos('#fgMats li.sp').length);
-    ok('a seda separa o que a encomenda usa', /4 para a encomenda/.test(mat('seda').textContent)&&mat('seda').querySelectorAll('button')[1].textContent==='sobra · 8', mat('seda').textContent);
-    ok('o dente não tem sobra para vender', mat('dente').querySelectorAll('button')[1].disabled);
+    ok('a seda separa o que a encomenda usa', /4 para a encomenda/.test(mat('seda').textContent)&&mat('seda').querySelectorAll('button').length===1, mat('seda').textContent);
     ok('a maça só sai depois da encomenda 1', loja('maça cravejada').querySelector('button').disabled&&/depois da encomenda 1/.test(loja('maça cravejada').textContent), loja('maça cravejada').textContent);
-    clica(mat('seda').querySelectorAll('button')[1]);
-    ok('vender a sobra paga 4 por seda e guarda a da encomenda', sv().cofre===308&&sv().mats.seda===4&&/pagou 8/.test(txt('#fgMsg')), sv().cofre+' / '+JSON.stringify(sv().mats));
+    clica(mat('seda').querySelector('button'));clica(mat('seda').querySelector('button'));
+    ok('vender 1 duas vezes paga 4 por seda',sv().cofre===308&&sv().mats.seda===4&&/pagou 4/.test(txt('#fgMsg')), sv().cofre+' / '+JSON.stringify(sv().mats));
     clica($('#fgMissao button'));
     ok('entregar consome o pedido e avança a encomenda', sv().forja===1&&!sv().mats.seda&&!sv().mats.dente&&sv().mats.osso===2, sv().forja+' / '+JSON.stringify(sv().mats));
     ok('o Gordon diz o que liberou', /maça cravejada/.test(txt('#fgMsg')||''), txt('#fgMsg'));

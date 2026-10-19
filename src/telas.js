@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, Feira (mercado entre jogadores) e Forja (o
    Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.19.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.19.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.19.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.19.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.19.0';
-import {persist,saveFalhou} from './salvar.js?v=0.19.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.19.0';
-import {rede,SALAS} from './rede.js?v=0.19.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.19.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.19.0';
-import {icone} from './arte.js?v=0.19.0';
-import {$,app} from './dom.js?v=0.19.0';
-import {retrato} from './desenho.js?v=0.19.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.19.1';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.19.1';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.19.1';
+import {G,setG,newRun} from './sim/incursao.js?v=0.19.1';
+import {C,entraCidade} from './sim/cidade.js?v=0.19.1';
+import {persist,saveFalhou} from './salvar.js?v=0.19.1';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.19.1';
+import {rede,SALAS} from './rede.js?v=0.19.1';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.19.1';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.19.1';
+import {icone} from './arte.js?v=0.19.1';
+import {$,app} from './dom.js?v=0.19.1';
+import {retrato} from './desenho.js?v=0.19.1';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS];
@@ -387,14 +387,12 @@ function drawForja(){
   const ml=$('#fgMats');ml.textContent='';
   const rows=Object.keys(FORJA.compra).filter(k=>save.mats[k]>0);
   if(!rows.length)fgVazio(ml,'Nada guardado. Dente, seda, osso e erva que você extrair vêm para cá.');
-  for(const k of rows){const q=save.mats[k],pr=FORJA.compra[k],res=Math.min(q,reservado(k)),sobra=q-res;
+  for(const k of rows){const q=save.mats[k],pr=FORJA.compra[k],res=Math.min(q,reservado(k));
     const li=fgLi(k);
     li.append(fgInfo(`${ITEMS[k].nome} ×${q}`,`Gordon paga ${pr} de ouro cada`,res?`${res} para a encomenda`:''));
-    const bt=document.createElement('div');bt.className='btns';
-    const vende=n=>()=>{const o=venderMat(k,n);if(o){persist();drawForja();msgFg(`Gordon pagou ${o} de ouro.`)}};
-    bt.append(fgBt(`vender 1 · ${pr}`,`Vender 1 ${ITEMS[k].nome} por ${pr} de ouro`,vende(1)),
-      fgBt(`sobra · ${sobra*pr}`,`Vender ${sobra} ${ITEMS[k].nome}, o que a encomenda não usa, por ${sobra*pr} de ouro`,vende(sobra),!sobra));
-    bt.lastChild.className='rm';li.appendChild(bt);ml.appendChild(li)}
+    li.appendChild(fgBt(`vender 1 · ${pr}`,`Vender 1 ${ITEMS[k].nome} por ${pr} de ouro`,()=>{
+      const o=venderMat(k,1);if(o){persist();drawForja();msgFg(`Gordon pagou ${o} de ouro.`)}}));
+    ml.appendChild(li)}
 }
 function showForja(){msgFg('');drawForja();soTela(forjaS)}
 
