@@ -1,6 +1,6 @@
 -- Fibula · telemetria mínima (F1)
--- Depende do 002. Pode rodar de novo sem estrago. Sem nenhum comando de
--- apagar: o conector do Supabase não aplica migração que tenha um.
+-- Depende do 002. Pode rodar de novo sem estrago. Sem nenhum delete: o
+-- conector do Supabase não aplica migração que tenha um.
 --
 -- Decisão do Leonardo, 19/10/2026: medir o jogo com dado de jogador antes de
 -- mexer em balanceamento, retenção ou custo da morte. Os eventos são os da
@@ -56,7 +56,7 @@ begin
   if p_token is not null and p_token <> '' then j := public._fibula_dono(p_token); end if;
   for ev in select x from jsonb_array_elements(p_eventos) with ordinality a(x, i) where i <= 50 loop
     continue when jsonb_typeof(ev) <> 'object'
-      or not (ev->>'e' = any (array['sessao_inicio','caca_inicio','caca_fim','compra','nivel_up','erro_cliente']))
+      or not (coalesce(ev->>'e', '') = any (array['sessao_inicio','caca_inicio','caca_fim','compra','nivel_up','erro_cliente']))
       or (ev ? 'd' and jsonb_typeof(ev->'d') <> 'object')
       or octet_length(coalesce(ev->'d', '{}'::jsonb)::text) > 2000;
     t := now();
@@ -72,10 +72,18 @@ $$;
 grant execute on function public.telemetria_gravar(uuid, text, text, jsonb) to anon, authenticated;
 
 -- ---------- o painel ----------
+-- O create or replace de view só aceita coluna nova no fim e o mesmo tipo nas
+-- de antes; drop view não passa pelo conector.
+-- Número do JSON sempre por case when jsonb_typeof(..) = 'number': o case
+-- garante que o cast só roda em número.
 -- Dia em horário de Brasília. security_invoker: quem lê precisa poder ler a
 -- tabela, e o anon não pode.
 
--- por dia: aparelhos ativos, sessões, caçadas, saída viva, duração da caçada
+-- por dia: aparelhos ativos, sessões, caçadas, saída viva, duração da caçada.
+-- Quem fecha o jogo no meio da caçada deixa um caca_inicio sem caca_fim: a
+-- saída viva e a duração contam só as caçadas que terminaram (largadas mostra
+-- quantas não). As views leem só número de verdade do JSON (jsonb_typeof),
+-- para um evento forjado com texto no lugar do número não derrubar o painel.
 create or replace view public.tel_dia with (security_invoker = true) as
 select (quando at time zone 'America/Sao_Paulo')::date as dia,
   count(distinct aparelho) as ativos,
@@ -83,9 +91,10 @@ select (quando at time zone 'America/Sao_Paulo')::date as dia,
   count(*) filter (where evento = 'caca_fim') as cacadas,
   round(100.0 * count(*) filter (where evento = 'caca_fim' and dados->>'fim' = 'extraiu')
     / nullif(count(*) filter (where evento = 'caca_fim' and dados->>'fim' in ('extraiu','morreu')), 0), 1) as saida_viva_pct,
-  round((percentile_cont(0.5) within group (order by (dados->>'dur')::numeric)
+  round((percentile_cont(0.5) within group (order by case when jsonb_typeof(dados->'dur') = 'number' then (dados->'dur')::numeric end)
     filter (where evento = 'caca_fim'))::numeric / 60, 1) as caca_mediana_min,
-  count(*) filter (where evento = 'erro_cliente') as erros
+  count(*) filter (where evento = 'erro_cliente') as erros,
+  greatest(0, count(*) filter (where evento = 'caca_inicio') - count(*) filter (where evento = 'caca_fim')) as largadas
 from public.telemetria group by 1 order by 1 desc;
 
 -- retenção por turma (o primeiro dia de cada aparelho): voltou no dia 1, 7, 30
@@ -110,12 +119,14 @@ from s group by aparelho, n order by inicio desc;
 
 -- o pilar 3: horas de caçada (soma das caca_fim antes) até cada nível, por classe
 create or replace view public.tel_niveis with (security_invoker = true) as
-with n as (select aparelho, dados->>'classe' as classe, (dados->>'nivel')::int as nivel, min(quando) as quando
-    from public.telemetria where evento = 'nivel_up' and dados->>'nivel' ~ '^[0-9]+$' group by 1, 2, 3),
-  h as (select n.classe, n.nivel, (select coalesce(sum((c.dados->>'dur')::numeric), 0) from public.telemetria c
-      where c.aparelho = n.aparelho and c.evento = 'caca_fim' and c.dados->>'classe' = n.classe and c.quando <= n.quando
-        and c.dados->>'dur' ~ '^[0-9.]+$') / 3600 as horas from n)
-select classe, nivel, count(*) as personagens,
+with v as (select aparelho, dados->>'classe' as classe, quando,
+    case when jsonb_typeof(dados->'nivel') = 'number' then (dados->'nivel')::numeric end as nivel
+    from public.telemetria where evento = 'nivel_up'),
+  n as (select aparelho, classe, nivel, min(quando) as quando from v where nivel between 1 and 10000 group by 1, 2, 3),
+  h as (select n.classe, n.nivel, (select coalesce(sum(case when jsonb_typeof(c.dados->'dur') = 'number' then (c.dados->'dur')::numeric end), 0)
+      from public.telemetria c
+      where c.aparelho = n.aparelho and c.evento = 'caca_fim' and c.dados->>'classe' = n.classe and c.quando <= n.quando) / 3600 as horas from n)
+select classe, nivel::int as nivel, count(*) as personagens,
   round((percentile_cont(0.5) within group (order by horas))::numeric, 2) as horas_mediana
 from h group by 1, 2 order by 1, 2;
 

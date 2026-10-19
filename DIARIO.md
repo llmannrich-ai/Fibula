@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 19:45 UTC — sessão manual (nuvem): telemetria mínima (0.47.0)
+
+**Item desenvolvido:** pedido do Leonardo, a telemetria mínima da F1. Os seis eventos da Parte 2 (`sessao_inicio`, `caca_inicio`, `caca_fim`, `compra`, `nivel_up`, `erro_cliente`) sobem em lote para `telemetria_gravar` ([007_telemetria.sql](tools/supabase/007_telemetria.sql), aplicada no banco), por um uuid de aparelho sorteado no navegador; com conta, o banco liga ao jogador pelo token. Fila no aparelho sem rede (até 300). O painel são as views `tel_dia`, `tel_retencao`, `tel_sessoes`, `tel_niveis` (horas de caçada até cada nível, por classe, o número do pilar 3) e `tel_erros`, que o anon não lê. A tela de Regras ganhou "Dados", e "Controles" deixou de dizer que o jogo escolhe o alvo (mira manual desde a 0.34.0).
+
+**Validação:** `node tools/testar.mjs`, 42/42, com os casos novos `telemetria` (sessão, começo e fim da caçada com morte, duração, mochila, XP perdido e grupo; aparelho e token) e `telemetria-sem-rede` (a fila guarda e o jogo segue). No banco, numa transação desfeita: evento desconhecido, sem nome ou com texto no lugar de número fica de fora ou é ignorado pelas views; o anon recebe 204 na gravação e 42501 ao ler a tabela e as views. Revisor independente: nenhum bloqueio; aplicadas as sugestões de painel à prova de evento forjado, descarte da fila só em 400/422, grupo no fim da caçada, erros só da origem do jogo, texto das Regras mais exato.
+
+**Análise:** o conector do Supabase também expira com `drop view` (não só com `delete`): view muda por `create or replace`, com coluna nova no fim e o tipo das antigas.
+
+**Roadmap:** "Telemetria mínima" saiu de `Depois` para `Concluído`.
+
+**Pendências e riscos:** ligar o id do aparelho à conta faz dele dado pessoal pela LGPD: a política de privacidade antes do beta precisa citar a telemetria, e falta uma regra de quanto tempo os eventos ficam (apagar é do Leonardo, no painel). `grupo` conta as fichas que passaram pela masmorra, com reentradas. Simultâneos, custo e receita não estão no painel. Quem fecha o app no meio da caçada não manda `caca_fim` (`largadas` em `tel_dia`). O evento é forjável por quem tem a chave publicável: é medida, não prova.
+
+**Próximo passo recomendado:** com os testadores jogando, o item "Medir o ritmo até o nível 20 em horas" passa a ler `tel_niveis` em vez de só simular.
+
 ## 2026-10-19 16:55 UTC — sessão manual (nuvem): a cidade neutra no código (0.46.1)
 
 **Item desenvolvido:** pedido do Leonardo, a regra da cidade neutra no código. `protegido(x,y)` e `podeAtacar(a,b)` em `src/sim/cidade.js`: dentro do retângulo `city.mundo.cidade` (muralha e portões inclusive) ninguém ataca nem é atacado; basta um dos dois estar dentro. O `validaConteudo()` passou a exigir esse retângulo, para a zona neutra não sumir calada. Nada muda para o jogador: o PvP ainda não existe e vai consultar `podeAtacar()` no servidor da F2. Pilar 4.

@@ -2924,7 +2924,7 @@ const CASOS = [
     var foi=await ate(function(){return ev('caca_fim').length>0},200);
     var i=(ev('caca_inicio')[0]||{}).d||{},f=(ev('caca_fim')[0]||{}).d||{};
     ok('o começo da caçada diz o lugar, a classe, o nível e o grupo', i.lugar&&i.classe==='feiticeiro'&&i.nivel===1&&i.grupo===1, JSON.stringify(i));
-    ok('o fim diz a morte, a duração, a mochila e o XP perdido', foi&&f.fim==='morreu'&&f.lugar===i.lugar&&f.dur>=0&&f.mochila===200&&f.perdeu>0, JSON.stringify(f));
+    ok('o fim diz a morte, a duração, a mochila e o XP perdido', foi&&f.fim==='morreu'&&f.lugar===i.lugar&&f.dur>=0&&f.mochila===200&&f.perdeu>0&&f.grupo===1, JSON.stringify(f));
     ok('sem nível novo, nenhum nivel_up', ev('nivel_up').length===0, JSON.stringify(ev('nivel_up')));
     ok('cada evento leva a hora do aparelho', N.tel.every(function(x){return typeof x.t==='number'&&x.t>0}), JSON.stringify(N.tel));
     ok('a fila do aparelho esvaziou', (localStorage.getItem('masmorra-runas-v2-tel')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-tel'));

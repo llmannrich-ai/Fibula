@@ -183,7 +183,7 @@ addEventListener('visibilitychange',()=>{if(document.hidden&&nuvem.sujo){clearTi
 const KEYT=KEY+'-tel',KEYA=KEY+'-aparelho',TEL_MAX=300,TEL_LOTE=50;
 const VER=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'dev'}catch(e){return 'dev'}})();
 const aparelho=(()=>{let a=null;try{a=localStorage.getItem(KEYA)}catch(e){}
-  if(!a||!/^[0-9a-f-]{36}$/.test(a)){
+  if(!a||!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(a)){
     const h=[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');
     a=`${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20)}`;
     try{localStorage.setItem(KEYA,a)}catch(e){}}
@@ -198,8 +198,10 @@ async function telSobe(keepalive){
   telV.voo=true;const lote=telFila.slice(0,TEL_LOTE);let foi=false;
   try{
     const r=await rpc('telemetria_gravar',{p_aparelho:aparelho,p_token:sessao?sessao.tk:null,p_versao:VER,p_eventos:lote},keepalive);
-    /* 4xx: o banco não quer este lote (formato velho); descarta para não travar a fila */
-    if(r.ok||r.status<500){telFila.splice(0,lote.length);tGuarda();foi=true}
+    /* 400: o banco não quer este lote (formato velho); descarta para não
+       travar a fila. O resto (sem rede, 404 de função ainda não aplicada,
+       429, 5xx) espera e tenta de novo */
+    if(r.ok||r.status===400||r.status===422){telFila.splice(0,lote.length);tGuarda();foi=true}
   }catch(e){}
   telV.voo=false;
   /* sobrou: o lote seguinte logo; sem rede, de novo em 60 s */
@@ -219,17 +221,18 @@ export function telCacaInicio(lugar,c,classe,grupo){
   Object.assign(telCaca,{t0:Date.now(),lugar,lvl:c.lvl,classe});
   tel('caca_inicio',{lugar,classe,nivel:c.lvl,grupo});
 }
-export function telCacaFim(fim,c,mochila,xp,perdeu){
+export function telCacaFim(fim,c,mochila,xp,perdeu,grupo){
   if(!telCaca.t0)return;
   const dur=Math.round((Date.now()-telCaca.t0)/1000),{lugar,classe,lvl}=telCaca;telCaca.t0=0;
-  tel('caca_fim',{lugar,classe,fim,dur,nivel:c.lvl,mochila,xp:xp|0,perdeu:perdeu|0});
+  tel('caca_fim',{lugar,classe,fim,dur,nivel:c.lvl,mochila,xp:xp|0,perdeu:perdeu|0,grupo});
   for(let n=lvl+1;n<=c.lvl;n++)tel('nivel_up',{classe,nivel:n});
   telSobe();
 }
-/* erros: um de cada mensagem, no máximo 5 por sessão */
+/* erros: um de cada mensagem, no máximo 5 por sessão, só dos arquivos do
+   jogo (o de extensão do navegador vem de outra origem) */
 const errosVistos=new Set();
 const telErro=(msg,onde)=>{msg=String(msg||'').slice(0,200);if(errosVistos.has(msg)||errosVistos.size>=5)return;
   errosVistos.add(msg);tel('erro_cliente',{msg,onde:String(onde||'').replace(/^.*\/(src\/)/,'$1').slice(0,120)},true)};
-addEventListener('error',ev=>telErro(ev.message,ev.filename?`${ev.filename}:${ev.lineno}`:''));
+addEventListener('error',ev=>{if(ev.filename&&ev.filename.indexOf(location.origin)!==0)return;telErro(ev.message,ev.filename?`${ev.filename}:${ev.lineno}`:'')});
 addEventListener('unhandledrejection',ev=>{const r=ev.reason;telErro(r&&r.message||r,r&&r.stack&&String(r.stack).split('\n')[1])});
 addEventListener('visibilitychange',()=>{if(document.hidden&&telFila.length)telSobe(true)});

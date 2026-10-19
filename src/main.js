@@ -42,8 +42,9 @@ if(pronto){
   saida.nivel=p=>{if(meu(p))montaBotoes()};saida.persist=persist;
   /* a tela final aparece quando sai o jogador deste aparelho; na sala, a
      incursão segue no anfitrião até o último sair */
-  /* a telemetria mede a caçada deste jogador: o save já tem o resultado */
-  const telFim=kind=>{const p=G&&G.p;if(p)telCacaFim(kind,ch(),valMochila(p.bag),p.xpGain,p.xpPerdido)};
+  /* a telemetria mede a caçada deste jogador: o save já tem o resultado;
+     grupo é quantos passaram pela masmorra (G.ps guarda quem saiu) */
+  const telFim=kind=>{const p=G&&G.p;if(p)telCacaFim(kind,ch(),valMochila(p.bag),p.xpGain,p.xpPerdido,G.ps.length)};
   const fimMeu=kind=>{if(G&&G.p){cacaFim(kind,G.p);telFim(kind)}soltaTudo();setTimeout(showEnd,kind==='extraiu'?450:1100)};
   saida.sai=p=>{if(p===G.p)fimMeu(p.fora);else saiu(p)};
   /* o convidado: começa quando o anfitrião manda, termina com o resultado dele */
