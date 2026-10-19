@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 16:45 UTC — sessão manual (nuvem): cidade neutra no PvP
+
+**Item desenvolvido:** decisão do Leonardo registrada: dentro dos muros da cidade nenhum jogador ataca nem é atacado por outro; fora deles vale o PvP aberto. Entrou no pilar 4, na Parte 6 (Em vigor), no `ROADMAP.md` e no `docs/plano-multiplayer.md`. Princípios assinados de novo a pedido dele. Sem mudança de código: o PvP ainda não existe.
+
+**Validação:** `node tools/principios.mjs` com `PRINCIPIOS_OK`; `node tools/testar.mjs`.
+
+**Análise:** "a área da cidade" foi lida como o retângulo murado (`city.mundo.cidade`), não o mundo em volta dela.
+
+**Roadmap:** o item PvP aberto cita a cidade neutra; a D1 encolheu.
+
+**Pendências e riscos:** a D1 continua sensível e agora inclui a borda da cidade: se quem está em combate pode entrar nos muros (sem isso a cidade vira esconderijo de quem ataca na porta) e se vale atacar de fora quem está dentro. Ao implementar, a checagem de dano entre jogadores passa por uma função única no servidor da F2.
+
+**Próximo passo recomendado:** decidir a borda junto com o resto da D1, antes de implementar o PvP.
+
 ## 2026-10-19 15:55 UTC — sessão manual (nuvem): o ciclo autônomo, Etapa 0
 
 **Item desenvolvido:** a base do ciclo autônomo, pedido do Leonardo. A Parte 5 do `CLAUDE.md` trocou os quatro papéis por dois: o **Auditor** (1×/dia, analisa o jogo por uma lente por dia e decide a fila, sem código de jogo) e o **Ciclo** (4×/dia, entrega um item com revisor independente antes do push e confere o site no ar). Entraram o freio automático (`docs/agentes/freio`, o agente cria, só o Leonardo apaga) e os níveis A, B e C do que o agente decide sozinho. Os princípios (Parte 1) ficaram imutáveis para agentes e assinados em `docs/agentes/principios.sha256` (`tools/principios.mjs`; as linhas "Estado hoje" ficam fora da assinatura). Novos portões: saves de referência em `tools/saves/` (três formatos: 0.20, 0.29 e 0.46) e `tools/no-ar.mjs`, que compara byte a byte o Pages com o checkout. Decisões na Parte 6; o D5 saiu (Opus nas duas).

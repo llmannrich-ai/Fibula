@@ -157,9 +157,12 @@ motivo. A vida é assim.** Saber onde ir, com quem andar e de quem desconfiar
   compartilhado, qualquer jogador pode atacar e matar outro, a qualquer
   momento, sem precisar de motivo nem de consentimento. Não há imunidade por
   nível, por ser iniciante ou por estar em grupo. Morrer para um jogador custa
-  o mesmo que morrer para um monstro (a regra acima). O que quem mata ganha, o
-  que ele passa a arriscar (como a caveira do Tibia) e se existe algum lugar
-  protegido são a pendência D1 da Parte 6.
+  o mesmo que morrer para um monstro (a regra acima). **A exceção é a cidade
+  (decidida pelo Leonardo em 19/10/2026): dentro dos muros ninguém ataca nem
+  é atacado por outro jogador.** Fora deles vale o PvP aberto. O que quem mata
+  ganha, o que ele passa a arriscar (como a caveira do Tibia), se há outro
+  lugar protegido e como funciona a borda da cidade são a pendência D1 da
+  Parte 6.
 - **Estado hoje:** a morte leva a mochila inteira — e ela fica com o
   personagem entre as caçadas, então só o cofre do Banco é seguro (decisão do
   Leonardo, 0.27.0) — menos o que o Selo de resguardo guarda (até 60% no nível
@@ -1738,6 +1741,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o jogo deixa de exigir uma mão só | Parte 2, "Controle e tela"; Parte 3, `combate.js` |
 | 19/10 | **Sai o pilar "Duas mãos, e pode parar a qualquer hora"**: os pilares passam a ser cinco (o do ralo vira o 5). Sai a regra da saída segura a ≤ 60 s (era a P8) e a pergunta "dá para parar no meio" do teste de ideias; a regra para sair do jogo durante a luta virá depois. O controle e a tela de celular ficam como requisito da Parte 2 | Parte 1; Parte 2, "Controle e tela" |
 | 19/10 | **PvP aberto:** qualquer jogador pode matar outro a qualquer momento, mesmo sem motivo; a morte para um jogador custa o mesmo que para um monstro. Substitui "PvP só em arena opcional". Entra com o servidor autoritativo da F2 | Pilar 4; não-objetivos |
+| 19/10 | **Cidade neutra no PvP:** dentro dos muros da cidade nenhum jogador ataca nem é atacado por outro; o PvP aberto vale fora deles. A regra é conferida no servidor da F2, nunca no aparelho | Pilar 4 |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 
 ### Pendentes
@@ -1746,7 +1750,7 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 
 | # | Decisão | Padrão | Até |
 |---|---|---|---|
-| D1 | PvP: o que ganha e o que arrisca quem mata (marca de assassino como a caveira do Tibia, perda maior na própria morte), e se há lugar protegido (templo, Banco, a porta de um lugar de caça) (**sensível**) | Nada entra sem o Leonardo; o Balanceamento propõe em issue | Antes de implementar o PvP |
+| D1 | PvP: o que ganha e o que arrisca quem mata (marca de assassino como a caveira do Tibia, perda maior na própria morte); se há outro lugar protegido além da cidade (a porta de um lugar de caça); e a borda da cidade: se quem está em combate pode entrar nela, e se o ataque de fora para dentro dos muros vale (**sensível**) | Nada entra sem o Leonardo; o Balanceamento propõe em issue | Antes de implementar o PvP |
 | D2 | Teto mensal de infraestrutura (**sensível**) | Nenhum gasto até o Leonardo definir | Início da F2 |
 | D3 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord, Reddit); o Leonardo convida | Fim da F0 |
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |

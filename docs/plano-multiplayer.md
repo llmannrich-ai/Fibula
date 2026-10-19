@@ -313,7 +313,7 @@ de carga com 50 salas.
 
 Cidade compartilhada, chat, guildas, mercado e matchmaking com
 desconhecidos são F3. Na F2 só se joga com quem recebeu o link — o que
-também dispensa moderação de chat por enquanto. PvP aberto é decisão do Leonardo (pilar 4, 19/10/2026), mas só entra com o servidor autoritativo: o que arrisca quem mata é a pendência D1.
+também dispensa moderação de chat por enquanto. PvP aberto é decisão do Leonardo (pilar 4, 19/10/2026), mas só entra com o servidor autoritativo: a cidade, dentro dos muros, é neutra (19/10/2026), e o que arrisca quem mata é a pendência D1.
 
 ## 5. Riscos
 

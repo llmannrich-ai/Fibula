@@ -155,8 +155,9 @@ pode desenhar pelo `.otbm` também.
 - **PvP aberto** (pilar 4) — qualquer jogador ataca e mata outro, a qualquer
   momento, com a mesma perda da morte por monstro. **Só depois do servidor
   autoritativo da F2** (hoje o aparelho do anfitrião poderia forjar a morte
-  de outro) e da pendência D1 (o que arrisca quem mata, lugar protegido;
-  sensível).
+  de outro) e da pendência D1 (o que arrisca quem mata, a borda da cidade;
+  sensível). A cidade, dentro dos muros, é neutra: ninguém ataca nem é
+  atacado por outro jogador (decisão do Leonardo, 19/10/2026).
 - **Primeiro bem de patrimônio** (pilares 6 e 5) — algo que valha ter além
   de ouro e peças (casa, montaria, título ou outro, a escolher pelo
   Leonardo numa issue `decisao-do-dono`), comprado com ouro do cofre: é o
