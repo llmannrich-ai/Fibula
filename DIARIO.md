@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 16:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** o mundo em volta da cidade (0.45.0), pedido do Leonardo: a cidade de hoje cercada por muralha, com portões abertos ("porta, não portal mágico"), e fora dela estradas, vilas e matas para explorar e, mais tarde, achar os próximos lugares de caça; sem monstros por enquanto. `tools/mundo.mjs` gera `city.mapa` (240×180, antes 54×38), `city.regioes` (15 nomes anunciados ao entrar) e `city.mundo` (semente e retângulo da cidade, que o script não toca). O portão `P` virou chão; a muralha mostra a face de fora; o mapa do canto mostra uma janela de 64 sqm; `city.chao` foi deslocado para as coordenadas do mundo.
+
+**Validação:** `node tools/testar.mjs` completo, todos verdes. Casos `chao-da-cidade` e `armas-que-renascem` passaram a usar as coordenadas do mundo (+93, +71). Simulação no Node ganhou: quatro portões abertos, toda região alcançável a pé do `@`, sair pelo portão sul e voltar anuncia a cidade, região fora do mapa recusada. Telas conferidas em 360×640 (portão sul, Vila da Ponte, muralha, Vila do Cais, Ruínas). Download: `content.json` 21 → 29 KB em gzip; total 573 KB.
+
+**Análise:** o mundo é texto no `content.json` como a cidade era; a 2 sqm/s, do centro à borda leva perto de 1 min no nível 1. Nenhuma regra de jogo mudou: lá fora não se ganha nem se perde nada. O não-objetivo "mapa contínuo" foi reescrito para "mapa contínuo de caça", com a decisão registrada na Parte 6.
+
+**Roadmap:** item novo direto em `Concluído`; o item "Escada de lugares de caça" diz que a entrada pode ficar numa clareira do mundo.
+
+**Pendências e riscos:** rodar `node tools/mundo.mjs` de novo apaga edição à mão fora dos muros (a cidade fica). O portão é só um vão na muralha, sem sprite de portão; um portão aberto do OTSP pede `tools/sprites.mjs` com o `cwebp`. Quem está numa versão velha não vê quem está na nova (o canal da cidade é por versão), como sempre. Pilar 5: andar longe sem nada a decidir é tempo morto; enquanto o mundo não tiver entradas de caça, ele é passeio opcional (os NPCs continuam todos dentro dos muros).
+
+**Próximo passo recomendado:** pôr a entrada de um lugar de caça numa clareira (item 6 da fila).
+
 ## 2026-10-19 15:10 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** atlas em WebP sem perda (0.44.0), por decisão do Leonardo ("pode usar o cwebp, execute"). `tools/sprites.mjs` grava o PNG e, pelo `cwebp` (`-lossless -z 9 -exact -metadata none`; PATH ou `FIBULA_CWEBP`), o `atlas.webp`; sem o `cwebp`, para antes de gravar. `src/arte.js` pede o WebP e, se não abrir, o PNG; `ART.url` guarda o que chegou e os ícones da interface usam ele. O harness copia o WebP, conta o WebP no orçamento, confere no caso `arte` que o WebP tem os mesmos pixels do PNG e prova a volta para o PNG no caso novo `arte-sem-webp`.

@@ -1018,14 +1018,15 @@ async function testaSimulacao() {
     if (C2.perto !== 'guia') falhas.push(`voltar pelo portão não pôs o jogador ao lado do Guia (${C2.perto})`);
     const ruim = (f) => { const c = JSON.parse(CONTEUDO); f(c); try { carrega(c); return null; } catch (e) { return e.message; } finally { carrega(JSON.parse(CONTEUDO)); } };
     if (!ruim((c) => { c.city.mapa[3] += ','; })) falhas.push('mapa da cidade com linha torta foi aceito');
-    if (!ruim((c) => { c.city.mapa[1] = c.city.mapa[1].replace(',', '?'); })) falhas.push('mapa da cidade com letra desconhecida foi aceito');
+    if (!ruim((c) => { c.city.mapa[1] = '?' + c.city.mapa[1].slice(1); })) falhas.push('mapa da cidade com letra desconhecida foi aceito');
     if (!ruim((c) => { c.city.mapa = c.city.mapa.map((l) => l.replace('@', '.')); })) falhas.push('mapa da cidade sem @ foi aceito');
     if (!ruim((c) => { delete c.city.npcs.guia; })) falhas.push('cidade sem quem abra os mapas de caça foi aceita');
     if (!ruim((c) => { c.city.npcs.quitandeira.vende.push('nada'); })) falhas.push('loja que vende provisão inexistente foi aceita');
     if (!ruim((c) => { c.supplies.pocao.efeito = {voar: 1}; })) falhas.push('provisão com efeito desconhecido foi aceita');
     if (!ruim((c) => { delete c.supplies.pocao.max; })) falhas.push('provisão sem máximo por caçada foi aceita');
     if (!ruim((c) => { c.city.npcs.mago.letra = 'f'; })) falhas.push('NPC com a letra de um objeto foi aceito');
-    if (!ruim((c) => { c.city.chao = [{x: 26, y: 17, item: 'espada'}]; })) falhas.push('peça do chão em cima da fonte foi aceita');
+    if (!ruim((c) => { c.city.chao = [{x: iObj % M[0].length, y: iObj / M[0].length | 0, item: 'espada'}]; })) falhas.push('peça do chão em cima da fonte foi aceita');
+    if (!ruim((c) => { c.city.regioes[1].w = 9999; })) falhas.push('região do mundo que sai do mapa foi aceita');
     if (!ruim((c) => { c.city.chao = [{x: 37, y: 6, item: 'faca', respawn: 0}]; })) falhas.push('peça do chão com respawn zero foi aceita');
     if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
     if (!ruim((c) => { c.hunts.esgoto.npc = 'mercador'; })) falhas.push('mapa de caça levado por quem não abre cacadas foi aceito');
@@ -1038,6 +1039,29 @@ async function testaSimulacao() {
     if (!ruim((c) => { c.hunts.ilha.npc = 'guia'; })) falhas.push('NPC que abre cacadas sem mapa de caça nenhum foi aceito');
     const C3 = Cd.entraCidade('capitao'); Cd.updateCidade(0.05, parado);
     if (C3.perto !== 'capitao') falhas.push(`voltar da ilha não pôs o jogador ao lado do Capitão (${C3.perto})`);
+    /* o mundo em volta da cidade (tools/mundo.mjs): a muralha tem quatro
+       portões abertos, toda região se alcança andando do @, e sair pelo portão
+       sul e voltar anuncia a cidade */
+    {
+      const R = JSON.parse(CONTEUDO).city.regioes, C4 = Cd.entraCidade(false), portoes = [];
+      M.forEach((l, y) => { for (let x = 0; x < l.length; x++) if (l[x] === 'P') portoes.push([x, y]); });
+      if (portoes.length !== 4 || portoes.some(([x, y]) => C4.sol[y * C4.w + x])) falhas.push(`a muralha devia ter 4 portões abertos: ${JSON.stringify(portoes)}`);
+      if (C4.w < 200 || C4.h < 150) falhas.push(`o mundo tem ${C4.w}×${C4.h}, menor que o desenhado`);
+      const vis = new Uint8Array(C4.w * C4.h), fila = [C4.p.ty * C4.w + C4.p.tx]; vis[fila[0]] = 1;
+      while (fila.length) { const i = fila.pop(), x = i % C4.w, y = i / C4.w | 0;
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) { const nx = x + dx, ny = y + dy, j = ny * C4.w + nx;
+          if (nx >= 0 && ny >= 0 && nx < C4.w && ny < C4.h && !vis[j] && C4.sol[j] !== 1) { vis[j] = 1; fila.push(j); } } }
+      const presas = R.filter((r) => { for (let y = r.y; y < r.y + r.h; y++) for (let x = r.x; x < r.x + r.w; x++) if (vis[y * C4.w + x]) return false; return true; });
+      if (presas.length) falhas.push(`regiões que não se alcançam andando: ${presas.map((r) => r.nome)}`);
+      let ban = null; saida.banner = (t) => { ban = t; };
+      const [gx, gy] = portoes.find(([, y]) => y === R[0].y + R[0].h - 1) || [0, 0];
+      B.poeNoSqm(C4.p, gx, gy - 1); C4.reg = Cd.regiao(gx, gy - 1);
+      for (let i = 0; i < 200 && (C4.p.ty < gy + 2 || C4.p.mv); i++) Cd.updateCidade(0.05, C4.p.ty < gy + 2 ? {x: 0, y: 1} : parado);
+      const saiu = C4.p.ty === gy + 2 && C4.reg !== 0;
+      for (let i = 0; i < 200 && (C4.p.ty > gy - 1 || C4.p.mv); i++) Cd.updateCidade(0.05, C4.p.ty > gy - 1 ? {x: 0, y: -1} : parado);
+      if (!saiu || ban !== R[0].nome) falhas.push(`sair pelo portão sul e voltar não anunciou a cidade (saiu: ${saiu}, anúncio: ${ban})`);
+      saida.banner = () => {};
+    }
     /* os mapas de caça: cada um com os monstros e o chefe dele, a mesma
        semente no mesmo mapa dá a mesma masmorra, e mapas diferentes dão
        masmorras diferentes; nome que não existe (da rede) vira a de Runas */
@@ -2012,7 +2036,7 @@ const CASOS = [
     nome: 'chao-da-cidade',
     o_que: 'peças de teste no chão da cidade: pisar leva ao cofre do Banco, uma vez por conta, e não voltam ao chão',
     semente: 7,
-    conteudo: [c => { c.city.chao = [{x: 27, y: 20, item: 'espada'}, {x: 29, y: 20, item: 'cota'}]; }],
+    conteudo: [c => { c.city.chao = [{x: 120, y: 91, item: 'espada'}, {x: 122, y: 91, item: 'cota'}]; }],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
@@ -2027,7 +2051,7 @@ const CASOS = [
     tecla('keyup','KeyD');await quadros(8);
     ok('andando por cima, pegou as duas', pegou, Cd.C.chao.length);
     ok('foram para o cofre da conta', sv().itens.espada===1&&sv().itens.cota===1, JSON.stringify(sv().itens));
-    ok('o save lembra que já pegou', sv().chao['27,20']===1&&sv().chao['29,20']===1, JSON.stringify(sv().chao));
+    ok('o save lembra que já pegou', sv().chao['120,91']===1&&sv().chao['122,91']===1, JSON.stringify(sv().chao));
     ok('o registro avisa', /Você pegou espada enferrujada/.test(txt('#log')||''), txt('#log'));
     clica($('#bMochila'));
     ok('foram para o cofre, não para a mochila', txt('#moTit')==='Mochila'&&txt('#moVal')==='0 ouro · 0/20'&&todos('#moGrade .cel:not([disabled])').length===0, txt('#moTit')+' / '+txt('#moVal')+' / '+todos('#moGrade .cel:not([disabled])').length);
@@ -2042,7 +2066,7 @@ const CASOS = [
     nome: 'armas-que-renascem',
     o_que: 'a faca e a espada de madeira da casa vazia: pisar leva à mochila, a peça renasce no mesmo sqm e, com a mochila cheia, fica no chão',
     semente: 7,
-    conteudo: [c => { c.city.chao = [{x: 27, y: 20, item: 'faca', respawn: 2}]; }],
+    conteudo: [c => { c.city.chao = [{x: 120, y: 91, item: 'faca', respawn: 2}]; }],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
@@ -2056,17 +2080,17 @@ const CASOS = [
     var pegou=await ate(function(){return Cd.C.chao.length===0},40);
     tecla('keyup','KeyD');await quadros(60);
     ok('pisou e pegou', pegou, Cd.C.chao.length);
-    ok('parado em cima, ela não renasce', Cd.C.p.tx===27&&Cd.C.chao.length===0, Cd.C.p.tx+' / '+Cd.C.chao.length);
-    tecla('keydown','KeyD');await ate(function(){return Cd.C.p.tx>=29},40);tecla('keyup','KeyD');
+    ok('parado em cima, ela não renasce', Cd.C.p.tx===120&&Cd.C.chao.length===0, Cd.C.p.tx+' / '+Cd.C.chao.length);
+    tecla('keydown','KeyD');await ate(function(){return Cd.C.p.tx>=122},40);tecla('keyup','KeyD');
     ok('foi para a mochila, não para o cofre', sv().chars.cavaleiro.mochila.faca===1&&!sv().itens.faca, JSON.stringify(sv().chars.cavaleiro.mochila)+' / '+JSON.stringify(sv().itens));
-    ok('o save não marca a peça como pega', !sv().chao['27,20'], JSON.stringify(sv().chao));
+    ok('o save não marca a peça como pega', !sv().chao['120,91'], JSON.stringify(sv().chao));
     ok('o registro avisa', /Você pegou faca\. Está na mochila/.test(txt('#log')||''), txt('#log'));
     var volta=await ate(function(){return Cd.C.chao.length===1},80);
-    ok('renasce no mesmo sqm', volta&&Cd.C.chao[0].x===27&&Cd.C.chao[0].y===20, JSON.stringify(Cd.C.chao));
+    ok('renasce no mesmo sqm', volta&&Cd.C.chao[0].x===120&&Cd.C.chao[0].y===91, JSON.stringify(Cd.C.chao));
     Pg.ch().mochila={faca:1,espada:19};
     ok('a mochila está cheia', Pg.cabe(Pg.ch().mochila,'faca')===0, Pg.cabe(Pg.ch().mochila,'faca'));
     tecla('keydown','KeyA');
-    var pisou=await ate(function(){return Cd.C.p.tx===27},40);
+    var pisou=await ate(function(){return Cd.C.p.tx===120},40);
     tecla('keyup','KeyA');await quadros(4);
     ok('chegou no sqm da faca', pisou, Cd.C.p.tx);
     ok('mochila cheia: a faca fica no chão', Cd.C.chao.length===1&&Pg.ch().mochila.faca===1, Cd.C.chao.length+' / '+Pg.ch().mochila.faca);

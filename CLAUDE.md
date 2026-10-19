@@ -104,7 +104,9 @@ placar.
   acontece na caçada. O harness confere que outra semente dá o mesmo mapa e os
   mesmos monstros nos mesmos sqm. Os quatro mapas de hoje são **rascunhos**
   gerados; desenhá-los no Remere's Map Editor ([docs/rme.md](docs/rme.md)) é
-  item do `ROADMAP.md`.
+  item do `ROADMAP.md`. Desde a 0.45.0 a cidade fica no meio de um mundo que
+  se anda (`tools/mundo.mjs`), ainda sem monstros, com três clareiras vazias
+  para as entradas dos próximos lugares.
 
 #### Pilar 3 — Evoluir é lento e é seu
 
@@ -194,8 +196,10 @@ Nada daqui entra sem o Leonardo mudar esta parte primeiro.
 - **O tempo morto do Tibia.** Copia-se do Tibia o que aumenta **peso e
   consequência**; nunca o que aumenta **espera, deslocamento ou exigência de
   sessão longa**. Nem os onze espaços de equipamento, nem a interface de 2002.
-- **Mapa contínuo e PvP aberto.** A sensação de mundo aberto é objetivo; o mapa
-  contínuo não. PvP, se vier, é arena opcional (D1).
+- **Mapa contínuo de caça e PvP aberto.** A sensação de mundo aberto é
+  objetivo; o mapa contínuo de caça não. O mundo em volta da cidade se anda
+  (decisão do Leonardo, 19/10/2026), mas cada lugar de caça é um mapa à parte,
+  com porta. PvP, se vier, é arena opcional (D1).
 - **Dependência externa nova.** Nenhuma biblioteca, nenhum build: o jogo abre
   em dois segundos num 3G ruim (motivo técnico na Parte 3). O Supabase é
   serviço do produto, não biblioteca no navegador. O STUN da voz da sala
@@ -298,7 +302,7 @@ na mão.
 | Caçada | Quatro lugares em `hunts` do `content.json`: Masmorra de Runas (nível 1, pelo Guia), Esgoto (1, pela grade da rua), Ilha da Enseada (8, pelo Capitão do porto), Cripta Antiga (15, pelo Guia). Sala sem relógio, porta de entrada e saída, respawn de 60 s. A incursão solo com relógio de 6 min ficou só para os testes |
 | Personagem | 4 classes por taxa de crescimento; nível, magia e perícia; 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18); habilidades aprendidas com o Mestre de magias; regenera só alimentado, comendo pelo botão Comer a comida da mochila (loot dos animais ou da Quitanda) |
 | Equipamento | Arma, armadura e amuleto, com raridade; Mochila no desenho do inventário do Tibia; veste-se pela Mochila, na cidade e na caçada; mochila do personagem com 20 espaços e cofre no Banco |
-| Cidade | Mapa de `city.mapa`, NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
+| Cidade | Mapa de `city.mapa`: a cidade murada no meio de um mundo de 240×180 sqm sem monstros (estradas, vilas, matas, rio, costa, clareiras para futuras entradas de caça); NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
 | Caçar junto | Salas de até 4, com o aparelho do anfitrião calculando (só entre amigos) |
@@ -552,8 +556,14 @@ principal, o markup das telas e do HUD, e a linha que carrega
   cidade usa com a grade dela). O **gerador** (`genMap()`, `carveRooms()`,
   `corridor()`, `carve()`, `objetos()`) só serve ao rascunho de
   `tools/mapas.mjs`: o jogo não sorteia mapa
-- `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
-  `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
+- `cidade.js` — **cidade e o mundo em volta dela**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
+  `content.json`, que é o mundo inteiro, gerado por `node tools/mundo.mjs`: a
+  cidade desenhada à mão fica no retângulo `city.mundo.cidade`, que o script
+  não toca, cercada de muralha com quatro portões abertos (`P`, chão); fora
+  dela, estradas, vilas, matas, rio, lago e costa, sem monstro. Para mudar a
+  cidade, edite as letras no `content.json`; para mudar o que fica fora, edite
+  o script e rode de novo. `regiao(x,y)` dá a menor de `city.regioes` que
+  contém o sqm, e `updateCidade()` anuncia o nome ao entrar nela; `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
   vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
   anda e devolve o NPC ao alcance (`C.perto`), e as **peças no chão**
   (`C.chao`, de `city.chao`): sem `respawn`, vão ao cofre uma vez por conta
@@ -645,7 +655,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   fica intacto; mexa nos dois ou teste o `sem-arte`. A **cidade** tem o
   `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`,
   `drawObj()` (os objetos, com e sem a arte) e `drawMiniCidade()` (o mapa da
-  cidade no canto, com os NPCs em amarelo)
+  cidade no canto, com os NPCs em amarelo: uma janela de `JMC` sqm em volta do
+  jogador, porque o mundo não cabe em 108 px)
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
@@ -1603,6 +1614,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
 | 19/10 | **Atlas em WebP sem perda**, gravado pelo `cwebp` do Google em `tools/sprites.mjs` (só na montagem; o jogador baixa um arquivo de imagem), com o PNG de reserva | Parte 3, "O que mais o jogador baixa" |
 | 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco também deve recusar | Pilar 4; Parte 3, Supabase |
+| 19/10 | **O mundo em volta da cidade:** a cidade de hoje cercada por muralha, com portões abertos (porta, não portal mágico); fora, estradas, vilas e matas para explorar e achar as entradas dos próximos lugares de caça. Por agora sem monstros | Pilar 2; Parte 3, `cidade.js` |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes

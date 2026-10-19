@@ -90,7 +90,9 @@ manifesto e o service worker carregam.
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
 item, com nome, nível recomendado, monstros, chefe, mapa fixo e quem leva até
-ele, todos no `content.json`.
+ele, todos no `content.json`. Desde a 0.45.0 a entrada pode ficar no mundo
+em volta da cidade, numa das clareiras vazias (`city.regioes`), como um
+lugar no chão (`lugar: true`, igual à grade do esgoto).
 
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
@@ -142,6 +144,16 @@ pode desenhar pelo `.otbm` também.
 ---
 
 ## Concluído
+
+- **2026-10-19 — O mundo em volta da cidade (0.45.0)** *(decisão do Leonardo;
+  pilar 2)*. `city.mapa` virou um mundo de 240×180 sqm gerado por
+  `node tools/mundo.mjs`: a cidade de antes, intacta, cercada por muralha com
+  quatro portões abertos; fora, estradas, quatro vilas, quatro matas, rio,
+  lago, costa com cais, ruínas e três clareiras vazias para as entradas dos
+  próximos lugares de caça. Sem monstros. Regiões com nome (`city.regioes`)
+  anunciadas ao entrar; o mapa do canto mostra uma janela de 64 sqm. O
+  harness confere os quatro portões abertos, que toda região se alcança a pé
+  e o anúncio ao voltar pelo portão sul.
 
 - **2026-10-19 — Atlas em WebP sem perda (0.44.0)** *(decisão do Leonardo:
   "pode usar o cwebp"; pilar 5)*. `tools/sprites.mjs` grava o `atlas.webp`

@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.44.0';
-import {ALFA} from './mapa.js?v=0.44.0';
+import {MW,MH} from './base.js?v=0.45.0';
+import {ALFA} from './mapa.js?v=0.45.0';
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
@@ -95,6 +95,12 @@ export function validaConteudo(c){
     if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
     if(!t||!',._@:=vh'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
     if('respawn'in q&&!(typeof q.respawn==='number'&&q.respawn>0))throw new Error(`city.chao: o respawn de ${q.item} em ${q.x},${q.y} precisa ser um número de segundos maior que zero`);
+  }
+  /* as regiões do mundo (tools/mundo.mjs): retângulos com nome dentro do mapa;
+     a primeira é a cidade murada */
+  if(ci.regioes!==undefined){
+    if(!Array.isArray(ci.regioes)||!ci.regioes.length)throw new Error('city.regioes, se existir, é uma lista de regiões');
+    for(const r of ci.regioes)if(!r||typeof r.nome!=='string'||!r.nome||![r.x,r.y,r.w,r.h].every(Number.isInteger)||r.x<0||r.y<0||r.w<1||r.h<1||r.x+r.w>M[0].length||r.y+r.h>M.length)throw new Error(`city.regioes: ${r&&r.nome} precisa de nome e de x, y, w, h inteiros dentro do mapa`);
   }
   const hs=Object.entries(c.hunts).filter(([k])=>k[0]!=='_');
   if(!hs.length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
