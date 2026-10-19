@@ -138,11 +138,9 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   personagem entre as caçadas, então só o cofre do Banco é seguro (decisão do
   Leonardo, 0.27.0) — menos o que o Selo de resguardo guarda (até 60% no nível
   3), e 25% do XP do nível, nunca o nível; o equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
-  ordem de implementação está no `ROADMAP.md`.
-- **Conflito aberto:** a venda de peça da mochila na Feira **durante** a caçada,
-  livre mesmo que o jogador morra depois, é decisão do Leonardo e está em
-  vigor, mas tira peso da morte. Está na Parte 6 como pendência **sensível**:
-  nenhum agente muda isso sem ele.
+  ordem de implementação está no `ROADMAP.md`. Desde a 0.43.2 a Mochila não
+  vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
+  está na mochila só fica a salvo saindo pela porta.
 
 #### Pilar 5 — Duas mãos, e pode parar a qualquer hora
 
@@ -904,10 +902,11 @@ arquitetura (Parte 2). Hoje guarda:
   (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
   negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
   tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
-  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
-  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
-  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
-  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). A
+  extração tem limites de plausibilidade (30 peças por caçada, 60 por dia,
+  só depois de 85 s). A venda do saco durante a caçada saiu do cliente na
+  0.43.2 (decisão do Leonardo); o `mercado_anunciar` ainda aceita `p_caca` e
+  `p_saco`, e fechar isso no banco é item do `ROADMAP.md`. Esquema em
   [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql); na morte, a
   `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
   [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
@@ -1597,6 +1596,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
+| 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco também deve recusar | Pilar 4; Parte 3, Supabase |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes
@@ -1611,6 +1611,5 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Ao religar o ciclo |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |
-| P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |
