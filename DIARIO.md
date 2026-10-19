@@ -20,7 +20,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 11:11 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** tela de entrada só com a conta (0.39.0), a pedido do Leonardo ("serve somente para login e criação de login; o personagem deve ser escolhido na tela seguinte"). A primeira tela (`#menu`) ficou com o título, usuário e senha, Entrar, Criar conta e o `#play`: "Jogar sem conta" (um link discreto) sem sessão, "Continuar" com ela. Saíram dela o personagem, o preço da morte e o rodapé. A escolha de personagem (`#pick`) virou a tela seguinte: tocar num personagem entra na cidade (`escolher()`, que só tira da sala e zera a incursão se a classe mudar), cada personagem mostra o preço da morte (`riscoCurto(c)`), os números da conta ganharam o nível, e o rodapé tem Regras e Voltar. O Menu da cidade abre a escolha de personagem.
+**Item desenvolvido:** tela de entrada só com a conta (0.40.0), a pedido do Leonardo ("serve somente para login e criação de login; o personagem deve ser escolhido na tela seguinte"). A primeira tela (`#menu`) ficou com o título, usuário e senha, Entrar, Criar conta e o `#play`: "Jogar sem conta" (um link discreto) sem sessão, "Continuar" com ela. Saíram dela o personagem, o preço da morte e o rodapé. A escolha de personagem (`#pick`) virou a tela seguinte: tocar num personagem entra na cidade (`escolher()`, que só tira da sala e zera a incursão se a classe mudar), cada personagem mostra o preço da morte (`riscoCurto(c)`), os números da conta ganharam o nível, e o rodapé tem Regras e Voltar. O Menu da cidade abre a escolha de personagem.
 
 **Validação:** `node tools/testar.mjs` — 36/36. O harness ganhou `entrar()` (tela de entrada → escolha → cidade), que substituiu os 20 cliques diretos em `#play`; asserções novas: a tela de entrada só tem a conta, "Jogar sem conta" e "Continuar" conforme a sessão, o preço da morte no cartão do personagem, Regras e Voltar na escolha, e o Menu da cidade abrindo a escolha. Prints em 390×844.
 
@@ -33,6 +33,19 @@ execução precisa saber e não vai descobrir lendo o código.
 **Próximo passo recomendado:** o Leonardo abrir no celular; depois, "Mapas de caça fixos" (`Agora`).
 
 ---
+## 2026-10-19 12:20 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** correção 0.38.1, a partir da pergunta do Leonardo "por que os alimentos não aparecem na mochila?". Reproduzido no navegador: sozinho (o anfitrião), a comida comprada e a que cai do rato aparecem na janela da Mochila. O defeito era do **convidado da sala**: o retrato do anfitrião mandava só o valor da mochila (`bv`), nunca o conteúdo, e a janela do convidado ficava parada no que ele levou ao entrar — nenhum loot aparecia, comida ou não. O retrato agora leva `bag` de cada jogador e o convidado aplica a dele (`soMochila`).
+
+**Validação:** `node tools/testar.mjs` — 36/36, com asserção nova no `sala-convidado` (a mochila vem no retrato, item inexistente fora, a do anfitrião não muda).
+
+**Análise:** outra causa possível, que não é defeito: a comida comprada na 0.29.0 (quando ficava em `prov`) foi migrada na 0.33.0 para o **cofre do Banco**, não para a mochila; aparece no Banqueiro, com "levar".
+
+**Roadmap:** sem mudança.
+
+**Pendências e riscos:** o retrato cresce ~100 bytes por jogador (a mochila de cada um a 10/s); com 4 na sala continua muito abaixo do limite do Realtime.
+
+**Próximo passo recomendado:** o Leonardo confirmar, como convidado numa sala, que o loot aparece na Mochila.
 
 ## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala, com a masmorra
 
@@ -323,22 +336,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - A tela do Banco (`drawEquip()`) continua com os três botões em linha; não foi pedida.
 
 **Próximo passo recomendado:** o Leonardo abrir a Mochila no celular e dizer se as casas apagadas ficam ou saem; depois, "Sair cedo" (`Agora`).
-
-## 2026-10-19 03:10 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** mais mapas de caça (0.22.0), a pedido do Leonardo ("crie mais mapas de caça: esgoto, navio que leva para ilha, outros; cada um acessado como a masmorra, criando ou entrando em salas"). `hunts` no `content.json` ganhou, por mapa, `npc` (quem leva até ele), `bands` e `boss` (no formato de `progression`), `mapa` (salas, tamanho, atalhos, lido por `genMap(m)`), `arte` (chão, parede, cores sem sprite, escuridão, tochas) e as frases `entrada`/`volta`. Três mapas novos: **Esgoto** (nível 1, Vigia do esgoto, letra `V` perto do mercado: morcego, barata, lesma, Centopeia-rainha; muitas salas pequenas), **Ilha da Enseada** (nível 8, Capitão, letra `N` no porto do canal leste: vespa, lagarta-cuspideira à distância, leão, troll, Dragão da enseada; poucas salas grandes, menos escuro, sem tochas) e **Cripta Antiga** (nível 15, no Guia: esqueleto, fantasma, múmia, necromante à distância, Senhora das Sombras; mais escura). A Masmorra de Runas não mudou (sem `bands`, `boss` e `mapa`, usa `progression`, e `genMap()` sorteia na mesma ordem). Treze monstros e dois NPCs com sprite do OTSP; chão e parede de cada mapa no atlas. `showHunts(npc)`: cada NPC que abre `cacadas` mostra só os mapas dele, com os monstros listados, e cada linha tem "entrar" e "criar sala". A sala guarda o mapa (`SALA.caca`), anunciado na presença (`sala.h`), na lista de membros e na porta; a porta só abre no NPC daquele mapa. A volta da caçada é ao lado de quem levou (`entraCidade(npc)`).
-
-**Validação:** `node tools/testar.mjs` — 32/32, com o caso novo `mapas-de-caca` (Vigia → Esgoto e volta ao lado dele, Capitão → Ilha, sala da Ilha anunciada com o mapa, porta fechada no Guia, volta de navio ao porto) e, no Node, os quatro mapas: monstros só da tabela de cada um, um chefe só, mesma semente igual, mapas diferentes por mapa de caça, chave desconhecida virando Runas, quatro conteúdos tortos recusados. Telas e os quatro mapas conferidos com Chromium em 390×780 com o atlas.
-
-**Análise:** o chefe podia **não nascer** quando um monstro comum já ocupava o sqm dele (acontecia também na Masmorra de Runas, em algumas sementes). Agora, com o sqm ocupado, o chefe vai para o livre mais perto do centro da sala, sem sorteio, então nenhuma masmorra muda de mapa. O "Entrar pela porta" ficava desabilitado até outra coisa redesenhar o Guia depois que o canal da sala ligava: `SALA.aoMudar()` agora roda ao ligar. A `main` subiu para 0.21.0 (habilidades no Mestre de magias) durante o trabalho; mesclado, esta é a 0.22.0, e a sala de 0.21 não enxerga a de 0.22 (o canal leva a versão).
-
-**Roadmap:** "Lugares com nome" foi para `Concluído`; o Acampamento Orc do item original ficou de fora (os orcs já são da Masmorra). `Agora` não mudou.
-
-**Pendências e riscos:**
-- **Balanceamento é chute medido só no papel.** Simulação de 40 sementes, masmorra inteira: Esgoto ~620 XP e ~400 de loot; Runas ~1.640 e ~1.600; Ilha ~3.170 e ~2.040; Cripta ~6.440 e ~3.000. Ninguém jogou a Ilha no nível 8 nem a Cripta no 15; o dano dos monstros (12 a 52) precisa do agente de Balanceamento com personagens de referência.
-- O chefe dos mapas novos não deixa troféu próprio (a coroa é só do Guardião); os novos dropam gema e equipamento.
-- Monstro à distância usa sempre o projétil do xamã (`mi_xama`).
-- O atlas foi de ~340 KB para ~510 KB (o dragão e a sombra são grandes).
-- O Gordon pede materiais pensando na Masmorra; a Ilha dá muita seda e a Cripta muita erva, o que barateia as encomendas.
-
-**Próximo passo recomendado:** o Leonardo jogar o Esgoto com um personagem novo e a Ilha com um de nível 8 e dizer se o perigo está certo; depois, Balanceamento dos mapas novos.

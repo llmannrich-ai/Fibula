@@ -1454,10 +1454,11 @@ const CASOS = [
     var foi=await ate(function(){return I.G&&I.G.convidado&&$('#app').classList.contains('playing')},20);await quadros(2);
     ok('a porta abre e ele entra na masmorra da sala, sem tempo', foi&&I.G.semente===77&&I.G.aberta&&I.G.p===I.G.ps[1]&&txt('#timeT')==='sem tempo', I.G&&I.G.semente);
     var lon=I.G.rooms.reduce(function(a,b){return Math.hypot(b.cx-I.G.p.tx,b.cy-I.G.p.ty)>Math.hypot(a.cx-I.G.p.tx,a.cy-I.G.p.ty)?b:a});
-    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=lon.cx*32+16;r.ps[1].y=lon.cy*32+16;r.ps[1].tx=lon.cx;r.ps[1].ty=lon.cy;r.t=12.5;var m0=I.G.mons[0],xa=I.G.ps[0].x;
+    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=lon.cx*32+16;r.ps[1].y=lon.cy*32+16;r.ps[1].tx=lon.cx;r.ps[1].ty=lon.cy;r.t=12.5;r.ps[1].bag={queijo:2,ouro:7,nada:3};r.ps[1].bv=23;r.ps[0].bag={coroa:1};var m0=I.G.mons[0],xa=I.G.ps[0].x;
     r.ps.push({cl:'feiticeiro',nome:'Caio',eq:{},x:r.ps[0].x,y:r.ps[0].y,tx:r.ps[0].tx,ty:r.ps[0].ty,hp:50,mhp:50,mp:10,mmp:10,f:0,mv:0,fl:0,sw:0,fora:null,pch:0,bv:0,pot:3,cdC:0,cds:{},gcd:{},arm:0,c:[1,0,0,10]});
     for(var k=0;k<3;k++){RT.sala('estado',r);await quadros(2)}
     ok('o retrato do anfitrião move os monstros e o anfitrião', I.G.mons[0].id===m0.id&&Math.abs(I.G.mons[0].x-(Math.round(m0.x)+40))<1&&Math.abs(I.G.ps[0].x-(Math.round(xa)+20))<1, I.G.mons[0].x+' / '+I.G.ps[0].x);
+    ok('a mochila do convidado vem no retrato (o loot que o anfitrião contou), e só a dele', I.G.p.bag.queijo===2&&I.G.p.bag.ouro===7&&!I.G.p.bag.nada&&!I.G.ps[0].bag.coroa, JSON.stringify(I.G.p.bag));
     ok('quem entrou depois aparece, com nome e classe', I.G.ps.length===3&&I.G.ps[2].nome==='Caio'&&I.G.ps[2].cl==='feiticeiro'&&!I.G.ps[2].fora, I.G.ps.length);
     ok('longe demais, o convidado volta para onde o anfitrião o vê', I.G.p.tx===lon.cx&&I.G.p.ty===lon.cy, I.G.p.tx+','+I.G.p.ty+' / '+lon.cx+','+lon.cy);
     var n0=RT.salaMandadas('ent').length,x0=I.G.p.x,rt0=I.G.rT;

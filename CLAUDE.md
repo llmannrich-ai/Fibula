@@ -699,7 +699,9 @@ do Banco como item, em `save.mats` (não em `save.itens`, que é só de peças e
 Banco não a compra). Come-se pelo botão Comer
 (`comer()`, a menor da mochila primeiro, nada se passar de
 `progression.comida.max`, 1200 s). Na sala, o convidado pede pelo contador
-`com` da entrada, como a poção, e o retrato manda quantas tem (`nc`).
+`com` da entrada, como a poção, e o retrato manda quantas tem (`nc`) e a
+mochila de cada um (`bag`), que o convidado aplica só na dele: é o que a
+janela da Mochila dele mostra durante a caçada.
 
 #### As três moedas de progressão
 

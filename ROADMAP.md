@@ -142,7 +142,7 @@ Ilha mostra areia e grama com borda, e o caso `arte` cobre o desenho.
 
 ## Concluído
 
-- **2026-10-19 — Tela de entrada só com a conta (0.39.0)** *(pedido do
+- **2026-10-19 — Tela de entrada só com a conta (0.40.0)** *(pedido do
   Leonardo; pilar 5)*. A primeira tela tem usuário, senha, Entrar, Criar conta
   e "Jogar sem conta" (ou "Continuar", com sessão). A escolha de personagem é
   a tela seguinte: tocar num personagem entra na cidade, cada um mostra o
