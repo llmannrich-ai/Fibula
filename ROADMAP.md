@@ -141,6 +141,14 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — A Mochila com o corpo do inventário do Tibia (0.21.0)**
+  *(pedido do Leonardo: "algo que se assemelha ao do Tibia, equipamentos em
+  posição de uso"; pilar 1)*. Três colunas como a janela do Tibia: amuleto,
+  arma e anel à esquerda; elmo, armadura, calça e botas no meio; o saco (onde o
+  Tibia põe a mochila), escudo e munição à direita. Casa vazia mostra a
+  silhueta do que vai nela; as que o jogo não tem ficam apagadas e sem toque.
+  Ao lado, o boneco vestido, que gira ao toque. Tela baixa esconde as duas
+  linhas de baixo (só casas apagadas).
 - **2026-10-19 — A cidade cinco vezes maior, com lojas de provisões (0.20.0)**
   *(pedido do Leonardo: "amplie o mapa da cidade para cerca de 5 vezes; insira
   NPCs que vendem itens como mercado de alimentos, poções e magias"; pilares 2

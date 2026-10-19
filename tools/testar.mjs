@@ -1362,9 +1362,11 @@ const CASOS = [
     ok('o botão Mochila aparece na cidade', getComputedStyle(bt).display!=='none');
     clica(bt);
     ok('a mochila abre na cidade', aberta()&&bt.getAttribute('aria-expanded')==='true');
-    var arma=todos('#moDoll .cel')[2];
+    var arma=$('#moDoll .s-arma');
     ok('o corpo mostra a arma vestida', (arma.getAttribute('aria-label')||'').indexOf('Arma: machado rachado')===0, arma.getAttribute('aria-label'));
     ok('o corpo mostra os espaços vazios', todos('#moDoll .cel').filter(function(b){return / vazio$/.test(b.getAttribute('aria-label')||'')}).length===2, todos('#moDoll .cel').map(function(b){return b.getAttribute('aria-label')}).join(' | '));
+    ok('o corpo tem o desenho do Tibia: três colunas, as casas que o jogo não tem apagadas', todos('#moDoll > div').length===3&&todos('#moDoll .trava').length===6&&$('#moDoll > div:first-child .s-amuleto')&&$('#moDoll > div:nth-child(2) .s-armadura')&&$('#moDoll > div:last-child .s-saco'), todos('#moDoll > div').map(function(c){return c.children.length}).join(','));
+    ok('o boneco vestido aparece ao lado do corpo', visivel('#moFig'));
     ok('o total vestido aparece', txt('#moTot')==='Vestido: +10% de dano. Vida 85 · Mana 95', txt('#moTot'));
     ok('na cidade o saco está vazio, em grade', cheias().length===0&&todos('#moGrade .cel').length===12, todos('#moGrade .cel').length);
     tecla('keydown','KeyB');tecla('keyup','KeyB');
