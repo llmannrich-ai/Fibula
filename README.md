@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.43.0 (19/10/2026) | A escolha de personagem cabe inteira na tela, sem barra de rolagem: os números da conta numa linha e cartões mais baixos, com o preço da morte no lugar da descrição de quem já existe |
 | 0.42.0 (19/10/2026) | Sem tela intermediária: quem tem conta aberta abre o jogo direto na escolha de personagem, e quem entra ou cria conta vai para ela sozinho. "Sair da conta" fica na escolha de personagem |
 | 0.41.0 (19/10/2026) | Os lugares de caça são fixos: o Esgoto é sempre o mesmo Esgoto, com os mesmos corredores, os mesmos objetos e cada monstro no mesmo lugar, renascendo ali. O chão ganhou os padrões do Tibia (sem azulejo repetido), e as tochas e velas iluminam onde estão |
 | 0.40.0 (19/10/2026) | A primeira tela é só a conta: usuário, senha, Entrar e Criar conta (ou Jogar sem conta). O personagem se escolhe na tela seguinte, que mostra o preço da morte de cada um e tem as Regras; o Menu da cidade volta a ela |

@@ -161,6 +161,10 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-19 — Escolha de personagem sem rolagem (0.43.0)** *(pedido do
+  Leonardo; pilar 5)*. Saiu a rolagem própria da lista; a tela cabe em
+  360×640 com os quatro personagens e a linha da conta.
+
 - **2026-10-19 — Sem tela intermediária depois do login (0.42.0)** *(pedido
   do Leonardo: "a tela intermediária de continuar não faz sentido"; pilar 5)*.
   Com conta aberta, a tela de entrada não aparece: o jogo abre na escolha de

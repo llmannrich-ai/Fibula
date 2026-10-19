@@ -1151,6 +1151,8 @@ const CASOS = [
     $('#play').click();
     ok('a tela seguinte é a escolha de personagem, com o cofre', visivel('#pick')&&txt('#sCofre')==='1000'&&txt('#sLvl')==='1', txt('#sCofre')+' / '+txt('#sLvl'));
     ok('o personagem mostra o preço da morte', txt('#pickList .cls.on .risco')==='Morrer custa a mochila (vazia) e nada de XP.', txt('#pickList .cls.on .risco'));
+    var pk=$('#pick'),pl=$('#pickList');
+    ok('a escolha de personagem cabe na tela, sem rolagem', pk.scrollHeight<=pk.clientHeight&&getComputedStyle(pl).overflowY==='visible', pk.scrollHeight+'/'+pk.clientHeight+' '+getComputedStyle(pl).overflowY);
     clica($('#toRegras'));
     ok('o botão Regras abre as regras', visivel('#regras')&&!visivel('#pick'));
     var CJ=await (await fetch('data/game/content.json')).json();

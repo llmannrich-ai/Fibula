@@ -18,6 +18,22 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 11:32 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** escolha de personagem sem rolagem (0.43.0), a pedido do Leonardo ("retire a barra de rolagem dos personagens, deixe somente a tela"). O `#pickList` perdeu o `max-height:58vh;overflow:auto`; para caber, o texto de apresentação saiu, os números da conta ficaram numa linha de seis, os cartões ficaram mais baixos e o de quem já existe mostra o preço da morte no lugar da descrição da classe (o novo segue com a descrição). As barras de crescimento ficaram. As telas não mostram mais barra de rolagem (`scrollbar-width:none`) quando, num aparelho muito baixo, precisarem rolar.
+
+**Validação:** `node tools/testar.mjs` — 36/36, com asserção nova: a escolha de personagem não rola e a lista não tem rolagem própria. Medido no Chromium: 640/640 em 360×640 e 844/844 em 390×844 com os quatro personagens criados e a linha da conta visível.
+
+**Análise:** em 360×640 a folga é de ~16 px; um quinto elemento na tela (outra classe, um aviso) volta a pedir rolagem.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono).
+
+**Pendências e riscos:** a folga pequena acima; o aviso de save que falha (`#mAviso`) fica na tela de entrada, não nesta.
+
+**Próximo passo recomendado:** o Leonardo conferir no celular.
+
+---
+
 ## 2026-10-19 11:28 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** sem tela intermediária depois do login (0.42.0), a pedido do Leonardo ("a tela intermediária de continuar não faz sentido"). Com sessão, `showMenu()` vai direto a `showPick()`: ao abrir o jogo (com o save local, refeito quando a nuvem chega) e depois de Entrar ou Criar conta, quando `puxa()` termina ou falha (`seguir()` em `src/nuvem.js`). A tela de entrada perdeu o "Continuar" e o "Sair"; "Sair da conta" virou o `#pickBack` da escolha de personagem com sessão (`sairDaConta()`), e a linha da conta aparece ali (`#pConta`).
@@ -319,21 +335,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - O convidado da sala não vê os botões (a ficha dele é do anfitrião). Na mescla com a 0.25.0 (toda caçada numa sala), a venda do saco na Feira tinha ficado desligada para todos (`!G.sala`); voltou para quem não é convidado (`!G.convidado`). Quando o servidor da F2 existir, vestir vira entrada (`ent`) da regra.
 
 **Próximo passo recomendado:** o Leonardo vestir uma peça no meio da caçada e dizer se o fluxo está claro; depois, "Sair cedo" (`Agora`).
-
-## 2026-10-19 23:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** toda caçada é numa sala (0.25.0), a pedido do Leonardo ("área de caça só acessível criando um servidor compartilhado ou entrando em um existente"), e a correção do "Entrar pela porta" que não respondia no celular.
-
-**Validação:** `node tools/testar.mjs` — 32/32. Asserções novas: o anfitrião entra pela porta com o canal da sala caído; fora de sala, cada lugar só oferece "criar sala", que cria e já entra; a chegada não promete relógio. O canal `sala-` do Realtime de verdade foi testado do contêiner (join e presença ok).
-
-**Análise:** o botão da porta ficava desabilitado sempre que o canal da sala não estava `ligado`, até para o anfitrião, que não precisa dele; e `.ghost:disabled` não tinha estilo, então parecia clicável. No iPhone o WebSocket cai com frequência, e era isso que o Leonardo via. A mescla com a 0.23.0 (mapas de caça novos) refez o Guia; a mudança foi reaplicada por cima: um botão por lugar ("criar sala" / "pela porta" / "outra sala"), "criar sala" não depende mais da rede.
-
-**Roadmap:** item fora da fila (pedido do dono), decisão na seção 15 do PRD.
-
-**Pendências e riscos:**
-- **O pilar 4 mudou** (VISAO revista): sem relógio, o arco depende só do saco e da morte. Se ficar for sempre melhor que sair, a decisão de ir embora morre. Medir com o agente de Balanceamento: tempo médio de caçada e valor do saco por minuto.
-- A incursão solo com relógio continua no código (`start()` sem `prepara`) e nos testes, mas o jogador não a alcança. Se o relógio não voltar, pode sair numa limpeza futura; muitos casos (extração, morte, desabamento) dependem dela hoje.
-- Sala de um ainda abre o canal do Realtime e anuncia presença: custo pequeno, mas cresce com jogadores sozinhos.
-- Cada entrada pela porta gasta as provisões de novo (já anotado na entrada da 0.20.0).
-
-**Próximo passo recomendado:** o Leonardo testar no celular criar sala, entrar, sair e entrar de novo; depois, decidir se volta algum limite de tempo.

@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.42.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.42.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.42.0';
-import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.42.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.42.0';
-import {persist,saveFalhou} from './salvar.js?v=0.42.0';
-import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.42.0';
-import {rede,SALAS} from './rede.js?v=0.42.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.42.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.42.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.42.0';
-import {icone} from './arte.js?v=0.42.0';
-import {$,app} from './dom.js?v=0.42.0';
-import {retrato} from './desenho.js?v=0.42.0';
+import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.43.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.43.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.43.0';
+import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.43.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.43.0';
+import {persist,saveFalhou} from './salvar.js?v=0.43.0';
+import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.43.0';
+import {rede,SALAS} from './rede.js?v=0.43.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.43.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.43.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.43.0';
+import {icone} from './arte.js?v=0.43.0';
+import {$,app} from './dom.js?v=0.43.0';
+import {retrato} from './desenho.js?v=0.43.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -261,7 +261,8 @@ export function showPick(){
     const lv=document.createElement('span');lv.className='lv';
     lv.textContent=c?`Nível ${c.lvl} · Magia ${c.mag} · Perícia ${c.per}`:'novo · '+K.tag;
     hd.append(h,lv);
-    const p=document.createElement('p');p.textContent=K.desc;
+    /* o personagem que existe mostra o preço da morte; o novo, como a classe é */
+    const p=document.createElement('p');p.textContent=c?riscoCurto(c):K.desc;if(c)p.className='risco';
     const bars=document.createElement('div');bars.className='bars';
     /* as quatro barras são as taxas de crescimento, não o poder atual */
     const vals=[['Vida',K.ghp/17],['Mana',K.gmp/16],['Magia',Math.min(1,(1.95-K.mMult)/0.9)],['Perícia',Math.min(1,(2.05-K.pMult)/0.95)],['Armadura',K.red/0.28]];
@@ -270,9 +271,7 @@ export function showPick(){
       const i=document.createElement('i');i.style.setProperty('--v',Math.round(v*100)+'%');
       d.append(t,i);bars.appendChild(d);
     }
-    b.append(hd,p);
-    if(c){const r=document.createElement('p');r.className='risco';r.textContent=riscoCurto(c);b.appendChild(r)}
-    b.appendChild(bars);
+    b.append(hd,p,bars);
     b.addEventListener('click',()=>escolher(k));
     li.appendChild(b);ul.appendChild(li);
   }
