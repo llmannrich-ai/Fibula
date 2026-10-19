@@ -303,7 +303,7 @@ na mão.
 | Cidade | Mapa de `city.mapa`, NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
-| Caçar junto | Salas de até 4, com o aparelho do anfitrião calculando (só entre amigos) |
+| Caçar junto | Uma sala por lugar, de até 4 (cópia 2 quando lota): pisa-se no portal do lugar e entra-se no servidor de quem já caça lá; o aparelho do anfitrião calcula, e o último que sai fica com ele |
 | Testes e CI | `node tools/testar.mjs` (sintaxe, simulação no Node, casos no Chromium headless); GitHub Actions em todo push |
 
 ### Fases
@@ -607,7 +607,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   regra nenhuma. Anuncia na presença a sala aberta deste aparelho
   (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
 - `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
-  `realtime:sala-<x.y>-<id da sala>` por sala (o id de quem a criou; não muda quando o anfitrião muda). O anfitrião roda a
+  `realtime:sala-<x.y>-<mapa>-<cópia>` por lugar (não muda quando o anfitrião muda); `vaiCaca(k)` é o portal. O anfitrião roda a
   incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
   por segundo; o convidado manda a entrada (o sqm em que está, espaços
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
@@ -665,10 +665,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
   com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
-  cidade → quem leva à caçada (o Guia, a Grade do esgoto — um lugar no chão
-  da rua, não uma pessoa: `lugar: true` no NPC —, o Capitão do porto,
-  cada um com os mapas dele, `showHunts(npc)`) → incursão → tela final → a
-  cidade, ao lado de quem levou; as telas abertas na
+  cidade → o portal do lugar (um "lugar" no chão: `lugar: true` e `abre:
+  "portal"` no NPC; pisar nele chama `pisa()` → `vaiCaca()`; o Guia e o
+  Capitão, `showHunts(npc)`, dizem o que há em cada lugar, quantos caçam lá
+  e onde é a entrada, com um botão Entrar) → incursão → tela final → a
+  cidade, em cima do portal de onde se volta; as telas abertas na
   cidade voltam para ela (`volta()`)
 - `controles.js` — joystick por ponteiro, `bindHold()`, teclado, `held` e
   `leEntrada()`
@@ -1013,17 +1014,33 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 #### Sala — caçar junto, com o anfitrião calculando
 
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
-co-op na masmorra **sem servidor próprio**. Em quem leva à caçada, qualquer um cria
-uma sala; quem está na cidade a vê e entra (até 4).
-**Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): o lugar de
-caça do Guia cria uma sala e entra pela porta, e sozinho é uma sala de um. A
+co-op na masmorra **sem servidor próprio**.
+**Uma sala por lugar, com entrada automática** (decisão do Leonardo em
+19/10/2026): cada mapa de caça tem um **portal** na cidade (`abre: "portal"`
+e `caca` em `city.npcs`: a grade do esgoto, os portais das Runas e da Cripta
+ao lado do portão, o barco da Ilha no cais). Pisar nele (`pisa()` em
+`src/telas.js`, só ao chegar no sqm) ou tocar em Entrar no Guia chama
+`vaiCaca(k)` em `src/sala.js`: entra no canal do lugar
+(`sala-<x.y>-<mapa>-<cópia>`) e olha a presença. Há quem tenha `anf` →
+entra no servidor dele (manda `quero` e, aceito, pede a porta sozinho);
+não há → vira o servidor e entra. Cheio (`cheia`, 4 na sala) → a cópia
+seguinte do mesmo lugar. **O anfitrião é sempre alguém lá dentro**: quem
+tem o servidor e sai da masmorra com gente caçando o passa (`passa`, com a
+herança) ao mais antigo lá dentro; **o último que sai fica com ele**, e a
+masmorra segue rodando no aparelho dele, na cidade, até alguém entrar e
+recebê-lo, ou até ele ir a outro lugar ou fechar o jogo (aí ela se perde).
+Convidado que sai da masmorra sai da sala. A volta à cidade é em cima do
+portal do lugar (`portalDe()` em `dados.js`).
+**Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): sozinho é
+uma sala de um. A
 incursão solo com relógio (`start()` sem `prepara`) continua no código só para
 os testes e a simulação; o jogador não a alcança. O anfitrião entra pela porta
-mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
+mesmo com o canal da sala caído: a masmorra roda no aparelho dele (sem
+resposta do canal em 2 a 4 s, `vaiCaca` abre a caçada aqui).
 
-- **A sala é de um mapa de caça** (`SALA.caca`), escolhido ao criar ("criar
-  sala" na linha do lugar). Vai no anúncio da cidade (`rede.sala.h`), na lista
-  de membros e na porta; a porta só abre no NPC que leva a esse mapa.
+- **A sala é de um mapa de caça** (`SALA.caca`, com a cópia em `SALA.n`). Vai
+  no anúncio da cidade (`rede.sala`: `h` o mapa, `id` o canal, `n` quantos),
+  e o Guia mostra quantos caçam em cada lugar.
 - **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
   nasce com a sala, no aparelho do anfitrião, e fica aberta enquanto ele
   estiver nela. Ninguém é soterrado. É o modo
@@ -1078,9 +1095,10 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
   (`fim`), passando por conferência (item que existe, número inteiro,
   habilidade da classe). A ficha que o convidado manda passa por
   `confereFicha()` em `src/sim/progresso.js`.
-- **Só o anfitrião pode trapacear**, porque é ele quem calcula. É aceitável
-  entre amigos e é a exceção à regra acima, de propósito; para abrir a
-  desconhecidos, o caminho é o servidor da F2 (M2).
+- **Só o anfitrião pode trapacear**, porque é ele quem calcula. Com a entrada
+  automática, desconhecidos caçam no aparelho uns dos outros: o Leonardo
+  aceitou esse risco na fase de teste (19/10/2026), e ele só cai com o
+  servidor da F2 (M2). É a exceção à regra acima, de propósito.
 - Custo: com 4 na sala, ~40 envios por segundo no canal, abaixo dos ~100 do
   plano Free; a cota mensal (2 milhões, contando cada entrega) dá algumas
   dezenas de horas de caçada a dois por mês.
@@ -1091,9 +1109,11 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
 
 ### Voz — falar na sala
 
-Decisão do Leonardo em 19/10/2026: **voz só dentro da sala de caçar junto**,
-entre quem se chamou; na cidade aberta, não, porque com desconhecidos pede a
-moderação da F3. `src/voz.js`, sem biblioteca:
+Decisão do Leonardo em 19/10/2026: **voz só dentro da sala de caçar junto**;
+na cidade aberta, não, porque com desconhecidos pede a moderação da F3. Com a
+entrada automática a sala pode ter desconhecidos, então a voz é **opcional**:
+só se ouve quem ligou, e o Guia avisa que pode haver desconhecidos.
+`src/voz.js`, sem biblioteca:
 
 - **O som não passa pelo Supabase.** Cada par de aparelhos abre um
   `RTCPeerConnection` direto (malha: com 4, cada um manda para 3, ~30 kbit/s
@@ -1597,6 +1617,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
+| 19/10 | **Uma sala por lugar, com entrada automática:** pisa-se no portal do lugar na cidade; há servidor, entra-se nele; não há, abre-se aqui; cheio (4), cópia 2. O servidor fica com quem está lá dentro, e com o último que saiu quando não há ninguém. Aceito o risco de trapaça do anfitrião entre desconhecidos na fase de teste; voz opcional | Parte 3, Sala e Voz |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes

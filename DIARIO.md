@@ -18,6 +18,26 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 — sessão manual (nuvem): uma sala por lugar, com portal
+
+**Item desenvolvido:** a pedido do Leonardo ("ao entrar no mapa de caça, estar no quadrado que migra para o mapa, um portal, e criar o servidor dele se ninguém estiver jogando lá; se já houver, entra nele; sem ninguém, o servidor fica com a última pessoa que saiu"), 0.44.0, com as escolhas dele: entrada automática para todos na fase de teste (aceitando a trapaça do anfitrião entre desconhecidos), cópia 2 quando lota, voz opcional, portal no chão. `content.json`: NPCs `abre: "portal"` com `caca` (a grade passou a portal; novos `portal_runas`, `portal_cripta` ao lado do portão e `barco` no cais); o Esgoto agora é explicado pelo Guia. `dados.js`: `ABRE` com `portal`, validação (todo mapa tem portal) e `portalDe()`. `sala.js`: canal por lugar (`sala-<x.y>-<mapa>-<cópia>`), `vaiCaca()` procura pela presença quem tem `anf` e entra nele (pede a porta sozinho) ou vira o servidor (`viraServidor()`); `cheia` leva à cópia seguinte; o anfitrião que sai da masmorra com gente lá dentro passa o servidor (`passaPara()`, com a herança), e o último que sai fica com ele até alguém entrar; convidado que sai da masmorra sai da sala. `telas.js`: `pisa()` (só ao chegar no sqm, para quem volta em cima do portal não entrar de novo), o Guia com Entrar, quantos caçam e onde é a entrada; a volta é em cima do portal.
+
+**Validação:** `node tools/testar.mjs` inteiro verde. Casos reescritos: `mapas-de-caca` (pisar na grade e no barco, volta em cima do portal, o último fica com o servidor, ir a outro lugar fecha a caçada vazia), `sala-anfitriao` (canal do lugar, passar o servidor ao sair com gente dentro, último que sai fica, quem chega recebe o servidor com a herança), `sala-convidado` (acha o servidor pela presença, entra sozinho, sai da sala ao sair da masmorra, volta pelo portal); novo `sala-lotada` (cópia 2). Não testado com aparelhos de verdade.
+
+**Análise:** com um canal por lugar, a presença do canal é o "servidor de nomes": quem tem `anf: true` é o servidor. Dois chegando no mesmo instante viram servidores ao mesmo tempo; a disputa de geração e id (já existente) resolve, e quem perde vira convidado e pede a porta sozinho, mas a caçada que ele tinha aberto se perde.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Queda de conexão não mata".
+
+**Pendências e riscos:**
+- Desconhecidos caçam no aparelho uns dos outros: quem tem o servidor pode trapacear no XP e no loot de quem está com ele. Aceito pelo Leonardo só na fase de teste; cai com o servidor da F2.
+- O último que sai segura a caçada no aparelho dele (CPU e dados na cidade). Se ele fechar o jogo ou for a outro lugar, a caçada se perde; o próximo abre uma nova.
+- Dois chegando juntos no lugar vazio: o que perde a disputa volta à cidade e entra de novo no servidor do outro (uma ida e volta visível).
+- O portal da Ilha fica sobre a água do cais, e os portais das Runas e da Cripta usam o sprite do portal da masmorra (sem sprite próprio).
+
+**Próximo passo recomendado:** testar com 2 ou 3 celulares: um pisa na grade; o segundo pisa e deve cair na mesma caçada; o primeiro sai e o segundo continua com o servidor; o segundo sai e, depois, um terceiro entra e encontra os monstros como ficaram.
+
+---
+
 ## 2026-10-19 12:06 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** orçamento de download vigiado (0.43.1), pedido do Leonardo ("temos que ter um mecanismo para garantir a velocidade rápida de download"). `tools/testar.mjs`: `orcamento()` mede antes dos casos o que o jogador baixa, como a rede leva (gzip no texto), e reprova acima de 1,8 MB (aviso em 1,2 MB); o coletor serve os casos com `rede: '4g'` a 9 Mbit/s com 170 ms por pedido e banda dividida; o caso `rede-4g` mede a primeira tela e a arte, com limite de 3 s, e imprime os dois tempos. Números em `ORCAMENTO`. O caso achou a arte em 3.298 ms: o atlas só começava depois do `content.json`, e a imagem depois do `atlas.json`. `src/arte.js` passou a pedir os dois ao carregar o módulo, em paralelo (`pede()`).
@@ -320,19 +340,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 - Gema e coroa só viram ouro no Banco; não há NPC que compre loot avulso, de propósito por enquanto.
 
 **Próximo passo recomendado:** o Leonardo jogar duas caçadas seguidas sem passar no Banco e morrer na segunda, para sentir se a perda está legível; decidir se fechar o app deve contar como morte.
-
-## 2026-10-20 00:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** peça vestida na caçada ganha origem também na morte (0.26.1), a pedido do Leonardo (o item 1 das pendências da 0.26.0). Migração `tools/supabase/005_vestidas.sql`, aplicada no banco pelo conector: a `caca_fim` (mesma assinatura) dá origem, na morte ou no desabamento, às peças que o cliente manda em `p_saco`, no máximo 3 e dentro dos limites de 30 por caçada e 60 por dia; passar do limite não desfaz a morte, só zera as peças. O cliente manda na morte `vestidasDaCaca(p)` (`src/sim/combate.js`): o saldo positivo de `p.troca`, as vestidas do saco que ainda estão no corpo.
-
-**Validação:** `node tools/testar.mjs` — 33/33, com o caso novo `vestida-morte` (vestir a espada do saco pela Mochila, morrer: a caçada fecha com `{"espada":1}`, a origem sobe e a espada segue vestida) e a conferência no Node de `vestidasDaCaca()`. Sabotagem (morte mandando `{}`) barrada. No banco: a função nova está no ar e o `anon` continua executando.
-
-**Análise:** compatível com o cliente antigo, que manda `{}` na morte. O Supabase falso dos testes passou a imitar a regra (até 3 peças fora da extração).
-
-**Roadmap:** sem mudança.
-
-**Pendências e riscos:**
-- Quem forjar a chamada ganha origem para até 3 peças por morte, sem o piso de 85 s da extração; o teto diário de 60 continua valendo. Não testei a função contra o banco de verdade com uma caçada real (só a leitura da definição e da permissão).
-- Peça vestida, tirada para o saco e morta perde-se, como o resto do saco, mas a origem dela (se tinha) fica sobrando no lastro: inofensivo, como já era com venda ao Banco.
-
-**Próximo passo recomendado:** o Leonardo vestir uma peça na caçada, morrer e anunciá-la na Feira.

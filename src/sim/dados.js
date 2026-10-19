@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.43.1';
-import {ALFA} from './mapa.js?v=0.43.1';
+import {MW,MH} from './base.js?v=0.44.0';
+import {ALFA} from './mapa.js?v=0.44.0';
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
@@ -127,6 +127,10 @@ export function validaConteudo(c){
     if(!m.spawn.some(t=>xy(t)[2]===bossK))E(`o chefe (${bossK}) não está no spawn`);
   }
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='cacadas'&&!hs.some(([,h])=>h.npc===k))throw new Error(`o NPC ${k} abre cacadas, mas nenhum mapa de caça é dele`);
+  /* o portal é um lugar no chão (pisou, entrou) que leva a um mapa de caça;
+     todo mapa tem o dele */
+  for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='portal'&&(n.lugar!==true||!hs.some(([h])=>h===n.caca)))throw new Error(`o portal ${k} precisa de lugar: true e caca, a chave de um mapa de caça`);
+  for(const[k]of hs)if(!Object.values(ci.npcs).some(n=>n.abre==='portal'&&n.caca===k))throw new Error(`o mapa de caça ${k} não tem portal na cidade (um NPC com abre: portal e caca: ${k})`);
   const f=c.forja,inteiro=v=>Number.isInteger(v)&&v>0;
   if(!f.compra||typeof f.compra!=='object'||!Array.isArray(f.missoes)||!Array.isArray(f.loja))throw new Error('forja precisa de compra, missoes e loja');
   for(const[k,v]of Object.entries(f.compra)){
@@ -156,8 +160,10 @@ export function validaConteudo(c){
    mapa k, ou o primeiro se k não existe (o que vem da rede passa por aqui). */
 export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10};
 export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha'};
-export const ABRE=['mercador','banco','cacadas','mercado','forja','loja'];
+export const ABRE=['mercador','banco','cacadas','mercado','forja','loja','portal'];
 export let CITY,HUNTS;
+/* o portal da cidade que leva ao mapa k: é perto dele que se volta */
+export const portalDe=k=>Object.keys(CITY.npcs).find(n=>CITY.npcs[n].abre==='portal'&&CITY.npcs[n].caca===k)||HUNTS[k].npc;
 export const cacaDe=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(HUNTS,k)?k:HUNTS.runas?'runas':Object.keys(HUNTS)[0];
 /* ---------- provisões ----------
    O que as lojas da cidade vendem (supplies no content.json): comida, poção

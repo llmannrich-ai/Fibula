@@ -129,6 +129,12 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-19 — Uma sala por lugar, com portal (0.44.0)** *(pedido do
+  Leonardo; pilares 2 e 5)*. Cada mapa de caça tem um portal na cidade;
+  pisar nele entra no servidor de quem já caça lá ou abre a caçada aqui;
+  cópia 2 quando lota; o servidor fica com quem está lá dentro, e com o
+  último que saiu quando não há ninguém. Casos `mapas-de-caca`,
+  `sala-anfitriao`, `sala-convidado` e `sala-lotada`.
 - **2026-10-19 — Orçamento de download vigiado (0.43.1)** *(pedido do
   Leonardo; pilar 5)*. O harness imprime o que o jogador baixa, parte por
   parte, como a rede leva (hoje ~920 KB, 774 KB deles o atlas), avisa acima
