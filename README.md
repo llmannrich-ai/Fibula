@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.44.0 (19/10/2026) | O jogo abre mais rápido: as imagens caíram de 793 KB para 420 KB (WebP sem perda, o mesmo desenho), e o download inteiro antes de jogar foi de 938 KB para 564 KB |
 | 0.43.2 (19/10/2026) | A Mochila não vende mais na Feira durante a caçada: o que está nela só fica a salvo saindo pela porta. Vender é na cidade |
 | 0.43.0 (19/10/2026) | A escolha de personagem cabe inteira na tela, sem barra de rolagem: os números da conta numa linha e cartões mais baixos, com o preço da morte no lugar da descrição de quem já existe |
 | 0.42.0 (19/10/2026) | Sem tela intermediária: quem tem conta aberta abre o jogo direto na escolha de personagem, e quem entra ou cria conta vai para ela sozinho. "Sair da conta" fica na escolha de personagem |

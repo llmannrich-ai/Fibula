@@ -18,6 +18,7 @@ licenças" do [CLAUDE.md](../CLAUDE.md)).
 | Arquivo | O que é | Alterações |
 |---|---|---|
 | `otsp/atlas.png` | os sprites que o jogo usa, reunidos numa imagem só | recortados de `client_files/otsp.spr` segundo `client_files/otsp.dat` e rearranjados em grade; quadros vazios no início de três efeitos foram descartados; quatro sprites tiveram o matiz girado para virar outro elemento (`ef_energia`, `ef_sagrado` e `mi_energia` a partir do brilho azul, `ef_terra` a partir da nuvem rosa, `mi_sagrado` a partir da estrela) |
+| `otsp/atlas.webp` | os mesmos pixels do `atlas.png`, em WebP sem perda: é o que o jogo baixa | convertido do `atlas.png` pelo `cwebp` (libwebp), sem perda |
 | `otsp/atlas.json` | posição, tamanho, direções e quadros de cada sprite no atlas | gerado |
 | `otsp/LICENSE.txt` | licença do pacote | cópia sem alteração |
 | `otsp/AUTHORS.md` | autores do pacote | cópia sem alteração |

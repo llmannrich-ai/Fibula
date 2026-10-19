@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.43.2';
-import {ALFA} from './mapa.js?v=0.43.2';
+import {MW,MH} from './base.js?v=0.44.0';
+import {ALFA} from './mapa.js?v=0.44.0';
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);

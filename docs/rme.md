@@ -13,7 +13,10 @@ de volta. Os scripts estão em `tools/`, rodam com o Node e não instalam nada.
 ## Uma vez só: preparar o editor
 
 1. **Baixe o OTSP**, se ainda não tem: `node tools/sprites.mjs` (o script
-   clona o pacote numa pasta temporária e refaz o atlas).
+   clona o pacote numa pasta temporária e refaz o atlas). Ele precisa do
+   `cwebp`: no Windows, baixe o zip da libwebp em
+   developers.google.com/speed/webp/download, descompacte e ponha a pasta
+   `bin` no PATH (ou o caminho do `cwebp.exe` em `FIBULA_CWEBP`).
 2. **Monte a pasta do editor:** `node tools/otbm.mjs rme`. Ela sai em
    `mapas-rme/editor/`, com:
    - `data/` — os arquivos do OTSP para o RME (`items.otb`, `items.xml`,

@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 15:10 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** atlas em WebP sem perda (0.44.0), por decisão do Leonardo ("pode usar o cwebp, execute"). `tools/sprites.mjs` grava o PNG e, pelo `cwebp` (`-lossless -z 9 -exact -metadata none`; PATH ou `FIBULA_CWEBP`), o `atlas.webp`; sem o `cwebp`, para antes de gravar. `src/arte.js` pede o WebP e, se não abrir, o PNG; `ART.url` guarda o que chegou e os ícones da interface usam ele. O harness copia o WebP, conta o WebP no orçamento, confere no caso `arte` que o WebP tem os mesmos pixels do PNG e prova a volta para o PNG no caso novo `arte-sem-webp`.
+
+**Validação:** `node tools/testar.mjs` completo, todos verdes. Download antes de jogar 938 → 564 KB (atlas 793 → 420 KB); 4G calculado: primeira tela 976 ms, arte 1.352 ms; cronometrado aqui: 1.415 e 1.786 ms. WebP determinístico (duas gerações, mesmos bytes) e com os mesmos pixels do PNG. Sabotagem: WebP com um quadrado vermelho de 64×64 → "4096 pixels diferentes", reprovado.
+
+**Análise:** o `cwebp` desta sessão é o 1.3.2 do apt (o pacote de binários do Google respondeu 404 por aqui). Outra versão pode gerar bytes diferentes do mesmo PNG; os pixels continuam iguais, e é isso que o caso `arte` confere.
+
+**Roadmap:** "Atlas em WebP sem perda" de `Depois` para `Concluído`.
+
+**Pendências e riscos:** quem rodar `node tools/sprites.mjs` (por exemplo depois de importar um mapa do editor) precisa do `cwebp`: no Windows do Leonardo, o zip da libwebp com a pasta `bin` no PATH (`docs/rme.md`). O PNG continua no repositório como reserva (iOS antes do 14).
+
+**Próximo passo recomendado:** o item `Agora` da fila.
+
 ## 2026-10-19 15:04 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** nenhum publicado. Pedido do Leonardo: filtro de linha no PNG do atlas. Implementado em `tools/sprites.mjs` (os cinco filtros do PNG, um para todas as linhas ou o melhor por linha, com deflate 9) e **desfeito**, porque não reduz: 794 KB contra os 793 KB de hoje.
@@ -316,21 +330,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 **Pendências e riscos:** jogador de nível alto agora acha os lugares baixos fáceis — é o pilar 1 funcionando, mas falta lugar acima do nível 15 (item 7). As quatro tarefas agendadas ainda mandam ler `docs/agentes/comum.md` e `docs/agentes/<papel>.md` (a instrução só pode ser trocada na conversa de cada uma); esses arquivos agora só redirecionam para o `CLAUDE.md`. O ciclo continua `pausado`. Pendências do dono na Parte 6: P7 (venda do saco na caçada, sensível, em conflito com o pilar 4), P8 (saída a ≤ 60 s), P9 (números da morte B, sensível).
 
 **Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).
-## 2026-10-20 01:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** mochila e cofre como no Tibia (0.27.0), a pedido do Leonardo ("apenas com a mochila e o cofre"). O saco deixou de existir como inventário: `p.bag` é a mochila durante a caçada, começa com `ch().mochila` e volta para ela na extração; a morte a esvazia. O Banco ganhou "Guardar tudo", "guardar" por linha, "levar" nas peças do cofre e "Retirar" ouro. Mochila de 20 espaços (`progression.mochila.espacos`), peça de equipamento ocupa um, o resto empilha; cheia, o que não cabe fica no chão.
-
-**Validação:** `node tools/testar.mjs` — 34/34 (caso novo `banco-mochila`; bloco novo da mochila na simulação no Node: entrar com ela, extrair sem cofre, morrer esvaziando com o selo, guardar, levar, retirar, mochila cheia deixando loot no chão, `normaliza()` e `confereFicha()` limpando item inexistente). Banco e Mochila conferidos em captura de 390×844.
-
-**Análise:** mesclado com a 0.26.0 (vestir pela Mochila) e a 0.26.1 (vestida ganha origem na morte), feitas em paralelo: na cidade a troca passou a ser com a mochila, não com o cofre, e tirar só sai se couber; `pecasDaCaca()` desconta `p.bag0`, para a origem não contar de novo o que entrou na mochila. A conversão automática (ouro, gema, peça, material) que a extração fazia em `guardaSaco()` foi mantida, só mudou de hora: acontece no Banco. Por isso o servidor da Feira não mudou (`itens` e `cofre` continuam sendo o cofre). Na sala, a ficha do convidado agora leva a mochila (`confereFicha()` limpa) e o `fim` do anfitrião vira a mochila do convidado.
-
-**Roadmap:** item fora da fila (pedido do dono), decisão na seção 15.1 do PRD.
-
-**Pendências e riscos:**
-- **Fechar o jogo no meio da caçada preserva a mochila** com que se entrou (só o ganho da caçada se perde, e nenhum XP). Já era assim com o XP; com a mochila valendo mais, o incentivo a fechar o app antes de morrer cresce. Corrigir pede esvaziar a mochila ao entrar e devolvê-la ao sair, cuidando do anfitrião que cria a sala com o próprio jogador "fora".
-- **Origem (lastro) a mais:** a extração credita na origem o que a caçada rendeu, mas se o jogador morrer depois com aquilo na mochila a origem não diminui. Só quem edita o save tira proveito, e só até esse teto.
-- O cofre não tem limite de espaços (o Leonardo citou espaços no banco também); com peças empilhando por tipo no save, um limite precisaria contar peça por peça e decidir o que fazer com quem já passou dele.
-- A mochila cheia é um freio novo à ganância (pilar 4): medir com o Balanceamento se 20 espaços apertam ou sobram nos mapas fundos.
-- Gema e coroa só viram ouro no Banco; não há NPC que compre loot avulso, de propósito por enquanto.
-
-**Próximo passo recomendado:** o Leonardo jogar duas caçadas seguidas sem passar no Banco e morrer na segunda, para sentir se a perda está legível; decidir se fechar o app deve contar como morte.

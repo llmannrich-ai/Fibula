@@ -460,7 +460,7 @@ confundidas com precedente:
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~780 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão) | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`assets/otsp/atlas.webp`](assets/otsp/atlas.webp) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, em WebP sem perda, ~420 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão). O [`atlas.png`](assets/otsp/atlas.png), com os mesmos pixels (~790 KB), só desce para o aparelho que não abre WebP | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs), que chama o `cwebp` | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -482,7 +482,10 @@ arte da seção "Arte e licenças" da Parte 2: só OTSP ou outra fonte com licen
 aberta, montado por script versionado, nunca à mão, com cada arquivo listado em
 [`assets/CREDITOS.md`](assets/CREDITOS.md). Para trocar o sprite de um monstro,
 edite a tabela `ARTE` do `tools/sprites.mjs` e rode `node tools/sprites.mjs`
-(o `--catalogo` grava folhas com o id de cada sprite do pacote).
+(o `--catalogo` grava folhas com o id de cada sprite do pacote). O script
+precisa do **`cwebp`** (libwebp do Google; no PATH ou em `FIBULA_CWEBP`) para
+gravar o `atlas.webp`, e para sem gravar nada se não o achar; o caso `arte`
+reprova se o WebP não tiver os mesmos pixels do PNG.
 
 **Não adicione dependência de terceiro nenhuma.** Para dado do próprio
 repositório, o teste é se ele serve para alguém ajustar o jogo sem programar —
@@ -620,7 +623,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   pelo laço e `VOZ`, que o botão `#bVoz` do HUD lê (`hudVoz()`)
 - `arte.js` — `ART`, `pede()` (o atlas começa a baixar quando o módulo
   carrega, em paralelo com o `content.json`, e a imagem não espera o
-  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`),
+  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`; pede o
+  `atlas.webp` e cai no `atlas.png` se o aparelho não abrir WebP, caso
+  `arte-sem-webp`; `ART.url` é o que chegou, e os ícones usam ele),
   `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -1597,6 +1602,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
+| 19/10 | **Atlas em WebP sem perda**, gravado pelo `cwebp` do Google em `tools/sprites.mjs` (só na montagem; o jogador baixa um arquivo de imagem), com o PNG de reserva | Parte 3, "O que mais o jogador baixa" |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes
