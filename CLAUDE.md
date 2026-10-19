@@ -279,12 +279,12 @@ na mão.
   que o Banqueiro guarda no cofre está seguro.
 - **Cidade:** gastar, guardar, trocar, ver outros jogadores, formar a sala.
 
-### O que existe hoje (0.28.0)
+### O que existe hoje (0.29.0)
 
 | Área | Estado |
 |---|---|
 | Caçada | Quatro lugares em `hunts` do `content.json`: Masmorra de Runas (nível 1, pelo Guia), Esgoto (1, pela grade da rua), Ilha da Enseada (8, pelo Capitão do porto), Cripta Antiga (15, pelo Guia). Sala sem relógio, porta de entrada e saída, respawn de 60 s. A incursão solo com relógio de 6 min ficou só para os testes |
-| Personagem | 4 classes por taxa de crescimento; nível, magia e perícia; 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18); habilidades aprendidas com o Mestre de magias |
+| Personagem | 4 classes por taxa de crescimento; nível, magia e perícia; 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18); habilidades aprendidas com o Mestre de magias; regenera só alimentado, comendo pelo botão Comer |
 | Equipamento | Arma, armadura e amuleto, com raridade; Mochila no desenho do inventário do Tibia; veste-se pela Mochila, na cidade e na caçada; mochila do personagem com 20 espaços e cofre no Banco |
 | Cidade | Mapa de `city.mapa`, NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
@@ -302,7 +302,7 @@ fase.
 
 | Fase | Entrega | Estado | Pronto quando |
 |---|---|---|---|
-| **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: PWA instalável (os créditos estão nas Regras desde a 0.29.0) | PWA instalável |
+| **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: PWA instalável (os créditos estão nas Regras desde a 0.30.0) | PWA instalável |
 | **F1 · Personagem e mundo** | Contas e save na nuvem ✅, 4 classes ✅, equipamento ✅, lugares de caça com nome ✅; **os pilares desta guia**: mapas fixos, morte da opção B com proteção contra queda, curva de 3 h até o nível 20, saída a ≤ 60 s; telemetria mínima | Em andamento | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op autoritativo** | Servidor próprio rodando `src/sim/`, salas de 1 a 4 para desconhecidos, convite por link, reconexão | Só a sala entre amigos (anfitrião calcula) | 4 celulares completam uma caçada juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Cidade compartilhada ✅ (Realtime), Feira ✅; chat com filtro, grupos, amigos, guildas | Parcial | 100 simultâneos estáveis; moderação básica (denunciar, silenciar, banir) |
@@ -524,7 +524,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
-  `soProv()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
+  `soProv()`, `devolveComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
   `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
@@ -552,7 +552,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   nunca lê `G.p` nem o `save` para saber quem joga: `G.p` é só o jogador
   deste aparelho, para a tela. No solo a ficha aponta para o personagem do
   save, e o que é da conta (cofre, peças) só muda para a ficha local, em `sai()`
-- `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`), todas
+- `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`, `comer()`), todas
   recebendo o jogador que age,
   `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`, e o vestir na caçada (`vesteDoSaco()`, `tiraProSaco()`, `pecasDaCaca()`)
 
@@ -646,6 +646,15 @@ você se pegar escrevendo um número mágico dentro de `updateMons()`, ele
 provavelmente devia ser um campo em `MT`. E nenhum campo pode escalar com o
 nível ou o grupo de quem entra (pilar 1): o `validaConteudo()` recusa
 `hpPerCharLevel`, `bossLevelFactor`, `party.monsters` e `party.bossHp`.
+
+**Só se regenera alimentado, como no Tibia** (decisão do Leonardo em
+19/10/2026). A regeneração é a da classe (`rhp`, `rmp` em `classes`), fixa, e
+só corre enquanto `p.ali` (segundos de alimentação) for maior que zero; todo
+jogador entra com fome. A comida é provisão com `efeito.comida` (os segundos
+dela): vai na mochila (`p.com`), se come pelo botão Comer (`comer()`, a menor
+primeiro, nada se passar de `progression.comida.max`, 1200 s como no Tibia),
+e o que sobra volta ao estoque só extraindo (`devolveComida()`). Na sala, o
+convidado pede pelo contador `com` da entrada, como a poção.
 
 #### As três moedas de progressão
 
@@ -1428,6 +1437,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | Feira entre jogadores no banco: custódia, 2% de taxa, só o que tem origem registrada | Parte 3, Supabase |
 | 19/10 | Vestir e tirar pela Mochila, na cidade e na caçada | Parte 3 |
 | 19/10 | Inventário como no Tibia: só mochila e cofre. A mochila é do personagem, fica com ele entre as caçadas, entra inteira na seguinte e cai toda na morte (menos o Selo); 20 espaços (`progression.mochila`). O Banqueiro guarda e devolve | Parte 3, "O save é mesclado" |
+| 19/10 | **Alimentação como no Tibia:** sem comida não se regenera vida nem mana; a regeneração é a da classe, fixa; cada comida dá um tempo de alimentação, maior nas mais caras, até 1200 s acumulados (`progression.comida`). Come-se pelo botão Comer na caçada (escolha do dono contra a recomendação de comer sozinho); a comida que sobra volta ao estoque só extraindo | Parte 3, "Números que governam o jogo" |
 | 19/10 | **Um guia só** (este arquivo), com o princípio-mãe "a realidade como ela é" e os seis pilares | Parte 1 |
 | 19/10 | **O mundo é igual para todos:** nada escala com nível, classe ou grupo | Pilar 1 |
 | 19/10 | **Mapas de caça fixos**, que se aprendem | Pilar 2 |

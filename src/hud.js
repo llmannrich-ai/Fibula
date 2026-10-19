@@ -1,18 +1,18 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.29.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.29.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.29.0';
-import {G} from './sim/incursao.js?v=0.29.0';
-import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.29.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.29.0';
-import {erroFeira} from './telas.js?v=0.29.0';
-import {persist} from './salvar.js?v=0.29.0';
-import {C} from './sim/cidade.js?v=0.29.0';
-import {ART,icone} from './arte.js?v=0.29.0';
-import {retrato} from './desenho.js?v=0.29.0';
-import {rede} from './rede.js?v=0.29.0';
-import {$,app} from './dom.js?v=0.29.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.30.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.30.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.30.0';
+import {G} from './sim/incursao.js?v=0.30.0';
+import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.30.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.30.0';
+import {erroFeira} from './telas.js?v=0.30.0';
+import {persist} from './salvar.js?v=0.30.0';
+import {C} from './sim/cidade.js?v=0.30.0';
+import {ART,icone} from './arte.js?v=0.30.0';
+import {retrato} from './desenho.js?v=0.30.0';
+import {rede} from './rede.js?v=0.30.0';
+import {$,app} from './dom.js?v=0.30.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -23,16 +23,18 @@ export function log(msg,cls='loot'){
 let bT;export function banner(t){bannerEl.textContent=t;bannerEl.classList.add('show');clearTimeout(bT);bT=setTimeout(()=>bannerEl.classList.remove('show'),2400)}
 
 export const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),clsT:$('#clsT'),magT:$('#magT'),perT:$('#perT'),
-  bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bPot:$('#bPot'),potN:$('#potN'),
+  bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bPot:$('#bPot'),potN:$('#potN'),bCom:$('#bCom'),comT:$('#comT'),comN:$('#comN'),
   compass:$('#compass'),compassArrow:$('#compassArrow'),
   slots:[$('#s0'),$('#s1'),$('#s2'),$('#s3')]};
 export const setT=(el,v)=>{if(el.textContent!==v)el.textContent=v};
-/* ícone da poção no botão; chamado quando o atlas termina de chegar */
+/* ícones da poção e da comida nos botões; chamado quando o atlas termina de chegar */
 export function montaIcones(){
   if(G&&G.active)montaBotoes();
   if(E.bPot.querySelector('.ico'))return;
   const i=document.createElement('span');i.className='ico';i.setAttribute('aria-hidden','true');
   if(icone(i,'pocao'))E.bPot.insertBefore(i,E.bPot.querySelector('.nm'));
+  const f=document.createElement('span');f.className='ico';f.setAttribute('aria-hidden','true');
+  if(icone(f,'sup_presunto'))E.bCom.insertBefore(f,E.bCom.querySelector('.nm'));
   const m=document.createElement('span');m.className='ico';m.setAttribute('aria-hidden','true');
   if(icone(m,'saco2'))MO.bt.insertBefore(m,MO.bt.querySelector('.nm'));
   if(!MO.el.hidden)desenhaMochila();
@@ -63,6 +65,10 @@ export function hud(){
   const showCompass=G.portal.open&&!G.over&&(!G.aberta||p.longe);E.compass.hidden=!showCompass;
   if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
   E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
+  /* a comida: quantas restam e quanto tempo de alimentação falta (sem ele, fome) */
+  let nc=0;for(const k in p.com)nc+=p.com[k];
+  E.bCom.style.setProperty('--cd',clamp(p.cdCo,0,1));E.bCom.classList.toggle('fome',p.ali<=0);E.bCom.classList.toggle('dim',!nc);
+  setT(E.comN,'×'+nc);setT(E.comT,p.ali>0?fmt(p.ali):'Fome');
   for(let i=0;i<4;i++){
     const b=E.slots[i];if(b.hidden)continue;
     const id=c.slots[i],s=SPELLS[id];

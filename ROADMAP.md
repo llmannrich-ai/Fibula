@@ -111,7 +111,7 @@ recomendado acima de 15, e o caso da cidade entra nele.
 
 ## Concluído
 
-- **2026-10-19 — Tela inicial curta, com Regras e créditos (0.29.0)**
+- **2026-10-19 — Tela inicial curta, com Regras e créditos (0.30.0)**
   *(pedido do Leonardo: minimalista, botão de regras, login fácil; pilares 4
   e 5; fecha o item "Tela de créditos" da F0)*. A tela inicial tem o
   personagem, o preço da morte em uma linha, Jogar, a conta (os mesmos campos

@@ -95,6 +95,11 @@ canvas{image-rendering:pixelated}
 #bPot{width:54px;height:54px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:28px;--el:var(--hp)}
 #bPot .nm{font-size:9px;align-self:end}
 #app[data-arte] #bPot .nm{position:absolute;bottom:3px;left:0;right:0}
+#bCom{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:154px;--el:var(--torch-deep)}
+#bCom .nm{font-size:9px;align-self:end;font-variant-numeric:tabular-nums}
+#bCom.fome{--el:var(--hp)}
+#bCom.fome .nm{color:var(--warn)}
+#app[data-arte] #bCom .nm{position:absolute;bottom:2px;left:0;right:0}
 #app[data-arte] .act .ct{position:absolute;top:3px;right:5px;z-index:2;text-shadow:1px 1px 0 #000}
 #app[data-arte] .act.sl .nm{position:absolute;bottom:4px;left:0;right:0}
 #app[data-arte] .act.sl .ico{transform:translate(-50%,-64%) scale(var(--esc,1))}
@@ -390,6 +395,7 @@ h2.lost{color:var(--hp)}
     <div id="banner" class="out"></div>
     <div id="joy" class="idle"><div id="knob"></div></div>
     <button class="act pot" id="bPot" aria-label="Beber poção (P)"><span class="cd"></span><span class="nm out">Poção</span><span class="ct" id="potN">×3</span></button>
+    <button class="act fome" id="bCom" aria-label="Comer (C)"><span class="cd"></span><span class="nm out" id="comT">Fome</span><span class="ct" id="comN">×0</span></button>
     <button class="act sl" id="s3" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
@@ -454,7 +460,7 @@ h2.lost{color:var(--hp)}
       <p class="eyebrow">Regras</p>
       <h2>Como funciona</h2>
       <details open><summary>A caçada</summary>
-        <p>Na cidade, fale com quem leva à caçada: o Guia, no portão sul, a grade do esgoto na rua, o Capitão no porto. Entre pela porta. Não há relógio: você sai pela mesma porta quando quiser, parado nela por <span id="rExt">2,5</span> segundos. Sozinho ou com até três amigos.</p>
+        <p>Na cidade, fale com quem leva à caçada: o Guia, no portão sul, a grade do esgoto na rua, o Capitão no porto. Entre pela porta. Não há relógio: você sai pela mesma porta quando quiser, parado nela por <span id="rExt">2,5</span> segundos. Sozinho ou com até três amigos. Leve comida, comprada nas lojas da cidade: sem estar alimentado, a vida e a mana não voltam sozinhas. Coma pelo botão Comer.</p>
       </details>
       <details open><summary>A morte</summary>
         <p>Morrer custa a mochila inteira e <span id="rPerda">25</span>% da experiência do nível atual. O nível nunca cai. O Selo de resguardo, comprado no Mercador, guarda parte do valor da mochila. A tela inicial e quem leva à caçada dizem quanto está em jogo antes de entrar.</p>
@@ -473,7 +479,7 @@ h2.lost{color:var(--hp)}
         <p>Na cidade você vê quem mais está nela. Em quem leva à caçada, crie uma sala ou entre na de alguém. Na Feira, com conta, compra e vende peças de outros jogadores. Com conta (usuário e senha, na tela inicial), o progresso fica na nuvem e continua em outro aparelho.</p>
       </details>
       <details><summary>Controles</summary>
-        <p>Arraste o lado esquerdo da tela para andar. O jogo escolhe o alvo. Segure um botão de habilidade para repeti-la. No teclado: <b>WASD</b> anda, <b>Enter</b> fala com quem está ao lado, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção.</p>
+        <p>Arraste o lado esquerdo da tela para andar. O jogo escolhe o alvo. Segure um botão de habilidade para repeti-la. No teclado: <b>WASD</b> anda, <b>Enter</b> fala com quem está ao lado, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção, <b>C</b> come.</p>
       </details>
       <details><summary>Créditos</summary>
         <p>A arte vem do <a href="https://github.com/peonso/opentibia_sprite_pack" target="_blank" rel="noopener">OpenTibia Sprite Pack</a>, da comunidade OpenTibia (<a href="assets/otsp/AUTHORS.md" target="_blank" rel="noopener">autores</a>), sob a licença <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank" rel="noopener">Creative Commons Atribuição 4.0</a>. Os sprites foram recortados e reunidos num atlas; alguns efeitos tiveram a cor trocada.</p>
@@ -647,7 +653,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.29.0"></script>
+<script type="module" src="src/main.js?v=0.30.0"></script>
 
 </body>
 </html>

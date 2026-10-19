@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.29.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.29.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila} from './progresso.js?v=0.29.0';
-import {genMap,pecas} from './mapa.js?v=0.29.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.29.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.30.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,SUP,cacaDe} from './dados.js?v=0.30.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,devolveComida,soMochila,valMochila} from './progresso.js?v=0.30.0';
+import {genMap,pecas} from './mapa.js?v=0.30.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.30.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -48,13 +48,15 @@ export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,prov:save.prov,lo
    jogadores não se bloqueiam (só monstros ocupam sqm) */
 const LADO=[[0,0],[1,0],[-1,0],[0,1]];
 /* as provisões (p.prov, o que sai do estoque quando a caçada começa) dão
-   poções, regeneração a mais (rgh, rgm) e buffs do começo (p.sup), que
-   somam aos das habilidades em vez de serem trocados por eles */
+   poções, buffs do começo (p.sup), que somam aos das habilidades em vez de
+   serem trocados por eles, e a comida da mochila (p.com). Todo mundo entra
+   com fome (p.ali, os segundos de alimentação, em zero): sem comer, não se
+   regenera nada */
 function novoJogador(f,i,s){
   const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0],e=efeitoProv(f.prov);
   const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',prov:Object.assign({},f.prov),
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
-    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,rgh:e.rhp,rgm:e.rmp,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
+    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,com:e.com,ali:0,cdCo:0,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
   /* a mochila entra inteira (p.bag é ela durante a caçada); bag0 é como
      entrou, para o banco só contar como origem o que a caçada rendeu */
@@ -230,9 +232,11 @@ function anda(p,dt,ent){
     if(!p.sd&&Number.isFinite(ent.f))p.face=ent.f;
     p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
   }else movimenta(p,dt,ent);
-  const K=CLASSES[p.cl];
-  p.mp=Math.min(p.mmp,p.mp+(K.rmp+p.rgm)*dt);p.hp=Math.min(p.mhp,p.hp+(K.rhp+p.rgh)*dt);
-  p.cdC-=dt;p.flash-=dt;p.swing-=dt;
+  /* regeneração da classe, fixa, só enquanto houver alimentação */
+  if(p.ali>0){const K=CLASSES[p.cl];
+    p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
+    p.ali-=dt;if(p.ali<=0){p.ali=0;saida.log('Você está com fome: sem comer, não se regenera vida nem mana.','warn',p)}}
+  p.cdC-=dt;p.cdCo-=dt;p.flash-=dt;p.swing-=dt;
   for(const k in p.cds)if(p.cds[k]>0)p.cds[k]-=dt;
   for(const k in p.gcd)if(p.gcd[k]>0)p.gcd[k]-=dt;
   for(const k in p.buffs){p.buffs[k].left-=dt;if(p.buffs[k].left<=0)delete p.buffs[k]}
@@ -325,7 +329,7 @@ function updateProj(dt){
    quando não sobra ninguém dentro */
 export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
-  if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
+  if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;devolveComida(p.com);save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
   else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   if(p.local)saida.persist();
@@ -391,8 +395,8 @@ export function retrato(){
   return{t:r1(G.t),po:G.portal.open?1:0,k:G.kills,m,pr,fx,cad,
     dr:G.drops.map(d=>[Math.round(d.x),Math.round(d.y),d.rar,d.dono,r1(d.t)]),
     ps:G.ps.map(p=>({cl:p.cl,nome:p.nome,eq:p.c.equip,x:Math.round(p.x),y:Math.round(p.y),tx:p.tx,ty:p.ty,hp:Math.ceil(p.hp),mhp:p.mhp,mp:Math.floor(p.mp),mmp:p.mmp,f:Math.round(p.face*100),
-      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,
-      cdC:r1(p.cdC),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
+      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,ali:Math.ceil(p.ali),com:p.com,
+      cdC:r1(p.cdC),cdCo:r1(p.cdCo),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
 }
 /* o convidado (o jogador eu de G.ps) aplica o retrato: cada coisa guarda a
    posição de antes (x0, y0) e o render() interpola até o próximo retrato, e
@@ -437,7 +441,8 @@ export function aplicaRetrato(r,eu){
       if(p.desv>=(longe?3:8)){poeNoSqm(p,qx,qy);p.x0=p.x;p.y0=p.y;p.desv=0}}
     p.hp=num0(q.hp);p.mhp=num0(q.mhp)||1;p.mp=num0(q.mp);p.mmp=num0(q.mmp)||1;p.flash=q.fl?.1:0;
     if(Array.isArray(q.sw)){p.swing=num0(q.sw[0]);p.swingA=num0(q.sw[1]);p.swingR=num0(q.sw[2])}
-    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);
+    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);p.cdCo=num0(q.cdCo);
+    p.ali=num0(q.ali);p.com={};if(q.com&&typeof q.com==='object')for(const k in q.com)if(SUP[k]&&SUP[k].efeito.comida)p.com[k]=num0(q.com[k])|0;
     p.cds=q.cds&&typeof q.cds==='object'?q.cds:{};p.gcd=q.gcd&&typeof q.gcd==='object'?q.gcd:{};
     p.buffs=q.arm?{arm:{v:num0(q.arm),left:1}}:{};
     if(Array.isArray(q.c)){p.c.lvl=num0(q.c[0])||1;p.c.xp=num0(q.c[1]);p.c.mag=num0(q.c[2]);p.c.per=num0(q.c[3])}
