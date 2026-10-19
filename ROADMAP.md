@@ -152,6 +152,11 @@ pode desenhar pelo `.otbm` também.
   ser batido.
 - **Som** (requisito de acessibilidade: jogável sem som, melhor com) — efeitos curtos por WebAudio,
   sem arquivo grande nem biblioteca.
+- **PvP aberto** (pilar 4) — qualquer jogador ataca e mata outro, a qualquer
+  momento, com a mesma perda da morte por monstro. **Só depois do servidor
+  autoritativo da F2** (hoje o aparelho do anfitrião poderia forjar a morte
+  de outro) e da pendência D1 (o que arrisca quem mata, lugar protegido;
+  sensível).
 - **Primeiro bem de patrimônio** (pilares 6 e 5) — algo que valha ter além
   de ouro e peças (casa, montaria, título ou outro, a escolher pelo
   Leonardo numa issue `decisao-do-dono`), comprado com ouro do cofre: é o

@@ -140,6 +140,11 @@ na Parte 3): as mesmas coisas custam preços diferentes para cada classe.
 Sem perda, a caçada não tem decisão: é só uma fila de recompensas. O que faz o
 jogador hesitar antes do próximo corredor é ter algo a perder.
 
+E não são só os monstros que matam. Num mundo de várias pessoas, **qualquer
+jogador pode matar outro a qualquer momento, mesmo de forma injusta e sem
+motivo. A vida é assim.** Saber onde ir, com quem andar e de quem desconfiar
+é parte da decisão, como o lugar escolhido e o que se leva na mochila.
+
 - **Regra (opção B, decidida pelo Leonardo em 19/10/2026):** morrer custa o
   mochila inteira e uma fatia do XP que **pode derrubar o nível**, e cada peça
   vestida tem uma chance de cair, como no Tibia sem bênção. Um seguro comprado
@@ -148,13 +153,22 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   pela rede**: queda de conexão não mata (20 s parado e invulnerável; depois
   sai com a mochila se não estava em combate). A proteção contra queda vem
   **antes** de a morte endurecer.
+- **Regra do PvP (decidida pelo Leonardo em 19/10/2026):** no mundo
+  compartilhado, qualquer jogador pode atacar e matar outro, a qualquer
+  momento, sem precisar de motivo nem de consentimento. Não há imunidade por
+  nível, por ser iniciante ou por estar em grupo. Morrer para um jogador custa
+  o mesmo que morrer para um monstro (a regra acima). O que quem mata ganha, o
+  que ele passa a arriscar (como a caveira do Tibia) e se existe algum lugar
+  protegido são a pendência D1 da Parte 6.
 - **Estado hoje:** a morte leva a mochila inteira — e ela fica com o
   personagem entre as caçadas, então só o cofre do Banco é seguro (decisão do
   Leonardo, 0.27.0) — menos o que o Selo de resguardo guarda (até 60% no nível
   3), e 25% do XP do nível, nunca o nível; o equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
   ordem de implementação está no `ROADMAP.md`. Desde a 0.43.2 a Mochila não
   vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
-  está na mochila só fica a salvo saindo pela porta.
+  está na mochila só fica a salvo saindo pela porta. Ainda não há PvP: ele
+  entra com o servidor autoritativo da F2, porque hoje o resultado da sala é
+  calculado no aparelho de um jogador, que poderia forjar a morte de outro.
 
 #### Pilar 5 — Todo recurso tem ralo
 
@@ -218,10 +232,10 @@ Nada daqui entra sem o Leonardo mudar esta parte primeiro.
 - **O tempo morto do Tibia.** Copia-se do Tibia o que aumenta **peso e
   consequência**; nunca o que aumenta **espera, deslocamento ou exigência de
   sessão longa**. Nem os onze espaços de equipamento, nem a interface de 2002.
-- **Mapa contínuo de caça e PvP aberto.** A sensação de mundo aberto é
+- **Mapa contínuo de caça.** A sensação de mundo aberto é
   objetivo; o mapa contínuo de caça não. O mundo em volta da cidade se anda
   (decisão do Leonardo, 19/10/2026), mas cada lugar de caça é um mapa à parte,
-  com porta. PvP, se vier, é arena opcional (D1).
+  com porta.
 - **Dependência externa nova.** Nenhuma biblioteca, nenhum build: o jogo abre
   em dois segundos num 3G ruim (motivo técnico na Parte 3). O Supabase é
   serviço do produto, não biblioteca no navegador. O STUN da voz da sala
@@ -407,6 +421,7 @@ multiplayer.
 
 | Risco | Impacto | Mitigação |
 |---|---|---|
+| PvP aberto afasta o iniciante e premia quem trapaceia | Alto | PvP só com o servidor autoritativo da F2; o que arrisca quem mata (D1); dado de testadores antes de abrir |
 | Evolução lenta e morte cara derrubam o D1 | Alto | Testadores reais na F1 antes de mexer; a morte sempre visível e nunca causada pela rede; decisão de aliviar é só do Leonardo |
 | Bug de agente com morte cara apaga dias de progresso | Alto | O harness vigia as regras da morte e do save; modo `direto` com CI como alarme e `git revert` |
 | Multiplayer é a parte mais cara e difícil | Alto | Simulação determinística pronta; sala entre amigos antes do servidor |
@@ -1722,6 +1737,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Só o servidor da sala manda na sala**, antes de a morte endurecer: mensagens de resultado, morte, troca de servidor e herança passam a ser conferidas pela autorização do Realtime do Supabase (canal privado, só com conta), mais conferência de plausibilidade do resultado; a trapaça de quem roda o servidor continua até a F2 | `ROADMAP.md`, Próximo 2; Parte 3, Sala |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o jogo deixa de exigir uma mão só | Parte 2, "Controle e tela"; Parte 3, `combate.js` |
 | 19/10 | **Sai o pilar "Duas mãos, e pode parar a qualquer hora"**: os pilares passam a ser cinco (o do ralo vira o 5). Sai a regra da saída segura a ≤ 60 s (era a P8) e a pergunta "dá para parar no meio" do teste de ideias; a regra para sair do jogo durante a luta virá depois. O controle e a tela de celular ficam como requisito da Parte 2 | Parte 1; Parte 2, "Controle e tela" |
+| 19/10 | **PvP aberto:** qualquer jogador pode matar outro a qualquer momento, mesmo sem motivo; a morte para um jogador custa o mesmo que para um monstro. Substitui "PvP só em arena opcional". Entra com o servidor autoritativo da F2 | Pilar 4; não-objetivos |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 
 ### Pendentes
@@ -1730,7 +1746,7 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 
 | # | Decisão | Padrão | Até |
 |---|---|---|---|
-| D1 | PvP | Arenas opcionais na F3 ou depois; nunca PvP aberto | Início da F3 |
+| D1 | PvP: o que ganha e o que arrisca quem mata (marca de assassino como a caveira do Tibia, perda maior na própria morte), e se há lugar protegido (templo, Banco, a porta de um lugar de caça) (**sensível**) | Nada entra sem o Leonardo; o Balanceamento propõe em issue | Antes de implementar o PvP |
 | D2 | Teto mensal de infraestrutura (**sensível**) | Nenhum gasto até o Leonardo definir | Início da F2 |
 | D3 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord, Reddit); o Leonardo convida | Fim da F0 |
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
