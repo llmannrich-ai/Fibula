@@ -1,17 +1,19 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.20.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.20.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat} from './sim/progresso.js?v=0.20.0';
-import {G} from './sim/incursao.js?v=0.20.0';
-import {tiraDoSaco,poeNoSaco} from './sim/combate.js?v=0.20.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.20.0';
-import {erroFeira} from './telas.js?v=0.20.0';
-import {persist} from './salvar.js?v=0.20.0';
-import {C} from './sim/cidade.js?v=0.20.0';
-import {ART,icone} from './arte.js?v=0.20.0';
-import {rede} from './rede.js?v=0.20.0';
-import {$,app} from './dom.js?v=0.20.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.36.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.36.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.36.0';
+import {G} from './sim/incursao.js?v=0.36.0';
+import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.36.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.36.0';
+import {erroFeira} from './telas.js?v=0.36.0';
+import {persist} from './salvar.js?v=0.36.0';
+import {C} from './sim/cidade.js?v=0.36.0';
+import {ART,icone} from './arte.js?v=0.36.0';
+import {retrato} from './desenho.js?v=0.36.0';
+import {rede} from './rede.js?v=0.36.0';
+import {VOZ} from './voz.js?v=0.36.0';
+import {$,app} from './dom.js?v=0.36.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -22,16 +24,18 @@ export function log(msg,cls='loot'){
 let bT;export function banner(t){bannerEl.textContent=t;bannerEl.classList.add('show');clearTimeout(bT);bT=setTimeout(()=>bannerEl.classList.remove('show'),2400)}
 
 export const E={hpI:$('#hpI'),hpT:$('#hpT'),mpI:$('#mpI'),mpT:$('#mpT'),xpI:$('#xpI'),lvlT:$('#lvlT'),clsT:$('#clsT'),magT:$('#magT'),perT:$('#perT'),
-  bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bPot:$('#bPot'),potN:$('#potN'),
+  bagT:$('#bagT'),timeT:$('#timeT'),clock:$('#clock'),portalT:$('#portalT'),bPot:$('#bPot'),potN:$('#potN'),bCom:$('#bCom'),comT:$('#comT'),comN:$('#comN'),
   compass:$('#compass'),compassArrow:$('#compassArrow'),
   slots:[$('#s0'),$('#s1'),$('#s2'),$('#s3')]};
 export const setT=(el,v)=>{if(el.textContent!==v)el.textContent=v};
-/* ícone da poção no botão; chamado quando o atlas termina de chegar */
+/* ícones da poção e da comida nos botões; chamado quando o atlas termina de chegar */
 export function montaIcones(){
   if(G&&G.active)montaBotoes();
   if(E.bPot.querySelector('.ico'))return;
   const i=document.createElement('span');i.className='ico';i.setAttribute('aria-hidden','true');
   if(icone(i,'pocao'))E.bPot.insertBefore(i,E.bPot.querySelector('.nm'));
+  const f=document.createElement('span');f.className='ico';f.setAttribute('aria-hidden','true');
+  if(icone(f,'sup_presunto'))E.bCom.insertBefore(f,E.bCom.querySelector('.nm'));
   const m=document.createElement('span');m.className='ico';m.setAttribute('aria-hidden','true');
   if(icone(m,'saco2'))MO.bt.insertBefore(m,MO.bt.querySelector('.nm'));
   if(!MO.el.hidden)desenhaMochila();
@@ -62,6 +66,10 @@ export function hud(){
   const showCompass=G.portal.open&&!G.over&&(!G.aberta||p.longe);E.compass.hidden=!showCompass;
   if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
   E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
+  /* a comida: quantas restam e quanto tempo de alimentação falta (sem ele, fome) */
+  let nc=0;for(const k in p.com)nc+=p.com[k];
+  E.bCom.style.setProperty('--cd',clamp(p.cdCo,0,1));E.bCom.classList.toggle('fome',p.ali<=0);E.bCom.classList.toggle('dim',!nc);
+  setT(E.comN,'×'+nc);setT(E.comT,p.ali>0?fmt(p.ali):'Fome');
   for(let i=0;i<4;i++){
     const b=E.slots[i];if(b.hidden)continue;
     const id=c.slots[i],s=SPELLS[id];
@@ -69,33 +77,52 @@ export function hud(){
     b.style.setProperty('--cd',clamp(esp/Math.max(s.cd,s.gcd||.4),0,1));
     b.classList.toggle('dim',p.mp<s.mana);
   }
+  hudVoz();
+}
+/* ---------- voz da sala ----------
+   O botão aparece só com sala ligada. Desligado, o toque liga (pede o
+   microfone); ligado, segurar fala e o rótulo diz quem fala agora */
+const EV={b:$('#bVoz'),nm:$('#bVoz .nm'),ct:$('#vozT')};
+let vozAntes='';
+export function hudVoz(){
+  const est=!VOZ.pode&&!VOZ.ligada?'':VOZ.pedindo?'pede':!VOZ.ligada?'off':VOZ.falando?'ar':'on';
+  if(est!==vozAntes){
+    vozAntes=est;EV.b.hidden=!est;EV.b.classList.toggle('on',est==='on');EV.b.classList.toggle('no-ar',est==='ar');
+    EV.b.setAttribute('aria-label',est==='off'||est==='pede'?'Ligar a voz da sala':'Segurar para falar com a sala (V)');
+  }
+  if(!est)return;
+  setT(EV.nm,est==='off'||est==='pede'?'Voz':'Falar');
+  setT(EV.ct,est==='off'?'ligar':est==='pede'?'…':est==='ar'?'no ar':VOZ.quem?VOZ.quem:VOZ.n?`${VOZ.n+1} na voz`:'só você');
 }
 /* ---------- HUD da cidade ----------
    Quem você é, o cofre, e o botão de falar quando há um NPC ao alcance. Ao
    chegar perto, o NPC diz a frase dele no registro, como no Tibia. */
-const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT')};
+const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT'),acao:$('#bFalar .nm')};
 let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
   setT(EC.cls,KL().nome);setT(EC.lvl,'Nv '+c.lvl);setT(EC.cofre,String(save.cofre));
+  hudVoz();
   setT(EC.rede,(rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…')+(rede.naSala?` · sala ${rede.naSala}/4`:''));
   if(C.perto===pertoAntes)return;
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
   if(!C.perto)return;
   const n=CITY.npcs[C.perto];
-  setT(EC.quem,n.nome);EC.falar.setAttribute('aria-label',`Falar com ${n.nome} (${n.casa}) — Enter`);
-  log(`${n.nome}: ${n.fala}`,'info');
+  /* um lugar (a grade do esgoto) não fala: o botão diz a ação dele */
+  const ac=n.acao||'Falar';setT(EC.acao,ac);setT(EC.quem,n.nome);
+  EC.falar.setAttribute('aria-label',n.lugar?`${ac}: ${n.nome} (${n.casa}) — Enter`:`${ac} com ${n.nome} (${n.casa}) — Enter`);
+  log(n.lugar?n.fala:`${n.nome}: ${n.fala}`,'info');
 }
 /* ao entrar na cidade o botão recomeça escondido */
 export const zeraCidade=()=>{pertoAntes=null;EC.falar.hidden=true};
 
 /* ---------- mochila ----------
-   O corpo (o que o personagem veste) e o saco (o que ele carrega e perde se
-   morrer), numa janela sobre o jogo: a incursão não pausa, e o toque fora
+   O corpo (o que o personagem veste) e a mochila (o que ele carrega entre as
+   caçadas e perde se morrer), numa janela sobre o jogo: a incursão não pausa, e o toque fora
    dela continua sendo joystick. Só mostra — vestir e vender é no Banco, na
    cidade. Nada de arrastar nem de passar o mouse (pilar 3): tocar numa peça
    diz o que ela é. */
-const MO={el:$('#mochila'),bt:$('#bMochila'),val:-1,sel:null};
+const MO={el:$('#mochila'),bt:$('#bMochila'),val:-1,sel:null,dir:2};
 /* o bônus somado do que está vestido, em texto; o Banco usa o mesmo */
 export function vestido(c=ch()){
   const st=stats(c),tot=[eqBonus('dano',c)&&`+${Math.round(eqBonus('dano',c)*100)}% de dano`,eqBonus('red',c)&&`−${Math.round(eqBonus('red',c)*100)}% de dano sofrido`,
@@ -112,53 +139,74 @@ function cel(k,q,rot){
   else{const i=document.createElement('i');i.textContent=it.nome.slice(0,2);b.appendChild(i)}
   if(q>1){const n=document.createElement('q');n.textContent=q;b.appendChild(n)}
   b.setAttribute('aria-label',(rot?rot+': ':'')+fmtItem([k,q])+(it.slot?', '+fmtBonus(it):''));
-  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila()});
+  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila();if(MO.sel)$('#moInfo').scrollIntoView({block:'nearest'})});
   return b;
 }
-function info(k,q,vestida,noCofre){
+function info(k,q,vestida){
   const el=$('#moInfo');el.textContent='';
-  if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é. O jogo continua correndo.':'Toque numa peça para ver o que é. Vestir, trocar e vender é no Banco.';return}
+  if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é, vestir ou tirar. O jogo continua correndo.':'Toque numa peça para ver o que é, vestir ou tirar. Guardar e vender é no Banco.';return}
   const it=ITEMS[k],b=document.createElement('b');b.className='r'+it.rar;b.textContent=fmtItem([k,q]);
   const bo=it.slot?` · ${SLOT_NOME[it.slot]}, ${fmtBonus(it)}`:'';
-  el.append(b,vestida?`${bo}. Vestida: não cai na morte.`:noCofre?`${bo}. No cofre do Banco: fale com o Banqueiro para vestir ou vender.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+(it.slot?' Ao extrair, vai para o Banco.':ehMat(k)?' Ao extrair, vai para o depósito do Gordon, na Forja.':''));
+  el.append(b,vestida?`${bo}. Vestida: não cai na morte; tirada, vai para a mochila.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+' Na mochila, cai na morte. '+
+    (it.slot?'Guardada no Banco, vai para o cofre.':ehMat(k)?'Guardado no Banco, fica no cofre e o Gordon vê na Forja.':k==='ouro'?'Guardado no Banco, vai para o cofre.':'Guardado no Banco, fica no cofre; o Banco compra.'));
 }
 export function desenhaMochila(){
-  const c=ch(),K=KL(),caca=naCaca(),p=caca?G.p:null,bag=p?p.bag:{},val=p?p.bagVal:0;
+  const c=ch(),K=KL(),caca=naCaca(),p=caca?G.p:null,bag=p?p.bag:c.mochila,val=p?p.bagVal:valMochila(bag);
   MO.val=caca?val:-1;
   setT($('#moEye'),`Mochila · ${K.nome} · Nv ${c.lvl}`);
-  /* corpo: amuleto e arma, o boneco, armadura e o próprio saco */
+  /* corpo: a janela de inventário do Tibia, em três colunas, cada peça no
+     lugar em que se usa (amuleto no pescoço, arma na mão, a mochila onde o
+     Tibia a põe). As casas que o jogo não tem ficam apagadas, sem toque */
   const d=$('#moDoll');d.textContent='';let selInfo=null;
-  const eq=sl=>{const k=c.equip[sl],w=document.createElement('div');w.className='eq s-'+sl;
-    const b=cel(k,1,SLOT_NOME[sl]);if(!k)b.setAttribute('aria-label',SLOT_NOME[sl]+' vazio');
-    b.dataset.k='eq:'+sl;if(MO.sel==='eq:'+sl){b.classList.add('on');selInfo=[k,1,true]}
-    const s=document.createElement('small');s.textContent=SLOT_NOME[sl];w.append(b,s);return w};
-  const fig=document.createElement('div');fig.className='fig';fig.setAttribute('aria-hidden','true');
-  const ic=document.createElement('span');ic.className='ico';
-  if(icone(ic,'cls_'+save.classe,2,0,64))fig.appendChild(ic);else{const l=document.createElement('b');l.textContent=K.nome[0];fig.appendChild(l)}
-  const sw=document.createElement('div');sw.className='eq s-saco';
-  const sc=document.createElement('button');sc.type='button';sc.className='cel'+(val?' cheia':'');sc.disabled=true;
+  const eq=sl=>{const k=c.equip[sl],b=cel(k,1,SLOT_NOME[sl]);if(!k)b.setAttribute('aria-label',SLOT_NOME[sl]+' vazio');
+    b.classList.add('s-'+sl);b.dataset.k='eq:'+sl;if(MO.sel==='eq:'+sl){b.classList.add('on');selInfo=[k,1,true]}return b};
+  const trava=s=>{const t=document.createElement('span');t.className='trava s-'+s;t.setAttribute('aria-hidden','true');return t};
+  const col=(...a)=>{const w=document.createElement('div');w.append(...a);return w};
+  const sc=document.createElement('button');sc.type='button';sc.className='cel s-saco'+(val?' cheia':'');sc.disabled=true;
   const si=document.createElement('span');si.className='ico';si.setAttribute('aria-hidden','true');if(icone(si,'saco2'))sc.appendChild(si);
-  sc.setAttribute('aria-label',`Saco: ${val} de ouro`);
-  const ss=document.createElement('small');ss.textContent='Saco';sw.append(sc,ss);
-  d.append(eq('amuleto'),fig,eq('armadura'),eq('arma'),sw);
+  sc.setAttribute('aria-label',`Mochila: ${val} de ouro`);
+  d.append(col(eq('amuleto'),eq('arma'),trava('anel')),col(trava('elmo'),eq('armadura'),trava('calca'),trava('botas')),col(sc,trava('escudo'),trava('municao')));
+  /* ao lado, o boneco vestido como anda no mapa; tocar gira */
+  const fg=$('#moFig'),tem=retrato(fg.firstElementChild,save.classe,c.equip,MO.dir,4);
+  fg.firstElementChild.hidden=!tem;fg.lastElementChild.textContent=tem?'':K.nome[0];
   setT($('#moTot'),vestido(c));
-  /* saco: o mais valioso primeiro; casas vazias completam a grade, como um
-     container do Tibia. Na cidade não há saco: a grade é o cofre do Banco */
-  const sela=p?Math.round(val*sealPct(p.up)):0,itens=caca?bag:save.itens;
-  setT($('#moTit'),caca?'Saco':'Cofre do Banco');
-  const mv=$('#moVal');mv.textContent='';const vb=document.createElement('b');
-  if(caca){vb.textContent=val;mv.append(vb,' ouro')}
-  else{const n=Object.values(itens).reduce((a,q)=>a+q,0);vb.textContent=n;mv.append(vb,n===1?' peça':' peças')}
-  setT($('#moRisco'),!caca?'Guardado no Banco, não cai na morte. Vestir, trocar e vender é com o Banqueiro.'
-    :val?`Se morrer, perde ${val-sela} de ouro`+(sela?` (o selo guarda ${sela}).`:'.')+' Extraia para guardar.':'Vazio. Cada monstro deixa um saco no chão: encoste nele para pegar.');
+  /* a mochila: o mais valioso primeiro, uma casa por peça de equipamento e
+     uma por pilha do resto; as casas livres completam a grade, como um
+     container do Tibia. É a mesma na cidade e na caçada */
+  const sela=Math.round(val*sealPct(p?p.up:save.up)),n=ocupa(bag),cap=nEspacos(),perde=`perde ${val-sela} de ouro em loot`+(sela?` (o selo guarda ${sela})`:'');
+  setT($('#moTit'),'Mochila');
+  const mv=$('#moVal');mv.textContent='';const vb=document.createElement('b');vb.textContent=val;mv.append(vb,` ouro · ${n}/${cap}`);
+  setT($('#moRisco'),!val?'Vazia. O loot das caçadas vem para cá e fica até você guardar no Banco.'
+    :caca?`Se morrer, ${perde}. Saia pela porta e guarde no Banco.`+(n>=cap?' A mochila está cheia.':'')
+    :`Vai com você na próxima caçada: se morrer, ${perde}. Guarde no Banco o que não quer arriscar.`);
   const g=$('#moGrade');g.textContent='';
-  const rows=Object.entries(itens).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
-  for(const[k,q]of rows){const b=cel(k,q);b.dataset.k=k;if(MO.sel===k){b.classList.add('on');selInfo=[k,q,false,!caca]}g.appendChild(b)}
-  for(let i=rows.length;i<Math.max(12,Math.ceil(rows.length/6)*6);i++)g.appendChild(cel(null));
+  const rows=Object.entries(bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
+  for(const[k,q]of rows)for(let i=0;i<(ITEMS[k].slot?q:1);i++){const b=cel(k,ITEMS[k].slot?1:q);b.dataset.k=k;
+    if(MO.sel===k&&!selInfo){b.classList.add('on');selInfo=[k,q,false]}g.appendChild(b)}
+  for(let i=n;i<cap;i++)g.appendChild(cel(null));
   if(!selInfo)MO.sel=null;
   info(...(selInfo||[]));
-  /* na sala de caçar junto o saco é do anfitrião: vender daqui duplicaria a peça */
-  vendaDoSaco(caca&&!G.sala&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
+  acoes(selInfo,caca,p);
+  /* o convidado da sala só vê o saco: quem o guarda é o anfitrião, e vender
+     daqui duplicaria a peça. Toda caçada é numa sala, e o anfitrião vende */
+  vendaDoSaco(caca&&!G.convidado&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
+}
+/* vestir e tirar sem ir ao Banco: um toque na peça, um botão grande (pilar 3).
+   A troca é com a mochila, na cidade (vesteDaMochila) e na caçada
+   (vesteDoSaco); a peça vestida passa a não cair na morte, e a tirada só sai
+   se couber na mochila. O convidado da sala, não: quem
+   calcula a ficha dele é o anfitrião */
+function acoes(sel,caca,p){
+  const el=$('#moAcoes');el.textContent='';
+  const pode=sel&&ITEMS[sel[0]].slot&&(!caca||(!G.convidado&&!p.fora&&!G.over));
+  el.hidden=!pode;if(!pode)return;
+  const [k,,vestida]=sel,it=ITEMS[k],sl=it.slot,atual=ch().equip[sl];
+  const bt=(t,rot,fn)=>{const b=document.createElement('button');b.type='button';b.className='cta';b.textContent=t;b.setAttribute('aria-label',rot);
+    b.addEventListener('click',()=>{if(fn()){if(!caca)persist();desenhaMochila()}});el.appendChild(b)};
+  if(vestida){bt('Tirar para a mochila',`Tirar ${it.nome} e pôr na mochila`,()=>{if(!(caca?tiraProSaco(p,sl):tiraPraMochila(sl)))return false;MO.sel=caca?k:null;return true});
+    if(!cabe(caca?p.bag:ch().mochila,k))el.lastChild.disabled=true}
+  else bt(atual?'Trocar':'Vestir',`Vestir ${it.nome}`+(atual?` no lugar de ${ITEMS[atual].nome}`:''),
+    ()=>{if(!(caca?vesteDoSaco(p,k):vesteDaMochila(k)))return false;MO.sel='eq:'+sl;return true});
 }
 /* ---------- venda do saco ----------
    Na caçada, a peça do saco pode ir direto para a Feira, uma por vez (decisão
@@ -183,8 +231,8 @@ async function vendeDoSaco(){
     msg.textContent=r.feitos?`Vendeu ${ITEMS[k].nome}: ${r.ouro} de ouro já no cofre (taxa de ${r.taxa}).`
       :`${ITEMS[k].nome} anunciada na Feira a ${pr}. Se ninguém comprar, cancele lá e ela vai para o cofre.`;
   }catch(e){
-    /* recusada: volta para o saco, ou para o cofre se a caçada já acabou em extração */
-    if(!p.fora)poeNoSaco(p,k,1);else if(p.fora==='extraiu'){save.itens[k]=(save.itens[k]|0)+1;persist()}
+    /* recusada: volta para a mochila, a da caçada ou, se já extraiu, a do personagem */
+    if(!p.fora)poeNoSaco(p,k,1);else if(p.fora==='extraiu'){p.c.mochila[k]=(p.c.mochila[k]|0)+1;persist()}
     msg.textContent=erroFeira(e.message);
   }
   MV.ocupado=false;if(!MO.el.hidden)desenhaMochila();
@@ -195,6 +243,7 @@ export function abreMochila(){MO.sel=null;MO.el.hidden=false;MO.bt.setAttribute(
 export function fechaMochila(){if(MO.el.hidden)return;MO.el.hidden=true;MO.bt.setAttribute('aria-expanded','false');MO.bt.setAttribute('aria-label','Abrir a mochila (B)')}
 const alterna=()=>MO.el.hidden?abreMochila():fechaMochila();
 MO.bt.addEventListener('click',alterna);
+$('#moFig').addEventListener('click',()=>{MO.dir=(MO.dir+1)%4;desenhaMochila()});
 $('#moX').addEventListener('click',fechaMochila);
 addEventListener('keydown',e=>{
   const pode=app.classList.contains('cidade')||(G&&G.active&&!G.over&&app.classList.contains('playing'));

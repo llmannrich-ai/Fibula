@@ -1,14 +1,16 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.20.0';
-import {EL_COR,MT,PROG,CLASSES,SPELLS} from './dados.js?v=0.20.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha} from './progresso.js?v=0.20.0';
-import {genMap,pecas} from './mapa.js?v=0.20.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.20.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.36.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,SUP,SPELLS,cacaDe} from './dados.js?v=0.36.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,devolveComida,soMochila,valMochila} from './progresso.js?v=0.36.0';
+import {genMap,pecas} from './mapa.js?v=0.36.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito} from './combate.js?v=0.36.0';
 
 export let G=null;
 export const setG=v=>{G=v};
+/* a tabela de spawn e o chefe são do mapa de caça (G.caca); sem eles, os de progression */
+const bandas=()=>HUNTS[G.caca].bands||PROG.bands,chefe=()=>HUNTS[G.caca].boss||PROG.boss;
 function pickType(d){
-  const bandas=PROG.bands,b=bandas.find(b=>d<b.untilDepth)||bandas[bandas.length-1];
+  const bs=bandas(),b=bs.find(b=>d<b.untilDepth)||bs[bs.length-1];
   const linhas=Object.entries(b.weights);
   let r=sorte();
   for(const[k,w]of linhas){if(r<w)return k;r-=w}
@@ -18,10 +20,15 @@ function spawn(k,r,d,boss){
   const n0=G.mons.length;spawn0(k,r,d,boss);if(G.mons.length>n0)G.mons[n0].sala=r.i;
 }
 function spawn0(k,r,d,boss){
-  const t=MT[k],sc=PROG.scaling,lv=sc.hpPerCharLevel*(G.lvl-1),
-    hpm=boss?(1+lv*sc.bossLevelFactor)*(1+PROG.party.bossHp*(G.ps.length-1)):1+sc.hpPerDepth*d+lv;
-  /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce */
-  const tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
+  /* o mundo é igual para todos: a vida vem do lugar (a profundidade), nunca
+     do nível nem do tamanho do grupo de quem entra */
+  const t=MT[k],sc=PROG.scaling,hpm=boss?1:1+sc.hpPerDepth*d;
+  /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce. O
+     chefe nasce sempre: com o sqm dele ocupado, vai para o livre mais perto
+     do centro da sala (sem sorteio, para não mudar a masmorra de ninguém) */
+  let tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
+  if(boss&&G.ocu[ty*MW+tx]){let bd=1e9;
+    for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++){const d=(i-r.cx)**2+(j-r.cy+1)**2;if(!G.ocu[j*MW+i]&&d<bd){bd=d;tx=i;ty=j}}}
   if(G.ocu[ty*MW+tx])return;G.ocu[ty*MW+tx]=1;
   const hp=Math.round(t.hp*hpm);
   G.mons.push({id:G.nid++,k,t,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
@@ -30,50 +37,59 @@ function spawn0(k,r,d,boss){
 /* ---------- jogadores ----------
    Solo é um grupo de um: a incursão sempre tem uma lista de jogadores, G.ps,
    e a regra não lê o save para saber quem joga. Cada jogador nasce de uma
-   ficha {cl, c, up, local}: a classe, o personagem (lvl, xp, mag, per,
-   slots, equip), as melhorias da conta e se ele é o dono do save deste
-   aparelho. No solo a ficha aponta para o próprio personagem do save, então
+   ficha {cl, c, up, prov, local}: a classe, o personagem (lvl, xp, mag, per,
+   slots, equip), as melhorias da conta, as provisões que ele leva e se ele é
+   o dono do save deste aparelho. No solo a ficha aponta para o próprio personagem do save, então
    nível, Magia e Perícia que sobem na incursão já ficam nele, como antes; o
    servidor da F2 monta as fichas do banco. O que é da conta (cofre, peças,
    estatísticas) só muda para a ficha local, em sai(). */
-export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,local:true});
+export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,prov:save.prov,local:true});
 /* onde cada jogador aparece na sala de entrada, em sqm a partir do centro;
    jogadores não se bloqueiam (só monstros ocupam sqm) */
 const LADO=[[0,0],[1,0],[-1,0],[0,1]];
+/* as provisões (p.prov, o que sai do estoque quando a caçada começa) dão
+   poções, buffs do começo (p.sup), que somam aos das habilidades em vez de
+   serem trocados por eles, e a comida da mochila (p.com). Todo mundo entra
+   com fome (p.ali, os segundos de alimentação, em zero): sem comer, não se
+   regenera nada */
 function novoJogador(f,i,s){
-  const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0];
-  const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',
+  const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0],e=efeitoProv(f.prov);
+  const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',prov:Object.assign({},f.prov),
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
-    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+f.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
+    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,com:e.com,ali:0,cdCo:0,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
+  /* a mochila entra inteira (p.bag é ela durante a caçada); bag0 é como
+     entrou, para o banco só contar como origem o que a caçada rendeu */
+  const mo=soMochila(f.c.mochila);for(const k in mo)p.bag[k]=(p.bag[k]|0)+mo[k];p.bagVal=valMochila(p.bag);p.bag0=mo;
   poeNoSqm(p,s.cx+o[0],s.cy+o[1]);return p;
 }
 /* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
    sorteia uma nova (é o caso normal do jogador). fichas são os jogadores;
    sem elas, o personagem do save sozinho. aberta é a masmorra da sala (ver
-   "masmorra aberta" abaixo): sem tempo, com a porta na sala de entrada */
-export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false){
-  semeia(s0);
-  const {g,rooms}=genMap(),s=rooms[0];
+   "masmorra aberta" abaixo): sem tempo, com a porta na sala de entrada.
+   caca é o mapa de caça (hunts no content.json): a mesma semente no mesmo
+   mapa de caça dá a mesma masmorra */
+export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false,caca){
+  semeia(s0);caca=cacaDe(caca);
+  const {g,rooms}=genMap(HUNTS[caca].mapa),s=rooms[0];
   let pr=s,md=1;
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
   G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),fsrc:[],ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
-     lvl:Math.max(...fichas.map(f=>f.c.lvl)),nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
-     t:0,kills:0,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
+     nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
+     t:0,kills:0,caca,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
-  const mais=1+PROG.party.monsters*(ps.length-1);
   rooms.forEach((r,i)=>{r.i=i});
   for(const r of rooms){
     if(r===s)continue;
     const pr2=PROG.perRoom,d=r.d/md,base=ri(pr2.min,pr2.max)+(r.w*r.h>pr2.largeRoomArea?pr2.largeRoomBonus:0),
-      n=Math.round(base*mais);
+      n=base;
     r.base=base;r.prof=d;r.esp=0;
     for(let k=0;k<n;k++)spawn(pickType(d),r,d,false);
   }
   pr.chefe=true;
-  const bs=PROG.boss;
+  const bs=chefe();
   spawn(bs.type,pr,1,true);
   spawn(bs.escort[rnd(bs.escort.length)],pr,1,false);
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=0;
@@ -163,7 +179,9 @@ function guarda(){
 /* ---------- atualização ----------
    Um passo da regra; fora dos testes, quem chama é passo(), sempre com TICK.
    ent é a entrada do quadro, montada pelo cliente em src/controles.js:
-   {x,y} do movimento (comprimento até 1) e held[4] dos espaços seguros. Com
+   {x,y} do movimento (comprimento até 1), held[4] dos espaços seguros e,
+   opcionais, mira[4] (a direção de cada um; NaN é para onde o jogador olha)
+   e alc[4] (de 0 a 1, quão longe a bomba cai). Com
    mais de um jogador, ent é uma lista, uma entrada por jogador de G.ps. */
 const UM=[null],PARADO={x:0,y:0,held:[false,false,false,false]};
 export function update(dt,ent){
@@ -172,7 +190,7 @@ export function update(dt,ent){
   G.flowT-=dt;if(G.flowT<=0){buildFlow();G.flowT=.2}
   for(const p of G.ps)if(!p.fora)anda(p,dt,ents[p.id]||PARADO);
   for(let i=G.pend.length-1;i>=0;i--){const q=G.pend[i];q.t-=dt;if(q.t<=0){G.pend.splice(i,1);q.fn();if(G.over)return}}
-  for(const p of G.ps){if(p.fora)continue;const e=ents[p.id]||PARADO;for(let i=0;i<4;i++)if(e.held[i])lancarSlot(i,p)}
+  for(const p of G.ps){if(p.fora)continue;const e=ents[p.id]||PARADO;for(let i=0;i<4;i++)if(e.held[i])lancarSlot(i,p,e.mira?e.mira[i]:NaN,e.alc?e.alc[i]:1)}
   revela();
   updateMons(dt);if(G.over)return;
   updateProj(dt);if(G.over)return;
@@ -183,7 +201,7 @@ export function update(dt,ent){
     for(const p of G.ps){if(p.fora||(p.id!==d.dono&&d.t<prot))continue;
       if(hyp(d.x-p.x,d.y-p.y)<p.r+16){pickup(d,i,p);break}}}
   const po=G.portal;
-  if(!po.open&&G.t>=PORTAL_AT){po.open=true;saida.banner('Portal de saída aberto');saida.log('Um portal se abriu na sala do Guardião. Siga o ponto dourado no mapa.','info')}
+  if(!po.open&&G.t>=PORTAL_AT){po.open=true;saida.banner('Portal de saída aberto');saida.log(`Um portal se abriu na sala de ${MT[chefe().type].nome}. Siga o ponto dourado no mapa.`,'info')}
   /* a extração é de cada um: quem fica parado no portal sai com o próprio saco */
   if(po.open)for(const p of G.ps){
     if(p.fora)continue;
@@ -223,12 +241,15 @@ function anda(p,dt,ent){
     if(!p.sd&&Number.isFinite(ent.f))p.face=ent.f;
     p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
   }else movimenta(p,dt,ent);
-  const K=CLASSES[p.cl];
-  p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
-  p.cdC-=dt;p.flash-=dt;p.swing-=dt;
+  /* regeneração da classe, fixa, só enquanto houver alimentação */
+  if(p.ali>0){const K=CLASSES[p.cl];
+    p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
+    p.ali-=dt;if(p.ali<=0){p.ali=0;saida.log('Você está com fome: sem comer, não se regenera vida nem mana.','warn',p)}}
+  p.cdC-=dt;p.cdCo-=dt;p.flash-=dt;p.swing-=dt;
   for(const k in p.cds)if(p.cds[k]>0)p.cds[k]-=dt;
   for(const k in p.gcd)if(p.gcd[k]>0)p.gcd[k]-=dt;
   for(const k in p.buffs){p.buffs[k].left-=dt;if(p.buffs[k].left<=0)delete p.buffs[k]}
+  for(const k in p.sup){p.sup[k].left-=dt;if(p.sup[k].left<=0)delete p.sup[k]}
 }
 /* fora da incursão (menu por cima do mapa, tela final) só os efeitos andam */
 export function parado(dt){G.t+=dt;G.alfa=1;efeitos(dt)}
@@ -293,11 +314,12 @@ function updateProj(dt){
   for(let i=G.proj.length-1;i>=0;i--){
     const q=G.proj[i];q.life-=dt;let dead=q.life<=0;
     if(q.k==='b'){
-      if(q.tg&&q.tg.hp>0){
-        const dx=q.tg.x-q.x,dy=q.tg.y-q.y,d=hyp(dx,dy)||1;q.vx=dx/d*560;q.vy=dy/d*560;
-        if(d<q.tg.r+6){atingir(q.tg,q.s,1,q.p);spark(q.x,q.y,q.col);dead=true}
-      }else if(!q.vx&&!q.vy)dead=true;
+      /* o tiro do jogador vai reto: o primeiro monstro no caminho leva, a
+         parede para, e no fim do alcance ele se desfaz com o mesmo efeito */
       q.x+=q.vx*dt;q.y+=q.vy*dt;
+      let alvo=null;for(const m of G.mons)if(m.hp>0&&hyp(m.x-q.x,m.y-q.y)<m.r+6){alvo=m;break}
+      if(alvo){atingir(alvo,q.s,1,q.p);spark(q.x,q.y,q.col);dead=true}
+      else if(solid(q.x/T|0,q.y/T|0)||dead){efeito(q.x-q.vx*dt,q.y-q.vy*dt,q.s.el);spark(q.x,q.y,q.col);dead=true}
     }else if(q.k==='r'){
       const dx=q.tx-q.x,dy=q.ty-q.y,d=hyp(dx,dy),pa=430*dt;
       if(d<=pa){explode(q.tx,q.ty,q.s,q.p);dead=true}else{q.x+=dx/d*pa;q.y+=dy/d*pa}
@@ -310,13 +332,15 @@ function updateProj(dt){
   }
 }
 /* um jogador sai da incursão: pelo portal ('extraiu'), morto ('morreu') ou
-   soterrado ('desabou'). A perda de XP e o Selo valem para a ficha de
-   qualquer um; cofre, peças e estatísticas só para a ficha local. Quem sai
-   não volta, e a sala acaba quando não sobra ninguém dentro */
+   soterrado ('desabou'). Extraindo, a mochila sai como está (nada vai sozinho
+   para o cofre: guardar é no Banco); morrendo, fica toda na masmorra. A perda
+   de XP, a mochila e o Selo valem para a ficha de qualquer um; cofre e
+   estatísticas só para a ficha local. Quem sai não volta, e a sala acaba
+   quando não sobra ninguém dentro */
 export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
-  if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag);p.ouroExt=r.ouro;p.pecas=r.pecas;p.mats=r.mats;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
-  else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;
+  if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;devolveComida(p.com);save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
+  else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   if(p.local)saida.persist();
   saida.sai(p);
@@ -344,17 +368,17 @@ export function entra(i,f){
 function repovoa(dt){
   G.respT+=dt;if(G.respT<1)return;
   const pas=G.respT;G.respT=0;
-  const R=PROG.respawn,dentro=G.ps.filter(p=>!p.fora),mais=1+PROG.party.monsters*Math.max(0,dentro.length-1),perto=R.clearTiles*T;
+  const R=PROG.respawn,dentro=G.ps.filter(p=>!p.fora),perto=R.clearTiles*T;
   for(const r of G.rooms){
     if(r.base===undefined&&!r.chefe)continue;
-    /* a sala do Guardião tem os monstros dela mais o Guardião e a escolta */
-    const vivos=G.mons.filter(m=>m.sala===r.i),alvo=Math.round((r.base||0)*mais)+(r.chefe?2:0);
+    /* a sala do chefe tem os monstros dela mais o chefe e a escolta */
+    const vivos=G.mons.filter(m=>m.sala===r.i),alvo=(r.base||0)+(r.chefe?2:0);
     if(vivos.length>=alvo){r.esp=0;continue}
     r.esp=(r.esp||0)+pas;
     if(r.esp<R.seconds||dentro.some(p=>hyp(p.x-(r.cx+.5)*T,p.y-(r.cy+.5)*T)<perto))continue;
     r.esp=0;
     let falta=alvo-vivos.length;
-    if(r.chefe&&!vivos.some(m=>m.t.boss)){const bs=PROG.boss;spawn(bs.type,r,1,true);spawn(bs.escort[rnd(bs.escort.length)],r,1,false);falta-=2}
+    if(r.chefe&&!vivos.some(m=>m.t.boss)){const bs=chefe();spawn(bs.type,r,1,true);spawn(bs.escort[rnd(bs.escort.length)],r,1,false);falta-=2}
     for(;falta>0;falta--)spawn(pickType(r.prof),r,r.prof,false);
   }
 }
@@ -381,8 +405,8 @@ export function retrato(){
   return{t:r1(G.t),po:G.portal.open?1:0,k:G.kills,m,pr,fx,cad,
     dr:G.drops.map(d=>[Math.round(d.x),Math.round(d.y),d.rar,d.dono,r1(d.t)]),
     ps:G.ps.map(p=>({cl:p.cl,nome:p.nome,eq:p.c.equip,x:Math.round(p.x),y:Math.round(p.y),tx:p.tx,ty:p.ty,hp:Math.ceil(p.hp),mhp:p.mhp,mp:Math.floor(p.mp),mmp:p.mmp,f:Math.round(p.face*100),
-      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,
-      cdC:r1(p.cdC),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
+      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,ali:Math.ceil(p.ali),com:p.com,
+      cdC:r1(p.cdC),cdCo:r1(p.cdCo),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
 }
 /* o convidado (o jogador eu de G.ps) aplica o retrato: cada coisa guarda a
    posição de antes (x0, y0) e o render() interpola até o próximo retrato, e
@@ -427,7 +451,8 @@ export function aplicaRetrato(r,eu){
       if(p.desv>=(longe?3:8)){poeNoSqm(p,qx,qy);p.x0=p.x;p.y0=p.y;p.desv=0}}
     p.hp=num0(q.hp);p.mhp=num0(q.mhp)||1;p.mp=num0(q.mp);p.mmp=num0(q.mmp)||1;p.flash=q.fl?.1:0;
     if(Array.isArray(q.sw)){p.swing=num0(q.sw[0]);p.swingA=num0(q.sw[1]);p.swingR=num0(q.sw[2])}
-    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);
+    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);p.cdCo=num0(q.cdCo);
+    p.ali=num0(q.ali);p.com={};if(q.com&&typeof q.com==='object')for(const k in q.com)if(SUP[k]&&SUP[k].efeito.comida)p.com[k]=num0(q.com[k])|0;
     p.cds=q.cds&&typeof q.cds==='object'?q.cds:{};p.gcd=q.gcd&&typeof q.gcd==='object'?q.gcd:{};
     p.buffs=q.arm?{arm:{v:num0(q.arm),left:1}}:{};
     if(Array.isArray(q.c)){p.c.lvl=num0(q.c[0])||1;p.c.xp=num0(q.c[1]);p.c.mag=num0(q.c[2]);p.c.per=num0(q.c[3])}
@@ -445,6 +470,8 @@ export function aplicaRetrato(r,eu){
    G.alfa diz quanto do caminho até o próximo retrato (0,1 s) já passou */
 export function assiste(dt,eu,ent){
   const p=G.ps[eu];
+  /* o elixir de pressa anda no aparelho do convidado: o relógio dele também corre aqui */
+  for(const k in p.sup){p.sup[k].left-=dt;if(p.sup[k].left<=0)delete p.sup[k]}
   if(!p.fora){movimenta(p,dt,ent);p.x0=p.x;p.y0=p.y;p.w0=p.walk;reveal(p)}
   G.rT=(G.rT||0)+dt;G.alfa=Math.min(1,G.rT/.1);efeitos(dt);
 }
@@ -462,7 +489,7 @@ const SEM_M=['t','x0','y0','a0','dot'],SEM_Q=['x0','y0','s','p','tg'],SEM_P=['x0
 const chaveSp=s=>{for(const k in SPELLS)if(SPELLS[k]===s)return k;return null};
 export function heranca(){
   const ocu=[];for(let i=0;i<MW*MH;i++)if(G.ocu[i])ocu.push(i);
-  return{v:1,semente:G.semente,sorte:sorteAgora(),t:G.t,kills:G.kills,nid:G.nid,lvl:G.lvl,respT:G.respT,flowT:G.flowT,fsrc:G.fsrc.slice(),ocu,
+  return{v:1,semente:G.semente,sorte:sorteAgora(),t:G.t,kills:G.kills,nid:G.nid,caca:G.caca,respT:G.respT,flowT:G.flowT,fsrc:G.fsrc.slice(),ocu,
     rooms:G.rooms.map(r=>[r.base===undefined?-1:r.base,r.prof||0,r.esp||0,r.chefe?1:0]),
     mons:G.mons.map(m=>Object.assign(copia(m,SEM_M),{dot:m.dot&&Object.assign({},m.dot,{p:m.dot.p?m.dot.p.id:-1})})),
     proj:G.proj.map(q=>Object.assign(copia(q,SEM_Q),{s:q.s?chaveSp(q.s):null,p:q.p?q.p.id:-1,tg:q.tg?q.tg.id:-1})),
@@ -482,9 +509,9 @@ export function adota(h,eu,meu){
     const c=fichas[eu].c;for(const k of['lvl','xp','mag','manaG','per','golpes'])meu.c[k]=c[k];
     fichas[eu]=Object.assign({},meu,{nome:fichas[eu].nome});
   }
-  newRun(h.semente>>>0,fichas,true);
+  newRun(h.semente>>>0,fichas,true,h.caca);
   if(Array.isArray(h.sorte))poeSorte(h.sorte[0]|0,h.sorte[1]|0);
-  G.t=num0(h.t);G.kills=num0(h.kills);G.nid=num0(h.nid);G.lvl=num0(h.lvl)||G.lvl;G.respT=num0(h.respT);
+  G.t=num0(h.t);G.kills=num0(h.kills);G.nid=num0(h.nid);G.respT=num0(h.respT);
   if(Array.isArray(h.rooms))h.rooms.forEach((r,i)=>{const o=G.rooms[i];if(!o||!Array.isArray(r))return;
     if(r[0]>=0)o.base=num0(r[0]);else delete o.base;o.prof=num0(r[1]);o.esp=num0(r[2]);o.chefe=!!r[3]});
   G.ps.forEach((p,i)=>{const c=p.c,up=p.up;Object.assign(p,copia(h.ps[i],SEM_P));p.c=c;p.up=up;p.id=i;p.local=i===eu;p.x0=p.x;p.y0=p.y});

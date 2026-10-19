@@ -3,20 +3,21 @@
    (src/sim/, sem DOM) às telas, ao desenho e ao save, e roda o laço.
    O carregamento do conteúdo é a primeira coisa que acontece porque a migração
    de save chama slotsIniciais() e portanto já precisa de SPELLS e SLOT_LVL. */
-import {saida} from './sim/base.js?v=0.20.0';
-import {carrega} from './sim/dados.js?v=0.20.0';
-import {G,passo,parado,assiste,newRun} from './sim/incursao.js?v=0.20.0';
-import {C,updateCidade} from './sim/cidade.js?v=0.20.0';
-import {carregaSave,persist} from './salvar.js?v=0.20.0';
-import {puxa,cacaFim} from './nuvem.js?v=0.20.0';
-import {carregaArte} from './arte.js?v=0.20.0';
-import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.20.0';
-import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.20.0';
-import {showMenu,showPick,showEnd,showCidade,start,pickS,endS,equipS,desenhaBoneco,conteudoFalhou,V} from './telas.js?v=0.20.0';
-import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.20.0';
-import {quadro} from './rede.js?v=0.20.0';
-import {quadro as quadroSala,entradas,saiu,logPara,ganchos} from './sala.js?v=0.20.0';
-import {app} from './dom.js?v=0.20.0';
+import {saida} from './sim/base.js?v=0.36.0';
+import {carrega} from './sim/dados.js?v=0.36.0';
+import {G,passo,parado,assiste,newRun} from './sim/incursao.js?v=0.36.0';
+import {C,updateCidade} from './sim/cidade.js?v=0.36.0';
+import {carregaSave,persist} from './salvar.js?v=0.36.0';
+import {puxa,cacaFim} from './nuvem.js?v=0.36.0';
+import {carregaArte} from './arte.js?v=0.36.0';
+import {W,H,resize,render,renderCidade,drawMini,drawMiniCidade} from './desenho.js?v=0.36.0';
+import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.36.0';
+import {showMenu,showPick,showEnd,showCidade,start,pickS,endS,equipS,desenhaBoneco,conteudoFalhou,V} from './telas.js?v=0.36.0';
+import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.36.0';
+import {quadro} from './rede.js?v=0.36.0';
+import {quadro as quadroSala,entradas,saiu,logPara,ganchos} from './sala.js?v=0.36.0';
+import {quadro as quadroVoz} from './voz.js?v=0.36.0';
+import {app} from './dom.js?v=0.36.0';
 
 /* ---------- conteúdo do jogo (data/game/content.json) ---------- */
 const DATA_URL='data/game/content.json';
@@ -43,13 +44,13 @@ if(pronto){
   const fimMeu=kind=>{if(G&&G.p)cacaFim(kind,G.p);soltaTudo();setTimeout(showEnd,kind==='extraiu'?450:1100)};
   saida.sai=p=>{if(p===G.p)fimMeu(p.fora);else saiu(p)};
   /* o convidado: começa quando o anfitrião manda, termina com o resultado dele */
-  ganchos.comeca=(s,fichas,eu)=>start(()=>{newRun(s,fichas,true);G.p=G.ps[eu];G.convidado=true;G.sala=true});
+  ganchos.comeca=(s,fichas,eu,caca)=>start(()=>{newRun(s,fichas,true,caca);G.p=G.ps[eu];G.convidado=true;G.sala=true});
   ganchos.fim=fimMeu;ganchos.banner=banner;
   ganchos.aborta=msg=>{G.over=true;soltaTudo();showCidade('portao');log(msg+' A incursão acabou sem resultado.','warn')};
 
   /* ---------- laço ---------- */
   const PARADO={x:0,y:0,held:[false,false,false,false]};
-  let last=performance.now();
+  let last=performance.now(),miniC=0;
   const frame=now=>{
     /* nem acima de 100 ms, dois passos da regra (aba voltando do fundo), nem
        abaixo de zero (carimbo do quadro anterior ao performance.now() da carga) */
@@ -59,7 +60,7 @@ if(pronto){
     const ent=leEntrada(),corre=G&&G.active&&!G.over;
     if(V.cidade&&C){
       /* andando na cidade; com uma tela dela aberta, ela só fica de fundo */
-      if(app.classList.contains('cidade')){updateCidade(dt,ent);hudCidade()}
+      if(app.classList.contains('cidade')){updateCidade(dt,ent);hudCidade();if((miniC-=dt)<=0){drawMiniCidade();miniC=.15}}
       renderCidade();
       /* o anfitrião que já saiu da incursão continua rodando a dos outros */
       if(corre&&!G.convidado)passo(dt,entradas(PARADO));
@@ -69,7 +70,7 @@ if(pronto){
       render();
       if(G.active){hud();G.miniT-=dt;if(G.miniT<=0){drawMini();G.miniT=.15}}
     }
-    quadroSala(dt,ent);
+    quadroSala(dt,ent);quadroVoz(dt);
     requestAnimationFrame(frame);
   };
   function onResize(){resize();if(joy.id===null)joyIdle()}

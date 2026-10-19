@@ -51,23 +51,53 @@ const ARTE = {
   /* monstros: as chaves de enemies no content.json */
   mon_rato: {o: 6}, mon_aranha: {o: 8}, mon_esqueleto: {o: 22}, mon_orc: {o: 7},
   mon_xama: {o: 4}, mon_guardiao: {o: 46},
+  /* monstros dos outros mapas de caça: Esgoto, Ilha da Enseada e Cripta */
+  mon_morcego: {o: 9}, mon_barata: {o: 24}, mon_lesma: {o: 29}, mon_centopeia: {o: 13},
+  mon_vespa: {o: 14}, mon_lagarta: {o: 30}, mon_leao: {o: 11}, mon_troll: {o: 12}, mon_dragao: {o: 25},
+  mon_fantasma: {o: 40}, mon_mumia: {o: 23, tom: 25}, mon_necromante: {o: 34}, mon_sombra: {o: 2},
   /* cadáveres: ficam no chão onde o monstro caiu */
   cad_rato: {i: 2228}, cad_aranha: {i: 2237}, cad_esqueleto: {i: 2233}, cad_orc: {i: 2234},
   cad_xama: {i: 2227}, cad_guardiao: {i: 2231},
+  cad_morcego: {i: 2228}, cad_barata: {i: 2237}, cad_lesma: {i: 2237}, cad_centopeia: {i: 2237},
+  cad_vespa: {i: 2237}, cad_lagarta: {i: 2237}, cad_leao: {i: 2228}, cad_troll: {i: 2234}, cad_dragao: {i: 2231},
+  cad_fantasma: {i: 2233}, cad_mumia: {i: 2233}, cad_necromante: {i: 2227}, cad_sombra: {i: 2231},
   cad_feiticeiro: {i: 2246}, cad_druida: {i: 2703}, cad_cacador: {i: 2227}, cad_cavaleiro: {i: 2227},
   /* masmorra: chão, pedrinhas e o conjunto de parede de pedra */
   chao: {i: 140}, cascalho: {i: 1614}, cascalho2: {i: 1617},
   par_v: {i: 534}, par_h: {i: 535}, par_poste: {i: 536}, par_canto: {i: 537},
   tocha: {i: 1253}, portal: {i: 1122},
+  /* chão e parede de cada mapa de caça (hunts.<k>.arte no content.json):
+     o Esgoto de laje e pedra com musgo, a Ilha de areia e arenito, a Cripta
+     de pedra escura e pedra rolada */
+  chao_esg: {i: 165}, esg_v: {i: 723}, esg_h: {i: 724}, esg_poste: {i: 725}, esg_canto: {i: 726},
+  chao_ilha: {i: 128}, ilha_v: {i: 552}, ilha_h: {i: 553}, ilha_poste: {i: 554}, ilha_canto: {i: 555},
+  chao_cripta: {i: 160}, cripta_v: {i: 542}, cripta_h: {i: 543}, cripta_poste: {i: 544}, cripta_canto: {i: 545},
   /* cidade: chão de grama, rua de pedra, assoalho das casas, água, árvores e
      os NPCs das casas (as chaves de city.npcs no content.json) */
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
   arvore: {i: 1507}, arvore2: {i: 1504},
   npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45}, npc_gordon: {o: 21},
+  npc_quitandeira: {o: 17}, npc_boticaria: {o: 44}, npc_mago: {o: 10},
+  npc_capitao: {o: 36},
+  /* um lugar da cidade (lugar: true), não uma pessoa: a grade do esgoto */
+  npc_grade: {i: 999},
+  /* cidade: chão da praça, ponte, terra da horta, o que cresce por cima
+     (flores e horta, por onde se anda) e os objetos sólidos (OBJETOS em
+     src/sim/dados.js, obj_<nome>) */
+  praca: {i: 155}, ponte: {i: 173}, terra: {i: 135},
+  flor1: {i: 1386}, flor2: {i: 1387}, flor3: {i: 1400}, flor4: {i: 1406}, horta: {i: 1381}, horta2: {i: 1384},
+  obj_fonte: {i: 1151}, obj_poco: {i: 1154}, obj_barril: {i: 1186}, obj_caixote: {i: 1115},
+  obj_estatua: {i: 1155}, obj_arbusto: {i: 1479}, obj_arbusto2: {i: 1480},
+  obj_cerejeira: {i: 1530}, obj_frutifera: {i: 1561}, obj_forno: {i: 1207}, obj_estante: {i: 1209},
+  obj_banca: {i: 1197}, obj_lenha: {i: 1140},
+  /* o que as lojas da cidade vendem: as chaves de supplies no content.json */
+  sup_frutas: {i: 2177}, sup_queijo: {i: 2183}, sup_presunto: {i: 2187}, sup_ensopado: {i: 2701},
+  sup_pocao: {i: 2129}, sup_pressa: {i: 2124},
+  sup_runa_pedra: {i: 2696}, sup_runa_furia: {i: 2697}, sup_runa_aguia: {i: 2698},
   /* sacos de loot por raridade e itens (as chaves de items no content.json) */
   saco0: {i: 2101}, saco1: {i: 2099}, saco2: {i: 2102},
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},
-  it_espada: {i: 1712}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
+  it_espada: {i: 1712}, it_faca: {i: 1750}, it_espadamadeira: {i: 1748}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
   it_gema: {i: 2211}, it_coroa: {i: 1984}, it_couraca: {i: 1998}, it_cota: {i: 2034}, pocao: {i: 2129},
   it_maca: {i: 1811}, it_gibao: {i: 2010}, it_machadoguerra: {i: 1844}, it_placas: {i: 2053},
   /* efeitos de impacto por elemento */

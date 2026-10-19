@@ -1,46 +1,71 @@
 /* ---------- cidade ----------
    O lugar entre incursões: um mapa fixo (city.mapa no content.json) por onde o
-   jogador anda até as casas dos NPCs — Mercador, Banco, a Feira e o Guia de caça, que
+   jogador anda até as casas dos NPCs — Mercador, Banco, a Feira, as lojas de
+   provisões (Quitanda, Botica, Torre dos magos, Forja) e o Guia de caça, que
    leva às masmorras. É regra e não tela, como a incursão: quando a cidade
-   for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
+   for compartilhada (F3, Parte 2 do CLAUDE.md), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.20.0';
-import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.20.0';
-import {CITY,LEGENDA,CLASSES,PROG,ITEMS,SLOTS_EQ} from './dados.js?v=0.20.0';
-import {pecas} from './mapa.js?v=0.20.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.36.0';
+import {ch,durPasso,save,pegaDoChao,pegaPraMochila} from './progresso.js?v=0.36.0';
+import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.36.0';
+import {pecas} from './mapa.js?v=0.36.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
-   3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
-   chega da primeira vez; a letra de um NPC de city.npcs é o lugar dele */
-const SOLIDO=[0,1,0,0,1,1,1];
+   3 assoalho, 7 praça, 8 ponte, 9 flores, 10 horta) ou obstáculo (1 parede,
+   4 árvore, 5 água, 6 portão). @ é onde se chega da primeira vez; a letra de
+   um NPC de city.npcs é o lugar dele. Um objeto (OBJETOS: fonte, barril,
+   estátua…) é sólido e fica sobre o chão do vizinho, como o NPC; C.obj guarda
+   qual (1 + a posição em LISTA_OBJ, 0 sem objeto) */
+const SOLIDO=[0,1,0,0,1,1,1,0,0,0,0];
+export const LISTA_OBJ=Object.values(OBJETOS);
+/* o chão debaixo de quem não tem chão próprio (NPC, objeto): o de dentro de
+   casa se houver, senão a praça, a rua e, por último, a grama */
+const CHAO_PREF=[3,7,2,8,10,0,9];
+function chaoVizinho(t,tem,w,h,x,y){
+  let melhor=-1;
+  for(const[a,b]of[[x-1,y],[x+1,y],[x,y-1],[x,y+1]]){
+    if(a<0||b<0||a>=w||b>=h||!tem[b*w+a])continue;const v=t[b*w+a],r=CHAO_PREF.indexOf(v);
+    if(r>=0&&(melhor<0||r<CHAO_PREF.indexOf(melhor)))melhor=v}
+  return melhor<0?0:melhor;
+}
 export let C=null;
-/* lê o mapa do conteúdo; dePortao põe o jogador na frente do Guia, que é por
-   onde se volta de uma incursão */
+/* lê o mapa do conteúdo; dePortao põe o jogador na frente de quem leva às
+   caçadas, que é por onde se volta de uma incursão: o NPC de chave dePortao
+   (o Capitão para quem volta da ilha), ou o da Masmorra de Runas (o Guia) */
 export function entraCidade(dePortao){
-  const M=CITY.mapa,h=M.length,w=M[0].length,t=new Uint8Array(w*h),sol=new Uint8Array(w*h),fora=new Uint8Array(w*h);
+  const M=CITY.mapa,h=M.length,w=M[0].length,t=new Uint8Array(w*h),sol=new Uint8Array(w*h),fora=new Uint8Array(w*h),obj=new Uint8Array(w*h),tem=new Uint8Array(w*h);
   let sx=1,sy=1;const npcs=[];
   for(let y=0;y<h;y++)for(let x=0;x<w;x++){
     const c=M[y][x],i=y*w+x;
     if(c==='@'){sx=x;sy=y}
     const k=npcDaLetra(c);
-    if(k){npcs.push({k,n:CITY.npcs[k],x:(x+.5)*T,y:(y+.5)*T});sol[i]=1;continue}
-    t[i]=LEGENDA[c];sol[i]=SOLIDO[t[i]];
+    /* um lugar (lugar: true, a grade do esgoto) fica no chão: pisa-se nele */
+    if(k){npcs.push({k,n:CITY.npcs[k],x:(x+.5)*T,y:(y+.5)*T});sol[i]=CITY.npcs[k].lugar?0:1;continue}
+    if(c in OBJETOS){obj[i]=LISTA_OBJ.indexOf(OBJETOS[c])+1;sol[i]=1;continue}
+    t[i]=LEGENDA[c];sol[i]=SOLIDO[t[i]];tem[i]=1;
   }
-  /* o chão debaixo do NPC é o do vizinho: assoalho dentro de casa, rua na praça */
-  for(const n of npcs){const x=n.x/T|0,y=n.y/T|0;t[y*w+x]=[t[y*w+x-1],t[y*w+x+1],t[(y-1)*w+x],t[(y+1)*w+x]].find(v=>v===3)??2}
-  /* as paredes saem como as de uma sala da masmorra, com o assoalho de dentro
-     fazendo o papel do chão: o que não é assoalho conta como rocha */
-  for(let i=0;i<w*h;i++)fora[i]=t[i]===3?0:1;
-  if(dePortao){const g=npcs.find(n=>CITY.npcs[n.k].abre==='cacadas');if(g){sx=g.x/T|0;sy=(g.y/T|0)-1}}
-  C={w,h,t,sol,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
-  /* peças de teste no chão (city.chao): só as que esta conta ainda não pegou */
-  C.chao=(CITY.chao||[]).filter(c=>!(save.chao&&save.chao[c.x+','+c.y])).map(c=>({x:c.x,y:c.y,k:c.item}));
+  /* o chão debaixo do NPC e do objeto é o do vizinho: assoalho dentro de
+     casa, pedra na praça, grama no pomar */
+  for(let i=0;i<w*h;i++)if(!tem[i])t[i]=chaoVizinho(t,tem,w,h,i%w,i/w|0);
+  /* as paredes saem como as de uma sala da masmorra, com o assoalho (ou a
+     pedra do templo) de dentro fazendo o papel do chão: o resto conta como rocha */
+  for(let i=0;i<w*h;i++)fora[i]=t[i]===3||t[i]===7?0:1;
+  if(dePortao){const g=npcs.find(n=>n.k===dePortao)||npcs.find(n=>n.k===HUNTS[cacaDe()].npc);if(g){sx=g.x/T|0;sy=(g.y/T|0)-(g.n.lugar?0:1)}}
+  C={w,h,t,sol,obj,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
+  /* peças no chão (city.chao): as de teste só se esta conta ainda não pegou;
+     as que renascem, se o tempo delas já passou */
+  C.chao=(CITY.chao||[]).filter(c=>c.respawn?!(VOLTA.get(c.x+','+c.y)>RELOGIO):!(save.chao&&save.chao[c.x+','+c.y])).map(c=>({x:c.x,y:c.y,k:c.item,r:c.respawn||0}));
+  C.cheia=null;
   poeNoSqm(C.p,sx,sy);
   return C;
 }
+/* as peças que renascem (city.chao com respawn): sqm → quando volta, no
+   relógio da cidade, que corre enquanto se está nela. É de cada aparelho e
+   não vai para o save: recarregar a página traz a peça de volta, e tudo bem,
+   porque ela vale 0 de ouro */
+const VOLTA=new Map();let RELOGIO=0;
 export const npcDaLetra=c=>{for(const k in CITY.npcs)if(CITY.npcs[k].letra===c)return k;return null};
-/* física da cidade: a mesma da incursão (src/sim/incursao.js), na grade da cidade */
 /* física da cidade: o mesmo andar por sqm da incursão (base.js), na grade da
    cidade; jogadores não se bloqueiam */
 const livreC=(x,y)=>x>=0&&y>=0&&x<C.w&&y<C.h&&C.sol[y*C.w+x]!==1;
@@ -55,10 +80,23 @@ export function updateCidade(dt,ent){
     else if(i>=0)p.face=Math.atan2(DIR8[i][1],DIR8[i][0]);
   }
   p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
-  /* pisou numa peça do chão: ela vai para o cofre do Banco */
-  for(let i=C.chao.length-1;i>=0;i--){const c=C.chao[i];if(c.x!==p.tx||c.y!==p.ty)continue;
+  /* pisou numa peça do chão: a de teste vai para o cofre do Banco; a que
+     renasce vai para a mochila, se couber, e volta ao sqm depois de r segundos */
+  RELOGIO+=dt;
+  for(let i=C.chao.length-1;i>=0;i--){const c=C.chao[i];if(c.x!==p.tx||c.y!==p.ty){if(C.cheia===c)C.cheia=null;continue}
+    const id=c.x+','+c.y;
+    if(c.r){
+      if(pegaPraMochila(c.k)){C.chao.splice(i,1);VOLTA.set(id,RELOGIO+c.r);saida.log(`Você pegou ${ITEMS[c.k].nome}. Está na mochila.`,'info');saida.persist()}
+      else if(C.cheia!==c){C.cheia=c;saida.log(`A mochila está cheia. ${ITEMS[c.k].nome[0].toUpperCase()+ITEMS[c.k].nome.slice(1)} fica no chão.`,'info')}
+      continue}
     C.chao.splice(i,1);
-    if(pegaDoChao(c.x+','+c.y,c.k)){saida.log(`Você pegou ${ITEMS[c.k].nome}. Está no cofre do Banco.`,'info');saida.persist()}}
+    if(pegaDoChao(id,c.k)){saida.log(`Você pegou ${ITEMS[c.k].nome}. Está no cofre do Banco.`,'info');saida.persist()}}
+  /* renasce no sqm, se o jogador não estiver em cima */
+  if(VOLTA.size)for(const[id,t]of VOLTA){if(t>RELOGIO)continue;
+    const q=CITY.chao.find(c=>c.x+','+c.y===id);
+    if(!q){VOLTA.delete(id);continue}
+    if(q.x===p.tx&&q.y===p.ty)continue;
+    VOLTA.delete(id);C.chao.push({x:q.x,y:q.y,k:q.item,r:q.respawn})}
   let melhor=null,md=T*1.75;
   for(const n of C.npcs){const d=hyp(n.x-p.x,n.y-p.y);if(d<md){md=d;melhor=n.k}}
   C.perto=melhor;

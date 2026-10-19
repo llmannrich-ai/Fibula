@@ -5,9 +5,10 @@
     "aviso": "Gerado a partir dos literais que estavam no index.html. Ajuste de balanceamento se faz aqui, sem tocar no motor.",
     "tierReference": "O campo tier de cada inimigo aponta a banda equivalente em ../mechanics/tiers.json (por HP).",
     "lootFormat": "[chaveDoItem, probabilidade, quantidadeMin, quantidadeMax]",
-    "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)",
-    "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
-    "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)"
+    "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per). preco: ouro do cofre para aprender com o NPC que ensina (ensina: true em city.npcs); 0 = vem de graca ao chegar no nivel. Cada classe precisa de uma de nivel 1 e preco 0, senao o personagem novo nao ataca. Quem ja jogava antes da 0.21.0 ficou com tudo que o nivel tinha liberado",
+    "equipFormat": "item com slot (arma, armadura ou amuleto) fica como peca na mochila e, guardado no Banco, vai para o cofre da conta em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
+    "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)",
+    "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Cada uma e uma provisao: fica guardada (ate max) e vai inteira na proxima cacada que comecar. efeito: pot (pocoes a mais), comida (segundos de alimentacao: vai na mochila, se come pelo botao Comer e so alimentado se regenera vida e mana, ver progression.comida; o que sobra volta ao extrair), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada. Icone: sup_<chave> no atlas."
   },
   "classes": {
     "feiticeiro": {
@@ -114,6 +115,7 @@
       "k": "Faísca",
       "w": "adori flam",
       "lvl": 1,
+      "preco": 0,
       "mana": 5,
       "cd": 0.45,
       "g": "ataque",
@@ -126,7 +128,7 @@
       "b1": 6,
       "b2": 10,
       "alc": 7,
-      "d": "Dardo de fogo que persegue o alvo mais próximo."
+      "d": "Dardo de fogo que voa reto na direção da mira."
     },
     "flam": {
       "c": "feiticeiro",
@@ -134,6 +136,7 @@
       "k": "Chamas",
       "w": "exori flam",
       "lvl": 4,
+      "preco": 150,
       "mana": 22,
       "cd": 2,
       "g": "ataque",
@@ -158,6 +161,7 @@
       "k": "Onda",
       "w": "exevo flam hur",
       "lvl": 9,
+      "preco": 500,
       "mana": 42,
       "cd": 4,
       "g": "ataque",
@@ -171,7 +175,7 @@
       "b2": 12,
       "raio": 118,
       "ang": 1.15,
-      "d": "Leque de chamas na direção em que você olha."
+      "d": "Leque de chamas na direção da mira."
     },
     "bolaenergia": {
       "c": "feiticeiro",
@@ -179,6 +183,7 @@
       "k": "Bola",
       "w": "adevo mas vis",
       "lvl": 15,
+      "preco": 1100,
       "mana": 55,
       "cd": 5,
       "g": "ataque",
@@ -200,6 +205,7 @@
       "k": "Raio",
       "w": "exori vis",
       "lvl": 22,
+      "preco": 2000,
       "mana": 70,
       "cd": 7,
       "g": "ataque",
@@ -220,6 +226,7 @@
       "k": "Núcleo",
       "w": "exevo gran mas flam",
       "lvl": 32,
+      "preco": 3500,
       "mana": 170,
       "cd": 26,
       "g": "ataque",
@@ -244,6 +251,7 @@
       "k": "Fagulha",
       "w": "adori frigo",
       "lvl": 1,
+      "preco": 0,
       "mana": 5,
       "cd": 0.45,
       "g": "ataque",
@@ -268,6 +276,7 @@
       "k": "Cura",
       "w": "exura",
       "lvl": 3,
+      "preco": 100,
       "mana": 24,
       "cd": 1.6,
       "g": "cura",
@@ -286,6 +295,7 @@
       "k": "Terra",
       "w": "exori tera",
       "lvl": 7,
+      "preco": 350,
       "mana": 22,
       "cd": 2,
       "g": "ataque",
@@ -310,6 +320,7 @@
       "k": "Avalanche",
       "w": "adevo mas frigo",
       "lvl": 13,
+      "preco": 850,
       "mana": 50,
       "cd": 4.5,
       "g": "ataque",
@@ -335,6 +346,7 @@
       "k": "Raízes",
       "w": "exevo tera hur",
       "lvl": 20,
+      "preco": 1700,
       "mana": 62,
       "cd": 8,
       "g": "ataque",
@@ -359,6 +371,7 @@
       "k": "Inverno",
       "w": "exevo gran mas frigo",
       "lvl": 32,
+      "preco": 3500,
       "mana": 165,
       "cd": 26,
       "g": "ataque",
@@ -383,6 +396,7 @@
       "k": "Flecha",
       "w": "exevo con",
       "lvl": 1,
+      "preco": 0,
       "mana": 3,
       "cd": 0.42,
       "g": "ataque",
@@ -403,6 +417,7 @@
       "k": "Lança",
       "w": "exori con",
       "lvl": 5,
+      "preco": 200,
       "mana": 26,
       "cd": 2,
       "g": "ataque",
@@ -424,6 +439,7 @@
       "k": "Míssil",
       "w": "exori san",
       "lvl": 11,
+      "preco": 650,
       "mana": 24,
       "cd": 2.2,
       "g": "ataque",
@@ -444,6 +460,7 @@
       "k": "Pés",
       "w": "utani tempo hur",
       "lvl": 17,
+      "preco": 1300,
       "mana": 55,
       "cd": 14,
       "g": "apoio",
@@ -461,6 +478,7 @@
       "k": "Caldeira",
       "w": "exevo mas san",
       "lvl": 24,
+      "preco": 2300,
       "mana": 95,
       "cd": 5,
       "g": "ataque",
@@ -481,6 +499,7 @@
       "k": "Atirador",
       "w": "utito tempo san",
       "lvl": 32,
+      "preco": 3500,
       "mana": 130,
       "cd": 24,
       "g": "apoio",
@@ -499,6 +518,7 @@
       "k": "Golpe",
       "w": "",
       "lvl": 1,
+      "preco": 0,
       "mana": 0,
       "cd": 0.55,
       "g": "ataque",
@@ -520,6 +540,7 @@
       "k": "Brutal",
       "w": "exori ico",
       "lvl": 4,
+      "preco": 150,
       "mana": 24,
       "cd": 5,
       "g": "ataque",
@@ -542,6 +563,7 @@
       "k": "Fúria",
       "w": "exori",
       "lvl": 10,
+      "preco": 550,
       "mana": 34,
       "cd": 4,
       "g": "ataque",
@@ -562,6 +584,7 @@
       "k": "Provocar",
       "w": "exeta res",
       "lvl": 16,
+      "preco": 1200,
       "mana": 30,
       "cd": 13,
       "g": "apoio",
@@ -580,6 +603,7 @@
       "k": "Abalo",
       "w": "exori mas",
       "lvl": 22,
+      "preco": 2000,
       "mana": 52,
       "cd": 8,
       "g": "ataque",
@@ -604,6 +628,7 @@
       "k": "Aniquilar",
       "w": "exori gran ico",
       "lvl": 32,
+      "preco": 3500,
       "mana": 75,
       "cd": 26,
       "g": "ataque",
@@ -653,7 +678,7 @@
     },
     "seguro": {
       "nome": "Selo de resguardo",
-      "desc": "guarda 20% do loot do saco se você morrer",
+      "desc": "guarda 20% do valor da mochila se você morrer",
       "max": 3,
       "base": 300,
       "mult": 2
@@ -721,6 +746,141 @@
       "atk": 1.4,
       "boss": true,
       "tier": 3
+    },
+    "morcego": {
+      "nome": "Morcego",
+      "hp": 18,
+      "spd": 210,
+      "dmg": 3,
+      "xp": 5,
+      "r": 9,
+      "atk": 0.8,
+      "tier": 1
+    },
+    "barata": {
+      "nome": "Barata gigante",
+      "hp": 30,
+      "spd": 150,
+      "dmg": 5,
+      "xp": 9,
+      "r": 10,
+      "atk": 0.9,
+      "tier": 1
+    },
+    "lesma": {
+      "nome": "Lesma do esgoto",
+      "hp": 48,
+      "spd": 90,
+      "dmg": 7,
+      "xp": 15,
+      "r": 11,
+      "atk": 1.2,
+      "tier": 2
+    },
+    "centopeia": {
+      "nome": "Centopeia-rainha",
+      "hp": 320,
+      "spd": 160,
+      "dmg": 14,
+      "xp": 130,
+      "r": 18,
+      "atk": 1.2,
+      "boss": true,
+      "tier": 3
+    },
+    "vespa": {
+      "nome": "Vespa gigante",
+      "hp": 70,
+      "spd": 230,
+      "dmg": 12,
+      "xp": 36,
+      "r": 10,
+      "atk": 0.8,
+      "tier": 2
+    },
+    "lagarta": {
+      "nome": "Lagarta-cuspideira",
+      "hp": 85,
+      "spd": 110,
+      "dmg": 14,
+      "xp": 44,
+      "r": 11,
+      "atk": 1.7,
+      "ranged": true,
+      "tier": 2
+    },
+    "leao": {
+      "nome": "Leão da ilha",
+      "hp": 140,
+      "spd": 190,
+      "dmg": 19,
+      "xp": 68,
+      "r": 14,
+      "atk": 1.1,
+      "tier": 3
+    },
+    "troll": {
+      "nome": "Troll",
+      "hp": 190,
+      "spd": 140,
+      "dmg": 23,
+      "xp": 88,
+      "r": 15,
+      "atk": 1.3,
+      "tier": 3
+    },
+    "dragao": {
+      "nome": "Dragão da enseada",
+      "hp": 1100,
+      "spd": 150,
+      "dmg": 36,
+      "xp": 560,
+      "r": 22,
+      "atk": 1.4,
+      "boss": true,
+      "tier": 4
+    },
+    "fantasma": {
+      "nome": "Fantasma",
+      "hp": 150,
+      "spd": 170,
+      "dmg": 25,
+      "xp": 95,
+      "r": 12,
+      "atk": 1.1,
+      "tier": 3
+    },
+    "mumia": {
+      "nome": "Múmia",
+      "hp": 260,
+      "spd": 120,
+      "dmg": 31,
+      "xp": 130,
+      "r": 13,
+      "atk": 1.3,
+      "tier": 3
+    },
+    "necromante": {
+      "nome": "Necromante",
+      "hp": 170,
+      "spd": 140,
+      "dmg": 29,
+      "xp": 150,
+      "r": 12,
+      "atk": 1.8,
+      "ranged": true,
+      "tier": 4
+    },
+    "sombra": {
+      "nome": "Senhora das Sombras",
+      "hp": 2000,
+      "spd": 160,
+      "dmg": 52,
+      "xp": 1100,
+      "r": 20,
+      "atk": 1.3,
+      "boss": true,
+      "tier": 5
     }
   },
   "items": {
@@ -743,6 +903,24 @@
       "nome": "osso antigo",
       "val": 10,
       "rar": 0
+    },
+    "faca": {
+      "nome": "faca",
+      "val": 0,
+      "rar": 0,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.02
+      }
+    },
+    "espadamadeira": {
+      "nome": "espada de madeira",
+      "val": 0,
+      "rar": 0,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.03
+      }
     },
     "espada": {
       "nome": "espada enferrujada",
@@ -996,6 +1174,308 @@
         1,
         1
       ]
+    ],
+    "morcego": [
+      [
+        "ouro",
+        0.8,
+        1,
+        3
+      ],
+      [
+        "dente",
+        0.3,
+        1,
+        1
+      ]
+    ],
+    "barata": [
+      [
+        "ouro",
+        0.9,
+        2,
+        7
+      ],
+      [
+        "seda",
+        0.2,
+        1,
+        1
+      ],
+      [
+        "gema",
+        0.02,
+        1,
+        1
+      ]
+    ],
+    "lesma": [
+      [
+        "ouro",
+        0.9,
+        4,
+        10
+      ],
+      [
+        "erva",
+        0.25,
+        1,
+        1
+      ],
+      [
+        "amuleto",
+        0.03,
+        1,
+        1
+      ]
+    ],
+    "centopeia": [
+      [
+        "ouro",
+        1,
+        50,
+        90
+      ],
+      [
+        "gema",
+        0.5,
+        1,
+        1
+      ],
+      [
+        "espada",
+        0.4,
+        1,
+        1
+      ],
+      [
+        "couraca",
+        0.35,
+        1,
+        1
+      ]
+    ],
+    "vespa": [
+      [
+        "ouro",
+        0.9,
+        15,
+        30
+      ],
+      [
+        "seda",
+        0.45,
+        1,
+        2
+      ],
+      [
+        "gema",
+        0.04,
+        1,
+        1
+      ]
+    ],
+    "lagarta": [
+      [
+        "ouro",
+        0.9,
+        15,
+        32
+      ],
+      [
+        "seda",
+        0.5,
+        1,
+        3
+      ],
+      [
+        "erva",
+        0.2,
+        1,
+        1
+      ]
+    ],
+    "leao": [
+      [
+        "ouro",
+        0.9,
+        25,
+        50
+      ],
+      [
+        "dente",
+        0.6,
+        1,
+        2
+      ],
+      [
+        "couraca",
+        0.15,
+        1,
+        1
+      ],
+      [
+        "gibao",
+        0.05,
+        1,
+        1
+      ]
+    ],
+    "troll": [
+      [
+        "ouro",
+        0.9,
+        30,
+        60
+      ],
+      [
+        "machado",
+        0.3,
+        1,
+        1
+      ],
+      [
+        "osso",
+        0.5,
+        1,
+        2
+      ],
+      [
+        "maca",
+        0.05,
+        1,
+        1
+      ]
+    ],
+    "dragao": [
+      [
+        "ouro",
+        1,
+        300,
+        500
+      ],
+      [
+        "gema",
+        1,
+        1,
+        3
+      ],
+      [
+        "placas",
+        0.25,
+        1,
+        1
+      ],
+      [
+        "machadoguerra",
+        0.25,
+        1,
+        1
+      ]
+    ],
+    "fantasma": [
+      [
+        "ouro",
+        0.9,
+        20,
+        45
+      ],
+      [
+        "gema",
+        0.08,
+        1,
+        1
+      ],
+      [
+        "amuleto",
+        0.12,
+        1,
+        1
+      ]
+    ],
+    "mumia": [
+      [
+        "ouro",
+        0.9,
+        25,
+        50
+      ],
+      [
+        "osso",
+        0.6,
+        1,
+        3
+      ],
+      [
+        "erva",
+        0.3,
+        1,
+        1
+      ],
+      [
+        "cota",
+        0.1,
+        1,
+        1
+      ]
+    ],
+    "necromante": [
+      [
+        "ouro",
+        0.9,
+        30,
+        60
+      ],
+      [
+        "erva",
+        0.5,
+        1,
+        2
+      ],
+      [
+        "amuleto",
+        0.15,
+        1,
+        1
+      ],
+      [
+        "gema",
+        0.1,
+        1,
+        1
+      ]
+    ],
+    "sombra": [
+      [
+        "ouro",
+        1,
+        400,
+        700
+      ],
+      [
+        "gema",
+        1,
+        2,
+        4
+      ],
+      [
+        "placas",
+        0.4,
+        1,
+        1
+      ],
+      [
+        "machadoguerra",
+        0.3,
+        1,
+        1
+      ],
+      [
+        "gibao",
+        0.3,
+        1,
+        1
+      ]
     ]
   },
   "progression": {
@@ -1029,12 +1509,10 @@
       }
     ],
     "scaling": {
-      "_note": "Crescimento comprimido de proposito: a fonte cresce ~2.7x de HP e ~3x de dps entre tiers vizinhos, o que nao cabe numa incursao curta. A troca de inimigo carrega o resto do salto.",
+      "_note": "Crescimento comprimido de proposito: a fonte cresce ~2.7x de HP e ~3x de dps entre tiers vizinhos, o que nao cabe numa incursao curta. A troca de inimigo carrega o resto do salto. O mundo e igual para todos (decisao do Leonardo, 19/10/2026): a forca do monstro vem so do lugar e da profundidade, nunca do nivel nem do grupo de quem entra; o carregamento recusa hpPerCharLevel e bossLevelFactor.",
       "hpPerDepth": 0.35,
       "dmgPerDepth": 0.25,
-      "xpPerDepth": 0.4,
-      "hpPerCharLevel": 0.05,
-      "bossLevelFactor": 1.5
+      "xpPerDepth": 0.4
     },
     "boss": {
       "type": "guardiao",
@@ -1066,49 +1544,211 @@
       "largeRoomBonus": 1
     },
     "party": {
-      "_note": "Regras de grupo (decisao do Leonardo, 19/10/2026; plano do multiplayer, secao 3). Com n jogadores, cada sala tem os monstros de uma sala solo vezes (1 + monsters*(n-1)) e o Guardiao tem a vida vezes (1 + bossHp*(n-1)). O loot e unico: cada monstro deixa um drop so, e nos primeiros lootProtection segundos so quem causou mais dano pode pega-lo; depois, qualquer um. XP cheia para quem causou dano ou estava a ate shareTiles tiles. Solo (n=1) nao muda nada.",
-      "monsters": 0.6,
-      "bossHp": 0.8,
+      "_note": "Regras de grupo (decisao do Leonardo, 19/10/2026; plano do multiplayer, secao 3). O grupo nao muda o mundo (decisao do Leonardo, 19/10/2026): os monstros e o Guardiao sao os mesmos com 1 ou 4 jogadores, e o carregamento recusa monsters e bossHp. O loot e unico: cada monstro deixa um drop so, e nos primeiros lootProtection segundos so quem causou mais dano pode pega-lo; depois, qualquer um. XP cheia para quem causou dano ou estava a ate shareTiles tiles. Solo (n=1) nao muda nada.",
       "lootProtection": 10,
       "shareTiles": 9
     },
     "respawn": {
-      "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala cresce com quem esta dentro, pelas regras de party.",
+      "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala e o mesmo com qualquer numero de jogadores.",
       "seconds": 60,
       "clearTiles": 10
+    },
+    "mochila": {
+      "_note": "A mochila do personagem, como no Tibia (decisao do Leonardo, 19/10/2026): o loot fica nela entre as cacadas, ela entra inteira na proxima e a morte leva tudo o que esta dentro (menos o Selo de resguardo). So o cofre do Banco e seguro: guardar e com o Banqueiro. espacos: quantas casas ela tem; cada peca de equipamento ocupa uma casa, o resto (ouro, gemas, materiais) empilha uma casa por tipo. Cheia, o loot que nao cabe fica no chao.",
+      "espacos": 20
+    },
+    "comida": {
+      "_note": "Alimentacao como no Tibia (decisao do Leonardo, 19/10/2026): sem comida o personagem nao regenera vida nem mana. Cada comida (supplies com efeito.comida) soma os segundos dela ao tempo de alimentacao; enquanto ele dura, a regeneracao e a da classe (rhp e rmp em classes), fixa. O jogador come pelo botao Comer na cacada, a menor comida que levou primeiro; se o tempo passaria de max, nada e comido (Voce esta satisfeito). max e o do Tibia: 1200 s. A comida que sobra volta ao estoque se ele extrair e se perde se morrer.",
+      "max": 1200
+    }
+  },
+  "supplies": {
+    "frutas": {
+      "nome": "Cesta de frutas",
+      "desc": "1 min 30 s de alimentação.",
+      "preco": 15,
+      "max": 10,
+      "efeito": {
+        "comida": 90
+      }
+    },
+    "queijo": {
+      "nome": "Queijo curado",
+      "desc": "3 min de alimentação.",
+      "preco": 25,
+      "max": 10,
+      "efeito": {
+        "comida": 180
+      }
+    },
+    "presunto": {
+      "nome": "Presunto defumado",
+      "desc": "5 min de alimentação.",
+      "preco": 40,
+      "max": 10,
+      "efeito": {
+        "comida": 300
+      }
+    },
+    "ensopado": {
+      "nome": "Ensopado do caçador",
+      "desc": "9 min de alimentação.",
+      "preco": 60,
+      "max": 10,
+      "efeito": {
+        "comida": 540
+      }
+    },
+    "pocao": {
+      "nome": "Poção de vida",
+      "desc": "+1 poção no cinto na próxima caçada.",
+      "preco": 25,
+      "max": 5,
+      "efeito": {
+        "pot": 1
+      }
+    },
+    "pressa": {
+      "nome": "Elixir de pressa",
+      "desc": "+30% de velocidade no primeiro minuto da caçada.",
+      "preco": 40,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "velo": 0.3,
+          "dur": 60
+        }
+      }
+    },
+    "runa_pedra": {
+      "nome": "Runa da pele de pedra",
+      "desc": "−15% de dano sofrido nos primeiros 90 s da caçada.",
+      "preco": 60,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "arm": 0.15,
+          "dur": 90
+        }
+      }
+    },
+    "runa_furia": {
+      "nome": "Runa da fúria",
+      "desc": "+20% de dano nos primeiros 90 s da caçada.",
+      "preco": 80,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "dano": 0.2,
+          "dur": 90
+        }
+      }
+    },
+    "runa_aguia": {
+      "nome": "Runa do olho de águia",
+      "desc": "+2 sqm de alcance nas habilidades nos primeiros 90 s.",
+      "preco": 50,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "alc": 2,
+          "dur": 90
+        }
+      }
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) cacadas (mapas de caca) mercado (a feira entre jogadores, no banco da nuvem) ou forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
     "nome": "Cidade",
-    "_chao": "Pecas de teste no chao da cidade (pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao). Nao tem origem no banco, entao nao entra na Feira. Para tirar, apague a lista.",
+    "_chao": "Pecas no chao da cidade. Sem respawn (as de teste, pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao); nao tem origem no banco, entao nao entra na Feira. Com respawn (segundos): pisou, vai para a mochila se couber, e a peca volta ao mesmo sqm depois desse tempo de cidade, contado em cada aparelho (as armas de quem comeca, na casa vazia ao norte da praca). Val 0: nao vira ouro no Banco. Para tirar, apague da lista.",
     "chao": [
-      {"x": 9, "y": 11, "item": "espada"},
-      {"x": 13, "y": 11, "item": "machado"},
-      {"x": 8, "y": 12, "item": "couraca"},
-      {"x": 14, "y": 12, "item": "cota"},
-      {"x": 9, "y": 13, "item": "amuleto"},
-      {"x": 13, "y": 13, "item": "espada"},
-      {"x": 11, "y": 13, "item": "cota"}
+      {
+        "x": 37,
+        "y": 6,
+        "item": "faca",
+        "respawn": 120
+      },
+      {
+        "x": 39,
+        "y": 6,
+        "item": "espadamadeira",
+        "respawn": 120
+      },
+      {
+        "x": 23,
+        "y": 21,
+        "item": "espada"
+      },
+      {
+        "x": 29,
+        "y": 21,
+        "item": "machado"
+      },
+      {
+        "x": 22,
+        "y": 22,
+        "item": "couraca"
+      },
+      {
+        "x": 30,
+        "y": 22,
+        "item": "cota"
+      },
+      {
+        "x": 23,
+        "y": 23,
+        "item": "amuleto"
+      },
+      {
+        "x": 29,
+        "y": 23,
+        "item": "espada"
+      },
+      {
+        "x": 26,
+        "y": 22,
+        "item": "cota"
+      }
     ],
     "mapa": [
-      "AAAAAAAAAAAAAAAAAAAAAAAA",
-      "A,,,,,,,,,,,,,,,,,,,,,,A",
-      "A,#######,,,,,,#######,A",
-      "A,#_____#,,A,,,#_____#,A",
-      "A,#__M__#,,,,,,#__B__#,A",
-      "A,#_____#,,,,,,#_____#,A",
-      "A,###_###,,,,,,###_###,A",
-      "A,,,,.,,,,,,,,,,,,.,,,,A",
-      "A,,,,..............,,,,A",
-      "A,A,,.,,,,,~~,T,,,.,,A,A",
-      "A,,,,.,,,,,~~,,,,,.,,,,A",
-      "A,,,,......@.......,,,,A",
-      "A,#####,,,,.,,,,,,,,,,,A",
-      "A,#_F_#,,,,.,,,,,,,A,,,A",
-      "A,#____.....,,,,,,,,,,,A",
-      "A,#####,,,,.G,,,,,,,,,,A",
-      "A##########P###########A"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~AAAAAAAA",
+      "AAAAAAA,,,A,AAAA,,,,AA,,,,A,,,A,A,,,A,,,,,A,~~A,AA,A,A",
+      "A,,,,,,,,,,,,,,,,,,,#############,,#######,,~~,,,,,,,A",
+      "AA,########,#######,#:::::::::::#,,#s___n#,,~~,,,,,,,A",
+      "A,,#c____c#,#s___n#,#:e:::f:::e:#,,#_____#,,~~######,A",
+      "AA,#__B___#,#_____#,#:::::::::::#,,#_____#r,~~#s__s#,A",
+      "A,,#______#,#_____#,#:::::::::::#A,#_____#,,~~#_S__#,A",
+      "AA,#______#,#___b_#,#:e:::::::e:#,,#_____#,,~~#____#,A",
+      "A,,#______#,#_____#,#:::::::::::#,,#_____#,,~~#____#,A",
+      "AA,###_####,###_###,######_######,,###_###,~~,#____#,A",
+      "A,,,vv.vv,,,,vv.vv,,,,,,,,.,,,,,,,,,vv.vv,,~~,##_###,A",
+      "A,........................................,==....,,,,A",
+      "AA,,.,,,,,,,,,,,,,,,,,,,y,.,y,,,,,,,,,,,,,,~~,,,,,,,,A",
+      "A,,,.,,,,,########,,,,,,,,.,,,,,,,,######,,~~,,,,,,,,A",
+      "A,,,.,,,,,#b____c#,y:::::::::::::y,#s__s#,,~~,,q,,q,,A",
+      "AA,,.,,,,,#___M__#,::vv:::::::vv::,#_O__#r,~~,hhhhhh,A",
+      "AA,,.,,,,,#______#,:::::::::::::::,#____#,,~~,hhhhhh,A",
+      "AA,,.,,,,,#c_____#,:::::::f:::::::,#___b#,,~~,,q,,q,,A",
+      "A,,,.,,,,,####_###,:::::::::::::::,##_###,,~~,hhhhhh,A",
+      "A,,,.,,,,,,,,,.,,,,:::::::::::::::,,,.,,,,~~,,hhhhhh,A",
+      "AA.................:::::::@:::::::........==.....,,r,A",
+      "AA,,.,,,,,,,,,,,,,,:::::::::::::::,,,,,,,,~~,,r,,,,,,A",
+      "AA,,.,............,:::::::::::::::,,A,,,,,~~,,,,p,,,,A",
+      "A,,,.,.kk.kk.kk.k.,::vv:::::::vv::,,,,,,A,~~,,,,,,,,,A",
+      "AA,,.,............,y:::::::::::::y,,,,,,,,~~,,,,q,,q,A",
+      "A,,,.,......Q.....,,,,,,y,.,y,,,,,,,,,,,,,~~,,,,,,,,,A",
+      "A,,r.,............A,,,,,,,.,.............,~~,r,,,,,,,A",
+      "A,,,.,.bc......wb.,,,,,,,,.,.kk.......kk.,~~,,,,N,,,,A",
+      "A,,,.,............,,,,A,,,.,......T......,~~~~~~~~~~~~",
+      "A,,,.,,,,,,,,,,,,,,,,,,,,,.,...c.....b...,~~~~~~~~~~~~",
+      "AAy,.,vvv,vvv,,A,,r,,,,,,,.,.k.........k.,,,,,,,,,,,,A",
+      "AA,,.,,,,p,,,,,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,,,,,,,A",
+      "A,,,................V.................,,,,,,,,,,,,,,,A",
+      "A,,,,,,,,,,,,,,,,,,,,,,,,,.,##_######,,,,,,,,,,,,,,,,A",
+      "A,y,,,,,,r,,,,y,,,,r,,,A,,.,#____F_n#,,,,,,,,,,,,,,,,A",
+      "A,,,,,,,,,,,,,,,,,,,,,,,,,.,#w______#,,,,,,,,,,,,,,,,A",
+      "A,,,,,,,,,,,,,,,,,,,,,,,,,.G#########,,,,,,,,,,,,,,,,A",
+      "A#########################P##########################A"
     ],
     "npcs": {
       "mercador": {
@@ -1116,21 +1756,21 @@
         "nome": "Mercador",
         "casa": "Mercado",
         "abre": "mercador",
-        "fala": "Melhorias permanentes, pagas com o ouro do cofre."
+        "fala": "Melhorias permanentes, pagas com o ouro do cofre. A casa fica bem do lado da praça."
       },
       "banqueiro": {
         "letra": "B",
         "nome": "Banqueiro",
         "casa": "Banco",
         "abre": "banco",
-        "fala": "O cofre é da conta. Vista, guarde ou venda o que trouxe."
+        "fala": "O que está na mochila cai com você. O que está no cofre fica. Guarde, vista ou venda."
       },
       "guia": {
         "letra": "G",
         "nome": "Guia de caça",
         "casa": "Portão da cidade",
         "abre": "cacadas",
-        "fala": "Escolha onde caçar. O portal abre em 1:30."
+        "fala": "Daqui saem a Masmorra de Runas e a Cripta. O portal abre em 1:30. Quem leva provisões, leva para uma caçada só."
       },
       "corretor": {
         "letra": "T",
@@ -1145,18 +1785,278 @@
         "casa": "Forja",
         "abre": "forja",
         "fala": "Compro o que os bichos deixam, pago pouco. Me traga o que eu peço e eu forjo coisa melhor para você."
+      },
+      "quitandeira": {
+        "letra": "Q",
+        "nome": "Quitandeira",
+        "casa": "Quitanda",
+        "abre": "loja",
+        "fala": "Barriga vazia não sara ferida. Leve comida: quanto mais farta, mais tempo ela sustenta.",
+        "vende": [
+          "frutas",
+          "queijo",
+          "presunto",
+          "ensopado"
+        ]
+      },
+      "boticaria": {
+        "letra": "O",
+        "nome": "Boticária",
+        "casa": "Botica",
+        "abre": "loja",
+        "fala": "Poção a mais no cinto já salvou muito caçador teimoso. E o elixir faz as pernas voarem.",
+        "vende": [
+          "pocao",
+          "pressa"
+        ]
+      },
+      "mago": {
+        "letra": "S",
+        "nome": "Mestre de magias",
+        "casa": "Torre dos magos",
+        "abre": "loja",
+        "fala": "Habilidade não cai do céu: chegue ao nível e eu ensino, a troco de ouro. E vendo runas para quem vai caçar.",
+        "vende": [
+          "runa_pedra",
+          "runa_furia",
+          "runa_aguia"
+        ],
+        "ensina": true
+      },
+      "grade": {
+        "letra": "V",
+        "nome": "Grade do esgoto",
+        "casa": "Rua do mercado",
+        "abre": "cacadas",
+        "lugar": true,
+        "acao": "Descer",
+        "fala": "Uma grade de ferro no chão da rua, e o cheiro que sobe dela. Lá embaixo, ratos e baratas, e dizem que uma centopeia do tamanho de um homem."
+      },
+      "capitao": {
+        "letra": "N",
+        "nome": "Capitão",
+        "casa": "Porto",
+        "abre": "cacadas",
+        "fala": "O navio leva até a Ilha da Enseada e espera pelo portal. Lá o bicho é grande: venha forte."
       }
     }
   },
   "hunts": {
+    "_note": "Os mapas de caca (pedido do Leonardo, 19/10/2026). npc: a chave de city.npcs que leva ate ele (um NPC com abre cacadas pode levar a varios). bands e boss: a tabela de spawn e o chefe, no formato de progression.bands e progression.boss; sem elas, valem as de progression. mapa: como genMap() cava (salas: minimo e maximo de salas; w e h: largura e altura de cada uma; atalhos: corredores a mais), sem ele os numeros da masmorra de sempre. arte: chao e par sao prefixos de sprite (chao, chao_<x>; par_v..par_canto, <par>_v..); cor e o desenho sem sprites (chao1, chao2, par); escuro e quanto a noite cobre a tela (0 a 1); tochas: se as paredes tem tochas. entrada e volta: as frases do registro ao chegar e ao voltar à cidade. nivel e so recomendacao: o mundo nao se ajusta ao jogador.",
+    "esgoto": {
+      "nome": "Esgoto",
+      "desc": "Galerias úmidas sob a cidade. Morcegos e ratos perto da grade, baratas e lesmas lá embaixo, e a Centopeia-rainha no ninho.",
+      "nivel": 1,
+      "npc": "grade",
+      "entrada": "Você desceu pela grade do esgoto.",
+      "bands": [
+        {
+          "untilDepth": 0.4,
+          "tier": 1,
+          "weights": {
+            "rato": 0.5,
+            "morcego": 0.5
+          }
+        },
+        {
+          "untilDepth": 0.75,
+          "tier": 1,
+          "weights": {
+            "rato": 0.3,
+            "barata": 0.4,
+            "morcego": 0.3
+          }
+        },
+        {
+          "untilDepth": 1.01,
+          "tier": 2,
+          "weights": {
+            "barata": 0.5,
+            "lesma": 0.5
+          }
+        }
+      ],
+      "boss": {
+        "type": "centopeia",
+        "escort": [
+          "barata",
+          "lesma"
+        ]
+      },
+      "mapa": {
+        "salas": [
+          12,
+          20
+        ],
+        "w": [
+          4,
+          7
+        ],
+        "h": [
+          4,
+          6
+        ],
+        "atalhos": 6
+      },
+      "arte": {
+        "chao": "esg",
+        "par": "esg",
+        "cor": {
+          "chao1": "#1f2622",
+          "chao2": "#1b211e",
+          "par": "#34403a"
+        },
+        "escuro": 0.86,
+        "tochas": true
+      },
+      "volta": "Você subiu pela grade do esgoto."
+    },
     "runas": {
       "nome": "Masmorra de Runas",
       "desc": "Corredores de pedra sob a cidade. Ratos e aranhas na entrada, orcs e o Guardião do Portal no fundo.",
-      "nivel": 1
+      "nivel": 1,
+      "npc": "guia"
+    },
+    "ilha": {
+      "nome": "Ilha da Enseada",
+      "desc": "O navio do porto leva até uma ilha de areia e pedra. Vespas e lagartas na praia, leões e trolls no interior, e um dragão dorme na enseada.",
+      "nivel": 8,
+      "npc": "capitao",
+      "entrada": "O navio deixou você na praia da ilha.",
+      "bands": [
+        {
+          "untilDepth": 0.35,
+          "tier": 2,
+          "weights": {
+            "vespa": 0.6,
+            "lagarta": 0.4
+          }
+        },
+        {
+          "untilDepth": 0.7,
+          "tier": 2,
+          "weights": {
+            "vespa": 0.3,
+            "lagarta": 0.3,
+            "leao": 0.4
+          }
+        },
+        {
+          "untilDepth": 1.01,
+          "tier": 3,
+          "weights": {
+            "leao": 0.4,
+            "troll": 0.4,
+            "lagarta": 0.2
+          }
+        }
+      ],
+      "boss": {
+        "type": "dragao",
+        "escort": [
+          "troll",
+          "leao"
+        ]
+      },
+      "mapa": {
+        "salas": [
+          7,
+          10
+        ],
+        "w": [
+          8,
+          13
+        ],
+        "h": [
+          7,
+          11
+        ],
+        "atalhos": 2
+      },
+      "arte": {
+        "chao": "ilha",
+        "par": "ilha",
+        "cor": {
+          "chao1": "#5a4c33",
+          "chao2": "#54472f",
+          "par": "#7a6646"
+        },
+        "escuro": 0.45,
+        "tochas": false
+      },
+      "volta": "O navio trouxe você de volta ao porto."
+    },
+    "cripta": {
+      "nome": "Cripta Antiga",
+      "desc": "Túmulos debaixo da colina, que o Guia só indica para quem já sabe lutar. Esqueletos e fantasmas na entrada, múmias e necromantes no fundo, e a Senhora das Sombras.",
+      "nivel": 15,
+      "npc": "guia",
+      "entrada": "Você desceu à cripta.",
+      "bands": [
+        {
+          "untilDepth": 0.35,
+          "tier": 2,
+          "weights": {
+            "esqueleto": 0.6,
+            "fantasma": 0.4
+          }
+        },
+        {
+          "untilDepth": 0.7,
+          "tier": 3,
+          "weights": {
+            "esqueleto": 0.2,
+            "fantasma": 0.4,
+            "mumia": 0.4
+          }
+        },
+        {
+          "untilDepth": 1.01,
+          "tier": 4,
+          "weights": {
+            "fantasma": 0.3,
+            "mumia": 0.35,
+            "necromante": 0.35
+          }
+        }
+      ],
+      "boss": {
+        "type": "sombra",
+        "escort": [
+          "necromante",
+          "mumia"
+        ]
+      },
+      "mapa": {
+        "salas": [
+          10,
+          16
+        ],
+        "w": [
+          5,
+          8
+        ],
+        "h": [
+          5,
+          8
+        ],
+        "atalhos": 4
+      },
+      "arte": {
+        "chao": "cripta",
+        "par": "cripta",
+        "cor": {
+          "chao1": "#1a1a1f",
+          "chao2": "#17171b",
+          "par": "#33333c"
+        },
+        "escuro": 0.9,
+        "tochas": true
+      }
     }
   },
   "forja": {
-    "_note": "O Gordon, na Forja da cidade (pedido do Leonardo, 19/10/2026). compra: o preco que ele paga por unidade de cada material, de proposito abaixo do val; so esses itens deixam de virar ouro na extracao e vao para save.mats, o deposito de materiais da conta (gema e coroa continuam virando ouro). missoes: as encomendas, em ordem; entregar uma consome o que ela pede e soma 1 em save.forja. loja: o que ele vende por ouro do cofre a partir da encomenda numero missao (0 = desde o comeco); preco precisa ser maior que o val, senao comprar aqui e vender no Banco daria lucro. Medido em 19/10/2026 com a simulacao no Node (50 sementes): a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas; uma incursao tipica traz perto da metade, e as ervas so no fundo.",
+    "_note": "O Gordon, na Forja da cidade (pedido do Leonardo, 19/10/2026). compra: o preco que ele paga por unidade de cada material, de proposito abaixo do val; so esses itens deixam de virar ouro ao guardar a mochila no Banco e vao para save.mats, o deposito de materiais da conta (gema e coroa continuam virando ouro). missoes: as encomendas, em ordem; entregar uma consome o que ela pede e soma 1 em save.forja. loja: o que ele vende por ouro do cofre a partir da encomenda numero missao (0 = desde o comeco); preco precisa ser maior que o val, senao comprar aqui e vender no Banco daria lucro. Medido em 19/10/2026 com a simulacao no Node (50 sementes): a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas; uma incursao tipica traz perto da metade, e as ervas so no fundo.",
     "compra": {
       "dente": 1,
       "seda": 4,

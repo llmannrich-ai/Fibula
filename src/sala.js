@@ -17,6 +17,8 @@
    geração maior e, empatados, o de id menor. Só o anfitrião pode trapacear (é ele quem
    calcula), e cada um grava o próprio save com o resultado que o anfitrião
    mandou: serve para jogar com amigos, não com desconhecidos — isso é a M2.
+   A sala é de um mapa de caça (SALA.caca: o Esgoto, a Ilha, a Cripta...),
+   escolhido ao criar, e vai junto no anúncio, na lista e na porta.
    A masmorra da sala nasce com ela e não tem tempo ("masmorra aberta" em
    src/sim/incursao.js): cada um entra e sai pela porta quando quiser, e ela
    acaba quando o anfitrião sai da sala (na cidade) ou do jogo.
@@ -25,16 +27,19 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    heranca (o estado da masmorra, para quem assumir), passa (o anfitrião sai
-   e diz quem fica no lugar, com a herança) e fecha (saiu sozinho). */
-import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.20.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.20.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid} from './sim/incursao.js?v=0.20.0';
-import {novaSemente} from './sim/base.js?v=0.20.0';
-import {drinkPot} from './sim/combate.js?v=0.20.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.20.0';
-import {rede,ID,anuncia} from './rede.js?v=0.20.0';
-import {persist} from './salvar.js?v=0.20.0';
-import {log} from './hud.js?v=0.20.0';
+   e diz quem fica no lugar, com a herança) e fecha (saiu sozinho),
+   e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
+
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.36.0';
+import {save,ch,confereFicha,valMochila,devolveComida} from './sim/progresso.js?v=0.36.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid} from './sim/incursao.js?v=0.36.0';
+import {novaSemente} from './sim/base.js?v=0.36.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.36.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.36.0';
+import {rede,ID,anuncia} from './rede.js?v=0.36.0';
+import {persist} from './salvar.js?v=0.36.0';
+import {log} from './hud.js?v=0.36.0';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.36.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -43,26 +48,29 @@ export const MAX=4;
 const RITMO=.1,BATIDA=25,PACIENCIA=12,HERDA=1;
 /* papel: null (fora de sala), 'anfitriao' ou 'convidado'. id: o canal da
    sala, que não muda com o anfitrião; anf: o anfitrião de agora; gen: quantas
-   vezes ele mudou. membros: quem está na sala, o anfitrião primeiro e os
-   outros por ordem de chegada: {id, nome, cl, lvl, ficha (só no anfitrião)} */
-export const SALA={papel:null,id:null,anf:null,gen:0,membros:[],estado:'fora',aoMudar(){}};
+   vezes ele mudou; caca: o mapa de caça. membros: quem está na sala, o
+   anfitrião primeiro e os outros por ordem de chegada: {id, nome, cl, lvl,
+   ficha (só no anfitrião)} */
+export const SALA={papel:null,id:null,anf:null,gen:0,caca:null,membros:[],estado:'fora',aoMudar(){}};
 let criadas=0;
-let ultHer=null,herT=0,ultDentro='',pedindo=false,pedT=0,ws=null,ref=0,pronto=false,espera=0,tenta=0,batida=0,ritmo=0,semAnf=0,potes=0,potesViu=[];
+let ultHer=null,herT=0,ultDentro='',pedindo=false,pedT=0,ws=null,ref=0,pronto=false,espera=0,tenta=0,batida=0,ritmo=0,semAnf=0,potes=0,potesViu=[],comidas=0,comidasViu=[];
 /* no anfitrião, durante a incursão da sala: o índice em G.ps de cada id, a
    entrada de cada convidado e quem já recebeu o resultado */
 const IDX=new Map(),ENTS=[];
 /* o lugar deste aparelho em G.ps: 0 para quem criou a sala, outro para quem
    a herdou */
 const meuI=()=>IDX.has(ID)?IDX.get(ID):0;
-/* a herança vai com quem é quem (o id de cada lugar de G.ps) e as poções já
-   vistas de cada um, para o próximo anfitrião não dar gole repetido */
-const pacote=()=>{const ids=[];for(const[id,i]of IDX)ids[i]=id;return{anf:ID,ids,pot:potesViu.slice(),h:heranca()}};
+/* a herança vai com quem é quem (o id de cada lugar de G.ps) e as poções e
+   comidas já vistas de cada um, para o próximo anfitrião não repetir */
+const pacote=()=>{const ids=[];for(const[id,i]of IDX)ids[i]=id;return{anf:ID,ids,pot:potesViu.slice(),com:comidasViu.slice(),h:heranca()}};
 const topico=()=>'realtime:sala-'+VER+'-'+SALA.id;
 const manda=(event,payload,topic=topico())=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic,event,payload,ref:String(++ref),join_ref:'1'}))};
 const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
+/* a apresentação da voz (src/voz.js) passa por este canal */
+export const sinal=q=>{if(pronto)bc('voz',Object.assign({de:ID},q))};
 const nomeMeu=()=>quemSou()||CLASSES[save.classe].nome;
-const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up)});
-const avisa=()=>{rede.sala=SALA.papel==='anfitriao'?{n:SALA.membros.length,id:SALA.id}:null;rede.naSala=SALA.papel?Math.max(1,SALA.membros.length):0;anuncia();SALA.aoMudar()};
+const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up),prov:Object.assign({},save.prov)});
+const avisa=()=>{rede.sala=SALA.papel==='anfitriao'?{n:SALA.membros.length,h:SALA.caca,id:SALA.id}:null;rede.naSala=SALA.papel?Math.max(1,SALA.membros.length):0;anuncia();SALA.aoMudar()};
 
 function liga(){
   pronto=false;ref=0;SALA.estado='ligando';
@@ -73,23 +81,24 @@ function liga(){
   s.onclose=()=>{if(ws!==s)return;ws=null;caiu()};
   s.onerror=()=>{};
 }
-function caiu(){pronto=false;if(!SALA.papel){SALA.estado='fora';return}SALA.estado='sem rede';espera=Math.min(20,2**tenta++)}
+function caiu(){pronto=false;if(!SALA.papel){SALA.estado='fora';return}SALA.estado='sem rede';espera=Math.min(20,2**tenta++);SALA.aoMudar()}
 function solta(){
   if(ws){manda('phx_leave',{});try{ws.close()}catch(e){}}
-  ws=null;pronto=false;pedindo=false;ultHer=null;SALA.papel=null;SALA.id=null;SALA.anf=null;SALA.gen=0;SALA.membros=[];SALA.estado='fora';IDX.clear();ENTS.length=0;avisa();
+  ws=null;pronto=false;pedindo=false;ultHer=null;SALA.papel=null;SALA.id=null;SALA.anf=null;SALA.gen=0;SALA.caca=null;SALA.membros=[];SALA.estado='fora';IDX.clear();ENTS.length=0;avisa();
 }
 
 /* ---------- o que o jogador faz ---------- */
-/* a masmorra da sala, vazia, no aparelho do anfitrião */
+/* a masmorra da sala, vazia, no aparelho do anfitrião, no mapa de caça dela */
 function abreMasmorra(){
-  newRun(novaSemente(),[fichaLocal()],true);G.ps[0].fora='fora';G.active=true;G.sala=true;
-  IDX.clear();ENTS.length=0;potesViu=[];IDX.set(ID,0);ritmo=0;herT=0;ultDentro='';
+  newRun(novaSemente(),[fichaLocal()],true,SALA.caca);G.ps[0].fora='fora';G.active=true;G.sala=true;
+  IDX.clear();ENTS.length=0;potesViu=[];comidasViu=[];IDX.set(ID,0);ritmo=0;herT=0;ultDentro='';
 }
-/* criar a sala abre a masmorra dela. O canal leva o id deste aparelho e um
-   contador: quem passou a sala adiante e cria outra não cai no canal velho */
-export function criaSala(){
+/* criar a sala abre a masmorra dela, no mapa de caça escolhido. O canal leva
+   o id deste aparelho e um contador: quem passou a sala adiante e cria outra
+   não cai no canal velho */
+export function criaSala(caca){
   if(SALA.papel)return;
-  SALA.papel='anfitriao';SALA.id=ID+(++criadas);SALA.anf=ID;SALA.gen=0;SALA.membros=[{id:ID,nome:nomeMeu(),cl:save.classe,lvl:ch().lvl}];
+  SALA.papel='anfitriao';SALA.id=ID+(++criadas);SALA.anf=ID;SALA.gen=0;SALA.caca=cacaDe(caca);SALA.membros=[{id:ID,nome:nomeMeu(),cl:save.classe,lvl:ch().lvl}];
   abreMasmorra();
   liga();avisa();log('Sala aberta, com a masmorra dela. Quem estiver na cidade a vê no Guia de caça.','info');
 }
@@ -101,9 +110,9 @@ export function entraPorta(){
   if(SALA.papel==='convidado'&&pronto&&!pedindo){pedindo=true;pedT=0;bc('entro',{id:ID,ficha:minhaFicha()});return true}
   return false;
 }
-export function entraSala(id){
+export function entraSala(id,caca){
   if(SALA.papel||typeof id!=='string'||!id)return;
-  SALA.papel='convidado';SALA.id=id;SALA.anf=null;SALA.gen=0;SALA.membros=[];semAnf=0;liga();avisa();
+  SALA.papel='convidado';SALA.id=id;SALA.anf=null;SALA.gen=0;SALA.caca=cacaDe(caca);SALA.membros=[];semAnf=0;liga();avisa();
 }
 /* o anfitrião sai: com mais gente, passa a sala ao convidado mais antigo;
    sozinho, fecha. A masmorra dele acaba (quem estava dentro volta à cidade
@@ -111,6 +120,7 @@ export function entraSala(id){
 export function saiDaSala(){
   if(!SALA.papel)return;
   const era=SALA.papel,resto=SALA.membros.filter(m=>m.id!==ID),prox=resto[0];
+  desligaVoz(false);
   if(era==='anfitriao'){
     if(prox)bc('passa',{anf:prox.id,gen:SALA.gen+1,lista:resto.map(semFicha),her:G&&G.sala&&!G.over?pacote():null});else bc('fecha',{});
     if(G&&G.sala){G.over=true;G.active=false}
@@ -128,8 +138,8 @@ function abrePorta(q){
   let i=IDX.get(q.id);
   if(i===undefined){i=G.ps.length;if(i>=8)return;IDX.set(q.id,i)}
   if(G.ps[i]&&!G.ps[i].fora)return;
-  entra(i,f);ENTS[i]=null;potesViu[i]=0;m.ficha=f;m.lvl=f.c.lvl;
-  bc('porta',{id:q.id,i,semente:G.semente,ps:G.ps.map(p=>({nome:p.nome,cl:p.cl,c:{lvl:p.c.lvl,equip:p.c.equip},up:{}}))});
+  entra(i,f);ENTS[i]=null;potesViu[i]=0;comidasViu[i]=0;m.ficha=f;m.lvl=f.c.lvl;
+  bc('porta',{id:q.id,i,semente:G.semente,h:G.caca,ps:G.ps.map(p=>({nome:p.nome,cl:p.cl,c:{lvl:p.c.lvl,equip:p.c.equip},up:{}}))});
   ritmo=0;mandaMembros();avisa();
 }
 /* a entrada de cada jogador para passo(): a deste aparelho e a última de
@@ -143,7 +153,7 @@ export function entradas(local){
 function mandaFim(p){
   const id=[...IDX].find(([,i])=>i===p.id);if(!id)return;
   const c=p.c;
-  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
+  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,com:p.com,
     c:{lvl:c.lvl,xp:c.xp,mag:c.mag,manaG:c.manaG,per:c.per,golpes:c.golpes,slots:c.slots}}});
 }
 /* chamado por saida.sai e saida.log/banner (src/main.js) para quem não é
@@ -174,15 +184,20 @@ function recebeAnf(ev,q,de){
     const i=IDX.get(q.id);if(i===undefined||q.id===ID)return;
     const e=ENTS[i]||(ENTS[i]={x:0,y:0,held:[false,false,false,false],pos:{x:0,y:0},f:0});
     const h=q.h|0;for(let k=0;k<4;k++)e.held[k]=!!(h&(1<<k));
+    /* a mira de cada espaço (sem ela, para onde ele olha) e quão longe */
+    e.mira=e.mira||[NaN,NaN,NaN,NaN];e.alc=e.alc||[1,1,1,1];
+    for(let k=0;k<4;k++){const a=Array.isArray(q.ma)?q.ma[k]:null,d=Array.isArray(q.md)?q.md[k]:100;
+      e.mira[k]=Number.isFinite(a)?a/100:NaN;e.alc[k]=Number.isFinite(d)?Math.max(0,Math.min(1,d/100)):1}
     /* o sqm em que o convidado diz estar; o anfitrião só anda até lá pela regra */
     if(Number.isInteger(q.x)&&Number.isInteger(q.y)){e.pos=e.pos||{x:0,y:0};e.pos.x=Math.max(0,Math.min(63,q.x));e.pos.y=Math.max(0,Math.min(63,q.y))}
     e.f=Number.isFinite(q.f)?q.f/100:e.f;
     /* a poção é um contador: cada aumento é um gole, mesmo que uma mensagem se perca */
     const n=q.pot|0;if(n>(potesViu[i]||0)){potesViu[i]=n;drinkPot(G.ps[i])}
+    const c=q.com|0;if(c>(comidasViu[i]||0)){comidasViu[i]=c;comer(G.ps[i])}
   }
 }
 const semFicha=m=>({id:m.id,nome:m.nome,cl:m.cl,lvl:m.lvl,d:dentro(m.id)?1:0});
-const mandaMembros=()=>bc('membros',{anf:ID,gen:SALA.gen,s:G&&G.sala?G.semente:0,lista:SALA.membros.map(semFicha)});
+const mandaMembros=()=>bc('membros',{anf:ID,gen:SALA.gen,s:G&&G.sala?G.semente:0,h:SALA.caca,lista:SALA.membros.map(semFicha)});
 function tira(id){
   const i=SALA.membros.findIndex(m=>m.id===id);if(i<1)return;
   const m=SALA.membros.splice(i,1)[0];log(`${m.nome} saiu da sua sala.`,'info');
@@ -230,7 +245,7 @@ function assume(velho,motivo){
   if(eu>=0&&!dentroEu)eu=-1;
   if(her&&adota(her.h,eu,fichaLocal())){
     IDX.clear();ENTS.length=0;ids.forEach((id,k)=>{if(id&&k<G.ps.length)IDX.set(id,k)});
-    potesViu=Array.isArray(her.pot)?her.pot.map(v=>v|0):[];
+    potesViu=Array.isArray(her.pot)?her.pot.map(v=>v|0):[];comidasViu=Array.isArray(her.com)?her.com.map(v=>v|0):[];
     if(eu<0){const k=IDX.has(ID)?IDX.get(ID):G.ps.length;entra(k,fichaLocal());G.ps[k].fora='fora';G.p=G.ps[k];IDX.set(ID,k)}
     const k=velho?IDX.get(velho):undefined;if(k!==undefined&&G.ps[k]&&!G.ps[k].fora)G.ps[k].fora='fora';
     /* quem estava dentro fica no sqm em que já estava neste aparelho */
@@ -267,6 +282,7 @@ function recebeConv(ev,q){
     SALA.membros=limpa(q.lista);
     if(!vazia&&anf!==SALA.anf){troca(anf,g,'A sala mudou de anfitrião.');return}
     SALA.anf=anf;SALA.gen=Math.max(SALA.gen,g);
+    if(q.h!==undefined)SALA.caca=cacaDe(q.h);
     if(vazia&&SALA.membros.length)log(`Você entrou na sala de ${SALA.membros[0].nome}. A masmorra dela está aberta: entre pela porta, no Guia de caça.`,'info');
     if(JSON.stringify(SALA.membros)!==antes)avisa();
   }else if(ev==='heranca'&&q&&q.anf===SALA.anf&&q.h&&typeof q.h==='object')ultHer=q;
@@ -280,7 +296,7 @@ function recebeConv(ev,q){
     pedindo=false;if(correndo())return;
     const i=q.i|0,fichas=q.ps.slice(0,8).map((f,k)=>k===i?confereFicha(minhaFicha()):confereFicha(f));
     if(i<0||i>=fichas.length||fichas.some(f=>!f))return;
-    eu=i;potes=0;ritmo=0;ganchos.comeca(q.semente>>>0,fichas,eu);
+    eu=i;potes=0;comidas=0;ritmo=0;SALA.caca=cacaDe(q.h);ganchos.comeca(q.semente>>>0,fichas,eu,SALA.caca);
   }else if(ev==='estado'&&q&&correndo()&&G.convidado)aplicaRetrato(q,eu);
   else if(ev==='fim'&&q&&q.id===ID&&correndo()&&G.convidado)aplicaFim(q.r);
   else if(ev==='log'&&q&&(q.id===null||q.id===ID)&&(correndo()||q.id===null)){if(q.b)ganchos.banner(String(q.m));else log(String(q.m),typeof q.c==='string'?q.c:'info')}
@@ -293,23 +309,26 @@ function aplicaFim(r){
   const kind=r.fora==='extraiu'||r.fora==='morreu'?r.fora:'desabou';
   if(r.c&&typeof r.c==='object'){
     c.lvl=Math.max(1,n(r.c.lvl));c.xp=n(r.c.xp);c.mag=n(r.c.mag);c.manaG=n(r.c.manaG);c.per=Math.max(10,n(r.c.per));c.golpes=n(r.c.golpes);
-    if(Array.isArray(r.c.slots))c.slots=[0,1,2,3].map(i=>{const k=r.c.slots[i];return SPELLS[k]&&SPELLS[k].c===save.classe&&SPELLS[k].lvl<=c.lvl?k:null});
+    if(Array.isArray(r.c.slots))c.slots=[0,1,2,3].map(i=>{const k=r.c.slots[i];return SPELLS[k]&&SPELLS[k].c===save.classe&&SPELLS[k].lvl<=c.lvl&&c.sabe.includes(k)?k:null});
   }
   const bag={};if(r.bag&&typeof r.bag==='object')for(const[k,q]of Object.entries(r.bag))if(ITEMS[k]&&n(q))bag[k]=n(q);
   p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);
-  p.ouroExt=0;p.pecas=0;p.fora=kind;p.c=c;
-  if(kind==='extraiu'){const g=guardaSaco(bag);p.ouroExt=g.ouro;p.pecas=g.pecas;save.ext++;save.best=Math.max(save.best,p.bagVal)}
-  else{save.deaths++;save.cofre+=p.sealed}
+  p.fora=kind;p.c=c;
+  /* a mochila sai como o anfitrião contou, ou fica na masmorra */
+  if(kind==='extraiu'){c.mochila=Object.assign({},bag);save.ext++;devolveComida(r.com);save.best=Math.max(save.best,valMochila(bag)-valMochila(p.bag0||{}))}
+  else{c.mochila={};save.deaths++;save.cofre+=p.sealed}
   persist();
   G.over=true;G.end=kind;G.dur=G.t;
   ganchos.fim(kind);
 }
 /* a entrada do convidado: o sqm em que está (ele anda no próprio aparelho), direção,
-   espaços segurados e quantas poções pediu */
+   espaços segurados, a mira de cada um e quantas poções e comidas pediu */
 export const pocao=()=>{potes++};
+export const comida=()=>{comidas++};
 function mandaEnt(ent){
   const p=G.p;let h=0;for(let k=0;k<4;k++)if(ent.held[k])h|=1<<k;
-  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,pot:potes});
+  const ma=[0,1,2,3].map(k=>ent.mira&&Number.isFinite(ent.mira[k])?Math.round(ent.mira[k]*100):null),md=(ent.alc||[1,1,1,1]).map(v=>Math.round(v*100));
+  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,ma,md,pot:potes,com:comidas});
 }
 
 /* ---------- canal ---------- */
@@ -318,8 +337,8 @@ function recebe(d){
   const p=d.payload||{};
   if(expulso(d)){const s=ws;ws=null;caiu();try{s&&s.close()}catch(e){}return}
   if(d.event==='phx_reply'&&d.ref==='1'){
-    if(p.status!=='ok'){SALA.estado='sem rede';return}
-    pronto=true;SALA.estado='ligado';
+    if(p.status!=='ok'){SALA.estado='sem rede';SALA.aoMudar();return}
+    pronto=true;SALA.estado='ligado';SALA.aoMudar();
     manda('presence',{type:'presence',event:'track',payload:{anf:SALA.papel==='anfitriao'}});
     if(SALA.papel==='convidado')bc('quero',{id:ID,ficha:minhaFicha()});else mandaMembros();
   }else if(d.event==='presence_diff'&&SALA.papel==='anfitriao'){
@@ -333,7 +352,8 @@ function recebe(d){
       if(id===SALA.anf)sucede('A conexão com o anfitrião caiu.');
       else{const n=SALA.membros.length;SALA.membros=SALA.membros.filter(m=>m.id!==id);if(SALA.membros.length!==n)avisa()}
     }
-  }else if(d.event==='broadcast'&&p.event){
+  }else if(d.event==='broadcast'&&p.event==='voz')recebeVoz(p.payload);
+  else if(d.event==='broadcast'&&p.event){
     if(SALA.papel==='anfitriao')recebeAnf(p.event,p.payload);else recebeConv(p.event,p.payload);
   }
 }

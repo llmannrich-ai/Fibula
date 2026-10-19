@@ -1,18 +1,13 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.20.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.20.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.20.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.20.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.36.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,SUP,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.36.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.36.0';
+import {G,num,shake,sai,solid} from './incursao.js?v=0.36.0';
 
-function target(p,range){
-  let best=null,bd=range;
-  for(const m of G.mons){const fd=flowAt(m);if(fd<0||fd>11)continue;const d=hyp(m.x-p.x,m.y-p.y);if(d<bd){bd=d;best=m}}
-  return best;
-}
 /* sem p, o jogador deste aparelho: é o que a tela pergunta */
-export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k];return b?b.v:0};
+export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k],s=p.sup&&p.sup[k];return (b?b.v:0)+(s?s.v:0)};
 const poderDe=(s,p)=>s.esc==='per'?p.c.per:p.c.mag;
 function rolaDano(s,p){
   const l=p.c.lvl,P=poderDe(s,p),mn=l/2+P*s.a1+s.b1,mx=l/2+P*s.a2+s.b2;
@@ -37,7 +32,7 @@ function aplicaEfeitos(m,s,p){
   if(s.lento){const f=s.lento.f;if(m.slow<=0||f<m.slowF)m.slowF=f;m.slow=Math.max(m.slow,s.lento.dur)}
   if(s.dot)m.dot={left:s.dot.dur,dps:Math.max(1,rolaDano(s,p)*s.dot.f),el:s.el,tick:0,p};
 }
-const efeito=(x,y,el)=>G.fx.push({k:'ef',x,y,n:'ef_'+(el||'fisico'),t:0,life:.5});
+export const efeito=(x,y,el)=>G.fx.push({k:'ef',x,y,n:'ef_'+(el||'fisico'),t:0,life:.5});
 export function atingir(m,s,mult,p){
   efeito(m.x,m.y,s.el);
   hitMon(m,Math.round(rolaDano(s,p)*(mult||1)),EL_COR[s.el],p);
@@ -66,37 +61,50 @@ function emLinha(cx,cy,ang,comp,lim){
   out.sort((a,b)=>a.t-b.t);
   return (lim?out.slice(0,lim):out).map(o=>o.m);
 }
-function miraEm(s,p){
-  const tg=target(p,s.raio?s.raio+40:alcanceDe(s,p)||T*7);
-  if(tg)p.face=Math.atan2(tg.y-p.y,tg.x-p.x);
-  return tg;
+/* a mira é do jogador (decisão do Leonardo, 19/10/2026): nada procura o
+   monstro mais perto. ang é a direção que ele escolheu (sem ela, para onde
+   olha) e frac, de 0 a 1, quão longe ele puxou: só a bomba usa, para cair
+   no ponto escolhido. Errar gasta a mana e a recarga como acertar */
+const ondeBate=(x,y,ux,uy,max)=>{let d=0;while(d<max){const n=Math.min(max,d+8);if(solid((x+ux*n)/T|0,(y+uy*n)/T|0))return d;d=n}return max};
+/* a forma da mira de cada habilidade, para a tela desenhar o que vai sair:
+   linha (proj, feixe), leque (cone, melee), ponto com área (bomba); aura,
+   cura e apoio não miram */
+export function formaMira(s,p=G.ps[0]){
+  if(!s)return null;
+  if(s.t==='proj')return{k:'linha',comp:alcanceDe(s,p)};
+  if(s.t==='feixe')return{k:'linha',comp:s.raio};
+  if(s.t==='cone'||s.t==='melee')return{k:'leque',raio:s.raio,ab:s.ang||.6};
+  if(s.t==='bomba')return{k:'ponto',comp:alcanceDe(s,p)||T*6,raio:s.raio||76};
+  return null;
 }
 export function podeLancar(id,p=G.ps[0]){
   const s=SPELLS[id];
   if(!s||p.c.lvl<s.lvl)return false;
   return (p.cds[id]||0)<=0&&(p.gcd[s.g]||0)<=0&&p.mp>=s.mana;
 }
-function lancar(id,p){
+function lancar(id,p,ang,frac){
   if(!G||!G.active||G.over||p.fora)return;
   const s=SPELLS[id];
   if(!s||p.c.lvl<s.lvl)return;
   if((p.cds[id]||0)>0||(p.gcd[s.g]||0)>0)return;
   if(p.mp<s.mana){if(s.cd>1)saida.log(`Mana insuficiente para ${s.n}.`,'warn',p);p.gcd[s.g]=.25;return}
   if(s.t==='cura'&&p.hp>=p.mhp)return;
+  if(formaMira(s,p))p.face=Number.isFinite(ang)?ang:p.face;
+  const ux=Math.cos(p.face),uy=Math.sin(p.face);
   let usou=true;
   switch(s.t){
     case'proj':{
-      const tg=target(p,alcanceDe(s,p));if(!tg){usou=false;break}
-      p.face=Math.atan2(tg.y-p.y,tg.x-p.x);
-      G.proj.push({k:'b',s,p,x:p.x+Math.cos(p.face)*12,y:p.y-14,tg,vx:0,vy:0,col:EL_COR[s.el],life:1.6});
+      /* reto, na direção da mira, até o alcance: bate no primeiro monstro
+         ou na parede, e no fim do alcance se desfaz com o mesmo efeito */
+      const V=560;
+      G.proj.push({k:'b',s,p,x:p.x+ux*12,y:p.y+uy*12,vx:ux*V,vy:uy*V,col:EL_COR[s.el],life:Math.max(.05,(alcanceDe(s,p)-12)/V)});
       break}
     case'bomba':{
-      const tg=miraEm(s,p);let tx,ty;
-      if(tg){tx=tg.x;ty=tg.y}else{tx=p.x+Math.cos(p.face)*90;ty=p.y+Math.sin(p.face)*90}
+      /* cai no ponto escolhido, ou antes, onde a parede corta o arremesso */
+      const max=alcanceDe(s,p)||T*6,d=ondeBate(p.x,p.y,ux,uy,max*clamp01(Number.isFinite(frac)?frac:1)),tx=p.x+ux*d,ty=p.y+uy*d;
       G.proj.push({k:'r',s,p,x:p.x,y:p.y-14,tx,ty,col:EL_COR[s.el],life:2.2});
       break}
     case'cone':{
-      miraEm(s,p);
       G.fx.push({k:'cone',x:p.x,y:p.y,ang:p.face,raio:s.raio,ab:s.ang,col:EL_COR[s.el],el:s.el,t:0,life:.4});
       for(const m of emCone(p.x,p.y,p.face,s.raio,s.ang))atingir(m,s,1,p);
       shake(4);break}
@@ -105,17 +113,17 @@ function lancar(id,p){
       for(const m of emCone(p.x,p.y,0,s.raio,Math.PI))atingir(m,s,1,p);
       shake(s.raio>120?7:4);break}
     case'feixe':{
-      miraEm(s,p);
-      G.fx.push({k:'feixe',x:p.x,y:p.y-8,ang:p.face,comp:s.raio,col:EL_COR[s.el],el:s.el,t:0,life:.3});
-      for(const m of emLinha(p.x,p.y,p.face,s.raio,s.max))atingir(m,s,1,p);
+      /* a linha de visão: a parede corta o raio */
+      const comp=ondeBate(p.x,p.y,ux,uy,s.raio);
+      G.fx.push({k:'feixe',x:p.x,y:p.y-8,ang:p.face,comp,col:EL_COR[s.el],el:s.el,t:0,life:.3});
+      for(const m of emLinha(p.x,p.y,p.face,comp,s.max))atingir(m,s,1,p);
       shake(3);break}
     case'melee':{
-      const tg=miraEm(s,p);
-      if(s.unico&&!tg){usou=false;break}
+      /* o golpe sai mesmo sem ninguém na frente */
       p.swing=.24;p.swingA=p.face;p.swingR=s.raio;
       const alvos=emCone(p.x,p.y,p.face,s.raio,s.ang,s.unico?1:0);
-      if(s.unico&&!alvos.length){usou=false;break}
       for(const m of alvos)atingir(m,s,1,p);
+      if(!alvos.length)efeito(p.x+ux*s.raio*.7,p.y+uy*s.raio*.7,s.el);
       if(s.multi)for(let i=1;i<s.multi;i++)G.pend.push({t:i*.16,fn:()=>{
         if(p.fora)return;
         const vivos=emCone(p.x,p.y,p.face,s.raio+8,s.ang,1);
@@ -139,7 +147,8 @@ function lancar(id,p){
   p.mp-=s.mana;gastaMana(s.mana,p);
   p.cds[id]=s.cd;p.gcd[s.g]=Math.max(p.gcd[s.g]||0,s.gcd||s.cd);
 }
-export function lancarSlot(i,p){const id=p.c.slots[i];if(id)lancar(id,p)}
+const clamp01=v=>v<.15?.15:v>1?1:v;
+export function lancarSlot(i,p,ang,frac){const id=p.c.slots[i];if(id)lancar(id,p,ang,frac)}
 export function drinkPot(p=G&&G.ps[0]){
   if(!G||!G.active||G.over||p.fora)return;
   if(p.cdC>0)return;
@@ -147,6 +156,18 @@ export function drinkPot(p=G&&G.ps[0]){
   if(p.hp>=p.mhp)return;
   const h=45+5*(p.c.lvl-1);p.hp=Math.min(p.mhp,p.hp+h);p.pot--;p.cdC=1;
   num(p.x,p.y-30,'+'+h,'#7ee07a',true);efeito(p.x,p.y,'cura');
+}
+/* comer, como no Tibia: a comida soma os segundos dela ao tempo de
+   alimentação (p.ali), e só alimentado se regenera. Come a menor que o
+   jogador levou; se o tempo passaria do máximo, não come nada */
+export function comer(p=G&&G.ps[0]){
+  if(!G||!G.active||G.over||p.fora||p.cdCo>0)return;
+  let k=null;for(const j in p.com)if(p.com[j]>0&&(!k||SUP[j].efeito.comida<SUP[k].efeito.comida))k=j;
+  if(!k){saida.log('Sem comida na mochila.','warn',p);return}
+  const s=SUP[k].efeito.comida;
+  if(p.ali+s>PROG.comida.max){saida.log('Você está satisfeito.','info',p);p.cdCo=1;return}
+  p.ali+=s;p.com[k]--;if(!p.com[k])delete p.com[k];p.cdCo=1;
+  num(p.x,p.y-30,'Nham.','#e8c872');
 }
 export function explode(x,y,s,p){
   const raio=s.raio||76;
@@ -176,20 +197,23 @@ function kill(m){
   /* um drop só, e quem causou mais dano tem a vez (ver update) */
   if(got.length)G.drops.push({x:m.x,y:m.y,items:got,rar,t:0,dono});
   saida.log(`Loot de ${m.t.nome}: ${got.length?got.map(fmtItem).join(', '):'nada'}.`,['loot','rare','epic'][rar]);
-  if(m.t.boss){saida.banner('Guardião derrotado');}
+  if(m.t.boss){saida.banner(m.t.nome+' caiu');}
 }
 function gainXp(x,p){
   const c=p.c;c.xp+=x;p.xpGain+=x;num(p.x,p.y-40,x+' xp','#f3ead6');
   while(c.xp>=xpNeed(c.lvl)){
-    const slotsAntes=nSlots(c),tinha=desbloqueadas(c,p.cl).length;
+    const slotsAntes=nSlots(c);
     c.xp-=xpNeed(c.lvl);c.lvl++;
     const st=stats(c,p.cl,p.up),dh=st.mhp-p.mhp,dm=st.mmp-p.mmp;
     p.mhp=st.mhp;p.mmp=st.mmp;
     p.hp=Math.min(p.mhp,p.hp+dh);p.mp=Math.min(p.mmp,p.mp+dm);
     saida.banner(`Nível ${c.lvl}`,p);saida.log(`Você subiu para o nível ${c.lvl}. Vida e mana máximas aumentaram.`,'info',p);
     if(nSlots(c)>slotsAntes)saida.log(`Novo espaço de habilidade liberado: agora você leva ${nSlots(c)} para a masmorra.`,'rare',p);
-    const novas=desbloqueadas(c,p.cl);
-    if(novas.length>tinha)for(const k of novas.slice(tinha)){
+    /* a habilidade do nível novo: de graça vem sozinha; com preço, o Mestre
+       de magias ensina na cidade */
+    for(const k of listaDaClasse(p.cl)){if(SPELLS[k].lvl!==c.lvl||(c.sabe&&c.sabe.includes(k)))continue;
+      if(precoHab(k)){saida.log(`${SPELLS[k].n} já pode ser aprendida com o Mestre de magias, por ${precoHab(k)} de ouro.`,'epic',p);continue}
+      if(c.sabe)c.sabe.push(k);
       saida.log(`Habilidade aprendida: ${SPELLS[k].n}. Equipe no Grimório.`,'epic',p);
       const vago=c.slots.indexOf(null);
       if(vago>=0&&vago<nSlots(c)){c.slots[vago]=k;saida.log(`${SPELLS[k].n} foi para o espaço ${vago+1}.`,'info',p)}
@@ -207,15 +231,47 @@ export function hurtPlayer(p,d){
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;sai(p,'morreu')}
 }
-/* venda do saco na Feira (src/hud.js): a peça sai do saco quando o jogador
+/* venda da mochila na Feira (src/hud.js): a peça sai da mochila quando o jogador
    anuncia e volta se o banco recusar. Quem chama é o cliente, com a resposta
    da rede, fora do update() — como drinkPot(); na F2 vira entrada (ent) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
 export function poeNoSaco(p,k,q){p.bag[k]=(p.bag[k]|0)+q;p.bagVal+=ITEMS[k].val*q}
+/* vestir na caçada, como no Tibia (decisão do Leonardo): a peça sai da
+   mochila e vale na hora; a que estava no corpo vai para a mochila e corre o
+   risco dela (tirar só se couber).
+   p.troca é o saldo de cada peça que entrou (+) ou saiu (−) do corpo, para a
+   extração dar origem só ao que veio desta caçada (cacaFim). Vida e mana
+   máximas mudam, mas a atual não sobe junto: senão tirar e pôr cura */
+const troca=(p,k,n)=>{const t=p.troca||(p.troca={});t[k]=(t[k]|0)+n;if(!t[k])delete t[k]};
+function reveste(p){const st=stats(p.c,p.cl,p.up);p.mhp=st.mhp;p.mmp=st.mmp;p.hp=Math.min(p.hp,p.mhp);p.mp=Math.min(p.mp,p.mmp)}
+export function vesteDoSaco(p,k){
+  const it=ITEMS[k],e=p.c.equip;if(!it||!it.slot||p.fora||!tiraDoSaco(p,k,1))return false;
+  const v=e[it.slot];if(v){poeNoSaco(p,v,1);troca(p,v,-1)}
+  e[it.slot]=k;troca(p,k,1);reveste(p);return true}
+/* as peças que esta caçada rendeu, para a origem na nuvem: a mochila de
+   agora, mais a que foi vestida dela, menos a que saiu do corpo para ela,
+   menos o que já estava nela ao entrar (p.bag0, contado na caçada de antes) */
+export const pecasDaCaca=p=>{const o={},b0=p.bag0||{},t=p.troca||{};
+  for(const k of new Set([...Object.keys(p.bag),...Object.keys(t)])){if(!ITEMS[k].slot)continue;
+    const n=(p.bag[k]|0)+(t[k]|0)-(b0[k]|0);if(n>0)o[k]=n}return o};
+/* na morte, só as vestidas da mochila que ainda estão no corpo e não tinham
+   entrado nela já com origem (p.bag0): o banco dá origem a elas (no máximo
+   uma por casa), e o resto da mochila se perde */
+export const vestidasDaCaca=p=>{const o={},b0=p.bag0||{};for(const[k,n]of Object.entries(p.troca||{})){const q=n-(b0[k]|0);if(q>0)o[k]=q}return o};
+export function tiraProSaco(p,sl){const e=p.c.equip,k=e[sl];if(!k||p.fora||!cabe(p.bag,k))return false;e[sl]=null;poeNoSaco(p,k,1);troca(p,k,-1);reveste(p);return true}
+/* o loot vai para a mochila até ela encher (progression.mochila); o que não
+   cabe fica no chão, e o aviso sai uma vez por jogador em cada drop (d.av) */
 export function pickup(d,i,p){
-  let v=0;
-  for(const[k,q]of d.items){p.bag[k]=(p.bag[k]||0)+q;v+=ITEMS[k].val*q}
-  p.bagVal+=v;G.drops.splice(i,1);
+  let v=0,levou=null,resta=null;
+  for(const it of d.items){const[k,q]=it,n=Math.min(q,cabe(p.bag,k));
+    if(n>0){p.bag[k]=(p.bag[k]||0)+n;v+=ITEMS[k].val*n;(levou||(levou=[])).push(n<q?[k,n]:it)}
+    if(n<q)(resta||(resta=[])).push(n?[k,q-n]:it)}
+  const avisa=t=>{if(d.av&1<<p.id)return;d.av|=1<<p.id;saida.log(t,'info',p)};
+  if(!levou)return avisa('A mochila está cheia. O loot ficou no chão.');
+  p.bagVal+=v;
+  if(resta){d.items=resta;d.rar=Math.max(...resta.map(g=>ITEMS[g[0]].rar));avisa('A mochila está cheia: parte do loot ficou no chão.')}
+  else G.drops.splice(i,1);
   num(p.x,p.y-30,'+'+v+' ouro','#f2c14e');
-  if(d.rar>=1)saida.log(`Você guardou: ${d.items.filter(([k])=>ITEMS[k].rar>=1).map(fmtItem).join(', ')}.`,['loot','rare','epic'][d.rar],p);
+  const raro=levou.filter(([k])=>ITEMS[k].rar>=1);
+  if(raro.length)saida.log(`Na mochila: ${raro.map(fmtItem).join(', ')}.`,['loot','rare','epic'][Math.max(...raro.map(([k])=>ITEMS[k].rar))],p);
 }
