@@ -2743,7 +2743,7 @@ const CASOS = [
   },
   {
     nome: 'feira-saco',
-    o_que: 'com conta, a caçada abre no banco; a Mochila vende uma peça do saco na Feira (sai do saco, vai com a caçada e o saco); a extração fecha a caçada com o saco que sobrou e a peça vendida não volta ao cofre',
+    o_que: 'com conta, a caçada abre no banco; a Mochila não vende na Feira durante a caçada; a extração fecha a caçada com o saco e dá origem ao que ela rendeu',
     semente: 11,
     limite: 90000,
     patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.nuvem(null, {}, {lastro: {ouro: 0, itens: {}}})],
@@ -2766,15 +2766,8 @@ const CASOS = [
     var esp=todos('#moGrade .cel:not(:disabled)').filter(function(b){return /espada/.test(b.getAttribute('aria-label')||'')})[0];
     ok('a espada está no saco da Mochila', !!esp);
     clica(esp);
-    ok('peça do saco oferece a venda na Feira pelo valor dela', visivel('#moVenda')&&$('#mvPreco').value==='20', $('#mvPreco').value);
-    clica($('#mvMais'));
-    clica($('#mvOk'));
-    var vendeu=await ate(function(){return /anunciada na Feira a 21/.test(txt('#mvMsg')||'')},300);
-    ok('a venda do saco foi anunciada', vendeu, txt('#mvMsg'));
-    var a=window.__nuvem.args.mercado_anunciar||{};
-    ok('o anúncio leva a caçada e o saco de antes', a.p_caca===501&&a.p_saco&&a.p_saco.espada===1&&a.p_qtd===1&&a.p_lado==='venda', JSON.stringify(a));
-    ok('a espada saiu do saco e do valor dele', txt('#bagT')==='200'&&!todos('#moGrade .cel:not(:disabled)').some(function(b){return /espada/.test(b.getAttribute('aria-label')||'')}), txt('#bagT'));
-    ok('peça vestida não oferece venda', (clica(todos('#moDoll .cel')[0]),!visivel('#moVenda')));
+    ok('na caçada, a Mochila não vende na Feira', !$('#moVenda')&&!todos('#moAcoes button').some(function(b){return /Feira/.test(b.textContent)}), txt('#moAcoes'));
+    clica(todos('#moDoll .cel')[0]);
     clica($('#moX'));
     tecla('keydown','KeyJ');
     var acabou=await ate(function(){return visivel('#end')},1500);
@@ -2782,9 +2775,9 @@ const CASOS = [
     ok('saiu pelo portal', acabou&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
     var fim=await ate(function(){return !!window.__nuvem.args.caca_fim},300);
     var f=window.__nuvem.args.caca_fim||{};
-    ok('a extração fecha a caçada no banco, sem a peça vendida', fim&&f.p_id===501&&f.p_desfecho==='extraiu'&&!(f.p_saco||{}).espada, JSON.stringify(f));
+    ok('a extração fecha a caçada no banco, sem vender nada', fim&&f.p_id===501&&f.p_desfecho==='extraiu'&&!window.__nuvem.args.mercado_anunciar, JSON.stringify(f));
     ok('o ouro extraído vai como origem', f.p_ouro>=200&&window.__nuvem.mk.lastro.ouro===f.p_ouro, f.p_ouro+' / '+window.__nuvem.mk.lastro.ouro);
-    ok('a espada vendida não volta ao cofre', sv()&&!(sv().itens||{}).espada, sv()&&JSON.stringify(sv().itens));
+    ok('a espada volta com a mochila', sv()&&(sv().chars.feiticeiro.mochila||{}).espada===1, sv()&&JSON.stringify(sv().chars.feiticeiro.mochila));
     ok('a fila da origem esvaziou', (localStorage.getItem('masmorra-runas-v2-fila')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-fila'));
 `,
   },

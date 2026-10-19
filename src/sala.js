@@ -30,16 +30,16 @@
    e diz quem fica no lugar, com a herança) e fecha (saiu sozinho),
    e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
 
-import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.43.1';
-import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.43.1';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid} from './sim/incursao.js?v=0.43.1';
-import {novaSemente} from './sim/base.js?v=0.43.1';
-import {drinkPot,comer} from './sim/combate.js?v=0.43.1';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.43.1';
-import {rede,ID,anuncia} from './rede.js?v=0.43.1';
-import {persist} from './salvar.js?v=0.43.1';
-import {log} from './hud.js?v=0.43.1';
-import {recebeVoz,desligaVoz} from './voz.js?v=0.43.1';
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.43.2';
+import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.43.2';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid} from './sim/incursao.js?v=0.43.2';
+import {novaSemente} from './sim/base.js?v=0.43.2';
+import {drinkPot,comer} from './sim/combate.js?v=0.43.2';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.43.2';
+import {rede,ID,anuncia} from './rede.js?v=0.43.2';
+import {persist} from './salvar.js?v=0.43.2';
+import {log} from './hud.js?v=0.43.2';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.43.2';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
