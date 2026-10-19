@@ -152,16 +152,40 @@ const P = {
      (tools/supabase/002_login_simples.sql): window.__nuvem.dados é o save do
      jogador (null = sem save), contas guarda usuário → senha, e cada leitura,
      gravação e login fica contado para o roteiro conferir. O token válido é
-     sempre 'tk1', do jogador 'u1'. */
-  nuvem: (remoto, contas) => (h) => patch(h,
+     sempre 'tk1', do jogador 'u1'.
+     mk imita as funções do mercado (tools/supabase/003_mercado.sql): mk.itens
+     é o livro ({item:{venda:[[preço,qtd]],compra:[…]}}), mk.minhas as ofertas
+     do jogador, mk.caixa o que espera para entrar no cofre. O match é o do
+     primeiro nível do outro lado, que basta para a tela; o algoritmo de
+     verdade é testado no SQL. N.forcaErro faz a próxima operação falhar com
+     a palavra-chave dada, e save_gravar recusa save com mkt mais velho. */
+  nuvem: (remoto, contas, mk) => (h) => patch(h,
     MODULO,
     `<script>
-window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0};
+window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0,
+  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100}, mk || {}))},chamadas:[],forcaErro:''};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
   const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
     erro=m=>r(400,{code:'P0001',message:m}),fn=u.split('/rpc/')[1];
   if(fn==='save_ler'){N.gets++;N.token=b.p_token;return b.p_token==='tk1'?r(200,N.dados):erro('sessao')}
-  if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');N.posts++;N.dados=b.p_dados;return r(204,null)}
+  if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');
+    if(N.dados&&(b.p_dados.mkt|0)<(N.dados.mkt|0))return erro('mercado');N.posts++;N.dados=b.p_dados;return r(204,null)}
+  if(fn.indexOf('mercado_')===0){if(b.p_token!=='tk1')return erro('sessao');N.chamadas.push(fn);const M=N.mk;
+    if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa});
+    if(!N.dados)return erro('sem_save');
+    if(N.forcaErro){const m=N.forcaErro;N.forcaErro='';return erro(m)}
+    const D=N.dados,it=D.itens||(D.itens={}),poe=(k,q)=>{it[k]=(it[k]|0)+q;if(it[k]<=0)delete it[k]},rec={ouro:0,itens:{}};
+    if(M.caixa){rec.ouro=M.caixa.ouro;rec.itens=M.caixa.itens;D.cofre+=M.caixa.ouro;for(const k in M.caixa.itens)poe(k,M.caixa.itens[k]);M.caixa=null}
+    const fim=x=>{D.mkt=(D.mkt|0)+1;D.em=Date.now();return r(200,Object.assign({cofre:D.cofre,itens:JSON.parse(JSON.stringify(it)),mkt:D.mkt,recebido:rec},x||{}))};
+    if(fn==='mercado_coletar')return fim();
+    if(fn==='mercado_cancelar'){const i=M.minhas.findIndex(o=>o.id===b.p_id);if(i<0)return erro('ordem');const o=M.minhas.splice(i,1)[0];
+      if(o.lado==='compra')D.cofre+=o.preco*o.resta;else poe(o.item,o.resta);return fim()}
+    if(fn==='mercado_anunciar'){const k=b.p_item,pr=b.p_preco,q=b.p_qtd,compra=b.p_lado==='compra',L=M.itens[k]||{venda:[],compra:[]};
+      if(compra){if(D.cofre<pr*q)return erro('sem_ouro');D.cofre-=pr*q}else{if((it[k]|0)<q)return erro('sem_peca');poe(k,-q)}
+      const op=compra?L.venda:L.compra,n0=op[0],f=n0&&(compra?n0[0]<=pr:n0[0]>=pr)?Math.min(q,n0[1]):0,tot=f?f*n0[0]:0,tx=compra?0:Math.ceil(tot*2/100);
+      if(f){if(compra){poe(k,f);D.cofre+=(pr-n0[0])*f}else D.cofre+=tot-tx;n0[1]-=f;if(!n0[1])op.shift()}
+      const resta=q-f;if(resta)M.minhas.unshift({id:++M.seq,lado:b.p_lado,item:k,preco:pr,qtd:q,resta:resta});
+      return fim({feitos:f,resta:resta,ouro:tot-tx,taxa:tx,ordem:resta?M.seq:null})}}
   if(fn==='conta_entrar'){N.login=b.p_usuario;return N.contas[b.p_usuario.toLowerCase()]===b.p_senha?r(200,{token:'tk1',id:'u1',usuario:b.p_usuario}):erro('credenciais')}
   if(fn==='conta_criar'){N.login=b.p_usuario;if(b.p_usuario.toLowerCase() in N.contas)return erro('usuario_existe');
     N.contas[b.p_usuario.toLowerCase()]=b.p_senha;return r(200,{token:'tk1',id:'u1',usuario:b.p_usuario})}
@@ -185,7 +209,7 @@ function ajusta(c, caminho, esperado, novo, nome) {
 const A = {
   /* rato letal: mata o jogador num golpe, para exercitar finish("morreu") */
   ratoLetal: (c) => {
-    ajusta(c, 'enemies.rato.spd', 72, 150, 'rato letal');
+    ajusta(c, 'enemies.rato.spd', 134, 400, 'rato letal');
     ajusta(c, 'enemies.rato.dmg', 4, 200, 'rato letal');
     ajusta(c, 'enemies.rato.atk', 0.9, 0.3, 'rato letal');
   },
@@ -703,18 +727,19 @@ async function testaSimulacao() {
     novoSave();
     const W = JSON.parse(CONTEUDO).progression.walk, c = P.ch();
     c.lvl = 1; const d1 = P.durPasso(c); c.lvl = 200; const dmax = P.durPasso(c); c.lvl = 1;
-    if (d1 !== 0.3 || dmax !== 0.2) falhas.push(`passo do nível 1 = ${d1} s e no teto = ${dmax} s (esperado 0,3 e 0,2 com base ${W.base} e max ${W.max})`);
-    if (Math.abs(P.durPasso(c, 0.5) - 0.2) > 1e-9) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)}`);
+    /* a fórmula do Tibia: nível 1 (220) = 550 ms; nível 200 (618) = 250 ms; 150 (orc) = 800 ms */
+    if (d1 !== 0.55 || dmax !== 0.25 || P.passoDaVel(150) !== 0.8) falhas.push(`passo do nível 1 = ${d1} s, nível 200 = ${dmax} s, velocidade 150 = ${P.passoDaVel(150)} s (esperado 0,55, 0,25 e 0,8 como no Tibia)`);
+    if (P.durPasso(c, 0.5) !== 0.4) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)} (esperado 0,4)`);
     I.newRun(7); I.G.active = true;
     const p = I.G.ps[0], cx = (t) => (t + 0.5) * 32;
     if (p.x !== cx(p.tx) || p.y !== cx(p.ty)) falhas.push(`o jogador não nasce no centro de um sqm (${p.x},${p.y})`);
-    /* leste por 1,5 s: 5 passos de 0,3 s, e para no centro do sqm */
+    /* leste por 2,2 s: 4 passos de 0,55 s, e para no centro do sqm */
     const leste = {x: 1, y: 0, held: [false, false, false, false]}, nada = {x: 0, y: 0, held: [false, false, false, false]};
     let livres = 0; while (!I.solid(p.tx + livres + 1, p.ty) && livres < 8) livres++;
-    const x0 = p.tx, alvo = Math.min(5, livres);
-    for (let i = 0; i < 30; i++) I.passo(0.05, leste);
-    for (let i = 0; i < 10; i++) I.passo(0.05, nada);
-    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 1,5 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
+    const x0 = p.tx, alvo = Math.min(4, livres);
+    for (let i = 0; i < 44; i++) I.passo(0.05, leste);
+    for (let i = 0; i < 12; i++) I.passo(0.05, nada);
+    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 2,2 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
     /* um monstro por sqm, nenhum no sqm de um jogador, em toda uma incursão com o jogador andando */
     I.newRun(11); I.G.active = true;
     const roteiro = [{x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 1, y: 1}];
@@ -748,12 +773,13 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,corretor,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
     /* anda por sqm: oeste até a coluna da porta (5), parando no centro dela */
     for (let i = 0; i < 200 && (C.p.tx > 5 || C.p.mv); i++) Cd.updateCidade(0.05, C.p.tx > 5 ? oeste : parado);
-    for (let i = 0; i < 40; i++) Cd.updateCidade(0.05, norte);
+    /* norte pela porta até o Mercador ficar ao alcance (no ritmo do Tibia, ~0,55 s por sqm) */
+    for (let i = 0; i < 200 && C.perto !== 'mercador'; i++) Cd.updateCidade(0.05, norte);
     if (C.perto !== 'mercador') falhas.push(`andar até a casa do Mercador não o deixou ao alcance (${C.perto} em ${C.p.x},${C.p.y})`);
     const m = C.npcs.find((n) => n.k === 'mercador');
     if (!(C.p.y > m.y + 10)) falhas.push('o jogador atravessou o Mercador');
@@ -864,6 +890,10 @@ const CASOS = [
     Tl.abreNpc('banqueiro');
     ok('o Banqueiro abre o Banco', visivel('#equip')&&txt('#equip h2')==='Banco', txt('#equip h2'));
     clica($('#eqBack'));
+    Tl.abreNpc('corretor');
+    ok('o Corretor abre a Feira', visivel('#mkt')&&txt('#mkt h2')==='Feira', txt('#mkt h2'));
+    ok('sem conta, a Feira pede para entrar e não negocia', /entre com uma conta/.test(txt('#mktMsg')||'')&&todos('#mktItens button').every(function(b){return b.disabled}), txt('#mktMsg'));
+    clica($('#mktBack'));
     Tl.abreNpc('guia');
     ok('o Guia mostra os mapas de caça', visivel('#hunts')&&todos('#huntList li').length>=1, todos('#huntList li').length);
     ok('o mapa de caça diz o nível recomendado', /nível recomendado 1/.test(txt('#huntList .meta')||''), txt('#huntList .meta'));
@@ -1043,12 +1073,12 @@ const CASOS = [
     ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.tx===Cd.C.w-1&&m.ty===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
     RT.sai('mal');
     var n0=RT.posMandadas().length,x0=Cd.C.p.tx;
-    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await ate(function(){return !Cd.C.p.mv},30);await quadros(2);
+    tecla('keydown','KeyD');await quadros(24);tecla('keyup','KeyD');await ate(function(){return !Cd.C.p.mv},40);await quadros(2);
     var n1=RT.posMandadas().length-n0,andou=Cd.C.p.tx-x0;
     ok('andando, manda uma mensagem por passo e nada parado', andou>=2&&n1===andou, n1+' mensagens, '+andou+' sqm');
     var ult=RT.posMandadas()[RT.posMandadas().length-1].payload.payload;
     ok('a última posição mandada é o sqm onde parei', ult.x===Cd.C.p.tx&&ult.y===Cd.C.p.ty&&!Cd.C.p.mv, JSON.stringify(ult)+' / '+Cd.C.p.tx+','+Cd.C.p.ty);
-    ok('cada mensagem é um passo de um sqm, com a duração dele', RT.posMandadas().slice(n0).every(function(q){return q.payload.payload.d>=150&&q.payload.payload.d<=700}), JSON.stringify(RT.posMandadas().slice(n0).map(function(q){return q.payload.payload})));
+    ok('cada mensagem é um passo de um sqm, com a duração dele', RT.posMandadas().slice(n0).every(function(q){return q.payload.payload.d>=250&&q.payload.payload.d<=800}), JSON.stringify(RT.posMandadas().slice(n0).map(function(q){return q.payload.payload})));
     RT.sai('ana1');await quadros(3);
     ok('quem sai some, e o registro avisa', !Cd.OUTROS.has('ana1')&&/Ana saiu da cidade/.test(txt('#log')||''), Cd.OUTROS.size);
     ok('sem ninguém, o HUD volta a só você', txt('#cRede')==='Só você na cidade', txt('#cRede'));
@@ -1135,6 +1165,119 @@ const CASOS = [
     await quadros(4);
     ok('o amuleto chegou em stats(): 85+15 de vida', txt('#hpT')==='100/100', txt('#hpT'));
     ok('o amuleto chegou em stats(): 95+15 de mana', txt('#mpT')==='110/110', txt('#mpT'));
+`,
+  },
+  {
+    nome: 'mochila',
+    o_que: 'botão Mochila na cidade e na masmorra: corpo vestido, saco em grade com o risco da morte, sem pausar o jogo',
+    semente: 7,
+    patches: [P.tempo(8, 3), P.sacoEquip],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 1},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], equip: {arma: 'machado', armadura: null, amuleto: null}}},
+    }},
+    roteiro: `
+    var bt=$('#bMochila'),aberta=function(){return visivel('#mochila')};
+    var cheias=function(){return todos('#moGrade .cel:not(:disabled)')};
+    clica($('#play'));
+    ok('o botão Mochila aparece na cidade', getComputedStyle(bt).display!=='none');
+    clica(bt);
+    ok('a mochila abre na cidade', aberta()&&bt.getAttribute('aria-expanded')==='true');
+    var arma=todos('#moDoll .cel')[2];
+    ok('o corpo mostra a arma vestida', (arma.getAttribute('aria-label')||'').indexOf('Arma: machado rachado')===0, arma.getAttribute('aria-label'));
+    ok('o corpo mostra os espaços vazios', todos('#moDoll .cel').filter(function(b){return / vazio$/.test(b.getAttribute('aria-label')||'')}).length===2, todos('#moDoll .cel').map(function(b){return b.getAttribute('aria-label')}).join(' | '));
+    ok('o total vestido aparece', txt('#moTot')==='Vestido: +10% de dano. Vida 85 · Mana 95', txt('#moTot'));
+    ok('na cidade o saco está vazio, em grade', cheias().length===0&&todos('#moGrade .cel').length===12, todos('#moGrade .cel').length);
+    tecla('keydown','KeyB');tecla('keyup','KeyB');
+    ok('B fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
+    clica(bt);
+    cacar();
+    ok('entrar na masmorra fecha a mochila', !aberta());
+    await quadros(2);
+    clica(bt);
+    ok('a mochila abre na masmorra', aberta());
+    ok('o saco mostra o valor', txt('#moVal')==='220 ouro', txt('#moVal'));
+    ok('o saco tem as duas peças, a mais valiosa primeiro', cheias().length===2&&/^200 de ouro/.test(cheias()[0].getAttribute('aria-label')||''), cheias().map(function(b){return b.getAttribute('aria-label')}).join(' | '));
+    ok('o risco da morte aparece, com o selo', txt('#moRisco')==='Se morrer, perde 176 de ouro (o selo guarda 44). Extraia para guardar.', txt('#moRisco'));
+    clica(cheias()[1]);
+    ok('tocar numa peça diz o que ela é', txt('#moInfo')==='espada enferrujada · vale 20 de ouro · Arma, +6% de dano. Ao extrair, vai para o Banco.', txt('#moInfo'));
+    ok('a peça tocada fica marcada', $('#moGrade .cel.on')&&$('#moGrade .cel.on').dataset.k==='espada');
+    var t0=txt('#timeT');
+    await quadros(40);
+    ok('o jogo não pausa com a mochila aberta', txt('#timeT')!==t0&&aberta(), t0+' → '+txt('#timeT'));
+    tecla('keydown','Escape');
+    ok('Esc fecha a mochila', !aberta());
+    clica(bt);
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    ok('a incursão acabou', acabou);
+    ok('a tela final fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
+`,
+  },
+  {
+    nome: 'equipamento-no-corpo',
+    o_que: 'o que o personagem veste aparece nele: retrato no Banco, cidade, incursão com golpe, e os outros jogadores veem pela presença',
+    semente: 11,
+    limite: 90000,
+    patches: [P.spawnNaEntrada],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {couraca: 1}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null],
+        equip: {arma: 'espada', armadura: 'cota', amuleto: 'amuleto'}}},
+    }},
+    roteiro: `
+    var RT=window.__rt,V=document.querySelector('script[src*="main.js"]').src.split('v=')[1];
+    var chegou=await ate(function(){return $('#app').dataset.arte==='1'},400);
+    ok('o atlas carregou', chegou);
+    /* uma impressão digital dos pixels do retrato: muda se o boneco muda */
+    var digital=function(){var c=$('#eqBoneco canvas'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,h=0,n=0;
+      for(var i=0;i<d.length;i+=4){if(d[i+3]){n++;h=(Math.imul(h,31)+d[i]*7+d[i+1]*13+d[i+2]*17+i)|0}}return n+':'+h};
+    clica($('#play'));
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    var tr=RT.enviadas.filter(function(d){return d.event==='presence'});
+    ok('a presença diz o que ele veste', tr.length===1&&JSON.stringify(tr[0].payload.payload.eq)==='{"arma":"espada","armadura":"cota","amuleto":"amuleto"}', tr.length&&JSON.stringify(tr[0].payload.payload));
+    /* dado de fora: só peça que existe e é daquele espaço */
+    RT.entra('ana1',{nome:'Ana',classe:'druida',lvl:4,eq:{arma:'machado',armadura:'coroa',amuleto:'__proto__'}});RT.pos('ana1',9,9);
+    await quadros(4);
+    var a=Cd.OUTROS.get('ana1');
+    ok('o equipamento dos outros chega conferido', a&&a.eq.arma==='machado'&&a.eq.armadura===null&&a.eq.amuleto===null, a&&JSON.stringify(a.eq));
+    RT.entra('bia',{nome:'Bia',classe:'feiticeiro',lvl:2});RT.pos('bia',10,9);
+    await quadros(4);
+    ok('quem não manda equipamento aparece sem nada', Cd.OUTROS.get('bia')&&Cd.OUTROS.get('bia').eq.arma===null, Cd.OUTROS.get('bia')&&JSON.stringify(Cd.OUTROS.get('bia').eq));
+    Tl.abreNpc('banqueiro');
+    ok('o Banco mostra o boneco vestido', visivel('#eqBoneco'), $('#eqBoneco').hidden);
+    var d0=digital();
+    ok('o retrato tem o boneco desenhado', +d0.split(':')[0]>300, d0);
+    clica($('#eqBoneco'));var d1=digital();
+    ok('tocar no boneco o gira', d1!==d0, d0+' → '+d1);
+    clica($('#eqBoneco'));clica($('#eqBoneco'));clica($('#eqBoneco'));
+    ok('quatro toques voltam de frente', digital()===d0, digital());
+    var linha=todos('#eqList li.sp')[0];
+    clica(linha.querySelectorAll('.btns button')[0]);
+    var d2=digital();
+    ok('trocar a cota pela couraça muda o boneco', sv().chars.cavaleiro.equip.armadura==='couraca'&&d2!==d0, d2);
+    clica(todos('#eqSlots button')[0]);
+    ok('tirar a arma também muda o boneco', !sv().chars.cavaleiro.equip.arma&&digital()!==d2, digital());
+    await quadros(3);
+    tr=RT.enviadas.filter(function(d){return d.event==='presence'});
+    var ult=tr[tr.length-1].payload.payload.eq;
+    ok('o que muda no Banco vai de novo para os outros', tr.length===2&&ult.arma===null&&ult.armadura==='couraca'&&ult.amuleto==='amuleto', tr.length+' / '+JSON.stringify(ult));
+    clica($('#eqList li.sp .btns button'));
+    ok('a espada voltou para a mão', sv().chars.cavaleiro.equip.arma==='espada', JSON.stringify(sv().chars.cavaleiro.equip));
+    clica($('#eqBack'));
+    await quadros(6);
+    cacar();
+    await quadros(2);
+    ok('a incursão começou vestida', $('#app').classList.contains('playing'));
+    tecla('keydown','KeyJ');
+    var In=await import('./src/sim/incursao.js?v='+V);
+    var golpeou=await ate(function(){return In.G&&In.G.p.swing>0},400);
+    await quadros(6);
+    tecla('keyup','KeyJ');
+    ok('o golpe saiu com a espada na mão, sem erro de desenho', golpeou, In.G&&In.G.p.swing);
 `,
   },
   {
@@ -1586,6 +1729,78 @@ const CASOS = [
     ok('a mana soma classe, nível e Foco: 95+64+10', txt('#mpT')==='169/169', txt('#mpT'));
     ok('a Bolsa de poções migrada vale na incursão', txt('#potN')==='×4', txt('#potN'));
     ok('a incursão nova contou sobre as sete antigas', sv()&&sv().runs===8, sv()&&sv().runs);
+`,
+  },
+  {
+    nome: 'feira',
+    o_que: 'mercado entre jogadores: a caixa entra no cofre ao abrir, vender e comprar casam com o livro, o resto fica anunciado, cancelar devolve, erro do banco vira aviso, e save mais velho que o mercado é trocado pelo da nuvem',
+    semente: 43,
+    patches: [P.nuvem(null, {}, {
+      itens: {espada: {venda: [[25, 1]], compra: [[18, 3]], ultimo: 22, dia: 4}, cota: {venda: [[70, 2]], compra: [], ultimo: null, dia: 0}, bogus: {venda: [[1, 1]], compra: [], ultimo: null, dia: 0}},
+      minhas: [{id: 7, lado: 'compra', item: 'cota', preco: 50, qtd: 1, resta: 1}],
+      caixa: {ouro: 40, itens: {}},
+    })],
+    save: {'masmorra-runas-v2': {
+      cofre: 300, itens: {espada: 2}, runs: 1, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    },
+    'masmorra-runas-v2-sessao': {tk: 'tk1', uid: 'u1', usuario: 'ana'}},
+    roteiro: `
+    var pronto=await ate(function(){return /salvo na nuvem · ana/.test(txt('#contaT')||'')},300);
+    ok('a sessão guardada liga a nuvem', pronto, txt('#contaT'));
+    clica($('#play'));await quadros(2);
+    Tl.abreNpc('corretor');
+    var abriu=await ate(function(){return /Da feira/.test(txt('#mktMsg')||'')},300);
+    ok('a Feira abre e avisa o que entrou da caixa', abriu&&/40 de ouro/.test(txt('#mktMsg')), txt('#mktMsg'));
+    ok('a caixa entrou no cofre e no save', sv().cofre===340&&txt('#mktGold')==='340', sv().cofre+' / '+txt('#mktGold'));
+    ok('o save guarda a marca do mercado', sv().mkt===window.__nuvem.dados.mkt&&sv().mkt>=1, sv().mkt);
+    var lis=todos('#mktItens li');
+    ok('a lista tem só as peças de equipamento do jogo (item desconhecido do livro fica fora)', lis.length===5&&!/bogus/.test(txt('#mktItens')), lis.length);
+    ok('a espada mostra os dois lados do livro e o cofre', /2 no cofre/.test(lis[0].textContent)&&/vendem a partir de 25/.test(lis[0].textContent)&&/compram até 18/.test(lis[0].textContent), lis[0].textContent);
+    ok('suas ofertas listam a compra de cota', /Compra: cota de malha a 50/.test(txt('#mktMinhas')||''), txt('#mktMinhas'));
+    clica(lis[0].querySelector('button'));
+    ok('quem tem a peça abre vendendo, pelo melhor preço de compra', visivel('#mktPeca')&&$('#mpLadoV').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='18', $('#mpPreco').value);
+    ok('o resumo diz o que recebe, já com a taxa', /recebe 17 de ouro \\(taxa de 1\\)/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpQtdMais'));
+    ok('o + soma uma peça e o resumo acompanha', $('#mpQtd').value==='2'&&/recebe 35/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpOk'));
+    var vendeu=await ate(function(){return /Vendeu/.test(txt('#mktMsg')||'')},300);
+    ok('vender casa com a compra do livro', vendeu&&/Vendeu 2 × espada enferrujada: entraram 35 de ouro/.test(txt('#mktMsg')), txt('#mktMsg'));
+    ok('o cofre e as peças vêm do banco', sv().cofre===375&&!sv().itens.espada, JSON.stringify([sv().cofre,sv().itens]));
+    ok('a volta é para a lista', visivel('#mktLista')&&!visivel('#mktPeca'));
+    clica(todos('#mktItens li button')[0]);
+    ok('sem a peça, abre comprando, pelo melhor preço de venda', $('#mpLadoC').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='25', $('#mpPreco').value);
+    $('#mpQtd').value='3';$('#mpQtd').dispatchEvent(new Event('input'));
+    ok('o resumo da compra diz quanto fica reservado', /Reserva 75 de ouro/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpOk'));
+    var comprou=await ate(function(){return /Comprou/.test(txt('#mktMsg')||'')},300);
+    ok('comprar leva o que há e anuncia o resto', comprou&&/Comprou espada enferrujada por 25 de ouro\\. 2 ficaram anunciadas no livro a 25/.test(txt('#mktMsg')), txt('#mktMsg'));
+    ok('a peça veio e o ouro do resto ficou preso', sv().cofre===300&&sv().itens.espada===1, JSON.stringify([sv().cofre,sv().itens]));
+    ok('a oferta nova aparece nas suas', todos('#mktMinhas li').length===2&&/Compra: 3 × espada enferrujada a 25/.test(txt('#mktMinhas')), txt('#mktMinhas'));
+    clica(todos('#mktMinhas li button')[0]);
+    var cancelou=await ate(function(){return /voltaram ao cofre/.test(txt('#mktMsg')||'')},300);
+    ok('cancelar devolve o ouro preso', cancelou&&/50 de ouro voltaram/.test(txt('#mktMsg'))&&sv().cofre===350, txt('#mktMsg')+' / '+sv().cofre);
+    clica(todos('#mktItens li button')[3]);
+    ok('a cota abre', txt('#mpNome')==='cota de malha', txt('#mpNome'));
+    $('#mpQtd').value='100';$('#mpQtd').dispatchEvent(new Event('input'));
+    ok('sem ouro, o botão não anuncia e o resumo diz quanto falta', $('#mpOk').disabled&&/Faltam/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpLadoV'));
+    ok('vender o que não tem fica bloqueado', $('#mpOk').disabled&&/Você tem 0/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpLadoC'));$('#mpQtd').value='1';$('#mpQtd').dispatchEvent(new Event('input'));
+    window.__nuvem.forcaErro='limite';
+    clica($('#mpOk'));
+    var recusou=await ate(function(){return /10 ofertas abertas/.test(txt('#mktMsg')||'')},300);
+    ok('o erro do banco vira aviso legível e nada muda no cofre', recusou&&$('#mktMsg').classList.contains('ruim')&&sv().cofre===350, txt('#mktMsg'));
+    clica($('#mktBack'));
+    /* outro aparelho negociou: a nuvem tem mkt maior, e a próxima gravação daqui é recusada */
+    window.__nuvem.dados.mkt+=5;window.__nuvem.dados.cofre=999;
+    Tl.abreNpc('banqueiro');
+    clica(todos('#eqList button.rm')[0]);
+    ${espera(2500)}
+    var trocou=await ate(function(){return sv()&&sv().cofre===999},300);
+    ok('save mais velho que o mercado é recusado e o da nuvem entra', trocou&&sv().mkt===window.__nuvem.dados.mkt, sv()&&JSON.stringify([sv().cofre,sv().mkt,window.__nuvem.dados.mkt]));
 `,
   },
   {

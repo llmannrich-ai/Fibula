@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.10.0';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.10.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso} from './progresso.js?v=0.10.0';
-import {genMap,pecas} from './mapa.js?v=0.10.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.10.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.14.0';
+import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.14.0';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel} from './progresso.js?v=0.14.0';
+import {genMap,pecas} from './mapa.js?v=0.14.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.14.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -229,8 +229,8 @@ function updateMons(dt){
         if(m.hp<=0)continue}
       if(m.dot.left<=0)m.dot=null}
     /* um passo de cada vez; o próximo só é escolhido quando o atual acaba.
-       spd é em pixels por segundo: o passo leva T/spd segundos */
-    const livreAgora=avanca(m,dt)>=0,sd=T/(m.spd*m.slowF);
+       spd é a velocidade do Tibia, e a lentidão (slowF) a reduz */
+    const livreAgora=avanca(m,dt)>=0,sd=passoDaVel(m.spd*m.slowF);
     m.mv=m.sd>0?1:0;
     /* o alvo é o jogador mais perto pelo campo de fluxo */
     const tx=m.tx,ty=m.ty,fd=f[ty*MW+tx];

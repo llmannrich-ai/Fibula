@@ -18,9 +18,9 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-19 04:30 UTC — sessão manual (nuvem)
+## 2026-10-19 01:38 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** caçar junto (0.10.0), opção C do plano do multiplayer, a pedido do Leonardo ("criada na opção de entrar na masmorra na cidade; cada usuário pode criar uma sala; ela fica aberta até ele sair do jogo ou fechar"). Módulo novo `src/sala.js` (canal do Realtime por sala); seção "Caçar em grupo" no Guia de caça (criar, ver as abertas, entrar, sair, fechar); `retrato()`, `aplicaRetrato()` e `assiste()` em `src/sim/incursao.js`; `confereFicha()` em `src/sim/progresso.js`; `saida.sai(p)` para a tela final ser de cada jogador; o desenho mostra todos da sala com nome. Mesclada com o andar por sqm (`78b2abf`, sessão paralela) por commit de merge: a posição do convidado passou a ser o sqm, e o anfitrião o leva até lá pela regra (um sqm por passo, na velocidade do nível).
+**Item desenvolvido:** caçar junto (0.14.0), opção C do plano do multiplayer, a pedido do Leonardo ("criada na opção de entrar na masmorra na cidade; cada usuário pode criar uma sala; ela fica aberta até ele sair do jogo ou fechar"). Módulo novo `src/sala.js` (canal do Realtime por sala); seção "Caçar em grupo" no Guia de caça (criar, ver as abertas, entrar, sair, fechar); `retrato()`, `aplicaRetrato()` e `assiste()` em `src/sim/incursao.js`; `confereFicha()` em `src/sim/progresso.js`; `saida.sai(p)` para a tela final ser de cada jogador; o desenho mostra todos da sala com nome. Mesclada com o andar por sqm (`78b2abf`, sessão paralela) por commit de merge: a posição do convidado passou a ser o sqm, e o anfitrião o leva até lá pela regra (um sqm por passo, na velocidade do nível).
 
 **Validação:** `node tools/testar.mjs` — 24/24, com dois casos novos (`sala-anfitriao`, `sala-convidado`, Realtime falso) e, no Node, o retrato (o convidado vê os mesmos monstros, jogadores e sacos), a `confereFicha()` e o limite de um sqm por passo. Sete sabotagens barradas (teleporte, ficha sem conferir, poção ignorada, retrato puxando quem anda, item falso no save, e duas do retrato). Fora do harness: dois Chromium com saves próprios no **Realtime de verdade**, servindo esta cópia: criar, listar, entrar, caçar juntos (66–71 monstros iguais nos dois), andar e ser visto no sqm exato, habilidade do convidado lançada no anfitrião, extração dos dois com cofre de cada um, sala aberta depois, fechar — quatro rodadas verdes seguidas. Telas conferidas em 360×640.
 
@@ -37,6 +37,79 @@ execução precisa saber e não vai descobrir lendo o código.
 - Os efeitos que o convidado vê são os principais (dano, magias de área, cadáveres); faíscas e fumaça não vão pela rede.
 
 **Próximo passo recomendado:** o Leonardo testar com um amigo, cada um no seu celular, e dizer se o atraso do convidado incomoda; depois, "Sair cedo" (`Agora`).
+
+---
+
+## 2026-10-19 13:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** equipamento visível no personagem (0.12.0), a pedido do Leonardo. Nova seção "equipamento no corpo" em `src/desenho.js`: `mede()` lê os pixels de cada quadro da classe uma vez (topo, altura, pescoço, mãos e quais pixels do tronco são roupa, pela cor dominante da faixa), `vestido()` guarda em cache o quadro retingido pela armadura, `poeArma()` desenha o sprite do item na mão (atrás do corpo de costas, girando no golpe) e `poeAmuleto()` a pedra no peito. `retrato()` desenha o mesmo boneco em qualquer canvas: o Banco mostra o personagem vestido e gira ao toque. Dados em `items.<k>.veste` (`cor`, `malha`), validados na carga. Rede: a presença leva `eq`, reenviada quando muda no Banco; `poeOutro()` só aceita peça que existe e é daquele espaço. Sem a arte, o desenho em código ganhou a faixa da armadura e a pedra.
+
+**Validação:** `node tools/testar.mjs` — todos os casos, com o caso novo `equipamento-no-corpo` (presença com `eq`, dado de fora conferido, retrato desenhado, giro, troca de armadura e arma mudando o boneco, presença reenviada, golpe na incursão com a arma). Fora do harness: bancada com as 4 classes × 4 combinações × 4 direções e o jogo em 390×740 (cidade e Banco), olhados um a um.
+
+**Análise:** os outfits com máscara de cor e addons existem no OTSP (16–18, 20, 21, 44, 45), mas são cidadãos genéricos; usá-los trocaria a cara das classes. A cor dominante resolve bem o manto dos magos e o aço do cavaleiro; no caçador, couro e pele têm o mesmo matiz, então a couraça pinta também os braços (fica como manga).
+
+**Roadmap:** "Equipamento no corpo" em `Concluído`, fora da fila (pedido do dono). Juntado com a Mochila e a Feira (0.11.0) que entraram em paralelo; o Leonardo autorizou deploy direto na `main` sempre.
+
+**Pendências e riscos:**
+- **Arte por código, não por sprite.** A posição da arma vem da borda do boneco na altura da mão, não de um ponto de mão desenhado; em alguns quadros ela fica um pouco solta do corpo. Se o Leonardo quiser acabamento de Tibia, o caminho é um ponto de mão por classe e direção numa tabela de arte (em `tools/sprites.mjs` ou no `atlas.json`).
+- No cavaleiro e no caçador de frente, a arma equipada aparece junto da arma que o sprite já segura.
+- A cor de cada peça nova precisa de `veste` no `content.json`; sem ela, a armadura não aparece (arma aparece sempre, pelo `it_<chave>`; amuleto usa dourado).
+- Presença com `eq` é aberta como o resto da cidade: quem tem a chave pode dizer que veste qualquer peça que existe. Não vale nada, só se vê.
+
+**Próximo passo recomendado:** o Leonardo olhar no celular (Banco e cidade com outra pessoa); depois, "Sair cedo" (`Agora`).
+
+---
+
+## 2026-10-19 04:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a Feira, mercado entre jogadores (0.11.0), a pedido do Leonardo ("cada player vende para cada player, buy e sell, match"). O Corretor (`city.npcs.corretor`, letra `T`, ao lado do chafariz; sprite OTSP 45) abre a tela `#mkt`. Livro de ofertas por peça de equipamento, compra e venda com preço por peça e quantidade, match automático. Banco: `tools/supabase/003_mercado.sql` — `mercado_ordens`, `mercado_negocios`, `mercado_caixa` e as funções `mercado_livro/anunciar/cancelar/coletar`; `save_gravar` reescrito com a guarda de `mkt`. Cliente: `mercado()` e `temConta()` em `nuvem.js`, `showFeira()` em `telas.js`, `soPecas()` em `progresso.js`.
+
+**Validação:** SQL aplicado duas vezes num Postgres 16 local (idempotente) e exercitado com três contas: match em vários níveis de preço, preço do maker, devolução da diferença ao comprador, taxa de 2% arredondada para cima, caixa e coleta, cancelamento, sem auto-match, `sem_ouro`, `sem_peca`, `sessao`, guarda `mercado` no `save_gravar`, `anon` sem acesso a tabela nem a função auxiliar; soma de ouro conservada (1060 − 5 de taxa = 1055). `node tools/testar.mjs` — 23/23, com o caso novo `feira` (24 asserções; o Supabase falso ganhou as quatro funções e a guarda de `mkt`) e o Corretor no caso `cidade` e na cidade do Node. Tela conferida em 360×740 com Playwright fora do repositório, sem erro de página.
+
+**Análise:** o save continua do cliente, então a única forma de o banco decidir o mercado foi tornar o save **da nuvem** a fonte do cofre e das peças durante a operação: o cliente sobe o save, o banco debita na mesma transação do livro e devolve cofre, peças e `mkt`, que o cliente adota. A outra ponta nunca tem o save reescrito (ela pode estar no meio de uma incursão e sobrescreveria): recebe na `mercado_caixa`, que entra ao abrir a Feira. Um seletor `#mpPreco+` derrubava o grafo de módulos inteiro (todos os casos davam "não reportou em 45000 ms"): `querySelector` estoura com `+` no id.
+
+**Roadmap:** Feira em `Concluído` (antecipada da F3, decisão registrada no PRD 15.1). `Agora` segue "sair cedo".
+
+**Pendências e riscos:**
+- Migração 003 **aplicada** em produção pelo conector, em sete partes (`003a`…`003g`), com o Leonardo de acordo. O conector trava (60 s, desfaz tudo) em qualquer migração que contenha `delete`: a caixa agora é zerada por `update`, e o arquivo foi ajustado igual. Conferido depois: RLS ligada nas três tabelas, auxiliares sem acesso de `anon`, API real respondendo `sessao` para token inválido. Os avisos novos do Supabase (funções da Feira executáveis por `anon`, tabelas sem política) são o desenho.
+- **Trapaça vira problema dos outros.** Quem editar o JSON do próprio save cria ouro e peças e agora pode gastá-los com jogadores honestos. É a dívida do D-M3: o mercado deixa de ser seguro para abrir a desconhecidos sem cofre autoritativo no servidor.
+- Dois aparelhos na mesma conta: se um negociar enquanto o outro está numa incursão, a gravação do segundo é recusada e ele adota a nuvem, perdendo o resultado dessa incursão. Raro, mas real.
+- Sem expiração de oferta; limite de 10 abertas por jogador. Ouro preso numa compra não conta no cofre do menu.
+- Volume de match serializado num único `pg_advisory_xact_lock`: suficiente para dezenas de jogadores, não para milhares.
+
+**Próximo passo recomendado:** testar com duas contas reais vendendo uma peça uma para a outra, no jogo publicado.
+## 2026-10-19 04:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** velocidade do Tibia para jogador e monstros (0.13.0), a pedido do Leonardo ("reduza a velocidade dos monstros e do player para se assemelhar ao Tibia"). `passoDaVel()` em `progresso.js` é a fórmula do Forgotten Server (`Creature::getStepDuration`: 857,36·ln(vel/2+261,29)−4795,01, chão 150, arredondado para cima em 50 ms). Jogador: 220 + 2 por nível, teto 1500 (`progression.walk`, campos novos `speedBase`, `speedPerLevel`, `speedMax`, `ground`); monstros: `spd` agora em unidades do Tibia — rato 134 (900 ms), aranha 200 (600 ms), esqueleto e orc 150 (800 ms), xamã e Guardião 140 (850 ms). Andar à toa: 1,5× mais lento (era 2,5×).
+
+**Validação:** `node tools/testar.mjs` — 23/23. Na simulação no Node: nível 1 = 0,55 s, nível 200 = 0,25 s, velocidade 150 = 0,8 s, buff de 50% = 0,4 s, 2,2 s para leste = 4 sqm. O caso `rato letal` sobe o rato para 400. Os roteiros da cidade andam até chegar, não por tempo fixo. Caçada no Chromium em 360×640 sem erro (Cavaleiro nível 6: 3 sqm em 1,5 s).
+
+**Análise:** do sqm de entrada ao portal são 70 sqm na mediana (52 a 103, 40 sementes, em 4 direções). No nível 1 isso dá ~40 s em linha reta, contra ~18 s no 0.9.0: cabe na incursão de 6 min, mas a masmorra cobre menos. Monstros ficaram mais lentos que o jogador (a aranha, a mais rápida, a 600 ms contra 550 ms do nível 1): fugir ficou fácil, como no Tibia de níveis baixos.
+
+**Roadmap:** sem mudança de fila.
+
+**Pendências e riscos:** **balanceamento a medir** — com monstros mais lentos que o jogador, a morte pode ter ficado rara (pilar 1); se ficar, a alavanca é o `spd` de cada monstro no `content.json`. O `wander` só pede ≥ 1 na validação.
+
+**Próximo passo recomendado:** o Leonardo jogar no celular e dizer se o ritmo agrada; o agente de Balanceamento medir mortes e XP por incursão com a velocidade nova.
+
+---
+
+## 2026-10-19 12:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** botão **Mochila** (0.10.0), a pedido do Leonardo para dar visibilidade ao equipamento. Abre na masmorra e na cidade (`B` no teclado, `Esc` fecha) uma janela sobre o jogo, que **não pausa**: em cima o corpo à moda da janela de inventário do Tibia (amuleto e arma à esquerda, o boneco da classe no meio, armadura e o saco à direita) com o bônus somado; embaixo o saco em grade de container, o mais valioso primeiro, quantidade no canto, borda por raridade, e a linha do pilar 1: "Se morrer, perde X de ouro (o selo guarda Y)". Tocar numa peça diz o que ela é e quanto vale (nada de passar o mouse). Só mostra: vestir, trocar e vender continua no Banco. Código na seção nova `mochila` de `src/hud.js` (`desenhaMochila()`, `abreMochila()`, `fechaMochila()`, `vestido()`, que o Banco passou a usar também); fora dela o toque segue sendo joystick (`.mwin` entrou na exceção de `controles.js`); qualquer troca de tela fecha a janela. De quebra, `icone()` corta o fundo ao sprite quando a caixa é maior: o Cavaleiro (sprite de 32 px) aparecia com os quadros vizinhos do atlas em Personagens.
+
+**Validação:** `node tools/testar.mjs` — 23/23, com o caso novo `mochila` (botão na cidade, corpo vestido, saco vazio em grade, B e Esc, saco semeado na masmorra em ordem de valor, risco com selo, toque numa peça, relógio andando com a janela aberta, tela final fechando). Fora do harness: o jogo de verdade no Chromium em 360×640, 390×844 e 412×915, na cidade e na masmorra, e a tela de Personagens.
+
+**Análise:** em 360×640 a janela tem ~300 px entre o HUD de cima e os botões; com o boneco em duas linhas a grade do saco ficava abaixo da dobra. Em tela baixa (`max-height:740px`) a janela sobe por cima do minimapa e o corpo vira uma linha só.
+
+**Roadmap:** sem mudança (pedido direto do dono, fora da fila).
+
+**Pendências e riscos:**
+- A janela cobre o meio da tela: dá para fugir com ela aberta, mas não ver o monstro que chega por cima. Foi escolha (o mundo não espera); se no celular incomodar, a saída é encolher para só o saco durante a caça.
+- Vestir uma peça do saco no meio da incursão **não** existe: mexeria em regra (`src/sim/`) e no que a F2 tem de conferir. Se o Leonardo quiser, é um item de roadmap, não um ajuste de tela.
+- O botão fica acima da poção, a 94 px do pé: confirmar no celular que não é tocado sem querer ao beber poção.
+
+**Próximo passo recomendado:** o Leonardo abrir a mochila numa caçada no celular e dizer se o tamanho e o lugar do botão estão bons.
 
 ---
 
@@ -358,220 +431,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - O PRD 7.5 ainda diz "link mágico e Google"; a troca é temporária e precisa voltar para lá ou o PRD mudar.
 
 **Próximo passo recomendado:** Leonardo cria uma conta no celular e confere o "Progresso salvo na nuvem"; o ciclo segue no pipeline de sprites OTSP.
-
----
-
-## 2026-10-18 21:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** revisão e mescla na `main` do save na nuvem (branch `claude/fibula-supabase-connection-1d3e9b`, feita na sessão do computador). Na revisão, uma correção no `puxa()` do `index.html` e o caso `nuvem-outra-conta`.
-
-**Validação:** `node tools/testar.mjs` — 14/14, sintaxe OK. O caso novo falhou contra o código da branch (leu cofre 777 no lugar de 30) e passa com a correção. Banco conferido pelo conector: `public.saves` com RLS ligada, migração `saves` aplicada, nenhum aviso de segurança. Só a chave publishable está no código.
-
-**Análise:**
-- **Perda de dados ao trocar de conta no mesmo aparelho.** Na primeira entrada de uma conta, vencia o save com mais incursões. Se o aparelho tinha o save da conta A (`dono` = A) e alguém entrava com B, o save de A, com mais incursões, sobrescrevia o de B na nuvem. Agora, quando o `dono` local é outra conta, vence sempre a nuvem.
-- Sem save na nuvem para B, o save local de A ainda é copiado para B. É cópia, não perda; mantido de propósito para não apagar progresso que ainda não subiu.
-- O conflito entre aparelhos já ligados usa `save.em`, o relógio do cliente. Relógio errado num aparelho pode fazer o save mais antigo vencer. Aceitável para os testadores; resolver de verdade é do servidor.
-- O `CLAUDE.md` da branch dizia que o conector do Supabase não enxergava o projeto. Deixou de ser verdade quando o Leonardo o religou à organização "Versa" (Free); o texto foi corrigido.
-
-**Roadmap:** o save na nuvem entrou em `Concluído`, marcado como antecipado da F1. `Agora` continua o pipeline de sprites OTSP.
-
-**Pendências e riscos:**
-- **Configuração do Auth no painel, com o Leonardo:** Site URL e Redirect URLs com `https://llmannrich-ai.github.io/Fibula/`. Sem isso o link mágico pode voltar para o endereço errado.
-- **E-mail:** o SMTP padrão do Supabase só entrega para membros da organização. Testadores de fora não recebem o link até existir SMTP próprio.
-- **Trapaça:** o cliente grava o save inteiro. A RLS só impede mexer no save de outra pessoa.
-- O link mágico precisa ser aberto no mesmo aparelho em que foi pedido (o token volta no `#hash` da URL).
-
-**Próximo passo recomendado:** Leonardo configura o Auth e testa o login no próprio celular; o ciclo segue no pipeline de sprites OTSP.
-
----
-
-## 2026-10-18 21:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** conserto da CI vermelha na `main` desde `bb2143e`. Só `tools/testar.mjs` (e uma linha do `CLAUDE.md`); o `index.html` não mudou.
-
-**Validação:** `node tools/testar.mjs` — 10/10 casos, sintaxe OK, no Chromium de `/opt/pw-browsers`. Cópia com `save.cofre+=G.bagVal` removido via `FIBULA_JOGO`: `incursao-extracao` falhou e a saída foi 1, como devia.
-
-**Análise:** o merge do conteúdo externo com o harness deixou três quebras que nenhum dos dois lados via sozinho:
-1. O marcador do `<script>` procurava `(()=>{`, mas o IIFE virou `(async()=>{` com o `content.json`. A suíte parava antes de rodar qualquer caso.
-2. O `fetch` falso do prelúdio devolvia o `content.json` para **qualquer** URL, inclusive o `POST` do resultado para o coletor. Todo caso morria com "o roteiro não reportou". Agora só a URL do `content.json` é interceptada.
-3. O patch "rato letal" procurava a tabela `MT` no `index.html`, que saiu para o `content.json`. Virou ajuste de conteúdo: campo `conteudo` no caso, função `ajusta()` que estoura se o valor esperado não estiver lá (mesmo princípio dos patches de texto).
-
-**Roadmap:** sem mudança; `Agora` continua o pipeline de sprites OTSP.
-
-**Pendências e riscos:**
-- Mudanças no `content.json` que alterem `enemies.rato` quebram o caso `morte` de propósito; ajuste o `A.ratoLetal` junto.
-- A CI só ficou vermelha porque cada lado foi testado antes do merge, não depois. Quem mesclar `main` com trabalho paralelo precisa rodar `node tools/testar.mjs` **depois** do merge.
-- Supabase (F1) ainda não tem projeto do Fibula na conta; nada foi criado.
-
-**Próximo passo recomendado:** pipeline dos sprites OTSP, como estava.
-
----
-
-## 2026-10-19 00:20 UTC — Desenvolvedor
-
-**Item desenvolvido:** aviso de falha do save. `index.html`: variável `saveFalhou`, sonda de gravação na carga, `persist()` marca a falha, faixa `#mAviso` no menu (+7 linhas). `tools/testar.mjs`: opção `bloqueiaSave` no caso e dois casos novos.
-
-**Validação:** `node tools/testar.mjs` — 10/10 casos, sintaxe OK. O caso `save-bloqueado` falha contra o `index.html` anterior (confirmado com `FIBULA_JOGO`) e passa com a mudança. Save sem alteração de formato.
-
-**Análise:**
-- O teste da migração v1→v2 já existia (`migracao-save`, 20 asserções); não dupliquei.
-- A sonda grava e remove uma chave auxiliar (`masmorra-runas-v2-sonda`) na carga, porque `persist()` só roda depois de uma incursão e o menu abriria sem aviso para quem já nasce bloqueado.
-- Navegador que lança no `getItem` (não só no `setItem`) também cai na sonda.
-
-**Roadmap:** item em `Concluído`; pipeline de sprites OTSP promovido a `Agora`.
-
-**Pendências e riscos:**
-- O aviso só é reavaliado ao abrir o menu; falha no meio da incursão aparece na volta ao menu.
-- O branch remoto `teste-ci-quebrada` continua lá por decisão do dono (pode ficar).
-
-**Próximo passo recomendado:** pipeline dos sprites OTSP (`tools/` + `assets/` + `assets/CREDITOS.md`), sem trocar o desenho do jogo.
-
----
-
-## 2026-10-18 23:50 UTC
-
-**Item desenvolvido:** Harness de teste headless no repositório —
-[tools/testar.mjs](tools/testar.mjs), commit `3f11261`. Um comando,
-`node tools/testar.mjs`, refaz a checagem de sintaxe, monta uma **cópia** do
-`index.html` por caso de teste, roda cada uma no Edge headless e sai com código
-diferente de zero se qualquer asserção falhar ou se um erro de janela aparecer.
-Oito casos, 194 asserções, 6 s de execução: menu com Mercador, incursão de ponta
-a ponta até a extração, morte com o Selo de resguardo, as quatro classes,
-grimório no nível 18, nível subindo no meio da incursão, save corrompido e
-migração `v1`→`v2`. Cada caso tem save semeado próprio. No mesmo commit, as
-duas correções que ele achou na Etapa 3 (abaixo) e o `CLAUDE.md` trocando o
-procedimento manual pela linha de comando.
-
-**Validação:** `SINTAXE_OK` e os 8 casos passando. O portão foi testado contra
-si mesmo, com três cópias quebradas de propósito via `FIBULA_JOGO`: chave de
-bloco a mais no `hud()` (barrou na sintaxe, saída 1), referência inexistente no
-`hud()` (apareceu em `data-errs`, saída 1) e remoção do `save.cofre+=G.bagVal`
-no `finish()` (duas asserções falharam nomeando o que leram, saída 1). Os cinco
-itens da lista "o que olhar antes de dizer que está pronto" do `CLAUDE.md`
-passaram a estar cobertos pelo script.
-
-**Análise:**
-- **A Etapa 3 nunca tinha sido executada fora do navegador de quem escreveu, e
-  tinha dois bugs. Os dois foram corrigidos neste commit.**
-  1. **A habilidade aprendida no meio da incursão não virava botão.** O
-     `gainXp()` abre espaço novo, escolhe a habilidade e escreve no log
-     "`Onda de Fogo` foi para o espaço 3" — mas o `montaBotoes()` só era chamado
-     no `start()`, então o botão continuava `hidden` até a incursão seguinte. O
-     `hud()` faz `if(b.hidden)continue`, então nada o revelava depois. Pior:
-     `lancarSlot(i)` lê `ch().slots[i]`, que **estava** preenchido, então a
-     tecla `L` do teclado conjurava uma habilidade sem botão na tela. Num jogo
-     de celular, isso é a habilidade simplesmente não existir. Correção de uma
-     linha: `montaBotoes()` no fim do laço de nível do `gainXp()`.
-  2. **Save com classe apontando para personagem ausente deixava a tela em
-     branco.** Com `classe:'druida'` e `chars:{}` no `localStorage`, o `ch()`
-     devolve `undefined` e o `showMenu()` estoura em `c.lvl` **antes** do
-     `requestAnimationFrame(frame)` no fim da IIFE: o laço nunca começa e o
-     jogador fica olhando os placeholders do markup, sem jeito de sair a não ser
-     limpando o armazenamento. Correção na carga do save: classe fora da tabela
-     `CLASSES` volta a `null` (cai na escolha de personagem) e classe válida sem
-     personagem ganha um `novoChar()`, já persistido. O cofre e as melhorias
-     sobrevivem.
-- Terceira correção, menor: o `aria-label` dos botões de habilidade dizia
-  "0 de mana" para o Golpe do Cavaleiro, enquanto o rótulo visível dizia
-  "grátis". Agora diz "sem mana" nos dois.
-- **O `--dump-dom` que o `CLAUDE.md` mandava usar não existe mais.** O Edge
-  desta máquina é o 155, aceita a opção e não escreve nada — nem para uma página
-  trivial. A opção saiu do headless novo e só vive no `chrome-headless-shell`,
-  que não vem instalado. Foi o que custou mais tempo nesta execução, porque
-  falha em silêncio: saída 0, zero byte, nenhum erro. No lugar dela o script
-  sobe um coletor HTTP em `127.0.0.1` e a cópia faz `POST` do resultado no fim
-  do roteiro, com o DOM final no mesmo pacote (gravado em `dump.html` para
-  inspeção, igual ao roteiro manual). Isso também dispensou a
-  `--virtual-time-budget`.
-- O atalho do `requestAnimationFrame` ficou melhor do que o documentado: em vez
-  de `setTimeout(cb, 50)`, é `setTimeout(cb, 0)` com um **timestamp sintético**
-  que anda 50 ms por quadro. O `dt` do jogo continua no passo cheio, mas o
-  tempo de parede não precisa passar: uma incursão de 20 s roda em segundos, e
-  a suíte inteira em 6.
-- O `Math.random` é semeado por caso (mulberry32 de uma linha). Sem isso, mapa,
-  corredores, spawns e loot mudam a cada execução e um teste de combate fica
-  intermitente. Com isso, "passou hoje" significa "passa amanhã".
-- Como o jogo inteiro vive numa IIFE, o harness não alcança função nenhuma por
-  dentro: tudo é clique em botão, tecla despachada na janela e leitura do DOM e
-  do `localStorage`. Isso é limitação e virtude — testa o que o jogador toca.
-  Para exercitar o combate, o roteiro despacha `keydown` de `KeyJ`, que o
-  `update()` lê como botão segurado.
-- Os patches na cópia são substituições exatas que **estouram se não casarem**.
-  Se o `index.html` mudar a linha patcheada, o harness falha alto em vez de
-  testar coisa nenhuma — o modo de falha que mais importa evitar num portão.
-
-**Colisão com o agente Desenvolvedor, e o que foi feito:** enquanto esta
-execução terminava, a entrada das 23:30 entregou **outro** harness para o mesmo
-item, o `tools/teste.js` (126 linhas, dois cenários, Chromium da nuvem,
-`--dump-dom`). Ficar com os dois é pior que escolher qualquer um — dois portões
-para o mesmo item significam que um dos dois não roda e ninguém percebe. **O
-`tools/teste.js` foi removido e o `tools/testar.mjs` ficou**, por três motivos
-verificáveis, não por preferência:
-1. **O `--dump-dom` dele não funciona na máquina do Leonardo.** O Edge 155
-   aceita a opção e devolve zero byte com saída 0, então o `tools/teste.js`
-   reporta "navegador não rodou" e o portão vira silêncio. O `testar.mjs` usa o
-   coletor HTTP e roda nas duas máquinas.
-2. **Cobertura:** 2 cenários contra 8 casos e 194 asserções. A própria entrada
-   das 23:30 lista como pendência que não há cenário de extração nem de morte —
-   os dois existem aqui, e o de extração passa pelo combate.
-3. **A pendência "o save semeado precisa trazer o personagem em `chars`; sem ele
-   o menu quebra" era o bug nº 2 desta entrada.** Ele foi contornado lá e
-   corrigido aqui, então a restrição deixou de existir.
-O que o `tools/teste.js` fazia melhor foi absorvido: a descoberta do navegador
-(`CHROME`, `/opt/pw-browsers`, PATH) e o `--no-sandbox` fora do Windows, para a
-suíte rodar também na nuvem. Se o Leonardo discordar, `git revert` deste commit
-traz os dois de volta.
-
-**Roadmap:** enquanto esta execução trabalhava, o agente de Produto promoveu o
-mesmo item de `Depois` para `Agora` com uma especificação própria
-("Ferramenta de teste headless no repositório", entrada de 22:00). Ele está
-atendido e foi para `Concluído`; `Agora` passou a ser a CI, que era o item 1 de
-`Próximo`. **Duas diferenças em relação ao que a especificação pedia**, as duas
-deliberadas e explicadas acima: o arquivo é `tools/testar.mjs` e não
-`tools/teste.js` (ESM, para `import` sem `package.json`), e o resultado volta
-por um coletor HTTP em vez de `--dump-dom`, porque a opção não escreve mais
-nada. O item 2 de `Próximo` foi aparado: a metade do teste da migração `v1`→`v2`
-já está feita (caso `migracao-save`), sobrou o aviso de falha do `persist()`.
-
-**Pendências e riscos:**
-- **A extração é testada com o portal mudado de lugar.** No headless não há quem
-  arraste o joystick da sala de entrada até a sala do Guardião, então o caso
-  `incursao-extracao` patcheia a cópia para o portal nascer na sala de entrada.
-  O que fica **sem** cobertura é a travessia: campo de fluxo levando o jogador
-  para longe, aggro em corredor, o Guardião. Testar isso de verdade pede um
-  roteiro que leia o `G.flow` e dirija o joystick, e o `G` está fechado dentro
-  da IIFE. A saída provável é um gancho de depuração no `index.html` ligado
-  apenas quando um parâmetro de URL estiver presente — decisão do Leonardo,
-  porque é código de teste no arquivo do jogo.
-- **Não há CI.** O script existe mas nada o roda sozinho. O ciclo automático
-  tem que chamá-lo, e o `CLAUDE.md` agora manda. O item "CI no GitHub Actions"
-  está em [docs/agentes/produto.md](docs/agentes/produto.md) e vale promover.
-  Atenção: na nuvem não existe Edge; a Action precisa instalar Chromium e
-  apontar `FIBULA_EDGE`.
-- **O `kill()` sombreia o `ch`**: `for(const[k,ch,a,b]of LOOT[m.k])` usa `ch`
-  como a chance do item, apagando dentro do laço o acessor do personagem. Hoje
-  não quebra nada, porque o corpo do laço não chama `ch()` — mas qualquer linha
-  nova ali dentro que precise do personagem vai pegar um número. Renomear para
-  `pc` é seguro; não fiz para manter o diff desta execução nos dois bugs reais.
-- **O número de asserções que dependem de texto exato é alto de propósito.**
-  Mudar um rótulo de botão ou um formato de linha da tela final quebra casos do
-  harness. Isso é o preço de testar pelo DOM, e a mensagem de falha sempre
-  imprime o que ela leu, então o conserto é óbvio. Não afrouxe as asserções para
-  "passar"; conserte o teste ou o jogo.
-- As cópias e os dumps de cada caso ficam em `%TEMP%/fibula-harness` até a
-  execução seguinte, que apaga a pasta. Numa falha, o caminho vem impresso.
-- **A suíte só foi executada no Edge 155 do Windows.** O caminho de nuvem
-  (Chromium do Playwright, `--no-sandbox`) foi escrito mas não rodado. A
-  primeira execução de nuvem que chamar `node tools/testar.mjs` é quem vai
-  descobrir se o coletor HTTP em `127.0.0.1` passa pelo contêiner; se não
-  passar, é aí que a CI vai travar.
-
-**Próximo passo recomendado:** promover a CI no GitHub Actions rodando
-`node tools/testar.mjs` em cada push para a `main`, com Chromium instalado e
-`FIBULA_EDGE` apontado — é o que transforma o portão em rede de verdade, já que
-hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
-roadmap.
-
-
 
 ---

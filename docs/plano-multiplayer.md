@@ -60,7 +60,7 @@ multiplayer isso muda três coisas:
 - **Jogo em grupo:** bloqueio de corpo (monstros ocupam sqm) dá papel ao
   cavaleiro, que segura o corredor.
 
-## 1.3 Caçar junto com o anfitrião calculando (19/10/2026, versão 0.10.0)
+## 1.3 Caçar junto com o anfitrião calculando (19/10/2026, versão 0.14.0)
 
 Opção C, decidida pelo Leonardo depois de testar a cidade compartilhada com
 dois celulares: co-op na masmorra **antes da M2 e sem gasto**, com o aparelho

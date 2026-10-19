@@ -27,7 +27,7 @@ Nenhum pixel foi desenhado à mão: o atlas sai inteiro de
 e gera os arquivos de novo, idênticos. A tabela `ARTE` no topo do script diz
 qual sprite do pacote virou o quê no jogo (monstros, classes, cadáveres, chão,
 paredes, itens, efeitos e projéteis, e na cidade a grama, a rua, o assoalho, a
-água, as árvores e os três NPCs).
+água, as árvores e os quatro NPCs).
 
 Os nomes de monstros, itens, lugares e magias são do Fibula. Nada vem do
 cliente oficial do Tibia (`Tibia.spr`/`Tibia.dat`), do site da CipSoft ou da
