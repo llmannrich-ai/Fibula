@@ -1,18 +1,18 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.24.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.24.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat} from './sim/progresso.js?v=0.24.0';
-import {G} from './sim/incursao.js?v=0.24.0';
-import {tiraDoSaco,poeNoSaco} from './sim/combate.js?v=0.24.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.24.0';
-import {erroFeira} from './telas.js?v=0.24.0';
-import {persist} from './salvar.js?v=0.24.0';
-import {C} from './sim/cidade.js?v=0.24.0';
-import {ART,icone} from './arte.js?v=0.24.0';
-import {retrato} from './desenho.js?v=0.24.0';
-import {rede} from './rede.js?v=0.24.0';
-import {$,app} from './dom.js?v=0.24.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.25.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.25.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat} from './sim/progresso.js?v=0.25.0';
+import {G} from './sim/incursao.js?v=0.25.0';
+import {tiraDoSaco,poeNoSaco} from './sim/combate.js?v=0.25.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.25.0';
+import {erroFeira} from './telas.js?v=0.25.0';
+import {persist} from './salvar.js?v=0.25.0';
+import {C} from './sim/cidade.js?v=0.25.0';
+import {ART,icone} from './arte.js?v=0.25.0';
+import {retrato} from './desenho.js?v=0.25.0';
+import {rede} from './rede.js?v=0.25.0';
+import {$,app} from './dom.js?v=0.25.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -74,7 +74,7 @@ export function hud(){
 /* ---------- HUD da cidade ----------
    Quem você é, o cofre, e o botão de falar quando há um NPC ao alcance. Ao
    chegar perto, o NPC diz a frase dele no registro, como no Tibia. */
-const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT')};
+const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT'),acao:$('#bFalar .nm')};
 let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
@@ -84,8 +84,10 @@ export function hudCidade(){
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
   if(!C.perto)return;
   const n=CITY.npcs[C.perto];
-  setT(EC.quem,n.nome);EC.falar.setAttribute('aria-label',`Falar com ${n.nome} (${n.casa}) — Enter`);
-  log(`${n.nome}: ${n.fala}`,'info');
+  /* um lugar (a grade do esgoto) não fala: o botão diz a ação dele */
+  const ac=n.acao||'Falar';setT(EC.acao,ac);setT(EC.quem,n.nome);
+  EC.falar.setAttribute('aria-label',n.lugar?`${ac}: ${n.nome} (${n.casa}) — Enter`:`${ac} com ${n.nome} (${n.casa}) — Enter`);
+  log(n.lugar?n.fala:`${n.nome}: ${n.fala}`,'info');
 }
 /* ao entrar na cidade o botão recomeça escondido */
 export const zeraCidade=()=>{pertoAntes=null;EC.falar.hidden=true};
