@@ -2,19 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.30.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.30.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.30.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.30.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.30.0';
-import {persist,saveFalhou} from './salvar.js?v=0.30.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.30.0';
-import {rede,SALAS} from './rede.js?v=0.30.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.30.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.30.0';
-import {icone} from './arte.js?v=0.30.0';
-import {$,app} from './dom.js?v=0.30.0';
-import {retrato} from './desenho.js?v=0.30.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.31.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.31.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.31.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.31.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.31.0';
+import {persist,saveFalhou} from './salvar.js?v=0.31.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.31.0';
+import {rede,SALAS} from './rede.js?v=0.31.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.31.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.31.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.31.0';
+import {icone} from './arte.js?v=0.31.0';
+import {$,app} from './dom.js?v=0.31.0';
+import {retrato} from './desenho.js?v=0.31.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -191,7 +192,15 @@ function desenhaSala(){
       }
     }
   }
-  box.append(h,p);if(ul.children.length)box.appendChild(ul);if(ac.children.length)box.appendChild(ac);
+  /* a voz é da sala: liga aqui ou no botão Voz, acima de Comer */
+  if(SALA.papel){
+    const v=document.createElement('p');
+    v.textContent=VOZ.ligada?'Voz ligada: segure Falar (ou V) para a sala ouvir.':'Com a voz ligada, quem está na sala se ouve enquanto segura Falar.';
+    ac.append(VOZ.ligada?botao('Desligar voz','Desligar a voz da sala',()=>{desligaVoz();showHunts()})
+      :botao(VOZ.pedindo?'Ligando voz…':'Ligar voz','Ligar a voz da sala (pede o microfone)',()=>{Promise.resolve(ligaVoz()).then(()=>{if(!huntS.hidden)showHunts()})},VOZ.pedindo));
+    box.append(h,p,v);
+  }else box.append(h,p);
+  if(ul.children.length)box.appendChild(ul);if(ac.children.length)box.appendChild(ac);
 }
 SALA.aoMudar=rede.aoMudar=()=>{if(!huntS.hidden)showHunts()};
 /* k é o NPC que abriu a tela; sem ele, o mesmo de antes */

@@ -148,6 +148,9 @@ const P = {
   portalNaEntrada: (h) => patch(h, ':{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false}',
     ':{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false}', 'portal na entrada'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
+  /* a voz (src/voz.js) sem STUN: nenhum caso sai para a rede, e os dois lados
+     da conexão estão no mesmo navegador */
+  semStun: (h) => patch(h, "export const STUN=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];", 'export const STUN=[];', 'voz sem STUN'),
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
   /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
      mas nada sai para a rede). Imita as funções do login simples
@@ -357,6 +360,7 @@ import * as Cd from './src/sim/cidade.js?v=${VERSAO}';
 import * as I from './src/sim/incursao.js?v=${VERSAO}';
 import * as Sa from './src/sala.js?v=${VERSAO}';
 import * as Pg from './src/sim/progresso.js?v=${VERSAO}';
+import * as Vz from './src/voz.js?v=${VERSAO}';
 (async function(){
   var H=document.documentElement;
   var $=function(s){return document.querySelector(s)};
@@ -482,6 +486,8 @@ function abreNavegador(edge, url, perfil) {
     /* o Chromium das execuções de nuvem roda em contêiner, onde o sandbox não sobe */
     ...(process.platform === 'win32' ? [] : ['--no-sandbox']),
     '--disable-extensions', '--mute-audio', '--window-size=420,860',
+    /* microfone falso, sem pergunta de permissão: o caso voz-na-sala */
+    '--use-fake-ui-for-media-stream', '--use-fake-device-for-media-stream',
     /* nada de rede a não ser o coletor: a folha do Google Fonts degrada e o
        teste fica hermético */
     '--host-resolver-rules=MAP * ~NOTFOUND,EXCLUDE 127.0.0.1',
@@ -1407,6 +1413,89 @@ const CASOS = [
     ok('o registro diz o que foi levado', /Você levou .*Presunto defumado/.test(txt('#log')||''), txt('#log'));
     ok('o estoque foi gasto ao entrar', sv()&&Object.keys(sv().prov).length===0, JSON.stringify(sv()&&sv().prov));
 `,
+  },
+  {
+    nome: 'voz-na-sala',
+    o_que: 'voz na sala: o botão só aparece com sala, o toque liga o microfone, a apresentação passa pelo canal da sala, o áudio liga direto (WebRTC de verdade, os dois lados neste navegador), segurar fala, mostra quem fala, e sair da sala desliga',
+    semente: 7,
+    patches: [P.semStun],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 3, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt,BIA={nome:'Bia',cl:'druida',c:{lvl:2,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:['gelo',null,null,null],equip:{}},up:{}};
+    /* microfone e WebRTC andam no relógio, não nos quadros: com a suíte em paralelo, 200 quadros podem não bastar */
+    var relogio=async function(cond,ms){var t0=performance.now();while(performance.now()-t0<ms){if(cond())return true;await new Promise(function(r){setTimeout(r,30)})}return cond()};
+    var aperta=function(e,tipo){e.dispatchEvent(new PointerEvent(tipo,{bubbles:true,pointerId:7}))};
+    clica($('#play'));
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    ok('sem sala, não há botão de voz', $('#bVoz').hidden);
+    Sa.criaSala();Tl.abreNpc('guia');
+    await ate(function(){return Sa.SALA.estado==='ligado'},40);
+    RT.sala('quero',{id:'zz1',ficha:BIA});RT.sala('quero',{id:'000',ficha:{nome:'Caio',cl:'cacador',c:{lvl:2,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:[null,null,null,null],equip:{}},up:{}}});
+    var tres=await ate(function(){return Sa.SALA.membros.length===3},20);
+    ok('dois convidados na sala', tres, Sa.SALA.membros.length);
+    ok('o Guia oferece ligar a voz da sala', todos('#hSala button').some(function(b){return b.textContent==='Ligar voz'}), txt('#hSala'));
+    clica($('#huntBack'));await quadros(3);
+    ok('com sala, o botão Voz aparece na cidade', !$('#bVoz').hidden&&txt('#vozT')==='ligar', txt('#bVoz'));
+    aperta($('#bVoz'),'pointerdown');aperta($('#bVoz'),'pointerup');
+    var ligou=await relogio(function(){return Vz.VOZ.ligada},10000);await quadros(2);
+    ok('o toque liga o microfone, mudo até segurar', ligou&&!Vz.VOZ.falando&&txt('#bVoz .nm')==='Falar', txt('#bVoz')+' / '+txt('#log'));
+    var oi=await ate(function(){return RT.salaMandadas('voz').some(function(v){return v.t==='oi'})},40);
+    ok('quem liga a voz se apresenta na sala', oi, JSON.stringify(RT.salaMandadas('voz')));
+    /* Bia (id maior) diz oi: este aparelho, de id menor, oferece */
+    RT.sala('voz',{de:'zz1',t:'oi'});
+    var of=null;await relogio(function(){of=RT.salaMandadas('voz').filter(function(v){return v.t==='oferta'&&v.para==='zz1'})[0];return !!of},10000);
+    ok('ao oi de id maior, este aparelho manda a oferta, com os candidatos', of&&/m=audio/.test(of.sdp)&&/a=candidate/.test(of.sdp), of&&of.sdp.length);
+    /* o lado da Bia: uma conexão de verdade, com o microfone falso dela */
+    /* o microfone da Bia é um tom do WebAudio: o falso do Chromium só alimenta uma captura por vez */
+    var ac=new AudioContext(),osc=ac.createOscillator(),dst=ac.createMediaStreamDestination();osc.connect(dst);osc.start();ac.resume();var mic=dst.stream;
+    var pc=new RTCPeerConnection({iceServers:[]});pc.addTrack(mic.getAudioTracks()[0],mic);
+    /* o som que chega só é medido se alguém o toca */
+    pc.ontrack=function(e){var a=document.createElement('audio');a.srcObject=e.streams[0];a.play().catch(function(){});document.body.appendChild(a)};
+    await pc.setRemoteDescription({type:'offer',sdp:of.sdp});await pc.setLocalDescription(await pc.createAnswer());
+    await relogio(function(){return pc.iceGatheringState==='complete'},10000);
+    RT.sala('voz',{de:'zz1',t:'resposta',para:of.de,sdp:pc.localDescription.sdp});
+    /* a Bia segue dizendo oi, como o jogo dela faria; sem isso o par some (o tempo do jogo corre mais que o do relógio aqui) */
+    var oiBia=setInterval(function(){RT.sala('voz',{de:'zz1',t:'oi'})},150);
+    var lig=await relogio(function(){return Vz.VOZ.n===1&&pc.connectionState==='connected'},10000);
+    ok('o áudio liga direto entre os dois aparelhos', lig&&/Voz ligada com Bia/.test(txt('#log')||''), Vz.VOZ.n+' / '+pc.connectionState+' / '+txt('#log'));
+    var fala=await relogio(function(){return Vz.VOZ.quem==='Bia'&&txt('#vozT')==='Bia'},10000);
+    ok('quem fala aparece no botão', fala, Vz.VOZ.quem+' / '+txt('#vozT'));
+    /* o microfone falso apita de tempos em tempos: mede o maior nível em 2,5 s */
+    var tx=function(){var s=pc.getReceivers()[0].getSynchronizationSources()[0];return s?s.audioLevel:0};
+    var pico=async function(){var m=0,t0=performance.now();while(performance.now()-t0<2500){m=Math.max(m,tx());await new Promise(function(r){setTimeout(r,40)})}return m};
+    var mudo=await pico();
+    ok('sem segurar, a sala não ouve nada', mudo<.01, mudo);
+    aperta($('#bVoz'),'pointerdown');await quadros(2);
+    var no_ar=txt('#vozT'),alto=await pico();
+    ok('segurando Falar, a sala ouve', alto>.03&&Vz.VOZ.falando&&no_ar==='no ar', alto+' / '+no_ar);
+    aperta($('#bVoz'),'pointerup');
+    ok('soltou, o microfone cala', !Vz.VOZ.falando&&mic&&true, Vz.VOZ.falando);
+    tecla('keydown','KeyV');await quadros(1);var v1=Vz.VOZ.falando;tecla('keyup','KeyV');await quadros(1);
+    ok('V no teclado também fala enquanto segura', v1&&!Vz.VOZ.falando, v1+' / '+Vz.VOZ.falando);
+    /* Caio (id menor) oferece: este aparelho responde */
+    var pc2=new RTCPeerConnection({iceServers:[]});pc2.addTrack(mic.getAudioTracks()[0],mic);
+    await pc2.setLocalDescription(await pc2.createOffer());await relogio(function(){return pc2.iceGatheringState==='complete'},10000);
+    RT.sala('voz',{de:'000',t:'oferta',para:of.de,sdp:pc2.localDescription.sdp});
+    var re=null;await relogio(function(){re=RT.salaMandadas('voz').filter(function(v){return v.t==='resposta'&&v.para==='000'})[0];return !!re},10000);
+    ok('à oferta de id menor, este aparelho responde', re&&/m=audio/.test(re.sdp), re&&re.sdp.length);
+    RT.sala('voz',{de:'estranho',t:'oferta',para:of.de,sdp:pc2.localDescription.sdp});await quadros(5);
+    ok('quem não está na sala não liga voz', !RT.salaMandadas('voz').some(function(v){return v.para==='estranho'}));
+    pc2.close();
+    clearInterval(oiBia);RT.sala('voz',{de:'zz1',t:'tchau'});
+    await ate(function(){return Vz.VOZ.n===0},40);
+    ok('tchau fecha a voz com quem saiu', Vz.VOZ.n===0, Vz.VOZ.n);
+    Tl.abreNpc('guia');
+    ok('o Guia oferece desligar a voz', todos('#hSala button').some(function(b){return b.textContent==='Desligar voz'}), txt('#hSala'));
+    clica(todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0]);
+    await ate(function(){return !Vz.VOZ.ligada},20);clica($('#huntBack'));await quadros(3);
+    ok('fechar a sala desliga a voz e o botão some', !Vz.VOZ.ligada&&$('#bVoz').hidden&&RT.salaMandadas('voz').some(function(v){return v.t==='tchau'}), Vz.VOZ.ligada);
+    pc.close();osc.stop();ac.close();
+    `,
   },
   {
     nome: 'cidade-compartilhada',

@@ -120,6 +120,12 @@ recomendado acima de 15, e o caso da cidade entra nele.
 
 ## Concluído
 
+- **2026-10-19 — Voz na sala (0.30.0)** *(pedido do Leonardo)*. `src/voz.js`:
+  WebRTC nativo em malha entre quem está na sala, apresentação pelo canal da
+  sala, segurar para falar (botão Voz ou V), quem fala no botão, STUN do
+  Cloudflare e do Google, sem TURN. Caso `voz-na-sala` no harness, com
+  conexão de verdade no Chromium headless.
+
 - **2026-10-19 — Um guia só e o mundo igual para todos (0.28.0)**
   *(decisão do Leonardo: "a realidade como ela é"; pilar 1)*. O `VISAO.md`, o
   `docs/PRD.md` e `docs/agentes/` viraram as Partes 1, 2, 5 e 6 do
