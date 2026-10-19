@@ -904,6 +904,24 @@
       "val": 10,
       "rar": 0
     },
+    "faca": {
+      "nome": "faca",
+      "val": 0,
+      "rar": 0,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.02
+      }
+    },
+    "espadamadeira": {
+      "nome": "espada de madeira",
+      "val": 0,
+      "rar": 0,
+      "slot": "arma",
+      "bonus": {
+        "dano": 0.03
+      }
+    },
     "espada": {
       "nome": "espada enferrujada",
       "val": 20,
@@ -1642,8 +1660,20 @@
   "city": {
     "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
     "nome": "Cidade",
-    "_chao": "Pecas de teste no chao da cidade (pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao). Nao tem origem no banco, entao nao entra na Feira. Para tirar, apague a lista.",
+    "_chao": "Pecas no chao da cidade. Sem respawn (as de teste, pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao); nao tem origem no banco, entao nao entra na Feira. Com respawn (segundos): pisou, vai para a mochila se couber, e a peca volta ao mesmo sqm depois desse tempo de cidade, contado em cada aparelho (as armas de quem comeca, na casa vazia ao norte da praca). Val 0: nao vira ouro no Banco. Para tirar, apague da lista.",
     "chao": [
+      {
+        "x": 37,
+        "y": 6,
+        "item": "faca",
+        "respawn": 120
+      },
+      {
+        "x": 39,
+        "y": 6,
+        "item": "espadamadeira",
+        "respawn": 120
+      },
       {
         "x": 23,
         "y": 21,
