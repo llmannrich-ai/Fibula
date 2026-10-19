@@ -29,17 +29,7 @@ os 20 s.
 Ordem decidida em 19/10/2026 com os pilares novos: primeiro o que faz o mundo
 ser fixo e a morte ser justa, depois o que a endurece, depois o resto da F0.
 
-### 1. Saída segura perto
-
-**Pilar 5.** Depende da pendência P8 (padrão:
-60 s). Medir, em cada lugar fixo, o tempo de caminhada no nível recomendado do
-sqm mais longe até a porta; onde passar do limite, pôr uma segunda saída (escada
-ou porta) numa sala funda.
-
-**Pronto quando:** o tempo máximo até uma saída, por lugar, está no diário e
-nenhum passa do limite; caso no harness confere que a segunda saída extrai.
-
-### 2. Medir o ritmo até o nível 20 em horas
+### 1. Medir o ritmo até o nível 20 em horas
 
 **Pilar 3.** Alvo do Leonardo: nível 20 em ~3 h de caçada efetiva. Script em
 `tools/balanceamento/` que simula caçadas no lugar recomendado para cada nível
@@ -50,7 +40,7 @@ sensível.
 **Pronto quando:** a tabela "nível × horas" atual e a proposta estão no diário,
 e a issue existe.
 
-### 3. Só o servidor da sala manda na sala
+### 2. Só o servidor da sala manda na sala
 
 **Pilar 4** (a perda nunca vem de fora da regra). **Sensível:** mexe em
 autenticação. Hoje o canal de cada lugar tem nome previsível
@@ -73,9 +63,9 @@ servidor atual é ignorada (`fim`, `passa`, `membros`, `heranca`), resultado
 implausível é recusado, e o canal da sala recusa quem não tem conta; o
 esquema novo está em `tools/supabase/NNN_*.sql`, aplicado.
 
-### 4. Morte da opção B
+### 3. Morte da opção B
 
-**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 (o ritmo), do item 3 (só o servidor manda na sala) e da pendência P9 (**sensível**: os
+**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 1 (o ritmo), do item 2 (só o servidor manda na sala) e da pendência P9 (**sensível**: os
 números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
@@ -85,16 +75,16 @@ entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 5. PWA instalável
+### 4. PWA instalável
 
-**Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
+**Requisito "Controle e tela"** (Parte 2) e desempenho. Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
 
 **Fase:** F0. **Pronto quando:** o Chrome do Android oferece "Instalar", o jogo
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 6. Escada de lugares de caça
+### 5. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -106,7 +96,7 @@ portal no chão (`abre: "portal"`, igual aos da cidade).
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
-### 7. Pincéis do Fibula no editor
+### 6. Pincéis do Fibula no editor
 
 **Pilar 2.** O OTSP traz para o Remere's Map Editor só um pincel (grama com
 borda); o resto se pinta item por item. `node tools/otbm.mjs rme` passa a
@@ -122,13 +112,13 @@ jogo como item da pilha, sem código novo no jogo
 harness confere que todo id citado existe no `items.otb`, e o
 [docs/rme.md](docs/rme.md) diz como usar.
 
-### 8. Redesenhar os lugares no editor
+### 7. Redesenhar os lugares no editor
 
 **Pilar 2.** Os quatro mapas de hoje são rascunhos do gerador antigo. Cada
 um é redesenhado no Remere's Map Editor com intenção do Tibia: o Esgoto com
 canal de água e pontes, a Ilha como clareira irregular com margem de areia e
 água, a Cripta com nichos de sarcófago, a Masmorra de Runas com salões de
-pilares; marcos que se reconhecem e uma segunda saída onde a P8 pedir. Um
+pilares; marcos que se reconhecem. Um
 lugar por vez, começando pelo Esgoto, com o orçamento de download vigiado (cada item novo pesa). **Precisa do Leonardo** na primeira
 configuração do editor ([docs/rme.md](docs/rme.md)); depois disso, um agente
 pode desenhar pelo `.otbm` também.
@@ -142,11 +132,11 @@ pode desenhar pelo `.otbm` também.
 
 - **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
   raro com loot próprio; entrada em `MT` e em `LOOT`.
-- **Log legível em tela estreita** (pilar 5) — o `#log` usa
+- **Log legível em tela estreita** (requisito "Controle e tela") — o `#log` usa
   `width:min(66vw,330px)`; abaixo de 340 px de largura nunca foi verificado.
 - **Rastro dos outros** (pilar 2) — placar, marca de morte no lugar, recorde a
   ser batido.
-- **Som** (pilar 5: jogável sem som, melhor com) — efeitos curtos por WebAudio,
+- **Som** (requisito de acessibilidade: jogável sem som, melhor com) — efeitos curtos por WebAudio,
   sem arquivo grande nem biblioteca.
 - **Telemetria mínima** (F1) — os eventos da Parte 2; dado pessoal é sensível.
 

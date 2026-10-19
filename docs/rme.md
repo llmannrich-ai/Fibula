@@ -70,10 +70,8 @@ apaga o que foi desenhado.
 | Para caminhar, o sqm precisa de chão e nada sólido | O que é sólido, chão ou luz vem do `items.otb` do OTSP (`tools/otsp-itens.json`): parede, árvore, pilar, estátua e água bloqueiam; tocha e vela iluminam |
 
 O que o jogo ainda **não** lê do `.otbm`: outros andares (escada, buraco,
-corda), casas, atributos de item (quantidade, ação) e teleporte. A saída
-segura perto (pendência P8, ≤ 60 s até uma saída) vai precisar de uma
-segunda saída, que entra como um segundo waypoint quando o item da fila
-chegar.
+corda), casas, atributos de item (quantidade, ação) e teleporte. Uma
+segunda saída, se vier, entra como um segundo waypoint.
 
 ## O pilar que isso serve
 

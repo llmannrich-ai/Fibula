@@ -11,7 +11,7 @@ resto: se uma regra nova muda uma antiga, a antiga sai no mesmo commit.
 
 | Parte | Responde | Quem muda |
 |---|---|---|
-| [1. O jogo](#1-o-jogo-os-princípios) | Por quê: o princípio-mãe, os seis pilares, os não-objetivos, o tom | Só o Leonardo |
+| [1. O jogo](#1-o-jogo-os-princípios) | Por quê: o princípio-mãe, os cinco pilares, os não-objetivos, o tom | Só o Leonardo |
 | [2. O produto](#2-o-produto) | O quê, para quem e em que ordem; arte e licenças; riscos | Só o Leonardo |
 | [3. O código](#3-o-código) | Como: arquitetura, simulação, save, Supabase, convenções | Qualquer sessão, junto do código |
 | [4. Testar, versionar, publicar](#4-testar-versionar-publicar) | Os portões antes de qualquer commit | Qualquer sessão, junto do código |
@@ -37,8 +37,7 @@ raiz do repositório).
 ### A frase
 
 **O Tibia raiz no celular. O mundo é como a vida real: indiferente, igual para
-todos e com consequências. A única coisa adaptada ao celular é poder parar a
-qualquer momento.**
+todos e com consequências.**
 
 O Tibia antigo acertava o que quase nenhum jogo de celular tenta: o mundo não
 sabia que você existia. Os monstros não eram balanceados para o seu nível, a
@@ -48,7 +47,9 @@ era de poder, era de risco administrado. O Fibula guarda tudo isso.
 
 O que o Fibula adapta é o que o celular não aguenta: sessão que só faz sentido
 com três horas livres, viagem longa, espera vazia, interface de 2002. O
-jogador abre o jogo no ônibus, caça, e pode parar quando o ônibus chega.
+jogador abre o jogo no ônibus e caça com o celular nas duas mãos. O controle
+e a tela de celular são requisito do produto (Parte 2, "Requisitos que não são
+funcionalidade"), não pilar.
 
 ### O princípio-mãe: a realidade como ela é
 
@@ -62,7 +63,7 @@ sabe que você está jogando?"** Monstro que fica mais forte porque você subiu 
 nível, loot que melhora porque você perdeu muito, modo fácil depois de morrer
 três vezes — tudo isso reprova, e não entra.
 
-### Os seis pilares
+### Os cinco pilares
 
 Cada pilar tem uma **regra verificável**, que é o que um agente confere antes
 de mudar o jogo, e o **estado hoje**, que diz o que ainda falta. O estado muda;
@@ -131,7 +132,7 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
 - **Regra (opção B, decidida pelo Leonardo em 19/10/2026):** morrer custa o
   mochila inteira e uma fatia do XP que **pode derrubar o nível**, e cada peça
   vestida tem uma chance de cair, como no Tibia sem bênção. Um seguro comprado
-  com ouro do cofre reduz essas perdas (e é ralo, pilar 6). A perda é
+  com ouro do cofre reduz essas perdas (e é ralo, pilar 5). A perda é
   **sempre dita antes** de entrar, mostrada na tela final, e **nunca causada
   pela rede**: queda de conexão não mata (20 s parado e invulnerável; depois
   sai com a mochila se não estava em combate). A proteção contra queda vem
@@ -144,32 +145,7 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
   está na mochila só fica a salvo saindo pela porta.
 
-#### Pilar 5 — Duas mãos, e pode parar a qualquer hora
-
-O jogo nasce para o toque. O teste é brutal e simples: **dá para jogar bem, em
-pé, no ônibus, com o celular nas duas mãos** — o polegar esquerdo anda, o
-direito mira? E, quando o ônibus chega, **dá para parar sem perder nada que a
-regra não diga?** (Até 19/10/2026 era "com uma mão"; o Leonardo trocou por
-duas ao aprovar a mira manual: o jogo sempre se joga com duas.)
-
-- **Regra:** o alvo é apontado pelo jogador, como a direção de andar: o botão
-  da habilidade é um joystick (apertar mostra a mira, arrastar escolhe a
-  direção, soltar lança; tocar lança para onde se olha), nada procura o
-  monstro sozinho e o que sai pode errar, gastando mana e recarga. Poucos
-  botões, grandes (≥ 48 px), na zona dos polegares: andar à esquerda,
-  habilidades à direita. Toda tela funciona em 360×640
-  retrato. Nada de arrastar e soltar em inventário minúsculo, menu com seis
-  níveis ou efeito de passar o mouse; o teclado existe só para desenvolver.
-  Sempre há uma saída segura perto: padrão de **60 s** de qualquer ponto de um
-  lugar de caça até uma saída (pendência P8 da Parte 6). Sem energia, sem
-  vidas que recarregam, sem evento com hora marcada. Tempo morto — andar longe
-  à toa na cidade, esperar sem nada a decidir — é defeito.
-- **Estado hoje:** controle e telas cumprem; a mira manual está no ar desde a
-  0.34.0. A única saída é a porta na sala de
-  entrada; o mapa de caça tem 64×64 sqm, então do fundo até a porta pode levar
-  mais de 60 s.
-
-#### Pilar 6 — Todo recurso tem ralo
+#### Pilar 5 — Todo recurso tem ralo
 
 O grind do Tibia funcionava porque cada ganho era seu. Em troca, **recurso
 acumulado precisa de ralo**: ouro parado é progresso morto.
@@ -192,7 +168,7 @@ Nada daqui entra sem o Leonardo mudar esta parte primeiro.
   estética e conveniência — nunca dano, vida, loot, XP ou proteção contra a
   morte. (O seguro do pilar 4 se compra com ouro do jogo, nunca com dinheiro.)
 - **Portão de tempo real.** Energia, vidas, evento que só acontece às oito da
-  noite. Contraria o pilar 5.
+  noite. Contraria o princípio-mãe: o mundo não raciona o tempo de ninguém.
 - **O tempo morto do Tibia.** Copia-se do Tibia o que aumenta **peso e
   consequência**; nunca o que aumenta **espera, deslocamento ou exigência de
   sessão longa**. Nem os onze espaços de equipamento, nem a interface de 2002.
@@ -222,13 +198,12 @@ inventado com apóstrofo no meio.
 
 ### O teste de qualquer ideia
 
-Cinco perguntas, nesta ordem. Reprovou em uma, está fora.
+Quatro perguntas, nesta ordem. Reprovou em uma, está fora.
 
 1. Isso existiria num mundo que não sabe que você está jogando?
 2. Qual pilar isso serve? Se nenhum, está fora, mesmo que seja boa.
 3. Bate em algum não-objetivo? Se sim, está fora, mesmo que seja ótima.
 4. Dá para fazer com as duas mãos no celular, em pé, no ônibus?
-5. Dá para parar no meio sem perder nada que a regra não diga?
 
 Se a ideia for boa e o pilar parecer errado, diga isso numa issue
 `decisao-do-dono` em vez de contornar: o pilar também pode mudar, pelo
@@ -260,7 +235,7 @@ sozinho ou com amigos, no tempo que o dia deixar."*
 |---|---|---|
 | O1 | Produto comercial com jogadores reais | Receita mensal maior que o custo de infraestrutura, a partir da F4 |
 | O2 | Retenção de RPG de nicho | D1 ≥ 35%, D7 ≥ 12%, D30 ≥ 5% |
-| O3 | Sessão que cabe no celular | Sessão mediana de 8 a 20 min; qualquer sessão pode parar em ≤ 60 s sem perda fora da regra |
+| O3 | Sessão que cabe no celular | Sessão mediana de 8 a 20 min |
 | O4 | Multiplayer estável | Latência percebida < 150 ms no Brasil; < 1% de quedas por sessão |
 | O5 | Desenvolvimento majoritariamente por agentes | ≥ 80% dos commits por agentes; CI verde na `main` ≥ 95% do tempo; zero perda de save |
 
@@ -319,7 +294,7 @@ fase.
 | Fase | Entrega | Estado | Pronto quando |
 |---|---|---|---|
 | **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: PWA instalável (os créditos estão nas Regras desde a 0.31.0) | PWA instalável |
-| **F1 · Personagem e mundo** | Contas e save na nuvem ✅, 4 classes ✅, equipamento ✅, lugares de caça com nome ✅; **os pilares desta guia**: mapas fixos, morte da opção B com proteção contra queda, curva de 3 h até o nível 20, saída a ≤ 60 s; telemetria mínima | Em andamento | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
+| **F1 · Personagem e mundo** | Contas e save na nuvem ✅, 4 classes ✅, equipamento ✅, lugares de caça com nome ✅; **os pilares desta guia**: mapas fixos, morte da opção B com proteção contra queda, curva de 3 h até o nível 20; telemetria mínima | Em andamento | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op autoritativo** | Servidor próprio rodando `src/sim/`, salas de 1 a 4 para desconhecidos, convite por link, reconexão | Só a sala entre amigos (anfitrião calcula) | 4 celulares completam uma caçada juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Cidade compartilhada ✅ (Realtime), Feira ✅; chat com filtro, grupos, amigos, guildas | Parcial | 100 simultâneos estáveis; moderação básica (denunciar, silenciar, banir) |
 | **F4 · Lançamento** | Monetização (só estética e conveniência), temporadas, LGPD, login por e-mail ou Google com SMTP próprio, beta aberto | — | Pagamento real processado; custo por jogador dentro da meta; O2 medido |
@@ -334,6 +309,7 @@ fase.
 | Segurança | A partir da F2, dano, loot, XP e ouro calculados no servidor; limite de taxa de ações; nenhum segredo no cliente |
 | Confiabilidade | Save transacional e versionado, com migração testada a cada mudança de formato; backup diário do banco |
 | Privacidade | LGPD: termos, política de privacidade e exclusão de conta antes do beta aberto |
+| Controle e tela | Jogável bem em pé, com o celular nas duas mãos: polegar esquerdo anda, direito mira. O botão da habilidade é um joystick (apertar mostra a mira, arrastar escolhe a direção, soltar lança; tocar lança para onde se olha); nada procura o monstro sozinho, e o que sai pode errar. Poucos botões, grandes (≥ 48 px), na zona dos polegares. Toda tela funciona em 360×640 retrato. Nada de arrastar e soltar em inventário minúsculo, menu com seis níveis ou efeito de passar o mouse; o teclado é só para desenvolver. Tempo morto (andar à toa, esperar sem decidir) é defeito. Hoje cumprido; mira manual desde a 0.34.0 |
 | Acessibilidade | Contraste AA, `prefers-reduced-motion`, jogável sem som |
 | Custo | < R$ 1,00 por jogador ativo por mês até 1.000 simultâneos |
 
@@ -1361,8 +1337,9 @@ manual e o ciclo automático escreverem os dois em paralelo.
 
 - **[ROADMAP.md](ROADMAP.md)** — a **fila única** de trabalho, com as seções
   `Agora`, `Próximo`, `Depois` e `Concluído`. `Agora` tem **um** item. Todo
-  item declara o **pilar** que serve e um **"Pronto quando:"** verificável;
-  item sem pilar não entra. Ao terminar, mova para `Concluído` com a data e o
+  item declara o **pilar** que serve (ou o requisito da Parte 2 que cumpre,
+  como "Controle e tela") e um **"Pronto quando:"** verificável; item sem
+  pilar nem requisito não entra. Ao terminar, mova para `Concluído` com a data e o
   commit, e promova o primeiro de `Próximo`. Issues servem só para decisão do
   dono, bug e feedback.
 - **[DIARIO.md](DIARIO.md)** — uma entrada por execução, mais recente no topo,
@@ -1551,8 +1528,8 @@ reescreva o trabalho do Desenvolvedor.
 2. Para cada um, leia o diff, rode os portões da Parte 4 e confira o "Pronto
    quando:" do item. Confira também os pilares: escala por nível ou grupo
    (pilar 1), mapa que deixou de ser fixo (2), perda da morte escondida ou
-   aliviada (4), botão pequeno ou tela fora de 360×640 (5), recurso sem ralo
-   (6).
+   aliviada (4), recurso sem ralo (5); e o requisito "Controle e tela" da
+   Parte 2: botão pequeno ou tela fora de 360×640.
 3. Defeito pequeno e óbvio (até ~20 linhas): corrija na `main` com commit
    próprio. Quebra o jogo, o save ou um pilar e não é trivial: `git revert`,
    issue `bug` explicando e o item de volta para `Agora`. Questão de design ou
@@ -1579,7 +1556,7 @@ dos pilares e propor ajustes. Não muda o jogo diretamente.
    (horas até cada nível — o alvo é o **nível 20 em ~3 h**, pilar 3); custo da
    morte em horas de caçada (pilar 4); escada de lugares de caça (cada faixa de
    nível tem um lugar adequado? pilar 1); economia do cofre e dos ralos (pilar
-   6); equilíbrio entre as 4 classes.
+   5); equilíbrio entre as 4 classes.
 2. **Meça** com um script em `tools/balanceamento/` (Node, sem dependência)
    que importe `src/sim/` (sempre com o mesmo `?v=` dos imports internos;
    `node tools/versao.mjs` mostra qual), chame `carrega()` com o
@@ -1627,7 +1604,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | Inventário como no Tibia: só mochila e cofre. A mochila é do personagem, fica com ele entre as caçadas, entra inteira na seguinte e cai toda na morte (menos o Selo); 20 espaços (`progression.mochila`). O Banqueiro guarda e devolve | Parte 3, "O save é mesclado" |
 | 19/10 | **Alimentação como no Tibia:** sem comida não se regenera vida nem mana; a regeneração é a da classe, fixa; cada comida dá um tempo de alimentação, maior nas mais caras, até 1200 s acumulados (`progression.comida`). Come-se pelo botão Comer na caçada (escolha do dono contra a recomendação de comer sozinho). A comida é item: os animais a derrubam, vai na mochila e se guarda no cofre do Banco | Parte 3, "Números que governam o jogo" |
 | 19/10 | **Voz na sala de caçar junto:** WebRTC direto entre os aparelhos, segurar para falar, apresentação pelo canal da sala; só na sala, nunca na cidade aberta (moderação vem antes). Aceita o STUN público do Cloudflare e do Google, a única exceção a não falar com outro servidor; sem TURN até medir quantos não ligam | Parte 3, "Voz" |
-| 19/10 | **Um guia só** (este arquivo), com o princípio-mãe "a realidade como ela é" e os seis pilares | Parte 1 |
+| 19/10 | **Um guia só** (este arquivo), com o princípio-mãe "a realidade como ela é" e os pilares | Parte 1 |
 | 19/10 | **O mundo é igual para todos:** nada escala com nível, classe ou grupo | Pilar 1 |
 | 19/10 | **Mapas de caça fixos**, que se aprendem | Pilar 2 |
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
@@ -1637,8 +1614,9 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Atlas em WebP sem perda**, gravado pelo `cwebp` do Google em `tools/sprites.mjs` (só na montagem; o jogador baixa um arquivo de imagem), com o PNG de reserva | Parte 3, "O que mais o jogador baixa" |
 | 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco recusa desde a 006 | Pilar 4; Parte 3, Supabase |
 | 19/10 | **O mundo em volta da cidade:** a cidade de hoje cercada por muralha, com portões abertos (porta, não portal mágico); fora, estradas, vilas e matas para explorar e achar as entradas dos próximos lugares de caça. Por agora sem monstros | Pilar 2; Parte 3, `cidade.js` |
-| 19/10 | **Só o servidor da sala manda na sala**, antes de a morte endurecer: mensagens de resultado, morte, troca de servidor e herança passam a ser conferidas pela autorização do Realtime do Supabase (canal privado, só com conta), mais conferência de plausibilidade do resultado; a trapaça de quem roda o servidor continua até a F2 | `ROADMAP.md`, Próximo 3; Parte 3, Sala |
-| 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
+| 19/10 | **Só o servidor da sala manda na sala**, antes de a morte endurecer: mensagens de resultado, morte, troca de servidor e herança passam a ser conferidas pela autorização do Realtime do Supabase (canal privado, só com conta), mais conferência de plausibilidade do resultado; a trapaça de quem roda o servidor continua até a F2 | `ROADMAP.md`, Próximo 2; Parte 3, Sala |
+| 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o jogo deixa de exigir uma mão só | Parte 2, "Controle e tela"; Parte 3, `combate.js` |
+| 19/10 | **Sai o pilar "Duas mãos, e pode parar a qualquer hora"**: os pilares passam a ser cinco (o do ralo vira o 5). Sai a regra da saída segura a ≤ 60 s (era a P8) e a pergunta "dá para parar no meio" do teste de ideias; a regra para sair do jogo durante a luta virá depois. O controle e a tela de celular ficam como requisito da Parte 2 | Parte 1; Parte 2, "Controle e tela" |
 
 ### Pendentes
 
@@ -1652,5 +1630,4 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Ao religar o ciclo |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |
-| P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |
