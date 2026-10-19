@@ -115,12 +115,12 @@ function cel(k,q,rot){
   b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila()});
   return b;
 }
-function info(k,q,vestida){
+function info(k,q,vestida,noCofre){
   const el=$('#moInfo');el.textContent='';
   if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é. O jogo continua correndo.':'Toque numa peça para ver o que é. Vestir, trocar e vender é no Banco.';return}
   const it=ITEMS[k],b=document.createElement('b');b.className='r'+it.rar;b.textContent=fmtItem([k,q]);
   const bo=it.slot?` · ${SLOT_NOME[it.slot]}, ${fmtBonus(it)}`:'';
-  el.append(b,vestida?`${bo}. Vestida: não cai na morte.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+(it.slot?' Ao extrair, vai para o Banco.':ehMat(k)?' Ao extrair, vai para o depósito do Gordon, na Forja.':''));
+  el.append(b,vestida?`${bo}. Vestida: não cai na morte.`:noCofre?`${bo}. No cofre do Banco: fale com o Banqueiro para vestir ou vender.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+(it.slot?' Ao extrair, vai para o Banco.':ehMat(k)?' Ao extrair, vai para o depósito do Gordon, na Forja.':''));
 }
 export function desenhaMochila(){
   const c=ch(),K=KL(),caca=naCaca(),p=caca?G.p:null,bag=p?p.bag:{},val=p?p.bagVal:0;
@@ -142,14 +142,18 @@ export function desenhaMochila(){
   const ss=document.createElement('small');ss.textContent='Saco';sw.append(sc,ss);
   d.append(eq('amuleto'),fig,eq('armadura'),eq('arma'),sw);
   setT($('#moTot'),vestido(c));
-  /* saco: o mais valioso primeiro; casas vazias completam a grade, como um container do Tibia */
-  const sela=p?Math.round(val*sealPct(p.up)):0;
-  const mv=$('#moVal');mv.textContent='';const vb=document.createElement('b');vb.textContent=val;mv.append(vb,' ouro');
-  setT($('#moRisco'),!caca?'O saco enche na masmorra e só é seu depois do portal.'
+  /* saco: o mais valioso primeiro; casas vazias completam a grade, como um
+     container do Tibia. Na cidade não há saco: a grade é o cofre do Banco */
+  const sela=p?Math.round(val*sealPct(p.up)):0,itens=caca?bag:save.itens;
+  setT($('#moTit'),caca?'Saco':'Cofre do Banco');
+  const mv=$('#moVal');mv.textContent='';const vb=document.createElement('b');
+  if(caca){vb.textContent=val;mv.append(vb,' ouro')}
+  else{const n=Object.values(itens).reduce((a,q)=>a+q,0);vb.textContent=n;mv.append(vb,n===1?' peça':' peças')}
+  setT($('#moRisco'),!caca?'Guardado no Banco, não cai na morte. Vestir, trocar e vender é com o Banqueiro.'
     :val?`Se morrer, perde ${val-sela} de ouro`+(sela?` (o selo guarda ${sela}).`:'.')+' Extraia para guardar.':'Vazio. Cada monstro deixa um saco no chão: encoste nele para pegar.');
   const g=$('#moGrade');g.textContent='';
-  const rows=Object.entries(bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
-  for(const[k,q]of rows){const b=cel(k,q);b.dataset.k=k;if(MO.sel===k){b.classList.add('on');selInfo=[k,q,false]}g.appendChild(b)}
+  const rows=Object.entries(itens).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
+  for(const[k,q]of rows){const b=cel(k,q);b.dataset.k=k;if(MO.sel===k){b.classList.add('on');selInfo=[k,q,false,!caca]}g.appendChild(b)}
   for(let i=rows.length;i<Math.max(12,Math.ceil(rows.length/6)*6);i++)g.appendChild(cel(null));
   if(!selInfo)MO.sel=null;
   info(...(selInfo||[]));
