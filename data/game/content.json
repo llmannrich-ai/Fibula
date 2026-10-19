@@ -6,7 +6,7 @@
     "tierReference": "O campo tier de cada inimigo aponta a banda equivalente em ../mechanics/tiers.json (por HP).",
     "lootFormat": "[chaveDoItem, probabilidade, quantidadeMin, quantidadeMax]",
     "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per). preco: ouro do cofre para aprender com o NPC que ensina (ensina: true em city.npcs); 0 = vem de graca ao chegar no nivel. Cada classe precisa de uma de nivel 1 e preco 0, senao o personagem novo nao ataca. Quem ja jogava antes da 0.21.0 ficou com tudo que o nivel tinha liberado",
-    "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
+    "equipFormat": "item com slot (arma, armadura ou amuleto) fica como peca na mochila e, guardado no Banco, vai para o cofre da conta em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
     "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)",
     "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Cada uma e uma provisao: fica guardada (ate max por cacada) e vai inteira na proxima cacada que comecar, extraindo ou morrendo. efeito: pot (pocoes a mais), rhp e rmp (vida e mana por segundo a mais durante a cacada), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada (uma refeicao). Icone: sup_<chave> no atlas."
   },
@@ -678,7 +678,7 @@
     },
     "seguro": {
       "nome": "Selo de resguardo",
-      "desc": "guarda 20% do loot do saco se você morrer",
+      "desc": "guarda 20% do valor da mochila se você morrer",
       "max": 3,
       "base": 300,
       "mult": 2
@@ -1534,6 +1534,10 @@
       "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala e o mesmo com qualquer numero de jogadores.",
       "seconds": 60,
       "clearTiles": 10
+    },
+    "mochila": {
+      "_note": "A mochila do personagem, como no Tibia (decisao do Leonardo, 19/10/2026): o loot fica nela entre as cacadas, ela entra inteira na proxima e a morte leva tudo o que esta dentro (menos o Selo de resguardo). So o cofre do Banco e seguro: guardar e com o Banqueiro. espacos: quantas casas ela tem; cada peca de equipamento ocupa uma casa, o resto (ouro, gemas, materiais) empilha uma casa por tipo. Cheia, o loot que nao cabe fica no chao.",
+      "espacos": 20
     }
   },
   "supplies": {
@@ -1730,7 +1734,7 @@
         "nome": "Banqueiro",
         "casa": "Banco",
         "abre": "banco",
-        "fala": "O cofre é da conta. Vista, guarde ou venda o que trouxe."
+        "fala": "O que está na mochila cai com você. O que está no cofre fica. Guarde, vista ou venda."
       },
       "guia": {
         "letra": "G",
@@ -2023,7 +2027,7 @@
     }
   },
   "forja": {
-    "_note": "O Gordon, na Forja da cidade (pedido do Leonardo, 19/10/2026). compra: o preco que ele paga por unidade de cada material, de proposito abaixo do val; so esses itens deixam de virar ouro na extracao e vao para save.mats, o deposito de materiais da conta (gema e coroa continuam virando ouro). missoes: as encomendas, em ordem; entregar uma consome o que ela pede e soma 1 em save.forja. loja: o que ele vende por ouro do cofre a partir da encomenda numero missao (0 = desde o comeco); preco precisa ser maior que o val, senao comprar aqui e vender no Banco daria lucro. Medido em 19/10/2026 com a simulacao no Node (50 sementes): a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas; uma incursao tipica traz perto da metade, e as ervas so no fundo.",
+    "_note": "O Gordon, na Forja da cidade (pedido do Leonardo, 19/10/2026). compra: o preco que ele paga por unidade de cada material, de proposito abaixo do val; so esses itens deixam de virar ouro ao guardar a mochila no Banco e vao para save.mats, o deposito de materiais da conta (gema e coroa continuam virando ouro). missoes: as encomendas, em ordem; entregar uma consome o que ela pede e soma 1 em save.forja. loja: o que ele vende por ouro do cofre a partir da encomenda numero missao (0 = desde o comeco); preco precisa ser maior que o val, senao comprar aqui e vender no Banco daria lucro. Medido em 19/10/2026 com a simulacao no Node (50 sementes): a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas; uma incursao tipica traz perto da metade, e as ervas so no fundo.",
     "compra": {
       "dente": 1,
       "seda": 4,

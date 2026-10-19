@@ -50,7 +50,7 @@ jogador abre o jogo no ônibus, caça, e pode parar quando o ônibus chega.
 ### O princípio-mãe: a realidade como ela é
 
 **A dificuldade vem do comportamento do jogador**, quase só dele: onde ele
-escolhe ir, quando decide voltar, o que leva no corpo e no saco, com quem vai.
+escolhe ir, quando decide voltar, o que leva no corpo e na mochila, com quem vai.
 O jogo não ajusta nada para facilitar nem para dificultar. Cabe ao jogador
 saber quais lugares são adequados ao nível dele.
 
@@ -77,7 +77,7 @@ antes matava passa a ser seguro e a render pouco.
   A força do monstro vem só do lugar e da profundidade dentro dele. O lugar
   mostra o nível recomendado e **nunca bloqueia** a entrada. O preço pode
   variar por classe (classe é taxa de crescimento), nunca por jogador.
-- **Estado hoje (0.27.0):** cumprido. O carregamento do `content.json` recusa
+- **Estado hoje (0.28.0):** cumprido. O carregamento do `content.json` recusa
   `hpPerCharLevel`, `bossLevelFactor`, `party.monsters` e `party.bossHp`, e a
   simulação no Node do `tools/testar.mjs` confere que 1 ou 4 jogadores, de
   nível 1 ou 30, encontram os mesmos monstros com a mesma vida.
@@ -120,18 +120,19 @@ Sem perda, a caçada não tem decisão: é só uma fila de recompensas. O que fa
 jogador hesitar antes do próximo corredor é ter algo a perder.
 
 - **Regra (opção B, decidida pelo Leonardo em 19/10/2026):** morrer custa o
-  saco inteiro e uma fatia do XP que **pode derrubar o nível**, e cada peça
+  mochila inteira e uma fatia do XP que **pode derrubar o nível**, e cada peça
   vestida tem uma chance de cair, como no Tibia sem bênção. Um seguro comprado
   com ouro do cofre reduz essas perdas (e é ralo, pilar 6). A perda é
   **sempre dita antes** de entrar, mostrada na tela final, e **nunca causada
   pela rede**: queda de conexão não mata (20 s parado e invulnerável; depois
-  sai com o saco se não estava em combate). A proteção contra queda vem
+  sai com a mochila se não estava em combate). A proteção contra queda vem
   **antes** de a morte endurecer.
-- **Estado hoje:** a morte leva o saco (menos o que o Selo de resguardo
-  guarda, até 60% no nível 3) e 25% do XP do nível, nunca o nível; o
-  equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
+- **Estado hoje:** a morte leva a mochila inteira — e ela fica com o
+  personagem entre as caçadas, então só o cofre do Banco é seguro (decisão do
+  Leonardo, 0.27.0) — menos o que o Selo de resguardo guarda (até 60% no nível
+  3), e 25% do XP do nível, nunca o nível; o equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
   ordem de implementação está no `ROADMAP.md`.
-- **Conflito aberto:** a venda de peça do saco na Feira **durante** a caçada,
+- **Conflito aberto:** a venda de peça da mochila na Feira **durante** a caçada,
   livre mesmo que o jogador morra depois, é decisão do Leonardo e está em
   vigor, mas tira peso da morte. Está na Parte 6 como pendência **sensível**:
   nenhum agente muda isso sem ele.
@@ -257,7 +258,7 @@ na mão.
         │ Mercador · Banco · Mestre de magias · provisões · Forja │
         │ Feira · outros jogadores · quem leva à caçada           │
         └────────┬─────────────────────────────────▲──────────────┘
-                 │ entra pela porta                │ sai pela porta com o saco
+                 │ entra pela porta                │ sai pela porta viva    
                  ▼                                 │ ou morre e perde (pilar 4)
         ┌──────────────── LUGAR DE CAÇA (sala) ───────────────────┐
         │ 1 a 4 jogadores · lugar com nome e nível · sem relógio  │
@@ -269,17 +270,20 @@ na mão.
   classe, na mesma conta.
 - **Caçada:** toda caçada é numa **sala** (sozinho é uma sala de um), num lugar
   de caça escolhido em quem leva até ele. Não tem relógio: o jogador sai pela
-  porta quando quiser, com o saco. A tensão vem do lugar escolhido, do saco que
-  cresce e da morte cara.
-- **Cidade:** gastar, trocar, ver outros jogadores, formar a sala.
+  porta quando quiser, com a mochila. A tensão vem do lugar escolhido, da
+  mochila que enche e da morte cara.
+- **Mochila e cofre, como no Tibia:** o loot fica na mochila do personagem
+  (20 espaços), que vai junto na caçada seguinte e cai inteira na morte. Só o
+  que o Banqueiro guarda no cofre está seguro.
+- **Cidade:** gastar, guardar, trocar, ver outros jogadores, formar a sala.
 
-### O que existe hoje (0.27.0)
+### O que existe hoje (0.28.0)
 
 | Área | Estado |
 |---|---|
 | Caçada | Quatro lugares em `hunts` do `content.json`: Masmorra de Runas (nível 1, pelo Guia), Esgoto (1, pela grade da rua), Ilha da Enseada (8, pelo Capitão do porto), Cripta Antiga (15, pelo Guia). Sala sem relógio, porta de entrada e saída, respawn de 60 s. A incursão solo com relógio de 6 min ficou só para os testes |
 | Personagem | 4 classes por taxa de crescimento; nível, magia e perícia; 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18); habilidades aprendidas com o Mestre de magias |
-| Equipamento | Arma, armadura e amuleto, com raridade; Mochila no desenho do inventário do Tibia; veste-se na cidade (do cofre) e na caçada (do saco) |
+| Equipamento | Arma, armadura e amuleto, com raridade; Mochila no desenho do inventário do Tibia; veste-se pela Mochila, na cidade e na caçada; mochila do personagem com 20 espaços e cofre no Banco |
 | Cidade | Mapa de `city.mapa`, NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
@@ -318,8 +322,8 @@ fase.
 ### Telemetria (a partir da F1)
 
 Eventos `sessao_inicio`, `caca_inicio`, `caca_fim` (saiu ou morreu, duração,
-valor do saco, lugar), `compra`, `nivel_up`, `erro_cliente`. Painel com DAU/MAU,
-retenção D1/D7/D30, taxa de saída com o saco, duração da caçada e da sessão,
+valor da mochila, lugar), `compra`, `nivel_up`, `erro_cliente`. Painel com DAU/MAU,
+retenção D1/D7/D30, taxa de saída viva, duração da caçada e da sessão,
 simultâneos, custo e receita. Nenhum dado pessoal além do necessário para conta
 e pagamento.
 
@@ -518,7 +522,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
-  `soProv()`)
+  `soProv()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
+  `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
   sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
@@ -736,11 +741,24 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto}}}}`.
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
 O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
 próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento
-vestido) fica em `chars`, um por classe. As operações do cofre de peças
+vestido e a mochila) fica em `chars`, um por classe.
+
+**Mochila e cofre, como no Tibia** (decisão do Leonardo em 19/10/2026). O
+loot da caçada vai para `p.bag`, que **é a mochila** durante a incursão:
+`novoJogador()` começa com a cópia de `ch().mochila` (e guarda `p.bag0`, como
+entrou). Extraindo, `sai()` devolve `p.bag` para `c.mochila`, sem converter
+nada; morrendo, `c.mochila` fica vazia e só o Selo vai ao cofre. Guardar é no
+Banco (`guardaMochila()`, `guardaUm()`: equipamento vira peça em `itens`,
+material vai para `mats`, ouro e gema viram ouro), e o Banco devolve com
+`leva()` (peça) e `retira()` (ouro). Espaços em `progression.mochila`
+(`ocupa()`, `cabe()`): peça de equipamento ocupa um, o resto empilha; cheia,
+`pickup()` deixa no chão o que não cabe. Na nuvem, `caca_fim` recebe só o que
+a caçada rendeu (`p.bag` menos `p.bag0`), para a origem não contar duas vezes
+o que entrou na mochila. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
 em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save
 antigo e descarta peça que saiu do `content.json`.
@@ -793,7 +811,9 @@ arquitetura (Parte 2). Hoje guarda:
   caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
   livre, mesmo que depois morra), dentro de limites de plausibilidade (30
   peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
-  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql). O cliente
+  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql); na morte, a
+  `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
+  [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
   guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
@@ -1398,11 +1418,12 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | Loot único no grupo: um drop por monstro, a vez de quem causou mais dano | Parte 3, Sala |
 | 19/10 | Feira entre jogadores no banco: custódia, 2% de taxa, só o que tem origem registrada | Parte 3, Supabase |
 | 19/10 | Vestir e tirar pela Mochila, na cidade e na caçada | Parte 3 |
+| 19/10 | Inventário como no Tibia: só mochila e cofre. A mochila é do personagem, fica com ele entre as caçadas, entra inteira na seguinte e cai toda na morte (menos o Selo); 20 espaços (`progression.mochila`). O Banqueiro guarda e devolve | Parte 3, "O save é mesclado" |
 | 19/10 | **Um guia só** (este arquivo), com o princípio-mãe "a realidade como ela é" e os seis pilares | Parte 1 |
 | 19/10 | **O mundo é igual para todos:** nada escala com nível, classe ou grupo | Pilar 1 |
 | 19/10 | **Mapas de caça fixos**, que se aprendem | Pilar 2 |
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
-| 19/10 | **Morte da opção B:** saco, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
+| 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
 
 ### Pendentes
 
@@ -1416,6 +1437,6 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Ao religar o ciclo |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |
-| P7 | Venda de peça do saco na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
+| P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |

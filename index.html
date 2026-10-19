@@ -224,11 +224,15 @@ h2.lost{color:var(--hp)}
 .slots.eqs em{font:normal 9px/1.2 var(--f-body);color:var(--loot)}
 .eqtot{margin:0;font:11px/1.4 var(--f-body);color:var(--muted);text-align:center}
 .sub{margin:4px 0 0;font:700 12px var(--f-body);color:var(--bone)}
-#eqList{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
-#eqList .sp{border-left-color:var(--torch)}
-#eqList .sp.r1{border-left-color:var(--rare)} #eqList .sp.r2{border-left-color:var(--epic)}
-#eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
-#eqList .btns{display:grid;gap:5px;flex:0 0 auto}
+/* as duas listas do Banco: a mochila e as peças do cofre */
+.eql{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
+.eql .sp{border-left-color:var(--torch)}
+.eql .sp.r1{border-left-color:var(--rare)} .eql .sp.r2{border-left-color:var(--epic)}
+.eql .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+.eql .btns{display:grid;gap:5px;flex:0 0 auto}
+.retira{display:grid;grid-template-columns:1fr auto;gap:6px}.retira .ghost{padding:0 14px}
+#eqGuarda:disabled{opacity:.45;cursor:default}
+#eqMsg:empty{display:none}
 #endItems small{color:var(--muted);font-size:10px}
 .fg{list-style:none;margin:0;padding:0;display:grid;gap:7px}
 .fg .sp{border-left-color:var(--torch)}
@@ -337,7 +341,7 @@ h2.lost{color:var(--hp)}
 .mvenda{display:grid;gap:6px} .mvenda[hidden]{display:none} .mvenda .cta{padding:10px;font-size:13px} .mvenda .passo{grid-template-columns:44px 1fr 44px} .mvenda .passo input{padding:6px}
 .mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
 /* tela baixa: a janela sobe por cima do minimapa, o boneco encolhe e o corpo fica só com as duas linhas de cima
-   (as de baixo são todas casas que o jogo ainda não tem), para o saco caber sem rolar */
+   (as de baixo são todas casas que o jogo ainda não tem), para a mochila caber sem rolar */
 @media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{padding:6px 8px}.trava{width:42px;height:42px}.tib .s-anel,.tib .s-calca,.tib .s-botas,.tib .s-municao{display:none}.tib>div:not(:nth-child(2)){margin-top:10px}.doll .fig{width:100px;height:100px}.doll .fig canvas{width:96px;height:96px}.minfo{min-height:0}}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}.mwin{animation:none}}
 </style>
@@ -355,7 +359,7 @@ h2.lost{color:var(--hp)}
         <div class="bar mp"><i id="mpI"></i><span id="mpT">60/60</span></div>
         <div class="bar xp"><i id="xpI"></i></div>
         <div class="skl out"><span id="magT">Magia 0</span><span id="perT">Perícia 10</span></div>
-        <div class="bag out">Saco: <span id="bagT">0</span> <small>ouro</small></div>
+        <div class="bag out">Mochila: <span id="bagT">0</span> <small>ouro</small></div>
       </div>
       <div class="map">
         <div class="clock out" id="clock"><strong id="timeT">6:00</strong></div>
@@ -412,7 +416,7 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow" id="mEye">Protótipo</p>
       <h1>Masmorra de Runas</h1>
-      <p class="lede">Entre, cace, encha o saco de loot e saia vivo pelo portal. Se morrer, o loot que você carrega fica para trás.</p>
+      <p class="lede">Entre, cace, encha a mochila de loot e saia vivo pelo portal. Se morrer, a mochila fica para trás com tudo dentro.</p>
       <p class="risco" id="mRisco"></p>
       <p class="aviso" id="mAviso" role="status" hidden>Seu progresso não está sendo salvo neste navegador (aba anônima ou armazenamento bloqueado). Ao fechar a aba, ele se perde.</p>
       <div class="conta" id="mConta" hidden>
@@ -435,11 +439,11 @@ h2.lost{color:var(--hp)}
         <div><dt>Mortes</dt><dd id="sDead">0</dd></div>
       </dl>
       <ol class="how">
-        <li>Cace monstros. Cada um deixa um saco de loot no chão.</li>
+        <li>Cace monstros. Encoste no loot que eles deixam para pôr na mochila, que tem 20 espaços.</li>
         <li>Aos 1:30 abre o portal de saída na sala mais distante, guardada pelo Guardião.</li>
-        <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde o saco e parte da experiência do nível.</li>
-        <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b>, na cidade, em melhorias permanentes.</li>
-        <li>Armas, armaduras e amuletos extraídos também vão para o cofre. Vista ou venda no <b>Banco</b>.</li>
+        <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde a mochila e parte da experiência do nível.</li>
+        <li>A mochila volta com você e vai junto na próxima caçada. Só o cofre do <b>Banco</b> é seguro: guarde lá o ouro e as peças. Lá também se veste e se vende.</li>
+        <li>Gaste o ouro do cofre com o <b>Mercador</b>, na cidade, em melhorias permanentes.</li>
         <li>Na cidade, ande até uma casa e fale com quem está lá. O <b>Guia de caça</b>, no portão sul, leva às masmorras.</li>
       </ol>
       <button class="cta" id="play">Entrar na cidade</button>
@@ -502,13 +506,21 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
       <h2>Banco</h2>
-      <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
+      <p class="lede">O que está na mochila vai com você para a caçada e cai se você morrer. O que está no cofre fica guardado e serve a qualquer personagem da conta. O que este personagem veste é só dele e não cai na morte.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
+      <h3 class="sub">Levar ouro do cofre na mochila</h3>
+      <div class="retira"><div class="passo"><button class="ghost" type="button" id="eqMenos" aria-label="Menos ouro">−</button><input id="eqQtd" type="number" inputmode="numeric" min="1" step="1" value="100" aria-label="Quanto ouro levar na mochila"><button class="ghost" type="button" id="eqMais" aria-label="Mais ouro">+</button></div><button class="ghost" type="button" id="eqRetira">Retirar</button></div>
+      <h3 class="sub">Na mochila · <span id="eqMoVal">0 ouro</span></h3>
+      <p class="eqtot" id="eqMoRisco"></p>
+      <button class="cta" type="button" id="eqGuarda">Guardar tudo no cofre</button>
+      <p class="eqtot" id="eqMsg" role="status"></p>
+      <ul id="eqMo" class="eql"></ul>
+      <h3 class="sub">O que este personagem veste</h3>
       <button type="button" class="boneco" id="eqBoneco" aria-label="Girar o personagem para ver o que ele veste" hidden><canvas width="256" height="256"></canvas></button>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
       <h3 class="sub">Peças no cofre</h3>
-      <ul id="eqList"></ul>
+      <ul id="eqList" class="eql"></ul>
       <button class="ghost voltar" id="eqBack">Voltar ao acampamento</button>
     </div>
   </div>
@@ -517,7 +529,7 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Forja</p>
       <h2>Gordon</h2>
-      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais extraídos ficam aqui no depósito, que é da conta; morrer com eles no saco perde, como o resto.</p>
+      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais guardados no Banco ficam aqui no depósito, que é da conta; morrer com eles na mochila perde, como o resto.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="fgGold">0</b></div>
       <p class="mmsg" id="fgMsg" role="status"></p>
       <h3 class="sub">Encomenda</h3>
@@ -579,7 +591,7 @@ h2.lost{color:var(--hp)}
       <h2 id="endTitle">Extraído!</h2>
       <p class="lede" id="endText"></p>
       <dl class="ledger">
-        <dt>Loot no saco</dt><dd id="eLoot"></dd>
+        <dt>Loot na mochila</dt><dd id="eLoot"></dd>
         <dt id="eSealDt" hidden>Resguardado pelo selo</dt><dd id="eSeal" hidden></dd>
         <dt id="eXpPerdaDt" hidden>Experiência perdida</dt><dd id="eXpPerda" hidden></dd>
         <dt>Monstros abatidos</dt><dd id="eKills"></dd>
@@ -596,7 +608,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.27.0"></script>
+<script type="module" src="src/main.js?v=0.28.0"></script>
 
 </body>
 </html>

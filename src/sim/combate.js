@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.27.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.27.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots} from './progresso.js?v=0.27.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.27.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.28.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.28.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.28.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.28.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -210,13 +210,14 @@ export function hurtPlayer(p,d){
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;sai(p,'morreu')}
 }
-/* venda do saco na Feira (src/hud.js): a peça sai do saco quando o jogador
+/* venda da mochila na Feira (src/hud.js): a peça sai da mochila quando o jogador
    anuncia e volta se o banco recusar. Quem chama é o cliente, com a resposta
    da rede, fora do update() — como drinkPot(); na F2 vira entrada (ent) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
 export function poeNoSaco(p,k,q){p.bag[k]=(p.bag[k]|0)+q;p.bagVal+=ITEMS[k].val*q}
-/* vestir na caçada, como no Tibia (decisão do Leonardo): a peça sai do saco
-   e vale na hora; a que estava no corpo vai para o saco e corre o risco dele.
+/* vestir na caçada, como no Tibia (decisão do Leonardo): a peça sai da
+   mochila e vale na hora; a que estava no corpo vai para a mochila e corre o
+   risco dela (tirar só se couber).
    p.troca é o saldo de cada peça que entrou (+) ou saiu (−) do corpo, para a
    extração dar origem só ao que veio desta caçada (cacaFim). Vida e mana
    máximas mudam, mas a atual não sobe junto: senão tirar e pôr cura */
@@ -226,15 +227,30 @@ export function vesteDoSaco(p,k){
   const it=ITEMS[k],e=p.c.equip;if(!it||!it.slot||p.fora||!tiraDoSaco(p,k,1))return false;
   const v=e[it.slot];if(v){poeNoSaco(p,v,1);troca(p,v,-1)}
   e[it.slot]=k;troca(p,k,1);reveste(p);return true}
-/* as peças que saíram desta caçada, para a origem na nuvem: o saco, mais a
-   que foi vestida do saco, menos a que saiu do corpo para o saco */
-export const pecasDaCaca=p=>{const o={};for(const[k,q]of Object.entries(p.bag))if(ITEMS[k].slot&&q>0)o[k]=q;
-  for(const[k,n]of Object.entries(p.troca||{})){const q=(o[k]|0)+n;if(q>0)o[k]=q;else delete o[k]}return o};
-export function tiraProSaco(p,sl){const e=p.c.equip,k=e[sl];if(!k||p.fora)return false;e[sl]=null;poeNoSaco(p,k,1);troca(p,k,-1);reveste(p);return true}
+/* as peças que esta caçada rendeu, para a origem na nuvem: a mochila de
+   agora, mais a que foi vestida dela, menos a que saiu do corpo para ela,
+   menos o que já estava nela ao entrar (p.bag0, contado na caçada de antes) */
+export const pecasDaCaca=p=>{const o={},b0=p.bag0||{},t=p.troca||{};
+  for(const k of new Set([...Object.keys(p.bag),...Object.keys(t)])){if(!ITEMS[k].slot)continue;
+    const n=(p.bag[k]|0)+(t[k]|0)-(b0[k]|0);if(n>0)o[k]=n}return o};
+/* na morte, só as vestidas da mochila que ainda estão no corpo e não tinham
+   entrado nela já com origem (p.bag0): o banco dá origem a elas (no máximo
+   uma por casa), e o resto da mochila se perde */
+export const vestidasDaCaca=p=>{const o={},b0=p.bag0||{};for(const[k,n]of Object.entries(p.troca||{})){const q=n-(b0[k]|0);if(q>0)o[k]=q}return o};
+export function tiraProSaco(p,sl){const e=p.c.equip,k=e[sl];if(!k||p.fora||!cabe(p.bag,k))return false;e[sl]=null;poeNoSaco(p,k,1);troca(p,k,-1);reveste(p);return true}
+/* o loot vai para a mochila até ela encher (progression.mochila); o que não
+   cabe fica no chão, e o aviso sai uma vez por jogador em cada drop (d.av) */
 export function pickup(d,i,p){
-  let v=0;
-  for(const[k,q]of d.items){p.bag[k]=(p.bag[k]||0)+q;v+=ITEMS[k].val*q}
-  p.bagVal+=v;G.drops.splice(i,1);
+  let v=0,levou=null,resta=null;
+  for(const it of d.items){const[k,q]=it,n=Math.min(q,cabe(p.bag,k));
+    if(n>0){p.bag[k]=(p.bag[k]||0)+n;v+=ITEMS[k].val*n;(levou||(levou=[])).push(n<q?[k,n]:it)}
+    if(n<q)(resta||(resta=[])).push(n?[k,q-n]:it)}
+  const avisa=t=>{if(d.av&1<<p.id)return;d.av|=1<<p.id;saida.log(t,'info',p)};
+  if(!levou)return avisa('A mochila está cheia. O loot ficou no chão.');
+  p.bagVal+=v;
+  if(resta){d.items=resta;d.rar=Math.max(...resta.map(g=>ITEMS[g[0]].rar));avisa('A mochila está cheia: parte do loot ficou no chão.')}
+  else G.drops.splice(i,1);
   num(p.x,p.y-30,'+'+v+' ouro','#f2c14e');
-  if(d.rar>=1)saida.log(`Você guardou: ${d.items.filter(([k])=>ITEMS[k].rar>=1).map(fmtItem).join(', ')}.`,['loot','rare','epic'][d.rar],p);
+  const raro=levou.filter(([k])=>ITEMS[k].rar>=1);
+  if(raro.length)saida.log(`Na mochila: ${raro.map(fmtItem).join(', ')}.`,['loot','rare','epic'][Math.max(...raro.map(([k])=>ITEMS[k].rar))],p);
 }

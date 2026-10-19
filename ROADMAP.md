@@ -33,12 +33,12 @@ ser fixo e a morte ser justa, depois o que a endurece, depois o resto da F0.
 **Pilar 4.** Pré-requisito da morte da opção B. Hoje o convidado que fica 12 s
 sem notícia volta à cidade sem resultado. Regra: jogador sem entrada por
 queda de rede ou aba no fundo fica parado e invulnerável por 20 s; depois sai
-com o saco se não estava em combate (dano recebido ou causado nos últimos
+com a mochila se não estava em combate (dano recebido ou causado nos últimos
 5 s). Vale para o convidado (no aparelho do anfitrião) e para quem caça
 sozinho.
 
 **Pronto quando:** caso no harness em que o convidado some no meio da caçada
-e volta à cidade com o saco, e outro em que some em combate e fica protegido
+e volta à cidade com a mochila, e outro em que some em combate e fica protegido
 os 20 s.
 
 ### 2. Saída segura perto
@@ -65,7 +65,7 @@ e a issue existe.
 ### 4. Morte da opção B
 
 **Pilar 4.** Depende dos itens 1 e 3 e da pendência P9 (**sensível**: os
-números são do Leonardo). Morrer leva o saco e uma fatia do XP que pode
+números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
 entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
@@ -120,7 +120,7 @@ recomendado acima de 15, e o caso da cidade entra nele.
 
 ## Concluído
 
-- **2026-10-19 — Um guia só e o mundo igual para todos (0.27.0)**
+- **2026-10-19 — Um guia só e o mundo igual para todos (0.28.0)**
   *(decisão do Leonardo: "a realidade como ela é"; pilar 1)*. O `VISAO.md`, o
   `docs/PRD.md` e `docs/agentes/` viraram as Partes 1, 2, 5 e 6 do
   `CLAUDE.md`, com o princípio-mãe e os seis pilares novos. Os monstros
@@ -131,6 +131,14 @@ recomendado acima de 15, e o caso da cidade entra nele.
   relógio), "Revisar a escala de HP" e "Selo de resguardo" (vira o seguro da
   morte B).
 
+- **2026-10-19 — Mochila e cofre, como no Tibia (0.27.0)** *(pedido do
+  Leonardo: "apenas com a mochila e o cofre"; pilar 1)*. O saco saiu. A
+  mochila é do personagem e fica com ele entre as caçadas: entra inteira na
+  próxima e cai toda na morte (menos o Selo). Extrair não guarda nada
+  sozinho; o Banqueiro guarda uma coisa ou tudo no cofre e devolve peças e
+  ouro à mochila. 20 espaços (`progression.mochila`); cheia, o loot fica no
+  chão. O Guia de caça e a Mochila dizem quanto ela arrisca. Vestir e tirar pela
+  Mochila (0.26.0) passou a trocar com a mochila também na cidade.
 - **2026-10-19 — Vestir e tirar pela Mochila, também na caçada (0.26.0)**
   *(pedido e decisão do Leonardo: "como o personagem vai equipar?"; vestir na
   caçada como no Tibia; pilares 1 e 3)*. Toque na peça, botão grande. Na

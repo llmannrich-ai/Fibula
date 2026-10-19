@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.27.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.27.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.27.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.27.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.27.0';
-import {persist,saveFalhou} from './salvar.js?v=0.27.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.27.0';
-import {rede,SALAS} from './rede.js?v=0.27.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.27.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.27.0';
-import {icone} from './arte.js?v=0.27.0';
-import {$,app} from './dom.js?v=0.27.0';
-import {retrato} from './desenho.js?v=0.27.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.28.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.28.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.28.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.28.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.28.0';
+import {persist,saveFalhou} from './salvar.js?v=0.28.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.28.0';
+import {rede,SALAS} from './rede.js?v=0.28.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.28.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.28.0';
+import {icone} from './arte.js?v=0.28.0';
+import {$,app} from './dom.js?v=0.28.0';
+import {retrato} from './desenho.js?v=0.28.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -28,7 +28,9 @@ const soTela=el=>{
 const volta=()=>V.cidade?showCidade():showMenu();
 /* pilar 1: o preço da morte, em número, antes de entrar — no acampamento e no
    Guia de caça, que é por onde se entra */
-const risco=()=>{const pd=perdaXp();return `Morrer também custa ${pctPerdaXp()}% da experiência do nível atual, nunca o nível. Hoje: ${pd?pd+' xp':'nada, o nível está vazio'}.`};
+const risco=()=>{const pd=perdaXp(),v=valMochila(ch().mochila),sela=Math.round(v*sealPct());
+  return (v?`A mochila vai junto, com ${v} de ouro em loot: morrer perde ${v-sela}`+(sela?` (o selo guarda ${sela})`:'')+'. Guarde no Banco o que não quer arriscar. ':'A mochila está vazia. ')+
+    `Morrer também custa ${pctPerdaXp()}% da experiência do nível atual, nunca o nível. Hoje: ${pd?pd+' xp':'nada, o nível está vazio'}.`};
 export function showMenu(){
   V.cidade=false;
   if(!save.classe)return showPick();
@@ -62,7 +64,7 @@ export function start(prepara,caca){
   G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
   const H=HUNTS[G.caca];
-  log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com o saco.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
+  log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com a mochila.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
   if(levou)log(`Você levou ${levou}.`,'info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
@@ -81,7 +83,7 @@ export function showCidade(como){
 }
 export function abreNpc(k){
   const a=CITY.npcs[k].abre;
-  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else if(a==='loja')showLoja(k);else showHunts(k);
+  if(a==='mercador')showShop();else if(a==='banco'){msgEq('');drawEquip()}else if(a==='mercado')showFeira();else if(a==='forja')showForja();else if(a==='loja')showLoja(k);else showHunts(k);
 }
 /* ---------- lojas de provisões ----------
    Uma tela para todas: o NPC diz o que vende (vende, no content.json). A
@@ -321,17 +323,44 @@ function drawGrim(){
   soTela(grimS);
 }
 /* ---------- equipamento ----------
-   Uma tela, três espaços, botões grandes: nada de arrastar (pilar 3). O cofre
-   embaixo é o da conta; os espaços em cima são do personagem atual. */
+   O Banco: a mochila (guardar no cofre), o ouro do cofre (levar na mochila),
+   os três espaços do personagem e as peças do cofre (vestir, vender, levar).
+   Uma tela, botões grandes: nada de arrastar (pilar 3). O cofre é da conta;
+   a mochila e os espaços são do personagem atual. */
 const icoItem=k=>{const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');return icone(ic,'it_'+k)?ic:null};
 /* o boneco vestido, como fica no mapa; tocar gira (sul, oeste, norte, leste) */
 let eqDir=2;
 export const desenhaBoneco=()=>{const b=$('#eqBoneco');b.hidden=!retrato(b.firstElementChild,save.classe,ch().equip,eqDir,4)};
+/* o que guardar faz com cada coisa da mochila, para a mensagem do Banco */
+function guardou(r){const t=[];if(!r)return '';
+  if(r.ouro)t.push(`${r.ouro} de ouro`);if(r.pecas)t.push(`${r.pecas} peça${r.pecas>1?'s':''} de equipamento`);
+  return (t.length?`Foram para o cofre: ${t.join(' e ')}.`:'')+(r.mats?` ${r.mats} ${r.mats>1?'materiais foram':'material foi'} para o depósito do Gordon, na Forja.`:'')}
+const msgEq=t=>{$('#eqMsg').textContent=t};
 function drawEquip(){
-  const c=ch(),K=KL(),e=c.equip;
+  const c=ch(),K=KL(),e=c.equip,mo=c.mochila,val=valMochila(mo),n=ocupa(mo);
   $('#eqEye').textContent=`${K.nome} · Nível ${c.lvl}`;
   desenhaBoneco();
   setT($('#eqGold'),String(save.cofre));
+  /* a mochila: tudo de uma vez ou uma coisa por vez para o cofre */
+  setT($('#eqMoVal'),`${val} ouro · ${n}/${nEspacos()}`);
+  const sela=Math.round(val*sealPct());
+  setT($('#eqMoRisco'),val?`Se morrer na próxima caçada com ela assim, perde ${val-sela} de ouro em loot`+(sela?` (o selo guarda ${sela}).`:'.'):'Vazia: nada em risco na próxima caçada.');
+  $('#eqGuarda').disabled=!n;
+  const um=$('#eqMo');um.textContent='';
+  const mrows=Object.entries(mo).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
+  if(!mrows.length){const li=document.createElement('li');li.className='vazio';li.textContent='A mochila está vazia.';um.appendChild(li)}
+  for(const[k,q]of mrows){
+    const it=ITEMS[k],li=document.createElement('li');li.className='sp r'+it.rar;
+    const ic=icoItem(k);if(ic)li.appendChild(ic);
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=fmtItem([k,q]);
+    const p=document.createElement('p');p.textContent=it.slot?`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`:ehMat(k)?'material: vai para o depósito do Gordon':k==='ouro'?'vai para o cofre':`vira ${it.val*q} de ouro no cofre`;
+    info.append(h,p);
+    const b=document.createElement('button');b.type='button';b.textContent='guardar';
+    b.setAttribute('aria-label',it.slot?`Guardar ${it.nome} no cofre`:`Guardar ${fmtItem([k,q])} no cofre`);
+    b.addEventListener('click',()=>{const r=guardaUm(k);if(r){persist();drawEquip();msgEq(guardou(r))}});
+    li.append(info,b);um.appendChild(li);
+  }
   const sl=$('#eqSlots');sl.textContent='';
   for(const s of SLOTS_EQ){
     const k=e[s],it=k&&ITEMS[k];
@@ -350,7 +379,7 @@ function drawEquip(){
   const ul=$('#eqList');ul.textContent='';
   const rows=Object.entries(save.itens).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a[0]].slot)-SLOTS_EQ.indexOf(ITEMS[b[0]].slot)||ITEMS[b[0]].val-ITEMS[a[0]].val);
   if(!rows.length){const li=document.createElement('li');li.className='vazio';
-    li.textContent='O cofre não tem peças. Armas, armaduras e amuletos que você extrair aparecem aqui.';ul.appendChild(li)}
+    li.textContent='O cofre não tem peças. Armas, armaduras e amuletos que você guardar aparecem aqui.';ul.appendChild(li)}
   for(const[k,q]of rows){
     const it=ITEMS[k],atual=e[it.slot];
     const li=document.createElement('li');li.className='sp r'+it.rar;
@@ -369,7 +398,12 @@ function drawEquip(){
     const b2=document.createElement('button');b2.type='button';b2.className='rm';b2.textContent=`vender ${it.val}`;
     b2.setAttribute('aria-label',`Vender ${it.nome} por ${it.val} de ouro`);
     b2.addEventListener('click',()=>{if(vender(k)){lastroBanco(k,it.val);persist();drawEquip()}});
-    bt.append(b1,b2);li.append(info,bt);ul.appendChild(li);
+    /* levar: a peça volta para a mochila, e com ela para o risco */
+    const b3=document.createElement('button');b3.type='button';b3.className='rm';b3.textContent='levar';
+    b3.setAttribute('aria-label',`Pôr ${it.nome} na mochila`);
+    if(!cabe(mo,k))b3.disabled=true;
+    else b3.addEventListener('click',()=>{if(levaDoCofre(k)){persist();drawEquip();msgEq(`${it.nome} está na mochila: cai se você morrer.`)}});
+    bt.append(b1,b2,b3);li.append(info,bt);ul.appendChild(li);
   }
   soTela(equipS);
 }
@@ -379,14 +413,12 @@ export function showEnd(){
   const p=G.p,k=p.fora||G.end,ok=k==='extraiu';
   $('#endEye').textContent=ok?'Incursão concluída':'Fim da incursão';
   const t=$('#endTitle');t.textContent=ok?'Extraído!':k==='morreu'?'Você morreu':'Soterrado';t.classList.toggle('lost',!ok);
-  $('#endText').textContent=ok?(p.pecas||p.mats
-      ?`Você saiu pelo portal com ${p.bagVal} de ouro em loot. ${p.ouroExt} viraram ouro no cofre`+
-        (p.pecas?`, ${p.pecas} peça${p.pecas>1?'s':''} de equipamento ${p.pecas>1?'esperam':'espera'} no Banco para vestir ou vender`:'')+
-        (p.mats?`, ${p.mats} ${p.mats>1?'materiais foram':'material foi'} para o depósito do Gordon, na Forja`:'')+'.'
-      :`Você saiu pelo portal com ${p.bagVal} de ouro em loot. Tudo foi para o cofre.`)
-    :k==='morreu'?`O loot que você carregava ficou na masmorra, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
-    :`A masmorra desabou antes de você chegar ao portal. O loot ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
-  const l=$('#eLoot');l.textContent=`${p.bagVal} ouro · ${ok?'guardado':'perdido'}`;l.className=ok?'ok':'bad';
+  const ganho=p.bagVal-valMochila(p.bag0||{});
+  $('#endText').textContent=ok?`Você saiu com a mochila valendo ${p.bagVal} de ouro em loot`+(ganho>0&&ganho<p.bagVal?`, ${ganho} desta caçada`:'')+
+      '. Ela continua com você e cai se você morrer: guarde no Banco o que não quer arriscar na próxima caçada.'
+    :k==='morreu'?`A mochila ficou na masmorra com tudo o que estava dentro, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
+    :`A masmorra desabou antes de você chegar ao portal. A mochila ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
+  const l=$('#eLoot');l.textContent=`${p.bagVal} ouro · ${ok?'na mochila':'perdido'}`;l.className=ok?'ok':'bad';
   const sealOn=!ok&&p.sealed>0,sl=$('#eSeal');
   $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;
   if(sealOn){sl.textContent=`+${p.sealed} ouro (${Math.round(sealPct(p.up)*100)}%)`;sl.className='ok'}
@@ -400,7 +432,7 @@ export function showEnd(){
   $('#eTime').textContent=fmtEl(G.dur);$('#eSeed').textContent=nMasmorra(G.semente);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
   const rows=Object.entries(p.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
-  if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}
+  if(!rows.length){const li=document.createElement('li');li.textContent='A mochila estava vazia.';ul.appendChild(li)}
   for(const[k,q]of rows){const li=document.createElement('li');li.className='r'+ITEMS[k].rar;
     const a=document.createElement('span'),ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');
     if(icone(ic,'it_'+k))a.appendChild(ic);a.append(fmtItem([k,q]));
@@ -494,7 +526,7 @@ const MSG_MK={conta:'Para negociar com outros jogadores, entre com uma conta no 
   qtd:'A quantidade vai de 1 a 100.',ordem:'Essa oferta já fechou ou foi cancelada.',
   sem_origem:'O banco não tem registro de onde isso veio. Só se negocia o que foi extraído, comprado, recebido na Feira ou vendido ao Banco com a conta ligada.',
   caca:'Esta caçada não foi registrada no banco (sem rede quando começou). Extraia e venda do cofre.',
-  caca_cedo:'A caçada acabou de começar. Espere alguns segundos para vender do saco.',
+  caca_cedo:'A caçada acabou de começar. Espere alguns segundos para vender da mochila.',
   saco_limite:'Limite de peças vindas de caçada atingido (30 por caçada, 60 por dia).'};
 /* o que o banco aceita: o menor entre o save e a origem registrada */
 const origem=()=>(MK.livro&&MK.livro.lastro)||{ouro:0,itens:{}};
@@ -650,6 +682,12 @@ $('#mpOk').addEventListener('click',anuncia);
 $('#mpVolta').addEventListener('click',()=>{MK.peca=null;msgMk('');desenhaFeira()});
 
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#fgBack','#ljBack'])$(id).addEventListener('click',volta);
+/* Banco: guardar a mochila inteira e tirar ouro do cofre para ela */
+$('#eqGuarda').addEventListener('click',()=>{if(!ocupa(ch().mochila))return;const r=guardaMochila();persist();drawEquip();msgEq(guardou(r))});
+for(const[id,d]of[['#eqMenos',-50],['#eqMais',50]])$(id).addEventListener('click',()=>{const el=$('#eqQtd');el.value=clamp((Math.round(+el.value)||0)+d,1,Math.max(1,save.cofre))});
+$('#eqRetira').addEventListener('click',()=>{const q=Math.round(+$('#eqQtd').value);
+  if(!(q>=1))return msgEq('Diga quanto ouro levar.');if(q>save.cofre)return msgEq(`O cofre tem ${save.cofre} de ouro.`);
+  if(!retira(q))return msgEq('A mochila está cheia.');persist();drawEquip();msgEq(`${q} de ouro na mochila: cai se você morrer.`)});
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
 $('#toGrim').addEventListener('click',drawGrim);
