@@ -24,7 +24,7 @@
   --f-body:Verdana,Tahoma,Geneva,"DejaVu Sans",sans-serif;
   color-scheme:dark;
 }
-html{box-sizing:border-box;height:100%;background:var(--void)}
+html{box-sizing:border-box;touch-action:manipulation;height:100%;background:var(--void)}
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
 body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bone);font-family:var(--f-body);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -406,7 +406,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.9.0"></script>
+<script type="module" src="src/main.js?v=0.9.1"></script>
 
 </body>
 </html>
