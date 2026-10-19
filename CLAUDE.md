@@ -176,7 +176,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   save, e o que é da conta (cofre, peças) só muda para a ficha local, em `sai()`
 - `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`), todas
   recebendo o jogador que age,
-  `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`
+  `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`, e o vestir na caçada (`vesteDoSaco()`, `tiraProSaco()`, `pecasDaCaca()`)
 
 **`src/` — o cliente**
 

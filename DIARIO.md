@@ -20,11 +20,11 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-20 01:30 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** mochila e cofre como no Tibia (0.26.0), a pedido do Leonardo ("apenas com a mochila e o cofre"). O saco deixou de existir como inventário: `p.bag` é a mochila durante a caçada, começa com `ch().mochila` e volta para ela na extração; a morte a esvazia. O Banco ganhou "Guardar tudo", "guardar" por linha, "levar" nas peças do cofre e "Retirar" ouro. Mochila de 20 espaços (`progression.mochila.espacos`), peça de equipamento ocupa um, o resto empilha; cheia, o que não cabe fica no chão.
+**Item desenvolvido:** mochila e cofre como no Tibia (0.27.0), a pedido do Leonardo ("apenas com a mochila e o cofre"). O saco deixou de existir como inventário: `p.bag` é a mochila durante a caçada, começa com `ch().mochila` e volta para ela na extração; a morte a esvazia. O Banco ganhou "Guardar tudo", "guardar" por linha, "levar" nas peças do cofre e "Retirar" ouro. Mochila de 20 espaços (`progression.mochila.espacos`), peça de equipamento ocupa um, o resto empilha; cheia, o que não cabe fica no chão.
 
 **Validação:** `node tools/testar.mjs` — 33/33 (caso novo `banco-mochila`; bloco novo da mochila na simulação no Node: entrar com ela, extrair sem cofre, morrer esvaziando com o selo, guardar, levar, retirar, mochila cheia deixando loot no chão, `normaliza()` e `confereFicha()` limpando item inexistente). Banco e Mochila conferidos em captura de 390×844.
 
-**Análise:** a conversão automática (ouro, gema, peça, material) que a extração fazia em `guardaSaco()` foi mantida, só mudou de hora: acontece no Banco. Por isso o servidor da Feira não mudou (`itens` e `cofre` continuam sendo o cofre). Na sala, a ficha do convidado agora leva a mochila (`confereFicha()` limpa) e o `fim` do anfitrião vira a mochila do convidado.
+**Análise:** mesclado com a 0.26.0 (vestir pela Mochila), feita em paralelo: na cidade a troca passou a ser com a mochila, não com o cofre, e tirar só sai se couber; `pecasDaCaca()` desconta `p.bag0`, para a origem não contar de novo o que entrou na mochila. A conversão automática (ouro, gema, peça, material) que a extração fazia em `guardaSaco()` foi mantida, só mudou de hora: acontece no Banco. Por isso o servidor da Feira não mudou (`itens` e `cofre` continuam sendo o cofre). Na sala, a ficha do convidado agora leva a mochila (`confereFicha()` limpa) e o `fim` do anfitrião vira a mochila do convidado.
 
 **Roadmap:** item fora da fila (pedido do dono), decisão na seção 15.1 do PRD.
 
@@ -36,6 +36,23 @@ execução precisa saber e não vai descobrir lendo o código.
 - Gema e coroa só viram ouro no Banco; não há NPC que compre loot avulso, de propósito por enquanto.
 
 **Próximo passo recomendado:** o Leonardo jogar duas caçadas seguidas sem passar no Banco e morrer na segunda, para sentir se a perda está legível; decidir se fechar o app deve contar como morte.
+
+## 2026-10-19 23:55 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** vestir e tirar pela Mochila (0.26.0), a pedido do Leonardo ("como o personagem vai equipar? não existe ferramenta para isso"), com a decisão dele de valer também na caçada, como no Tibia. Tocar numa peça mostra um botão grande abaixo do corpo: na cidade, **Vestir/Trocar** (do cofre, `equipar()`) e **Guardar no cofre** (`desequipar()`); na caçada, **Vestir/Trocar** do saco e **Tirar para o saco** (`vesteDoSaco()`/`tiraProSaco()`, em `src/sim/combate.js`). Vida e mana máximas mudam na hora, a atual não sobe (senão tirar e pôr cura). `p.troca` guarda o saldo de peças que entraram e saíram do corpo, e `pecasDaCaca()` manda à `caca_fim` o saco corrigido por ele. A descrição, o botão e a venda na Feira subiram para logo abaixo do corpo, senão o botão ficava fora da tela.
+
+**Validação:** `node tools/testar.mjs` — 32/32. No Node: vestir do saco, tirar para o saco, vida máxima ±15 sem curar, origem só do que veio da caçada, nada depois de sair. No caso `mochila`: guardar e vestir na cidade (o save muda), trocar na caçada (saco 220→228, bônus da espada) e a espada fica no corpo depois do fim. Sabotagem (trocar cura) barrada. Print em 390×844.
+
+**Análise:** vestir sai do cliente direto na regra, como a venda do saco já fazia (fora de `update()`); no solo não muda o determinismo de nada que os testes medem. Na sala de caçar junto os botões não aparecem: a ficha é do anfitrião.
+
+**Roadmap:** item novo em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **Peça vestida na caçada e morte = peça sem origem na nuvem.** A `caca_fim` só dá origem na extração; quem veste do saco e morre fica com a peça, mas não consegue anunciá-la na Feira (`sem_origem`). Vender ao Banco funciona. Resolver pede mudar a `caca_fim` para aceitar as peças vestidas também na morte.
+- Vestir do saco é uma forma de proteger loot da morte (só uma peça por casa, e a do corpo vai para o risco). Ficar de olho se a morte perde peso.
+- O convidado da sala não vê os botões (a ficha dele é do anfitrião). Na mescla com a 0.25.0 (toda caçada numa sala), a venda do saco na Feira tinha ficado desligada para todos (`!G.sala`); voltou para quem não é convidado (`!G.convidado`). Quando o servidor da F2 existir, vestir vira entrada (`ent`) da regra.
+
+**Próximo passo recomendado:** o Leonardo vestir uma peça no meio da caçada e dizer se o fluxo está claro; depois, "Sair cedo" (`Agora`).
 
 ## 2026-10-19 23:40 UTC — sessão manual (nuvem)
 
@@ -370,21 +387,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - `drinkPot()` continua sendo chamada fora do `update()` pelo cliente (já era assim): regra fora do passo fixo. Na M2 a poção precisa virar entrada (`ent.pot`).
 
 **Próximo passo recomendado:** o Leonardo decidir como quer testar o co-op (teste local sem custo ou M2 com servidor); enquanto isso, "Sair cedo" (`Agora`).
-
----
-
-## 2026-10-19 02:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** limite real do Realtime medido, e duas correções na cidade compartilhada (0.8.1). Posição a 5 por segundo (era 8). Erro do canal (`system` com erro, `phx_error`, `phx_close`, resposta de erro) agora fecha o socket e religa: antes, o servidor tirava o cliente do canal sem fechar o socket e o jogo ficava "ligado" e invisível para os outros. O boneco dos outros corre na velocidade de quem anda (132 px/s, ou 5× a distância), para não andar e parar a cada mensagem.
-
-**Validação:** `node tools/testar.mjs` — 22/22. O caso `cidade-compartilhada` ganhou a expulsão pelo servidor (religa sozinho) e mede a taxa pelo tempo de jogo (`C.t0`), porque o laço do roteiro e o do jogo dividem o relógio sintético; sabotagem com envio a 20/s reprovou (11 em 1,2 s). Carga no Realtime de verdade, com clientes no Node, todos enviando no mesmo instante (pior caso): 4 e 8 pessoas a 8/s, 100%; 11 a 8/s, 100%; 13 a 8/s, 92% e expulsão; 15 a 8/s, 86%; 20 a 4/s, 100%; 20 a 5/s, 100%; 18 a 5/s, 86%.
-
-**Análise:** o limite do Free é de **envios por segundo no canal** (~100), não de entregas, como eu tinha suposto na conta de custo. A cobrança mensal, essa sim, conta cada entrega (N+1 por broadcast). Resultado: até ~15 andando juntos funciona de graça; 20 ou mais juntos por horas estoura a cota mensal (2 milhões) e, no Pro, custa centenas de dólares por mês. Para mais de 20 o caminho é o servidor próprio do plano (M2–M4), estimado em US$ 35–80 por mês.
-
-**Roadmap:** sem mudança de fila.
-
-**Pendências e riscos:** o limite exato oscila entre execuções (18 a 5/s perdeu, 20 a 5/s passou): o rate limit do Supabase parece ser por janela, sensível a rajada. Teste com pessoas de verdade, que não mandam no mesmo milissegundo, deve aguentar mais. Cota mensal: o painel do Supabase (Usage → Realtime Messages) mostra o consumo; vale olhar depois do primeiro teste com amigos.
-
-**Próximo passo recomendado:** o Leonardo testar com amigos; depois, "Sair cedo" (`Agora`).
 
 ---

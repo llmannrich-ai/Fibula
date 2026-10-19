@@ -1,18 +1,18 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.26.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.26.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila} from './sim/progresso.js?v=0.26.0';
-import {G} from './sim/incursao.js?v=0.26.0';
-import {tiraDoSaco,poeNoSaco} from './sim/combate.js?v=0.26.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.26.0';
-import {erroFeira} from './telas.js?v=0.26.0';
-import {persist} from './salvar.js?v=0.26.0';
-import {C} from './sim/cidade.js?v=0.26.0';
-import {ART,icone} from './arte.js?v=0.26.0';
-import {retrato} from './desenho.js?v=0.26.0';
-import {rede} from './rede.js?v=0.26.0';
-import {$,app} from './dom.js?v=0.26.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.27.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.27.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.27.0';
+import {G} from './sim/incursao.js?v=0.27.0';
+import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.27.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.27.0';
+import {erroFeira} from './telas.js?v=0.27.0';
+import {persist} from './salvar.js?v=0.27.0';
+import {C} from './sim/cidade.js?v=0.27.0';
+import {ART,icone} from './arte.js?v=0.27.0';
+import {retrato} from './desenho.js?v=0.27.0';
+import {rede} from './rede.js?v=0.27.0';
+import {$,app} from './dom.js?v=0.27.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -115,15 +115,15 @@ function cel(k,q,rot){
   else{const i=document.createElement('i');i.textContent=it.nome.slice(0,2);b.appendChild(i)}
   if(q>1){const n=document.createElement('q');n.textContent=q;b.appendChild(n)}
   b.setAttribute('aria-label',(rot?rot+': ':'')+fmtItem([k,q])+(it.slot?', '+fmtBonus(it):''));
-  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila()});
+  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila();if(MO.sel)$('#moInfo').scrollIntoView({block:'nearest'})});
   return b;
 }
 function info(k,q,vestida){
   const el=$('#moInfo');el.textContent='';
-  if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é. O jogo continua correndo.':'Toque numa peça para ver o que é. Guardar, vestir e vender é no Banco.';return}
+  if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é, vestir ou tirar. O jogo continua correndo.':'Toque numa peça para ver o que é, vestir ou tirar. Guardar e vender é no Banco.';return}
   const it=ITEMS[k],b=document.createElement('b');b.className='r'+it.rar;b.textContent=fmtItem([k,q]);
   const bo=it.slot?` · ${SLOT_NOME[it.slot]}, ${fmtBonus(it)}`:'';
-  el.append(b,vestida?`${bo}. Vestida: não cai na morte.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+' Na mochila, cai na morte. '+
+  el.append(b,vestida?`${bo}. Vestida: não cai na morte; tirada, vai para a mochila.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+' Na mochila, cai na morte. '+
     (it.slot?'Guardada no Banco, vai para o cofre.':ehMat(k)?'Guardado no Banco, vai para o depósito do Gordon, na Forja.':k==='ouro'?'Guardado no Banco, vai para o cofre.':'Guardado no Banco, vira ouro no cofre.'));
 }
 export function desenhaMochila(){
@@ -162,8 +162,27 @@ export function desenhaMochila(){
   for(let i=n;i<cap;i++)g.appendChild(cel(null));
   if(!selInfo)MO.sel=null;
   info(...(selInfo||[]));
-  /* na sala de caçar junto o saco é do anfitrião: vender daqui duplicaria a peça */
-  vendaDoSaco(caca&&!G.sala&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
+  acoes(selInfo,caca,p);
+  /* o convidado da sala só vê o saco: quem o guarda é o anfitrião, e vender
+     daqui duplicaria a peça. Toda caçada é numa sala, e o anfitrião vende */
+  vendaDoSaco(caca&&!G.convidado&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
+}
+/* vestir e tirar sem ir ao Banco: um toque na peça, um botão grande (pilar 3).
+   A troca é com a mochila, na cidade (vesteDaMochila) e na caçada
+   (vesteDoSaco); a peça vestida passa a não cair na morte, e a tirada só sai
+   se couber na mochila. O convidado da sala, não: quem
+   calcula a ficha dele é o anfitrião */
+function acoes(sel,caca,p){
+  const el=$('#moAcoes');el.textContent='';
+  const pode=sel&&ITEMS[sel[0]].slot&&(!caca||(!G.convidado&&!p.fora&&!G.over));
+  el.hidden=!pode;if(!pode)return;
+  const [k,,vestida]=sel,it=ITEMS[k],sl=it.slot,atual=ch().equip[sl];
+  const bt=(t,rot,fn)=>{const b=document.createElement('button');b.type='button';b.className='cta';b.textContent=t;b.setAttribute('aria-label',rot);
+    b.addEventListener('click',()=>{if(fn()){if(!caca)persist();desenhaMochila()}});el.appendChild(b)};
+  if(vestida){bt('Tirar para a mochila',`Tirar ${it.nome} e pôr na mochila`,()=>{if(!(caca?tiraProSaco(p,sl):tiraPraMochila(sl)))return false;MO.sel=caca?k:null;return true});
+    if(!cabe(caca?p.bag:ch().mochila,k))el.lastChild.disabled=true}
+  else bt(atual?'Trocar':'Vestir',`Vestir ${it.nome}`+(atual?` no lugar de ${ITEMS[atual].nome}`:''),
+    ()=>{if(!(caca?vesteDoSaco(p,k):vesteDaMochila(k)))return false;MO.sel='eq:'+sl;return true});
 }
 /* ---------- venda do saco ----------
    Na caçada, a peça do saco pode ir direto para a Feira, uma por vez (decisão

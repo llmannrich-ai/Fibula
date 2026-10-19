@@ -930,6 +930,19 @@ async function testaSimulacao() {
     novoSave(); I.newRun(51);
     if (I.G.caca !== 'runas' || retrato().split('|')[0] !== fotos.runas) falhas.push('newRun sem mapa de caça não deu a Masmorra de Runas');
   } catch (e) { falhas.push('a cidade quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  /* vestir na caçada: a peça sai do saco e vale na hora, a do corpo vai para
+     o saco; trocar não cura; a origem conta só o que veio desta caçada */
+  try {
+    novoSave(); P.ch().equip.amuleto = 'amuleto'; I.newRun(37); const p = I.G.p, vida = p.mhp;
+    p.bag = {machado: 1, amuleto: 1}; p.bagVal = 0; p.hp = 40;
+    if (!Cb.vesteDoSaco(p, 'machado') || P.ch().equip.arma !== 'machado' || p.bag.machado) falhas.push(`vestir o machado do saco: ${JSON.stringify(P.ch().equip)} saco ${JSON.stringify(p.bag)}`);
+    if (!Cb.tiraProSaco(p, 'amuleto') || P.ch().equip.amuleto || p.bag.amuleto !== 2 || p.mhp !== vida - 15) falhas.push(`tirar o amuleto: saco ${JSON.stringify(p.bag)}, vida ${p.mhp} de ${vida}`);
+    if (!Cb.vesteDoSaco(p, 'amuleto') || p.mhp !== vida || p.hp !== 40) falhas.push(`vestir de novo mudou a vida atual: ${p.hp}/${p.mhp}`);
+    if (JSON.stringify(Cb.pecasDaCaca(p)) !== '{"amuleto":1,"machado":1}') falhas.push(`origem das peças da caçada: ${JSON.stringify(Cb.pecasDaCaca(p))}`);
+    Cb.tiraProSaco(p, 'amuleto');
+    if (JSON.stringify(Cb.pecasDaCaca(p)) !== '{"amuleto":1,"machado":1}') falhas.push(`o amuleto que já era do corpo ganhou origem: ${JSON.stringify(Cb.pecasDaCaca(p))}`);
+    p.fora = 'morreu'; if (Cb.vesteDoSaco(p, 'amuleto')) falhas.push('vestiu depois de sair da caçada');
+  } catch (e) { falhas.push('vestir na caçada quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* provisões das lojas: comprar tira do cofre e respeita o máximo e o grupo
      (uma refeição); a caçada aplica poções, regeneração e buffs do começo,
      o buff da provisão soma ao da habilidade e acaba no tempo; e só start()
@@ -1218,6 +1231,11 @@ const CASOS = [
     clica(porta);await quadros(3);
     ok('o anfitrião entra na masmorra que o aparelho dele já roda', $('#app').classList.contains('playing')&&I.G.p===I.G.ps[0]&&!I.G.ps[0].fora&&I.G.ps.length===2, I.G.ps[0].fora);
     ok('o HUD diz que não há tempo', txt('#timeT')==='sem tempo'&&/Porta/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
+    var h=I.G.p;h.bag={espada:1};h.bagVal=20;clica($('#bMochila'));clica(todos('#moGrade .cel:not(:disabled)')[0]);
+    ok('na sala, o anfitrião veste do saco pela Mochila', /^(Vestir|Trocar)$/.test(txt('#moAcoes button')||''), txt('#moAcoes'));
+    clica($('#moAcoes button'));
+    ok('a espada saiu do saco e foi para o corpo', Pg.ch().equip.arma==='espada'&&!h.bag.espada, JSON.stringify(Pg.ch().equip));
+    clica($('#moX'));
     var longe=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0}).pop();
     ok('na masmorra, a sala continua anunciada na cidade, sem boneco', RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:cidade-')===0})&&longe&&longe.payload.payload.longe&&longe.payload.payload.sala, longe&&JSON.stringify(longe.payload.payload));
     var a=I.G.ps[0],sai0=RT.salaMandadas('fim').length;
@@ -1517,6 +1535,15 @@ const CASOS = [
     ok('o boneco vestido aparece ao lado do corpo', visivel('#moFig'));
     ok('o total vestido aparece', txt('#moTot')==='Vestido: +10% de dano. Vida 85 · Mana 95', txt('#moTot'));
     ok('na cidade a mochila está vazia, com os 20 espaços', cheias().length===0&&todos('#moGrade .cel').length===20&&txt('#moTit')==='Mochila', todos('#moGrade .cel').length);
+    clica($('#moDoll .s-arma'));
+    var acao=function(){return $('#moAcoes button')};
+    ok('a arma vestida oferece tirar para a mochila', visivel('#moAcoes')&&txt('#moAcoes button')==='Tirar para a mochila', txt('#moAcoes'));
+    clica(acao());
+    ok('tirar põe a arma na mochila, não no cofre', !sv().chars.feiticeiro.equip.arma&&sv().chars.feiticeiro.mochila.machado===1&&!sv().itens.machado&&cheias().length===1, JSON.stringify(sv().chars.feiticeiro.mochila));
+    clica(cheias()[0]);
+    ok('a peça da mochila oferece vestir', txt('#moAcoes button')==='Vestir', txt('#moAcoes'));
+    clica(acao());
+    ok('vestir da mochila volta a arma ao corpo', sv().chars.feiticeiro.equip.arma==='machado'&&!sv().chars.feiticeiro.mochila.machado&&cheias().length===0, JSON.stringify(sv().chars.feiticeiro.equip));
     tecla('keydown','KeyB');tecla('keyup','KeyB');
     ok('B fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
     clica(bt);
@@ -1531,6 +1558,9 @@ const CASOS = [
     clica(cheias()[1]);
     ok('tocar numa peça diz o que ela é', txt('#moInfo')==='espada enferrujada · vale 20 de ouro · Arma, +6% de dano. Na mochila, cai na morte. Guardada no Banco, vai para o cofre.', txt('#moInfo'));
     ok('a peça tocada fica marcada', $('#moGrade .cel.on')&&$('#moGrade .cel.on').dataset.k==='espada');
+    ok('a peça do saco oferece trocar pela vestida', txt('#moAcoes button')==='Trocar', txt('#moAcoes'));
+    clica($('#moAcoes button'));
+    ok('trocar na caçada veste a espada e põe o machado na mochila', /^Arma: espada/.test($('#moDoll .s-arma').getAttribute('aria-label')||'')&&txt('#moVal')==='228 ouro · 2/20'&&txt('#moTot').indexOf('+6% de dano')>0, txt('#moVal')+' · '+txt('#moTot'));
     var t0=txt('#timeT');
     await quadros(40);
     ok('o jogo não pausa com a mochila aberta', txt('#timeT')!==t0&&aberta(), t0+' → '+txt('#timeT'));
@@ -1540,7 +1570,8 @@ const CASOS = [
     var acabou=await ate(function(){return visivel('#end')},1500);
     ok('a incursão acabou', acabou);
     ok('a tela final fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
-    ok('soterrado, a mochila ficou na masmorra', txt('#eLoot')==='220 ouro · perdido'&&sv()&&JSON.stringify(sv().chars.feiticeiro.mochila)==='{}', txt('#eLoot')+' / '+(sv()&&JSON.stringify(sv().chars.feiticeiro.mochila)));
+    ok('a espada vestida na caçada ficou no corpo depois do fim', sv().chars.feiticeiro.equip.arma==='espada', JSON.stringify(sv().chars.feiticeiro.equip));
+    ok('soterrado, a mochila ficou na masmorra', txt('#eLoot')==='228 ouro · perdido'&&sv()&&JSON.stringify(sv().chars.feiticeiro.mochila)==='{}', txt('#eLoot')+' / '+(sv()&&JSON.stringify(sv().chars.feiticeiro.mochila)));
 `,
   },
   {

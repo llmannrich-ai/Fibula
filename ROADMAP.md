@@ -130,13 +130,21 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
-- **2026-10-19 — Mochila e cofre, como no Tibia (0.26.0)** *(pedido do
+- **2026-10-19 — Mochila e cofre, como no Tibia (0.27.0)** *(pedido do
   Leonardo: "apenas com a mochila e o cofre"; pilar 1)*. O saco saiu. A
   mochila é do personagem e fica com ele entre as caçadas: entra inteira na
   próxima e cai toda na morte (menos o Selo). Extrair não guarda nada
   sozinho; o Banqueiro guarda uma coisa ou tudo no cofre e devolve peças e
   ouro à mochila. 20 espaços (`progression.mochila`); cheia, o loot fica no
-  chão. O Guia de caça e a Mochila dizem quanto ela arrisca.
+  chão. O Guia de caça e a Mochila dizem quanto ela arrisca. Vestir e tirar pela
+  Mochila (0.26.0) passou a trocar com a mochila também na cidade.
+- **2026-10-19 — Vestir e tirar pela Mochila, também na caçada (0.26.0)**
+  *(pedido e decisão do Leonardo: "como o personagem vai equipar?"; vestir na
+  caçada como no Tibia; pilares 1 e 3)*. Toque na peça, botão grande. Na
+  cidade troca com o cofre; na caçada com o saco (`vesteDoSaco()`,
+  `tiraProSaco()` em `src/sim/combate.js`): a vestida não cai na morte, a que
+  sai vai para o saco. Trocar não cura. A extração dá origem na nuvem só ao que
+  veio da caçada (`pecasDaCaca()`). O convidado da sala não veste: a ficha dele é do anfitrião.
 
 - **2026-10-19 — A Mochila com o corpo do inventário do Tibia (0.23.0)**
   *(pedido do Leonardo: "algo que se assemelha ao do Tibia, equipamentos em
