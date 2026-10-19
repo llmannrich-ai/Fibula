@@ -119,7 +119,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
 **`src/sim/` — a simulação, sem DOM**
 
 - `base.js` — `T=32`, `MW`, `MH`, `RUN`, `PORTAL_AT`, `EXT`, `TICK`, `clamp()`,
-  `hyp()`, `fmt()`, `DIRS`, o objeto `saida` e o **sorteio com semente**:
+  `hyp()`, `fmt()`, `DIRS`, o objeto `saida`, o **passo de sqm** (`DIR8`,
+  `centro()`, `poeNoSqm()`, `comeca()`, `avanca()`, `dir8()`, `passoPara()`)
+  e o **sorteio com semente**:
   `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`, `rnd()`, `rr()`,
   `ri()` (regra) e `frr()` (efeito)
 - `dados.js` — **conteúdo do jogo**, **classes**, **habilidades**, **melhorias
@@ -133,7 +135,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `progresso.js` — **personagem e progressão**: o `save` em memória
   (`setSave()` para trocar o objeto inteiro), `SAVE0()`, `normaliza()`,
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
-  `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`
+  `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
+  `durPasso()` (duração do passo pela velocidade do nível)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
@@ -173,7 +176,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   Supabase Realtime, por `WebSocket` nativo. `quadro(dt,naCidade)`, chamado
   pelo laço, liga ao entrar na cidade e desliga ao sair dela (caçar, menu) ou
   com a aba no fundo, e religa sozinho. Presença (nome, classe, nível) e
-  broadcast da posição, no máximo 5 por segundo e só quando mexe; erro do
+  broadcast de **um passo por mensagem** (`{id, x, y, d}`: sqm de destino e
+  duração em ms), nada parado; erro do
   canal (expulsão por excesso) fecha o socket e religa. Não decide
   regra nenhuma: a caçada é sozinha, e o co-op da incursão é o servidor da F2
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
@@ -212,7 +216,8 @@ nada do outro lado do ciclo** — só funções chamadas depois. Quebrar isso d�
 Constantes de `src/sim/base.js`: `T=32` (lado do tile), `MW=MH=64` (mapa),
 `RUN=360` (duração da incursão em segundos), `PORTAL_AT=90` (quando o portal
 abre), `EXT=2.5` (segundos parado no portal para extrair), `TICK=0.05` (o
-passo da regra: 20 por segundo).
+passo da regra: 20 por segundo). A velocidade de andar mora em
+`progression.walk` do `content.json` (sqm por segundo, por nível).
 
 Balanceamento vive nas tabelas `CLASSES`, `SPELLS`, `MT`, `LOOT`, `ITEMS` e
 `UP`, não espalhado pelo código. Ajuste de dificuldade é edição de tabela. Se
@@ -281,8 +286,31 @@ e irregulares). Três consequências:
 - **Testes chamam `passo()`, não `update()`**: é ela que tem o acumulador.
 
 
+**Anda-se por sqm, como no Tibia.** Decisão do Leonardo em 19/10/2026.
+Jogador, monstro e outro jogador da cidade estão sempre num sqm (`tx`, `ty`) e
+vão a um vizinho por vez (8 direções); `x`, `y` em pixels vão do ponto de
+partida ao centro do sqm novo durante o passo e só servem ao desenho e ao
+alcance do combate, que continua em pixels. O sqm é de quem anda **desde o
+começo do passo**. Regras:
+
+- **Velocidade** do jogador em `progression.walk`: `base + perLevel·(nível−1)`
+  sqm/s até `max`, vezes o buff `velo`; o passo é arredondado para múltiplos
+  de 50 ms (`durPasso()`). Diagonal dura `diagonal` vezes mais e não corta
+  quina (`passoPara()` escorrega pelo eixo livre). Monstro: `spd` em px/s, o
+  passo dura `T/spd`.
+- **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
+  passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
+  não entra em sqm de monstro. Jogadores não se bloqueiam entre si.
+- **Corpo a corpo é sqm vizinho** (diagonal inclusive), não distância em pixels.
+- **O joystick só escolhe o próximo passo quando o atual acaba**; o tempo que
+  sobrou emenda no seguinte (`avanca()` devolve a sobra), senão a velocidade
+  cai com o quadro.
+- Na rede, **um passo é uma mensagem**: quem recebe anima o mesmo passo com a
+  mesma duração. É isso que vai deixar o servidor da F2 barato: conferir
+  movimento é ver se o sqm é vizinho, livre e se o tempo do passo passou.
+
 **O campo de fluxo.** A perseguição dos monstros não é um pathfinding por
-monstro: `buildFlow()` faz uma BFS a partir do jogador e preenche `G.flow` com a
+monstro: `buildFlow()` faz uma BFS a partir do sqm de cada jogador e preenche `G.flow` com a
 distância em tiles, recalculada a cada 0,2 s e cortada em 22 passos. Os
 monstros só leem esse campo. Por isso aggro é medido em distância de fluxo
 (`fd<=9`, chefe `fd<=7`, desiste em `fd>18`) e não em linha reta — um monstro do

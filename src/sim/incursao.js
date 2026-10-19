@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.9.0';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.9.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp} from './progresso.js?v=0.9.0';
-import {genMap,pecas} from './mapa.js?v=0.9.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.9.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.10.0';
+import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.10.0';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso} from './progresso.js?v=0.10.0';
+import {genMap,pecas} from './mapa.js?v=0.10.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.10.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -17,9 +17,12 @@ function pickType(d){
 function spawn(k,r,d,boss){
   const t=MT[k],sc=PROG.scaling,lv=sc.hpPerCharLevel*(G.lvl-1),
     hpm=boss?(1+lv*sc.bossLevelFactor)*(1+PROG.party.bossHp*(G.ps.length-1)):1+sc.hpPerDepth*d+lv;
-  const x=boss?(r.cx+.5)*T:(r.x+1+rnd(r.w-2)+.5)*T,y=boss?(r.cy-.5)*T:(r.y+1+rnd(r.h-2)+.5)*T;
+  /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce */
+  const tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
+  if(G.ocu[ty*MW+tx])return;G.ocu[ty*MW+tx]=1;
   const hp=Math.round(t.hp*hpm);
-  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
+  G.mons.push({k,t,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
+  poeNoSqm(G.mons[G.mons.length-1],tx,ty);
 }
 /* ---------- jogadores ----------
    Solo é um grupo de um: a incursão sempre tem uma lista de jogadores, G.ps,
@@ -31,14 +34,16 @@ function spawn(k,r,d,boss){
    servidor da F2 monta as fichas do banco. O que é da conta (cofre, peças,
    estatísticas) só muda para a ficha local, em sai(). */
 export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,local:true});
-/* onde cada jogador aparece na sala de entrada, em pixels a partir do centro */
-const LADO=[[0,0],[16,0],[-16,0],[0,16]];
+/* onde cada jogador aparece na sala de entrada, em sqm a partir do centro;
+   jogadores não se bloqueiam (só monstros ocupam sqm) */
+const LADO=[[0,0],[1,0],[-1,0],[0,1]];
 function novoJogador(f,i,s){
   const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0];
-  return{id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,
-    x:(s.cx+.5)*T+o[0],y:(s.cy+.5)*T+o[1],r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
+  const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,
+    x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+f.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,xpPerdido:0};
+  poeNoSqm(p,s.cx+o[0],s.cy+o[1]);return p;
 }
 /* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
    sorteia uma nova (é o caso normal do jogador). fichas são os jogadores;
@@ -50,9 +55,10 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()]){
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
-  G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
+  G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
      lvl:Math.max(...fichas.map(f=>f.c.lvl)),mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
      t:0,kills:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
+  for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
   const mais=1+PROG.party.monsters*(ps.length-1);
   for(const r of rooms){
     if(r===s)continue;
@@ -63,17 +69,25 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()]){
   const bs=PROG.boss;
   spawn(bs.type,pr,1,true);
   spawn(bs.escort[rnd(bs.escort.length)],pr,1,false);
+  for(const p of ps)G.ocu[p.ty*MW+p.tx]=0;
   revela();
 }
 
-/* ---------- física ---------- */
+/* ---------- física ----------
+   Andar é por sqm (passo de sqm, em base.js). G.ocu marca os sqm com monstro:
+   monstro não entra em sqm de monstro nem de jogador, e jogador não entra em
+   sqm de monstro — é o bloqueio de corpo do Tibia, que deixa o cavaleiro
+   segurar o corredor. Jogadores não se bloqueiam entre si. */
 export const solid=(x,y)=>x<0||y<0||x>=MW||y>=MH||G.g[y*MW+x]===1;
-function blocked(x,y,r){
-  const a=Math.floor((x-r)/T),b=Math.floor((x+r)/T),c=Math.floor((y-r)/T),d=Math.floor((y+r)/T);
-  for(let j=c;j<=d;j++)for(let i=a;i<=b;i++)if(solid(i,j))return true;
-  return false;
+const temJogador=(x,y)=>{for(const p of G.ps)if(!p.fora&&p.tx===x&&p.ty===y)return true;return false};
+const livreP=(x,y)=>!solid(x,y)&&!G.ocu[y*MW+x];
+const livreM=(x,y)=>livreP(x,y)&&!temJogador(x,y);
+/* um monstro dá um passo: troca de sqm em G.ocu já no começo, como no Tibia */
+function passoM(m,i,sd){
+  const d=DIR8[i];G.ocu[m.ty*MW+m.tx]=0;
+  comeca(m,d[0],d[1],d[0]&&d[1]?sd*PROG.walk.diagonal:sd);
+  G.ocu[m.ty*MW+m.tx]=1;
 }
-function move(e,dx,dy){const r=e.r*.85;if(dx&&!blocked(e.x+dx,e.y,r))e.x+=dx;if(dy&&!blocked(e.x,e.y+dy,r))e.y+=dy}
 const Q=new Int32Array(MW*MH);
 /* a BFS parte de todos os jogadores que ainda estão na masmorra ao mesmo
    tempo: G.flow é a distância até o mais perto, e G.fdono diz qual é ele —
@@ -81,7 +95,7 @@ const Q=new Int32Array(MW*MH);
 function buildFlow(){
   const f=G.flow,o=G.fdono,g=G.g;f.fill(-1);let h=0,t=0;
   for(let i=0;i<G.ps.length;i++){const p=G.ps[i];if(p.fora)continue;
-    const s=(p.y/T|0)*MW+(p.x/T|0);if(f[s]<0){f[s]=0;o[s]=i;Q[t++]=s}}
+    const s=p.ty*MW+p.tx;if(f[s]<0){f[s]=0;o[s]=i;Q[t++]=s}}
   while(h<t){
     const c=Q[h++],v=f[c],w=o[c];if(v>=22)continue;
     const x=c%MW,y=(c/MW)|0;
@@ -91,7 +105,7 @@ function buildFlow(){
     if(y<MH-1&&g[c+MW]===0&&f[c+MW]<0){f[c+MW]=v+1;o[c+MW]=w;Q[t++]=c+MW}
   }
 }
-export const flowAt=e=>G.flow[(e.y/T|0)*MW+(e.x/T|0)];
+export const flowAt=e=>G.flow[e.ty*MW+e.tx];
 function reveal(p){
   const tx=p.x/T|0,ty=p.y/T|0;
   for(let j=-7;j<=7;j++)for(let i=-7;i<=7;i++){
@@ -168,11 +182,14 @@ export function update(dt,ent){
 }
 /* movimento, regeneração e recargas de um jogador */
 function anda(p,dt,ent){
-  let mx=ent.x,my=ent.y;
-  const ml=hyp(mx,my);if(ml>1){mx/=ml;my/=ml}
-  const vel=128*(1+bf('velo',p));
-  p.mv=ml>.08;
-  if(p.mv){move(p,mx*vel*dt,my*vel*dt);p.face=Math.atan2(my,mx);p.walk+=dt*Math.min(1,ml)*12}
+  /* um passo de cada vez: o joystick só escolhe o próximo quando o atual acaba */
+  const sobra=avanca(p,dt);
+  if(sobra>=0){
+    const i=dir8(ent.x,ent.y),j=i<0?-1:passoPara(p,i,livreP,ent.x,ent.y);
+    if(j>=0){const d=DIR8[j],sd=durPasso(p.c,bf('velo',p));comeca(p,d[0],d[1],d[0]&&d[1]?sd*PROG.walk.diagonal:sd,sobra)}
+    else if(i>=0)p.face=Math.atan2(DIR8[i][1],DIR8[i][0]);
+  }
+  p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
   const K=CLASSES[p.cl];
   p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
   p.cdC-=dt;p.flash-=dt;p.swing-=dt;
@@ -183,7 +200,9 @@ function anda(p,dt,ent){
 /* fora da incursão (menu por cima do mapa, tela final) só os efeitos andam */
 export function parado(dt){G.t+=dt;G.alfa=1;efeitos(dt)}
 function updateMons(dt){
-  const f=G.flow;
+  const f=G.flow,o=G.ocu;
+  /* quem morreu desocupa o sqm: a grade é refeita a cada passo da regra */
+  o.fill(0);for(const m of G.mons)if(m.hp>0)o[m.ty*MW+m.tx]=1;
   for(const m of G.mons.slice()){
     if(m.hp<=0)continue;
     m.atkCd-=dt;m.flash-=dt;m.anim+=dt;m.mv=0;
@@ -193,41 +212,48 @@ function updateMons(dt){
         G.fx.push({k:'sp',x:m.x+frr(-6,6),y:m.y+frr(-6,6),vx:0,vy:-24,col:EL_COR[m.dot.el],t:0,life:.4});
         if(m.hp<=0)continue}
       if(m.dot.left<=0)m.dot=null}
-    const spd=m.spd*m.slowF;
+    /* um passo de cada vez; o próximo só é escolhido quando o atual acaba.
+       spd é em pixels por segundo: o passo leva T/spd segundos */
+    const livreAgora=avanca(m,dt)>=0,sd=T/(m.spd*m.slowF);
+    m.mv=m.sd>0?1:0;
     /* o alvo é o jogador mais perto pelo campo de fluxo */
-    const tx=m.x/T|0,ty=m.y/T|0,fd=f[ty*MW+tx];
+    const tx=m.tx,ty=m.ty,fd=f[ty*MW+tx];
     let p=fd>=0?G.ps[G.fdono[ty*MW+tx]]:null;if(p&&p.fora)p=null;
     if(p&&fd<=(m.t.boss?7:9))m.aggro=true;else if(!p||fd>18)m.aggro=false;
-    let vx=0,vy=0;
     if(m.aggro){
       const dx=p.x-m.x,dy=p.y-m.y,dist=hyp(dx,dy)||1;
-      m.face=Math.atan2(dy,dx);
-      const reach=m.r+p.r+5;
+      if(!m.mv)m.face=Math.atan2(dy,dx);
+      /* corpo a corpo é sqm vizinho, diagonal inclusive, como no Tibia */
+      const junto=Math.max(Math.abs(p.tx-tx),Math.abs(p.ty-ty))<=1;
       if(m.t.ranged&&dist<T*5.5&&fd>=0&&fd<=7){
         if(m.atkCd<=0){m.atkCd=m.t.atk;const s=230;G.proj.push({k:'m',x:m.x,y:m.y-6,vx:dx/dist*s,vy:dy/dist*s,dmg:ri(Math.round(m.dmg*.7),m.dmg),life:2.5})}
-        if(dist<T*2){vx=-dx/dist*.6;vy=-dy/dist*.6}
-      }else if(dist<=reach){
-        if(m.atkCd<=0){m.atkCd=m.t.atk;hurtPlayer(p,ri(Math.round(m.dmg*.7),m.dmg));if(G.over)return}
-      }else if(dist<T*1.3||fd<=1){vx=dx/dist;vy=dy/dist}
-      else if(fd>0){
-        let best=fd,bx=0,by=0;
-        for(const[ox,oy]of DIRS){
-          const nx=tx+ox,ny=ty+oy;if(solid(nx,ny))continue;
-          if(ox&&oy&&(solid(tx+ox,ty)||solid(tx,ty+oy)))continue;
-          const v=f[ny*MW+nx];if(v>=0&&v<best){best=v;bx=nx;by=ny}
+        /* o xamã recua um sqm quando o jogador chega perto demais */
+        if(livreAgora&&dist<T*2){
+          let bi=-1,bd=dist;
+          for(let i=0;i<8;i++){const d=DIR8[i],nx=tx+d[0],ny=ty+d[1];if(!livreM(nx,ny)||(d[0]&&d[1]&&(!livreM(tx+d[0],ty)||!livreM(tx,ty+d[1]))))continue;
+            const dd=hyp(p.x-(nx+.5)*T,p.y-(ny+.5)*T);if(dd>bd){bd=dd;bi=i}}
+          if(bi>=0)passoM(m,bi,sd);
         }
-        if(best<fd){const cx=(bx+.5)*T-m.x,cy=(by+.5)*T-m.y,l=hyp(cx,cy)||1;vx=cx/l;vy=cy/l}
+      }else if(junto){
+        if(m.atkCd<=0){m.atkCd=m.t.atk;hurtPlayer(p,ri(Math.round(m.dmg*.7),m.dmg));if(G.over)return}
+      }else if(livreAgora&&fd>0){
+        /* desce o campo de fluxo; se o caminho está ocupado, contorna por um
+           sqm de mesma distância (é assim que os monstros cercam) */
+        let best=fd,bi=-1,lado=-1;
+        for(let i=0;i<8;i++){
+          const d=DIR8[i],nx=tx+d[0],ny=ty+d[1];if(!livreM(nx,ny))continue;
+          if(d[0]&&d[1]&&(solid(tx+d[0],ty)||solid(tx,ty+d[1])))continue;
+          const v=f[ny*MW+nx];if(v<0)continue;
+          if(v<best){best=v;bi=i}else if(v===fd&&lado<0)lado=i;
+        }
+        if(bi<0&&fd<=3)bi=lado;
+        if(bi>=0)passoM(m,bi,sd);
       }
-      if(vx||vy){move(m,vx*spd*dt,vy*spd*dt);m.mv=1}
-    }else{
-      m.wt-=dt;if(m.wt<=0){m.wt=rr(1,3);m.wa=rr(0,TAU);m.wm=sorte()<.45}
-      if(m.wm){move(m,Math.cos(m.wa)*spd*.3*dt,Math.sin(m.wa)*spd*.3*dt);m.mv=1;m.face=m.wa}
+    }else if(livreAgora){
+      m.wt-=dt;if(m.wt<=0){m.wt=rr(1,3);
+        if(sorte()<.45){const i=rnd(8),d=DIR8[i];if(livreM(tx+d[0],ty+d[1])&&!(d[0]&&d[1]&&(solid(tx+d[0],ty)||solid(tx,ty+d[1]))))passoM(m,i,sd*PROG.walk.wander)}}
     }
-  }
-  const ms=G.mons;
-  for(let i=0;i<ms.length;i++)for(let j=i+1;j<ms.length;j++){
-    const a=ms[i],b=ms[j],dx=b.x-a.x,dy=b.y-a.y,d=hyp(dx,dy),mn=a.r+b.r;
-    if(d>0&&d<mn){const push=(mn-d)/2,ux=dx/d,uy=dy/d;move(a,-ux*push,-uy*push);move(b,ux*push,uy*push)}
+    m.mv=m.sd>0?1:0;
   }
 }
 function updateProj(dt){

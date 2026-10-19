@@ -35,6 +35,8 @@ export function validaConteudo(c){
   if(!Array.isArray(p.bands)||!p.bands.length)throw new Error('progression.bands vazio');
   if(!p.scaling||!p.boss||!p.perRoom||!p.xp)throw new Error('progression incompleta');
   if(!(p.xp.base>0&&p.xp.exp>0&&p.xp.deathLoss>=0&&p.xp.deathLoss<1))throw new Error('progression.xp precisa de base e exp positivos e deathLoss entre 0 e 1');
+  const w=p.walk;
+  if(!w||!['base','perLevel','max','diagonal','stepMs','wander'].every(k=>typeof w[k]==='number'&&w[k]>=0)||!(w.base>0&&w.max>=w.base&&w.diagonal>=1&&w.stepMs>0))throw new Error('progression.walk precisa de base e max positivos (max >= base), perLevel, diagonal >= 1, stepMs e wander');
   const pt=p.party;
   if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
   for(const b of p.bands){
