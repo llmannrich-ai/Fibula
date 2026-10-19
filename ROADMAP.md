@@ -141,6 +141,12 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Voz na sala (0.19.0)** *(pedido do Leonardo)*. `src/voz.js`:
+  WebRTC nativo em malha entre quem está na sala, apresentação pelo canal da
+  sala, segurar para falar (botão Voz ou V), quem fala no botão, STUN do
+  Cloudflare e do Google, sem TURN. Caso `voz-na-sala` no harness, com
+  conexão de verdade no Chromium headless.
+
 - **2026-10-19 — Gordon e a Forja (0.18.0)** *(pedido do Leonardo)*. NPC
   novo na cidade (`city.npcs.gordon`, letra `F`, casa no canto sudoeste):
   compra materiais barato, quatro encomendas em ordem, loja liberada por

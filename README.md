@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.19.0 (19/10/2026) | Voz na sala de caçar junto: quem está na sala liga a voz (botão Voz, acima da Mochila, ou no Guia de caça) e segura Falar, ou V, para os outros ouvirem, na cidade e na masmorra. O som vai direto entre os aparelhos; o botão mostra quem está falando |
 | 0.18.0 (19/10/2026) | Gordon, o ferreiro, abre a Forja na cidade: compra dente, seda, osso e erva por pouco, dá quatro encomendas de materiais e, a cada uma entregue, põe à venda armas e armaduras melhores (maça cravejada, gibão acolchoado, machado de guerra, couraça de placas). Esses materiais não viram mais ouro na extração: vão para o depósito dele |
 | 0.17.0 (19/10/2026) | Peças de teste no chão da cidade, perto de onde se chega: pisou, vai para o cofre do Banco, uma vez por conta. Não entram na Feira (não têm origem no banco) |
 | 0.16.0 (19/10/2026) | Todo mundo anda uns 15% mais rápido: o personagem do nível 1 dá um passo a cada 0,5 s (2 sqm/s), e os monstros aceleram na mesma proporção |

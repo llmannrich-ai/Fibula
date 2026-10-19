@@ -280,6 +280,11 @@ h2.lost{color:var(--hp)}
 #app[data-arte] #bMochila .nm{position:absolute;bottom:2px;left:0;right:0}
 #bMochila[aria-expanded="true"]{--el:var(--torch)}
 #app.cidade .hud #bMochila{display:grid}
+/* Voz da sala: acima da Mochila, na cidade e na incursão. Apertado, fala */
+#bVoz{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:152px;--el:var(--muted)}
+#bVoz .nm{font-size:10px} #bVoz .ct{font-size:8px;max-width:48px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#bVoz.on{--el:var(--mana)} #bVoz.no-ar{--el:var(--torch)} #bVoz.no-ar .nm{color:var(--torch)}
+#app.cidade .hud #bVoz{display:grid}
 .mochila{position:absolute;z-index:4;top:150px;bottom:196px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
 .mwin{pointer-events:auto;width:min(100%,340px);max-height:100%;overflow:auto;display:grid;gap:8px;padding:0 10px 10px;box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.65);animation:sobe .16s ease-out}
 @keyframes sobe{from{opacity:0;transform:translateY(10px)}}
@@ -347,6 +352,7 @@ h2.lost{color:var(--hp)}
     <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl main" id="s0"><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
+    <button class="act" id="bVoz" hidden aria-label="Ligar a voz da sala"><span class="nm out">Voz</span><span class="ct" id="vozT">ligar</span></button>
     <button class="act" id="bMochila" aria-controls="mochila" aria-expanded="false" aria-label="Abrir a mochila (B)"><span class="nm out">Mochila</span></button>
   </div>
 
@@ -549,7 +555,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.18.0"></script>
+<script type="module" src="src/main.js?v=0.19.0"></script>
 
 </body>
 </html>

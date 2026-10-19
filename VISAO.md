@@ -131,7 +131,9 @@ multiplayer definida no [PRD](docs/PRD.md), que decide escopo e fase.
   que abrir em dois segundos num 3G ruim. Hoje o jogo não baixa nada de
   terceiro: a folha de fontes do Google, a única exceção herdada, saiu em
   18/10/2026. O Supabase (contas e save, só com conta) é serviço do produto,
-  decidido no [PRD](docs/PRD.md), não biblioteca no navegador.
+  decidido no [PRD](docs/PRD.md), não biblioteca no navegador. O STUN da voz
+  da sala (19/10/2026) também não é biblioteca: só diz ao aparelho o próprio
+  endereço, e o som vai direto entre os jogadores.
 - **Rastreamento invasivo.** Sem cookie de terceiro, sem SDK de anúncio, sem
   vender dado. A partir da F1 existe telemetria própria e mínima (eventos de
   jogo da seção 12 do PRD), dentro da LGPD.

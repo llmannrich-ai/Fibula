@@ -73,7 +73,11 @@ confundidas com precedente:
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
 as salas de caçar junto, ver abaixo) só enquanto o jogador está na cidade ou
-numa sala. A folha do Google Fonts que existia saiu em
+numa sala. **A única exceção é a voz da sala** (decisão do Leonardo em
+19/10/2026): quem liga a voz consulta o STUN do Cloudflare e o do Google
+(`STUN` em `src/voz.js`), que só respondem o endereço de fora do aparelho; o
+som vai direto entre os aparelhos e não passa por servidor nenhum. Não
+acrescente outro servidor, nem um TURN, sem decisão dele. A folha do Google Fonts que existia saiu em
 18/10/2026 junto com a arte do Tibia — as fontes agora são do sistema (Verdana,
 como o cliente do Tibia, e uma serifa Palatino nos títulos).
 
@@ -193,6 +197,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
   `saiDaSala()`, `quadro(dt,ent)` chamado pelo laço, e os `ganchos` que o
   `main.js` liga às telas
+- `voz.js` — **voz da sala** (ver "Voz" na seção do Realtime): WebRTC
+  nativo em malha entre quem está na sala, apresentação (`oi`, `oferta`,
+  `resposta`, `tchau`) pelo canal da sala (`sinal()` de `sala.js`), segurar
+  para falar (`fala()`), `ligaVoz()`, `desligaVoz()`, `quadro(dt)` chamado
+  pelo laço e `VOZ`, que o botão `#bVoz` do HUD lê (`hudVoz()`)
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -528,6 +537,34 @@ anfitrião fechar ou sair do jogo, e serve para várias caçadas seguidas.
 - **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
   laço, a incursão congela para todos, e depois de 12 s sem notícia os
   convidados voltam à cidade sem resultado.
+
+### Voz — falar na sala
+
+Decisão do Leonardo em 19/10/2026: **voz só dentro da sala de caçar junto**,
+entre quem se chamou; na cidade aberta, não, porque com desconhecidos pede a
+moderação da F3. `src/voz.js`, sem biblioteca:
+
+- **O som não passa pelo Supabase.** Cada par de aparelhos abre um
+  `RTCPeerConnection` direto (malha: com 4, cada um manda para 3, ~30 kbit/s
+  por pessoa). O canal da sala só leva a apresentação: `oi` a cada 5 s de
+  quem tem a voz ligada, uma `oferta` e uma `resposta` (o SDP já com os
+  candidatos, sem trickle) e `tchau`. Quem tem o `ID` menor oferece. Custo
+  no Realtime: quase nada.
+- **STUN sim, TURN não.** Sem TURN, quem está atrás de CGNAT de operadora
+  (comum no 4G) pode não ligar com alguém; depois de 2 tentativas o jogo
+  avisa "Sem voz com Fulano" e para de tentar. Medir isso é o próximo passo
+  antes de decidir por um TURN (que custa, porque repassa o áudio).
+- **Segurar para falar.** O microfone abre ao ligar a voz (botão Voz, acima
+  da Mochila, ou "Ligar voz" no Guia de caça), mas a trilha fica com
+  `enabled=false`; só manda som com `#bVoz` apertado ou V segurado. O botão
+  mostra quem fala, pelo `audioLevel` do que chega (5 vezes por segundo).
+- Os prazos da voz (`SUMIU`, `DESISTE`) são do relógio, não do passo do
+  jogo. Sair ou fechar a sala desliga a voz e solta o microfone.
+- No teste (caso `voz-na-sala`), o Chromium tem microfone falso
+  (`--use-fake-device-for-media-stream`), o `STUN` vira `[]` e o outro lado
+  é um `RTCPeerConnection` de verdade no mesmo navegador, com um tom do
+  WebAudio no lugar do microfone: o falso do Chromium só alimenta uma
+  captura por vez.
 
 ## Convenções de código
 
