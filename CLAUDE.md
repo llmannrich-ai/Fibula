@@ -130,7 +130,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
   `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`; da cidade,
   `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de `city.mapa` é) e `ABRE`
-  (o que um NPC pode abrir). As tabelas
+  (o que um NPC pode abrir); da forja do Gordon, `FORJA` (`compra`, `missoes`,
+  `loja`). As tabelas
   são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
   valor, edite o JSON
 - `progresso.js` — **personagem e progressão**: o `save` em memória
@@ -138,7 +139,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
   `passoDaVel()` (a fórmula do passo do Tibia) e `durPasso()` (o passo do
-  personagem pelo nível)
+  personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
+  `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
@@ -214,7 +216,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
-  **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
+  **forja** (`showForja()`, o Gordon: encomenda, loja e depósito de
+  materiais), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
   cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
   cidade voltam para ela (`volta()`)
@@ -313,9 +316,10 @@ começo do passo**. Regras:
 
 - **Velocidade do Tibia** (`progression.walk`): jogador `220 + 2·(nível−1)`,
   vezes o buff `velo`; monstro, o `spd` dele na mesma unidade, vezes a
-  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`
-  (nível 1 = 550 ms, 1,8 sqm/s; nível 100 = 350 ms; `spd` 150 = 800 ms),
-  arredondado para múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
+  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`,
+  com o chão `ground` 130 (o do Tibia é 150; ~15% mais rápido, pedido do
+  Leonardo): nível 1 = 500 ms, 2 sqm/s; nível 100 = 300 ms; `spd` 150 =
+  700 ms; arredondado para cima em múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
   não corta quina (`passoPara()` escorrega pelo eixo livre).
 - **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
   passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
@@ -337,9 +341,10 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
-O que é da conta (cofre de ouro, peças guardadas em `itens`, melhorias,
-estatísticas) fica na raiz; o que é do personagem (inclusive o equipamento
+`{cofre,itens:{<item>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+O que é da conta (cofre de ouro, peças guardadas em `itens`, materiais do
+Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
+fica na raiz; o que é do personagem (inclusive o equipamento
 vestido) fica em `chars`, um por classe. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
 em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save
@@ -384,6 +389,17 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   `save_gravar` recusa save com `mkt` menor (`'mercado'`) e o cliente relê a
   nuvem. Esquema em
   [tools/supabase/003_mercado.sql](tools/supabase/003_mercado.sql).
+- **Origem do que se negocia** — `public.mercado_lastro` é um segundo saldo
+  (ouro e peças) que só o banco mexe: extração de caçada registrada
+  (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
+  negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
+  tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
+  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
+  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
+  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql). O cliente
+  guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
@@ -393,10 +409,11 @@ O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
 `conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`, e as
 quatro da Feira (`mercado_livro`, `mercado_anunciar`, `mercado_cancelar`,
-`mercado_coletar`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
+`mercado_coletar`) e as três da origem (`caca_comecar`, `caca_fim`,
+`lastro_banco`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
 conferem senha ou token por dentro. As tabelas têm RLS ligada e nenhuma
 política, de propósito. Por isso os avisos de segurança do Supabase listam
-essas nove funções como "executáveis
+essas funções como "executáveis
 por anon" e as tabelas como "RLS sem política": é o desenho, não um furo. Se
 um aviso **novo** aparecer, aí sim investigue.
 

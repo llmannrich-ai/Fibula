@@ -141,13 +141,28 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
-- **2026-10-19 — A masmorra da sala sem tempo, com porta (0.15.0)** *(pedido
+- **2026-10-19 — A masmorra da sala sem tempo, com porta (0.19.0)** *(pedido
   do Leonardo; pilar 2)*. A masmorra nasce com a sala e fica aberta até o
   anfitrião fechar (na cidade) ou sair do jogo. Cada membro entra e sai por
   uma porta na sala de entrada quando quiser, e volta; os monstros renascem
   (`progression.respawn`). Casos `sala-anfitriao` e `sala-convidado`
   reescritos, regras da masmorra aberta no Node, quatro sabotagens barradas,
   e duas rodadas com dois navegadores no Realtime de verdade.
+- **2026-10-19 — Gordon e a Forja (0.18.0)** *(pedido do Leonardo)*. NPC
+  novo na cidade (`city.npcs.gordon`, letra `F`, casa no canto sudoeste):
+  compra materiais barato, quatro encomendas em ordem, loja liberada por
+  encomenda; quatro peças novas no `content.json` e no atlas. Pilar 5: os
+  materiais nascem com dois ralos (encomenda e venda barata) e as peças são
+  ralo novo de ouro. Caso `forja` (19 asserções) e a forja na simulação do
+  Node.
+
+- **2026-10-19 — Origem na Feira e venda do saco (0.15.0)** *(decisão do
+  Leonardo: anunciar só o que se tem no cofre ou no saco, com o banco
+  conferindo a origem)*. Saldo de origem no banco (`mercado_lastro`),
+  caçadas registradas, venda ao Banco avisada, anistia de quem já tinha conta;
+  venda do saco pela Mochila com limites de plausibilidade. Casos `feira`
+  (31 asserções) e `feira-saco` (14) no harness; `004_origem.sql`.
+
 - **2026-10-19 — Caçar junto (0.14.0)** *(opção C do plano do multiplayer,
   a pedido do Leonardo; pilar 2)*. No Guia de caça, qualquer um cria uma sala
   e quem está na cidade a vê e entra (até 4); a sala fica aberta até o

@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.15.0';
-import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.15.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.15.0';
-import {G,solid} from './sim/incursao.js?v=0.15.0';
-import {C} from './sim/cidade.js?v=0.15.0';
-import {bf} from './sim/combate.js?v=0.15.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.15.0';
-import {$,app,RM} from './dom.js?v=0.15.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.19.0';
+import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.19.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.19.0';
+import {G,solid} from './sim/incursao.js?v=0.19.0';
+import {C} from './sim/cidade.js?v=0.19.0';
+import {bf} from './sim/combate.js?v=0.19.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.19.0';
+import {$,app,RM} from './dom.js?v=0.19.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -438,7 +438,7 @@ function cena(){
    ordem de desenho da masmorra (chão, depois linha a linha as paredes, as
    árvores e quem está na linha). Sem a arte, cores chapadas. */
 const CHAO_C=['grama','','rua','assoalho','grama','agua','rua'],COR_C=['#3e6b2b','#5a5650','#6d675d','#6b4a2a','#3e6b2b','#2b5f93','#6d675d'];
-const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c'};
+const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c',gordon:'#3a3632'};
 function drawNpc(n,p){
   /* o NPC vira para quem chega perto, como no Tibia */
   const perto=hyp(p.x-n.x,p.y-n.y)<T*3,face=perto?Math.atan2(p.y-n.y,p.x-n.x):Math.PI/2;
@@ -481,6 +481,7 @@ export function renderCidade(){
       else if(k===6){if(A&&spr('portal',0,0,mx,my))continue;
         ctx.strokeStyle='#ffd68a';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(mx,my,13,9,0,0,TAU);ctx.stroke()}
     }
+    for(const c of C.chao)if(c.y===y&&(!A||!spr('it_'+c.k,0,0,(c.x+.5)*T,(c.y+.5)*T))){ctx.fillStyle='#d9c7a0';ctx.fillRect(c.x*T+11,c.y*T+11,10,10)}
     for(const n of C.npcs)if((n.y/T|0)===y)drawNpc(n,p);
     linhaC=y;C.outros.forEach(outroNaLinha);
     if((p.y/T|0)===y)drawPlayer(p,false,false,ch().equip);
