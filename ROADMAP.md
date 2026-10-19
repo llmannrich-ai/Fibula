@@ -50,9 +50,32 @@ sensível.
 **Pronto quando:** a tabela "nível × horas" atual e a proposta estão no diário,
 e a issue existe.
 
-### 3. Morte da opção B
+### 3. Só o servidor da sala manda na sala
 
-**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 (o ritmo) e da pendência P9 (**sensível**: os
+**Pilar 4** (a perda nunca vem de fora da regra). **Sensível:** mexe em
+autenticação. Hoje o canal de cada lugar tem nome previsível
+(`sala-<x.y>-<mapa>-<cópia>`) e a chave publicável está no site: qualquer um
+com conhecimento técnico entra no canal e manda `fim` (morte ou loot falso),
+`passa`, `membros` ou `heranca` forjados a quem está caçando, sem estar na
+caçada. O jogo não confere quem mandou. Caminho escolhido pelo Leonardo em
+19/10/2026: usar a **autorização do Realtime do Supabase** (canal privado,
+com a identidade de quem envia verificada pelo próprio Supabase), para que
+só o servidor atual da sala possa mandar resultado, morte, troca de servidor
+e herança, e só quem tem conta entre no canal. O login de hoje não é o
+Supabase Auth: a primeira parte do item é escolher como emitir a identidade
+(por exemplo, um token do Realtime emitido pela função de login) e registrar
+a escolha numa issue `decisao-do-dono` antes de mexer no banco. Junto, uma
+conferência de plausibilidade no `aplicaFim()` (o que a caçada pode render
+no tempo que durou). Não fecha a trapaça de quem roda o servidor: isso é a F2.
+
+**Pronto quando:** no harness, mensagem de sala vinda de quem não é o
+servidor atual é ignorada (`fim`, `passa`, `membros`, `heranca`), resultado
+implausível é recusado, e o canal da sala recusa quem não tem conta; o
+esquema novo está em `tools/supabase/NNN_*.sql`, aplicado.
+
+### 4. Morte da opção B
+
+**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 (o ritmo), do item 3 (só o servidor manda na sala) e da pendência P9 (**sensível**: os
 números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
@@ -62,7 +85,7 @@ entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 4. PWA instalável
+### 5. PWA instalável
 
 **Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
@@ -71,7 +94,7 @@ sem rede com o último conteúdo baixado. Sem biblioteca.
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 5. Escada de lugares de caça
+### 6. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -81,7 +104,7 @@ ele, todos no `content.json`.
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
-### 6. Pincéis do Fibula no editor
+### 7. Pincéis do Fibula no editor
 
 **Pilar 2.** O OTSP traz para o Remere's Map Editor só um pincel (grama com
 borda); o resto se pinta item por item. `node tools/otbm.mjs rme` passa a
@@ -97,7 +120,7 @@ jogo como item da pilha, sem código novo no jogo
 harness confere que todo id citado existe no `items.otb`, e o
 [docs/rme.md](docs/rme.md) diz como usar.
 
-### 7. Redesenhar os lugares no editor
+### 8. Redesenhar os lugares no editor
 
 **Pilar 2.** Os quatro mapas de hoje são rascunhos do gerador antigo. Cada
 um é redesenhado no Remere's Map Editor com intenção do Tibia: o Esgoto com
