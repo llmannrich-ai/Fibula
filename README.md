@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.27.0 (19/10/2026) | O mundo é igual para todos: os monstros e os chefes têm a mesma força para qualquer nível e qualquer tamanho de grupo. A dificuldade vem do lugar que você escolhe; cada lugar mostra o nível recomendado |
 | 0.26.0 (19/10/2026) | Vestir e tirar pela Mochila, sem ir ao Banco: toque numa peça e no botão. Na cidade, a troca é com o cofre do Banco; na caçada, como no Tibia, com o saco: a peça que você acabou de pegar vale na hora e passa a não cair na morte, e a que sai do corpo vai para o saco e corre o risco dele |
 | 0.25.0 (19/10/2026) | Toda caçada é numa sala: no Guia de caça, o lugar abre uma sala sua e já entra pela porta, e quem estiver na cidade pode entrar junto. A sala abre mesmo sem conexão. Corrige o "Entrar pela porta" que não respondia quando o canal da sala não tinha ligado, e o botão desabilitado agora parece desabilitado |
 | 0.24.0 (19/10/2026) | A entrada do Esgoto deixou de ser um vigia: agora é uma grade de ferro no chão da rua, perto do mercado. Pise nela (ou chegue perto) e toque em Descer; quem volta do Esgoto sai em cima dela |
@@ -127,9 +128,11 @@ biblioteca, servidos crus pelo GitHub Pages. A regra do jogo fica em `src/sim/`,
 sem nada de navegador, para poder rodar também num servidor. O conteúdo fica
 fora do código, num arquivo de dados.
 
-A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
-convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os
-não-objetivos), [ROADMAP.md](ROADMAP.md) e [DIARIO.md](DIARIO.md).
+Toda a documentação de quem desenvolve está num arquivo só,
+[CLAUDE.md](CLAUDE.md): os princípios do jogo, o produto, o código, os testes,
+os agentes e as decisões do dono. A fila de trabalho é o
+[ROADMAP.md](ROADMAP.md), e o registro de cada execução, o
+[DIARIO.md](DIARIO.md).
 
 O conteúdo do jogo não fica no motor. Classes, habilidades, melhorias do
 Mercador, inimigos, itens, loot e progressão moram em

@@ -46,7 +46,10 @@ export function validaConteudo(c){
   for(const[k,e]of Object.entries(c.enemies))if(!(e.spd>0))throw new Error(`inimigo ${k} precisa de spd (velocidade do Tibia) positivo`);
   if(!p.respawn||!(p.respawn.seconds>0)||!(p.respawn.clearTiles>=0))throw new Error('progression.respawn precisa de seconds positivo e clearTiles');
   const pt=p.party;
-  if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
+  if(!pt||!['lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de lootProtection e shareTiles numéricos e não negativos');
+  /* o mundo é igual para todos (pilar 1 do CLAUDE.md): nada escala com o nível ou o grupo de quem entra */
+  for(const k of ['hpPerCharLevel','bossLevelFactor'])if(k in p.scaling)throw new Error(`progression.scaling.${k}: monstro não escala com o nível do jogador`);
+  for(const k of ['monsters','bossHp'])if(k in pt)throw new Error(`progression.party.${k}: o mundo não muda com o tamanho do grupo`);
   for(const b of p.bands){
     if(typeof b.untilDepth!=='number')throw new Error('banda sem untilDepth numérico');
     const soma=Object.values(b.weights||{}).reduce((a,v)=>a+v,0);

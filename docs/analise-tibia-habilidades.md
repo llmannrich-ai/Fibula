@@ -1,5 +1,9 @@
 # O que os dados do Tibia ensinam sobre classes e habilidades
 
+> **Referência, não instrução.** O guia único é o [CLAUDE.md](../CLAUDE.md);
+> quando este documento discordar dele, vale o guia. Use-o para saber como o
+> Tibia fazia a conta antes de mexer numa curva.
+
 Análise dos dados do Tibia disponíveis na máquina e como eles viraram o sistema de
 classes, habilidades e evolução da Masmorra de Runas.
 
