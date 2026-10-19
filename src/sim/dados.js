@@ -48,7 +48,10 @@ export function validaConteudo(c){
   if(!p.mochila||!(Number.isInteger(p.mochila.espacos)&&p.mochila.espacos>0))throw new Error('progression.mochila precisa de espacos inteiro positivo');
   if(!p.comida||!(p.comida.max>0))throw new Error('progression.comida precisa de max (segundos de alimentação) positivo');
   const pt=p.party;
-  if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
+  if(!pt||!['lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de lootProtection e shareTiles numéricos e não negativos');
+  /* o mundo é igual para todos (pilar 1 do CLAUDE.md): nada escala com o nível ou o grupo de quem entra */
+  for(const k of ['hpPerCharLevel','bossLevelFactor'])if(k in p.scaling)throw new Error(`progression.scaling.${k}: monstro não escala com o nível do jogador`);
+  for(const k of ['monsters','bossHp'])if(k in pt)throw new Error(`progression.party.${k}: o mundo não muda com o tamanho do grupo`);
   for(const b of p.bands){
     if(typeof b.untilDepth!=='number')throw new Error('banda sem untilDepth numérico');
     const soma=Object.values(b.weights||{}).reduce((a,v)=>a+v,0);

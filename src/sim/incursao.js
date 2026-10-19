@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.28.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,SUP,cacaDe} from './dados.js?v=0.28.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,devolveComida,soMochila,valMochila} from './progresso.js?v=0.28.0';
-import {genMap,pecas} from './mapa.js?v=0.28.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.28.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.29.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,SUP,cacaDe} from './dados.js?v=0.29.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,devolveComida,soMochila,valMochila} from './progresso.js?v=0.29.0';
+import {genMap,pecas} from './mapa.js?v=0.29.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.29.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -20,8 +20,9 @@ function spawn(k,r,d,boss){
   const n0=G.mons.length;spawn0(k,r,d,boss);if(G.mons.length>n0)G.mons[n0].sala=r.i;
 }
 function spawn0(k,r,d,boss){
-  const t=MT[k],sc=PROG.scaling,lv=sc.hpPerCharLevel*(G.lvl-1),
-    hpm=boss?(1+lv*sc.bossLevelFactor)*(1+PROG.party.bossHp*(G.ps.length-1)):1+sc.hpPerDepth*d+lv;
+  /* o mundo é igual para todos: a vida vem do lugar (a profundidade), nunca
+     do nível nem do tamanho do grupo de quem entra */
+  const t=MT[k],sc=PROG.scaling,hpm=boss?1:1+sc.hpPerDepth*d;
   /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce. O
      chefe nasce sempre: com o sqm dele ocupado, vai para o livre mais perto
      do centro da sala (sem sorteio, para não mudar a masmorra de ninguém) */
@@ -76,15 +77,14 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false,caca)
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
   G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
-     lvl:Math.max(...fichas.map(f=>f.c.lvl)),nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
+     nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
      t:0,kills:0,caca,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
-  const mais=1+PROG.party.monsters*(ps.length-1);
   rooms.forEach((r,i)=>{r.i=i});
   for(const r of rooms){
     if(r===s)continue;
     const pr2=PROG.perRoom,d=r.d/md,base=ri(pr2.min,pr2.max)+(r.w*r.h>pr2.largeRoomArea?pr2.largeRoomBonus:0),
-      n=Math.round(base*mais);
+      n=base;
     r.base=base;r.prof=d;r.esp=0;
     for(let k=0;k<n;k++)spawn(pickType(d),r,d,false);
   }
@@ -358,11 +358,11 @@ export function entra(i,f){
 function repovoa(dt){
   G.respT+=dt;if(G.respT<1)return;
   const pas=G.respT;G.respT=0;
-  const R=PROG.respawn,dentro=G.ps.filter(p=>!p.fora),mais=1+PROG.party.monsters*Math.max(0,dentro.length-1),perto=R.clearTiles*T;
+  const R=PROG.respawn,dentro=G.ps.filter(p=>!p.fora),perto=R.clearTiles*T;
   for(const r of G.rooms){
     if(r.base===undefined&&!r.chefe)continue;
     /* a sala do chefe tem os monstros dela mais o chefe e a escolta */
-    const vivos=G.mons.filter(m=>m.sala===r.i),alvo=Math.round((r.base||0)*mais)+(r.chefe?2:0);
+    const vivos=G.mons.filter(m=>m.sala===r.i),alvo=(r.base||0)+(r.chefe?2:0);
     if(vivos.length>=alvo){r.esp=0;continue}
     r.esp=(r.esp||0)+pas;
     if(r.esp<R.seconds||dentro.some(p=>hyp(p.x-(r.cx+.5)*T,p.y-(r.cy+.5)*T)<perto))continue;

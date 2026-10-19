@@ -1,134 +1,135 @@
 # Roadmap do Fibula
 
-Fila única de trabalho dos agentes e das sessões manuais (decisão de
-18/10/2026). As decisões do dono ficam na seção 15 do [PRD](docs/PRD.md). `Agora` tem **um** item por vez.
-Ao concluir, mova para `Concluído` com a data e o commit, e promova o primeiro
-de `Próximo`.
-
-Todo item aqui precisa ter passado pelas quatro perguntas de
-[VISAO.md](VISAO.md), e cada um declara o pilar que serve. Item sem pilar não
-entra na lista. Cada item também diz **quando está pronto** — sem isso o agente
-não tem como saber que terminou.
+Fila única de trabalho dos agentes e das sessões manuais. As regras da fila
+(pilar, "Pronto quando:", um item em `Agora`) estão no [CLAUDE.md](CLAUDE.md),
+Parte 4; as decisões do dono, na Parte 6. Ao concluir, mova o item para
+`Concluído` com a data e o commit, e promova o primeiro de `Próximo`.
 
 ---
 
 ## Agora
 
-### Sair cedo precisa ser uma jogada válida
+### Mapas de caça fixos
 
-**Pilar 4.** Hoje o portal abre em 1:30 e nunca mais fecha, então a estratégia
-ótima é sempre ficar até o fim: o arco da decisão não existe. Candidatos a
-testar: o portal custar uma fatia do saco se usado cedo, ou o valor do loot
-crescer com o tempo de permanência, ou o portal ter uma janela que fecha e
-reabre. Precisa de teste de jogo, não só de implementação.
+**Pilar 2.** Hoje cada sala sorteia uma semente nova (`novaSemente()` em
+`src/sala.js`), então o Esgoto muda a cada caçada e conhecer o mapa não vale
+nada. Cada lugar de `hunts` ganha uma semente fixa no `content.json`
+(`semente`), validada no carregamento, e a sala usa essa semente. O que ainda
+for sorteado por caçada (dano, loot, movimento) continua sorteado.
 
-Com a morte custando XP (0.6.0), ficar até o fim já ficou mais caro para quem
-morre; meça de novo antes de escolher, porque parte do problema pode ter
-mudado.
-
-**Pronto quando:** existe uma situação clara em que sair aos 2:00 é melhor que
-sair aos 5:30, e o diário registra qual das três opções foi escolhida e por quê.
-
-**Fase:** jogo, em paralelo à F0.
+**Pronto quando:** duas salas do mesmo lugar, criadas em momentos diferentes,
+têm o mesmo mapa e os mesmos monstros nos mesmos sqm (caso no
+`tools/testar.mjs`), e lugares diferentes continuam com mapas diferentes.
 
 ---
 
 ## Próximo
 
-Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
-("razoável"): primeiro o que faz a **decisão de extrair** existir (morte que
-custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
-da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
+Ordem decidida em 19/10/2026 com os pilares novos: primeiro o que faz o mundo
+ser fixo e a morte ser justa, depois o que a endurece, depois o resto da F0.
 
-### 1. Tela de créditos no jogo
+### 1. Queda de conexão não mata
 
-**Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
-`assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
-conteúdo. Botão discreto no acampamento abrindo uma tela com origem, licença e
-autores.
+**Pilar 4.** Pré-requisito da morte da opção B. Hoje o convidado que fica 12 s
+sem notícia volta à cidade sem resultado. Regra: jogador sem entrada por
+queda de rede ou aba no fundo fica parado e invulnerável por 20 s; depois sai
+com a mochila se não estava em combate (dano recebido ou causado nos últimos
+5 s). Vale para o convidado (no aparelho do anfitrião) e para quem caça
+sozinho.
 
-**Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
-licença e link para os autores, e há caso no `tools/testar.mjs`.
+**Pronto quando:** caso no harness em que o convidado some no meio da caçada
+e volta à cidade com a mochila, e outro em que some em combate e fica protegido
+os 20 s.
 
-### 2. PWA instalável
+### 2. Saída segura perto
 
-**Pilar 3.** Manifesto e service worker para instalar na tela inicial e abrir
-offline, com o último conteúdo baixado. As fontes já são do sistema, então não
-há folha externa para embutir. Sem biblioteca.
+**Pilar 5.** Depende do item "Mapas de caça fixos" e da pendência P8 (padrão:
+60 s). Medir, em cada lugar fixo, o tempo de caminhada no nível recomendado do
+sqm mais longe até a porta; onde passar do limite, pôr uma segunda saída (escada
+ou porta) numa sala funda.
 
-**Fase:** F0 (6). **Pronto quando:** o Chrome do Android oferece "Instalar",
-o jogo abre sem rede depois da primeira visita, e um caso no harness confere
-que o manifesto e o service worker carregam.
+**Pronto quando:** o tempo máximo até uma saída, por lugar, está no diário e
+nenhum passa do limite; caso no harness confere que a segunda saída extrai.
 
-### 3. Revisar a economia do Selo de resguardo
+### 3. Medir o ritmo até o nível 20 em horas
 
-**Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
-reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
-para proteger. Fica mais urgente depois que a morte passar a custar XP, porque
-as duas coisas somadas mudam a conta toda.
+**Pilar 3.** Alvo do Leonardo: nível 20 em ~3 h de caçada efetiva. Script em
+`tools/balanceamento/` que simula caçadas no lugar recomendado para cada nível
+e mede as horas até cada nível com a curva atual (`520 · L^0,9`). Propor a
+curva nova no diário e numa issue `feedback`; acelerar a progressão é
+sensível.
 
-**Pronto quando:** custo ou percentual ajustado, com a justificativa escrita no
-diário.
+**Pronto quando:** a tabela "nível × horas" atual e a proposta estão no diário,
+e a issue existe.
 
-**Fase:** jogo, em paralelo à F0.
+### 4. Morte da opção B
+
+**Pilar 4.** Depende dos itens 1 e 3 e da pendência P9 (**sensível**: os
+números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
+derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
+com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
+entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
+(equipamento perdido, nível que desce): migração testada.
+
+**Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
+perdida e o seguro, e a tela de entrada mostra a perda possível.
+
+### 5. Tela de créditos no jogo
+
+**Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição; hoje ela está só em
+`assets/CREDITOS.md` e no README. Botão discreto abrindo uma tela com origem,
+licença e autores.
+
+**Fase:** F0. **Pronto quando:** a tela existe, lista o OTSP com licença e link
+para os autores, e há caso no `tools/testar.mjs`.
+
+### 6. PWA instalável
+
+**Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
+sem rede com o último conteúdo baixado. Sem biblioteca.
+
+**Fase:** F0. **Pronto quando:** o Chrome do Android oferece "Instalar", o jogo
+abre sem rede depois da primeira visita, e um caso no harness confere que o
+manifesto e o service worker carregam.
+
+### 7. Escada de lugares de caça
+
+**Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
+lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
+item, com nome, nível recomendado, monstros, chefe, mapa fixo e quem leva até
+ele, todos no `content.json`.
+
+**Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
+recomendado acima de 15, e o caso da cidade entra nele.
 
 ---
 
 ## Depois
 
-### Jogo, aguardando vaga (reordenar quando a F0 fechar)
-
-### Escolha de risco na entrada: três profundidades
-
-**Pilares 2 e 4.** Antes de entrar, o jogador escolhe entre três profundidades,
-cada uma com multiplicador de dano dos monstros e de valor do loot. O mundo
-deixa de se ajustar ao jogador: a profundidade funda é entrável no nível 1 e é
-burrice entrar. É a forma mais barata de criar a sensação de mundo indiferente,
-e transforma cada incursão numa decisão antes mesmo de começar.
-
-**Pronto quando:** as três opções aparecem no menu, afetam `spawn()` e a tabela
-de loot, e a escolha some do caminho de quem só quer jogar (uma fica como
-padrão).
-
-### Monstro novo para variar a sala do Guardião
-
-**Pilar 2.** Hoje só orc e xamã acompanham o chefe, então a sala final é sempre
-igual. Um acompanhante raro com loot próprio dá à sala do Guardião a chance de
-surpreender.
-
-**Pronto quando:** um monstro novo aparece ocasionalmente nessa sala, com
-entrada própria em `MT` e em `LOOT`.
-
-### Revisar a escala de HP dos monstros em níveis altos
-
-**Pilar 4.** Monstros escalam com `save.lvl`, o que pode tornar a incursão lenta
-e repetitiva para jogador avançado — e incursão lenta briga direto com o teto de
-dez minutos.
-
-**Pronto quando:** a curva foi revisada contra dois ou três níveis de referência
-e o resultado está no diário.
-
-### Log legível em tela estreita
-
-**Pilar 3.** O `#log` usa `width:min(66vw,330px)` sobre o canvas; o
-empilhamento abaixo de 340px de largura nunca foi verificado.
-
-**Pronto quando:** testado num viewport de 320px e ajustado se preciso.
-
-### Outros
-
-- **Rastro assíncrono de outros jogadores** — placar local, marca de morte no
-  mapa onde a última incursão terminou, recorde a ser batido. Sensação de MMO
-  sem rede (pilar 2).
-- **Som** — efeitos curtos de golpe, de dano e de extração, mais um fundo sóbrio.
-  Nada que precise de arquivo externo grande; de preferência síntese via
-  WebAudio, sem biblioteca.
-- **Mercado com preço móvel** — o valor dos itens oscila entre incursões, dando
-  motivo para guardar loot em vez de vender na hora (pilar 5).
+- **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
+  raro com loot próprio; entrada em `MT` e em `LOOT`.
+- **Log legível em tela estreita** (pilar 5) — o `#log` usa
+  `width:min(66vw,330px)`; abaixo de 340 px de largura nunca foi verificado.
+- **Rastro dos outros** (pilar 2) — placar, marca de morte no lugar, recorde a
+  ser batido.
+- **Som** (pilar 5: jogável sem som, melhor com) — efeitos curtos por WebAudio,
+  sem arquivo grande nem biblioteca.
+- **Telemetria mínima** (F1) — os eventos da Parte 2; dado pessoal é sensível.
 
 ---
 
 ## Concluído
+
+- **2026-10-19 — Um guia só e o mundo igual para todos (0.28.0)**
+  *(decisão do Leonardo: "a realidade como ela é"; pilar 1)*. O `VISAO.md`, o
+  `docs/PRD.md` e `docs/agentes/` viraram as Partes 1, 2, 5 e 6 do
+  `CLAUDE.md`, com o princípio-mãe e os seis pilares novos. Os monstros
+  deixaram de escalar com o nível (`hpPerCharLevel`, `bossLevelFactor`) e com
+  o grupo (`party.monsters`, `party.bossHp`, respawn); o carregamento recusa
+  esses campos e a simulação no Node confere o mesmo mundo para 1 ou 4
+  jogadores, de nível 1 ou 30. Saíram da fila "Sair cedo" (não há mais
+  relógio), "Revisar a escala de HP" e "Selo de resguardo" (vira o seguro da
+  morte B).
 
 - **2026-10-19 — Mochila e cofre, como no Tibia (0.27.0)** *(pedido do
   Leonardo: "apenas com a mochila e o cofre"; pilar 1)*. O saco saiu. A

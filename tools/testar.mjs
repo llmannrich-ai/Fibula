@@ -684,7 +684,8 @@ async function testaSimulacao() {
      - a ficha do save sozinha dá a mesma incursão de newRun() sem fichas;
      - 1, 2 e 4 jogadores com entradas roteirizadas são deterministas (mesma
        semente, mesmas entradas, mesmo resultado, a 20 e a 60 quadros);
-     - o grupo põe mais monstros e mais vida no Guardião (progression.party);
+     - o mundo é igual para todos: o nível e o tamanho do grupo de quem entra
+       não mudam quantos monstros nascem nem a vida deles (pilar 1);
      - o loot é único: só um jogador leva o drop, e quem causou mais dano tem
        a vez durante lootProtection;
      - a extração é de cada um, e só a ficha local mexe no cofre. */
@@ -724,9 +725,11 @@ async function testaSimulacao() {
       if (!x.fim) falhas.push(`${n} jogadores: a incursão não acabou (${JSON.stringify(x)})`);
     }
     const PT = JSON.parse(CONTEUDO).progression.party;
-    if (!(r[2].mons0 > r[1].mons0 && r[4].mons0 > r[2].mons0)) falhas.push(`o grupo não pôs mais monstros: ${r[1].mons0}, ${r[2].mons0}, ${r[4].mons0} para 1, 2 e 4`);
-    const chefe = (n) => { I.newRun(21, fichas(n, 1)); return I.G.mons.find((m) => m.t.boss).mhp; };
-    if (Math.abs(chefe(2) / chefe(1) - (1 + PT.bossHp)) > 0.02) falhas.push(`a vida do Guardião com 2 do mesmo nível não é ×${1 + PT.bossHp} (${chefe(1)} → ${chefe(2)})`);
+    /* o mesmo mundo para 1 ou 4 jogadores, de nível 1 ou 30: mesmos monstros, mesma vida */
+    const mundo = (n, lvl) => { const f = fichas(n, lvl); for (const x of f) x.c.lvl = lvl; I.newRun(21, f); return I.G.mons.map((m) => `${m.k}:${m.tx},${m.ty}:${m.mhp}`).join(' '); };
+    const m11 = mundo(1, 1);
+    for (const [n, lvl] of [[1, 30], [2, 1], [4, 30]]) if (mundo(n, lvl) !== m11) falhas.push(`o mundo mudou com ${n} jogador(es) de nível ${lvl}: monstros ou vida diferentes do solo de nível 1`);
+    if (!(r[1].mons0 === r[2].mons0 && r[2].mons0 === r[4].mons0)) falhas.push(`o grupo mudou quantos monstros nascem: ${r[1].mons0}, ${r[2].mons0}, ${r[4].mons0} para 1, 2 e 4`);
     if (!r[4].ps.split(' ').some((p) => +p.split(':')[1] > 0 && p !== r[4].ps.split(' ')[0])) falhas.push(`com 4 jogadores, só o primeiro abateu monstros: ${r[4].ps}`);
     /* loot único e a vez de quem causou mais dano */
     const f2 = fichas(2); I.newRun(22, f2); I.G.active = true; I.G.mons.length = 0;

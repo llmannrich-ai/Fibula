@@ -1491,12 +1491,10 @@
       }
     ],
     "scaling": {
-      "_note": "Crescimento comprimido de proposito: a fonte cresce ~2.7x de HP e ~3x de dps entre tiers vizinhos, o que nao cabe numa incursao curta. A troca de inimigo carrega o resto do salto.",
+      "_note": "Crescimento comprimido de proposito: a fonte cresce ~2.7x de HP e ~3x de dps entre tiers vizinhos, o que nao cabe numa incursao curta. A troca de inimigo carrega o resto do salto. O mundo e igual para todos (decisao do Leonardo, 19/10/2026): a forca do monstro vem so do lugar e da profundidade, nunca do nivel nem do grupo de quem entra; o carregamento recusa hpPerCharLevel e bossLevelFactor.",
       "hpPerDepth": 0.35,
       "dmgPerDepth": 0.25,
-      "xpPerDepth": 0.4,
-      "hpPerCharLevel": 0.05,
-      "bossLevelFactor": 1.5
+      "xpPerDepth": 0.4
     },
     "boss": {
       "type": "guardiao",
@@ -1528,14 +1526,12 @@
       "largeRoomBonus": 1
     },
     "party": {
-      "_note": "Regras de grupo (decisao do Leonardo, 19/10/2026; plano do multiplayer, secao 3). Com n jogadores, cada sala tem os monstros de uma sala solo vezes (1 + monsters*(n-1)) e o Guardiao tem a vida vezes (1 + bossHp*(n-1)). O loot e unico: cada monstro deixa um drop so, e nos primeiros lootProtection segundos so quem causou mais dano pode pega-lo; depois, qualquer um. XP cheia para quem causou dano ou estava a ate shareTiles tiles. Solo (n=1) nao muda nada.",
-      "monsters": 0.6,
-      "bossHp": 0.8,
+      "_note": "Regras de grupo (decisao do Leonardo, 19/10/2026; plano do multiplayer, secao 3). O grupo nao muda o mundo (decisao do Leonardo, 19/10/2026): os monstros e o Guardiao sao os mesmos com 1 ou 4 jogadores, e o carregamento recusa monsters e bossHp. O loot e unico: cada monstro deixa um drop so, e nos primeiros lootProtection segundos so quem causou mais dano pode pega-lo; depois, qualquer um. XP cheia para quem causou dano ou estava a ate shareTiles tiles. Solo (n=1) nao muda nada.",
       "lootProtection": 10,
       "shareTiles": 9
     },
     "respawn": {
-      "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala cresce com quem esta dentro, pelas regras de party.",
+      "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala e o mesmo com qualquer numero de jogadores.",
       "seconds": 60,
       "clearTiles": 10
     },

@@ -93,6 +93,8 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.29.0 (19/10/2026) | Alimentação como no Tibia: sem comer, o personagem não regenera vida nem mana. Cada comida dá um tempo de alimentação (de 1 min 30 s da cesta de frutas a 9 min do ensopado), comida pelo botão Comer na caçada, até 20 min acumulados; a regeneração é a da classe, fixa. A comida empilha na loja (até 10 de cada), vai na mochila e o que sobrar volta se você sair pela porta; morrendo, fica na masmorra |
+| 0.28.0 (19/10/2026) | O mundo é igual para todos: os monstros e os chefes têm a mesma força para qualquer nível e qualquer tamanho de grupo. A dificuldade vem do lugar que você escolhe; cada lugar mostra o nível recomendado |
 | 0.27.0 (19/10/2026) | Inventário como no Tibia: o saco saiu e ficaram a mochila e o cofre. O loot fica na mochila do personagem depois da caçada, vai junto na próxima e cai inteiro se ele morrer. Só o cofre do Banco é seguro: o Banqueiro guarda uma coisa ou tudo e devolve peças e ouro à mochila. Vestir e tirar pela Mochila, na cidade, agora troca com a mochila. A mochila tem 20 espaços; cheia, o loot fica no chão |
 | 0.26.0 (19/10/2026) | Vestir e tirar pela Mochila, sem ir ao Banco: toque numa peça e no botão. Na cidade, a troca é com o cofre do Banco; na caçada, como no Tibia, com o saco: a peça que você acabou de pegar vale na hora e passa a não cair na morte, e a que sai do corpo vai para o saco e corre o risco dele |
 | 0.25.0 (19/10/2026) | Toda caçada é numa sala: no Guia de caça, o lugar abre uma sala sua e já entra pela porta, e quem estiver na cidade pode entrar junto. A sala abre mesmo sem conexão. Corrige o "Entrar pela porta" que não respondia quando o canal da sala não tinha ligado, e o botão desabilitado agora parece desabilitado |
@@ -128,9 +130,11 @@ biblioteca, servidos crus pelo GitHub Pages. A regra do jogo fica em `src/sim/`,
 sem nada de navegador, para poder rodar também num servidor. O conteúdo fica
 fora do código, num arquivo de dados.
 
-A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
-convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os
-não-objetivos), [ROADMAP.md](ROADMAP.md) e [DIARIO.md](DIARIO.md).
+Toda a documentação de quem desenvolve está num arquivo só,
+[CLAUDE.md](CLAUDE.md): os princípios do jogo, o produto, o código, os testes,
+os agentes e as decisões do dono. A fila de trabalho é o
+[ROADMAP.md](ROADMAP.md), e o registro de cada execução, o
+[DIARIO.md](DIARIO.md).
 
 O conteúdo do jogo não fica no motor. Classes, habilidades, melhorias do
 Mercador, inimigos, itens, loot e progressão moram em
