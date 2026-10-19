@@ -441,7 +441,7 @@ multiplayer.
 | Agentes param esperando o dono | Alto | Toda pendência tem padrão e prazo (Parte 6); o agente segue para outro item |
 | Trapaça e economia quebrada | Alto | Origem das peças no banco hoje; servidor autoritativo na F2 |
 | Semelhança visual com o Tibia | Médio | Só OTSP e licenças explícitas; nomes e mapas próprios; créditos no jogo |
-| Custo de servidor | Médio | Teto definido pelo Leonardo (D2); teste de carga antes de abrir |
+| Custo de servidor | Médio | Teto do Leonardo: R$ 100/mês na F2, R$ 600/mês no lançamento; teste de carga antes de abrir |
 
 ### O que o Leonardo configura uma vez
 
@@ -1777,6 +1777,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 | 19/10 | **Monetização com impacto no jogo**, não só estética, inspirada no Tibia; substitui o não-objetivo "Compra que vira poder" por "Pagar para pular o mundo" (o mundo segue igual, a morte segue custando, e quem só joga alcança o que quem paga alcança). O mercado de itens com saque em dinheiro real foi analisado e deixado de lado por ora (regulação, fraude e escala) | Pilar 6; não-objetivos; Parte 2, F4; `ROADMAP.md`, Depois |
+| 19/10 | **Teto de infraestrutura (era a D2):** até R$ 100 por mês na F2 (uma máquina pequena do Fly.io, Supabase grátis) e até R$ 600 por mês no lançamento (duas máquinas, Supabase Pro, e-mail de login). Passar disso pede nova decisão | Parte 2, Riscos e C6 |
 
 ### Pendentes
 
@@ -1785,7 +1786,6 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | # | Decisão | Padrão | Até |
 |---|---|---|---|
 | D1 | PvP: o que ganha e o que arrisca quem mata (marca de assassino como a caveira do Tibia, perda maior na própria morte); se há outro lugar protegido além da cidade (a porta de um lugar de caça); e a borda da cidade: se quem está em combate pode entrar nela, e se o ataque de fora para dentro dos muros vale (**sensível**) | Nada entra sem o Leonardo; o Balanceamento propõe em issue | Antes de implementar o PvP |
-| D2 | Teto mensal de infraestrutura (**sensível**) | Nenhum gasto até o Leonardo definir | Início da F2 |
 | D3 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord, Reddit); o Leonardo convida | Fim da F0 |
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |

@@ -32,6 +32,16 @@ execução precisa saber e não vai descobrir lendo o código.
 
 **Próximo passo recomendado:** com os testadores jogando, o item "Medir o ritmo até o nível 20 em horas" passa a ler `tel_niveis` em vez de só simular.
 
+## 2026-10-19 18:00 UTC — sessão manual (nuvem): teto de infraestrutura (D2)
+
+**Item desenvolvido:** decisão do Leonardo registrada na Parte 6: até R$ 100 por mês na F2 e até R$ 600 por mês no lançamento. A D2 sai das pendentes; a linha de custo dos Riscos e o `docs/plano-multiplayer.md` acompanham. Sem código.
+
+**Validação:** `PRINCIPIOS_OK` (a Parte 1 não mudou).
+
+**Pendências e riscos:** a etapa M4 do plano (deploy no Fly.io) ainda depende do C6 (conta com teto de gasto e `FLY_API_TOKEN`) e do C7 (rede do ambiente). Os preços usados na estimativa são de memória: conferir ao contratar.
+
+**Próximo passo recomendado:** com a D2 decidida, o servidor da F2 deixa de esperar gasto; falta o Leonardo criar a conta do Fly.io (C6).
+
 ## 2026-10-19 17:30 UTC — sessão manual (nuvem): monetização com impacto no jogo
 
 **Item desenvolvido:** pedido do Leonardo. Princípios atualizados e assinados (`node tools/principios.mjs --assina`, a pedido dele): o não-objetivo "Compra que vira poder" virou "Pagar para pular o mundo" (dinheiro real pode ter impacto no jogo, como no Tibia, sem quebrar os pilares 1, 4 e 6), e a regra do pilar 6 virou "O esforço é o caminho principal" (quem só joga alcança o que quem paga alcança). Parte 2 (F4), Parte 6 (decisão e pendência D7) e `ROADMAP.md` (item "Estudar a monetização" em `Depois`) no mesmo commit. Sem código.

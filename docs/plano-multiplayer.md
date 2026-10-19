@@ -325,7 +325,7 @@ também dispensa moderação de chat por enquanto. PvP aberto é decisão do Leo
 | Cliente e servidor com versões diferentes | Médio | Checagem de versão no `entrar` (M4) |
 | Harness ganha dependência de npm | Médio | Só o `server/` tem `package.json`; casos de rede pulados com aviso se o `ws` não estiver instalado localmente, obrigatórios na CI |
 | Servidor sem dono de plantão | Médio | Máquina única, sem estado persistente próprio (o banco é o Supabase); reiniciar só perde salas em andamento |
-| Custo | Baixo agora | Uma máquina pequena do Fly.io custa poucos dólares por mês; confirmar o preço vigente antes da D2 |
+| Custo | Baixo agora | Uma máquina pequena do Fly.io custa poucos dólares por mês; teto de R$ 100 por mês na F2 (D2, decidida em 19/10/2026); confirmar o preço vigente ao contratar |
 
 ## 6. O que muda nos guias quando cada etapa entrar
 
@@ -345,7 +345,7 @@ também dispensa moderação de chat por enquanto. PvP aberto é decisão do Leo
 | D-M1 | Antecipar a F2? | **Decidida em 19/10:** antecipar só a M1 (sem rede, sem gasto). A rede (M2 em diante) segue na F2 | M2 |
 | D-M2 | Regras de grupo da seção 3 | **Decidida em 19/10:** as regras da seção 3, com o loot **único** (um drop por monstro, um jogador pega) no lugar do instanciado. Ajustar no playtest | M1 |
 | D-M3 | Solo continua local ou também passa pelo servidor? | Solo local (abre sem rede, ônibus, 3G); só co-op é autoritativo. Revisar quando houver ranking ou mercado (F3), porque aí o solo editado vira problema de todos | M3 |
-| D2 | Teto mensal de infraestrutura (já no PRD, sensível) | — | M4 |
+| D2 | Teto mensal de infraestrutura: decidido em 19/10/2026, R$ 100 na F2 e R$ 600 no lançamento | — | M4 |
 | C6/C7 | Conta Fly.io, `FLY_API_TOKEN`, liberar `api.fly.io` e `registry.npmjs.org` na rede do ambiente | — | M2 (npm) e M4 (deploy) |
 
 ## 8. Próximo passo concreto
