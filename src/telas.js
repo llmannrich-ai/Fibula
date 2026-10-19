@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.27.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.27.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.27.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.27.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.27.0';
-import {persist,saveFalhou} from './salvar.js?v=0.27.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.27.0';
-import {rede,SALAS} from './rede.js?v=0.27.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.27.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.27.0';
-import {icone} from './arte.js?v=0.27.0';
-import {$,app} from './dom.js?v=0.27.0';
-import {retrato} from './desenho.js?v=0.27.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.28.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.28.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.28.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.28.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.28.0';
+import {persist,saveFalhou} from './salvar.js?v=0.28.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.28.0';
+import {rede,SALAS} from './rede.js?v=0.28.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.28.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.28.0';
+import {icone} from './arte.js?v=0.28.0';
+import {$,app} from './dom.js?v=0.28.0';
+import {retrato} from './desenho.js?v=0.28.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -66,6 +66,7 @@ export function start(prepara,caca){
   const H=HUNTS[G.caca];
   log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com a mochila.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
   if(levou)log(`Você levou ${levou}.`,'info');
+  log(Object.keys(G.p.com).length?'Você está com fome: toque em Comer para regenerar vida e mana.':'Você não levou comida: sem comer, não se regenera vida nem mana.','warn');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
 
@@ -87,14 +88,16 @@ export function abreNpc(k){
 }
 /* ---------- lojas de provisões ----------
    Uma tela para todas: o NPC diz o que vende (vende, no content.json). A
-   provisão fica guardada e vai inteira na próxima caçada */
+   provisão fica guardada e vai inteira na próxima caçada; a comida que
+   sobrar volta com quem extrai */
 const listaProv=o=>Object.entries(o).map(([k,q])=>q>1?`${q} × ${SUP[k].nome}`:SUP[k].nome).join(', ');
-const leva=()=>Object.keys(save.prov).length?`Na próxima caçada você leva: ${listaProv(save.prov)}. Vai tudo, extraindo ou morrendo.`:'Nada guardado para a próxima caçada.';
+const leva=()=>Object.keys(save.prov).length?`Na próxima caçada você leva: ${listaProv(save.prov)}. Vai tudo; a comida que sobrar volta se você sair pela porta.`:'Nada guardado para a próxima caçada.';
 let lojaDe=null;
 function drawLoja(){
   const n=CITY.npcs[lojaDe];
   setT($('#ljCasa'),n.casa);setT($('#ljNome'),n.nome);setT($('#ljGold'),String(save.cofre));
-  setT($('#ljFala'),n.fala+(n.ensina?' Habilidade aprendida é para sempre; provisão vale para uma caçada só.':' Provisão vale para uma caçada só.'));setT($('#ljLeva'),leva());
+  const comida=n.vende.some(k=>SUP[k].efeito.comida);
+  setT($('#ljFala'),n.fala+(n.ensina?' Habilidade aprendida é para sempre; provisão vale para uma caçada só.':comida?' Na caçada, sem comer não se regenera vida nem mana.':' Provisão vale para uma caçada só.'));setT($('#ljLeva'),leva());
   for(const id of['#ljHabT','#ljHab','#ljProvT'])$(id).hidden=!n.ensina;
   if(n.ensina)drawEnsina();
   const ul=$('#ljList');ul.textContent='';

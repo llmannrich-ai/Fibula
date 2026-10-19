@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.27.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.28.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -168,9 +168,11 @@ export function comprarForja(k){const o=ofertaForja(k);
 
 /* ---------- provisões (lojas da cidade) ----------
    Compradas com o ouro do cofre, ficam em save.prov (da conta, até o max de
-   cada uma) e vão inteiras na próxima caçada que começar, extraindo ou
-   morrendo: é ralo do cofre (pilar 5) e aposta a mais na mesa (pilar 1). Só
-   uma do mesmo grupo (uma refeição por caçada). */
+   cada uma) e vão inteiras na próxima caçada que começar: é ralo do cofre
+   (pilar 5) e aposta a mais na mesa (pilar 1). A comida vai na mochila, como
+   no Tibia: o que não se comeu volta ao estoque se o jogador extrair
+   (devolveComida) e fica na masmorra se ele morrer. Provisão com grupo:
+   só uma do mesmo grupo por caçada. */
 export const soProv=o=>{const r={};for(const[k,q]of Object.entries(o||{})){const s=SUP[k];if(s&&q>0)r[k]=Math.min(s.max,q|0)}return r};
 /* '' se dá para comprar; senão o motivo: 'ouro', 'max' ou a chave da
    provisão do mesmo grupo que já está guardada */
@@ -183,11 +185,15 @@ export function compra(k){
   if(podeComprar(k))return false;save.cofre-=SUP[k].preco;save.prov[k]=(save.prov[k]||0)+1;return true}
 /* a caçada começou: o que o jogador levou (p.prov) sai do estoque */
 export function gastaProv(prov){for(const[k,q]of Object.entries(prov||{})){const n=(save.prov[k]||0)-q;if(n>0)save.prov[k]=n;else delete save.prov[k]}}
-/* o efeito somado das provisões de uma ficha, para novoJogador() */
+/* a caçada acabou com o jogador saindo pela porta: a comida que sobrou volta */
+export function devolveComida(com){for(const[k,q]of Object.entries(com||{})){const n=q|0;
+  if(SUP[k]&&SUP[k].efeito.comida&&n>0)save.prov[k]=Math.min(SUP[k].max,(save.prov[k]||0)+n)}}
+/* o efeito somado das provisões de uma ficha, para novoJogador(): poções,
+   buffs do começo e a comida que vai na mochila (com) */
 export function efeitoProv(prov){
-  const e={pot:0,rhp:0,rmp:0,buffs:{}};
+  const e={pot:0,com:{},buffs:{}};
   for(const[k,q]of Object.entries(prov||{})){const f=SUP[k]&&SUP[k].efeito;if(!f)continue;
-    e.pot+=(f.pot||0)*q;e.rhp+=(f.rhp||0)*q;e.rmp+=(f.rmp||0)*q;
+    e.pot+=(f.pot||0)*q;if(f.comida)e.com[k]=q;
     if(f.buff)for(const b of BUFFS)if(f.buff[b]){const o=e.buffs[b];e.buffs[b]={v:(o?o.v:0)+f.buff[b],left:Math.max(o?o.left:0,f.buff.dur)}}}
   return e;
 }

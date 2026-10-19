@@ -46,6 +46,7 @@ export function validaConteudo(c){
   for(const[k,e]of Object.entries(c.enemies))if(!(e.spd>0))throw new Error(`inimigo ${k} precisa de spd (velocidade do Tibia) positivo`);
   if(!p.respawn||!(p.respawn.seconds>0)||!(p.respawn.clearTiles>=0))throw new Error('progression.respawn precisa de seconds positivo e clearTiles');
   if(!p.mochila||!(Number.isInteger(p.mochila.espacos)&&p.mochila.espacos>0))throw new Error('progression.mochila precisa de espacos inteiro positivo');
+  if(!p.comida||!(p.comida.max>0))throw new Error('progression.comida precisa de max (segundos de alimentação) positivo');
   const pt=p.party;
   if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
   for(const b of p.bands){
@@ -66,7 +67,7 @@ export function validaConteudo(c){
     if(!e||typeof e!=='object'||!Object.keys(e).length||!(Number.isInteger(s.max)&&s.max>=1))throw new Error(`provisão ${k} precisa de efeito e de max inteiro >= 1`);
     for(const[a,v]of Object.entries(e)){
       if(a==='buff'){if(!v||!(v.dur>0)||!Object.keys(v).every(b=>b==='dur'||(BUFFS.includes(b)&&typeof v[b]==='number')))throw new Error(`provisão ${k} com buff inválido: ${BUFFS.join(', ')} e dur positivo`)}
-      else if(!['pot','rhp','rmp'].includes(a)||!(typeof v==='number'&&v>0))throw new Error(`provisão ${k} com efeito inválido: ${a}`);
+      else if(!['pot','comida'].includes(a)||!(typeof v==='number'&&v>0))throw new Error(`provisão ${k} com efeito inválido: ${a}`);
     }
   }
   for(const[k,n]of Object.entries(ci.npcs||{})){
@@ -138,7 +139,9 @@ export let CITY,HUNTS;
 export const cacaDe=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(HUNTS,k)?k:HUNTS.runas?'runas':Object.keys(HUNTS)[0];
 /* ---------- provisões ----------
    O que as lojas da cidade vendem (supplies no content.json): comida, poção
-   e runa, que vão inteiras na próxima caçada. BUFFS são os buffs que uma
+   e runa, que vão inteiras na próxima caçada. A comida (efeito.comida, em
+   segundos de alimentação) se come na caçada e o que sobra volta ao
+   extrair; poção e runa valem desde a entrada. BUFFS são os buffs que uma
    provisão pode dar, os mesmos das habilidades */
 export let SUP;
 export const BUFFS=['velo','dano','arm','alc'];
@@ -148,7 +151,8 @@ export const BUFFS=['velo','dano','arm','alc'];
    vem das TAXAS DE CRESCIMENTO. ghp/gmp espelham gainhp/gainmana do
    vocations.xml; mMult espelha manamultiplier (custo exponencial de magia);
    pMult espelha o skill multiplier das armas; rhp/rmp espelham os ticks de
-   regeneração. Quem é de mana regenera mana; quem é de vida regenera vida. */
+   regeneração. Quem é de mana regenera mana; quem é de vida regenera vida.
+   Como no Tibia, só se regenera alimentado (progression.comida). */
 export let CLASSES,CL_ORDEM;
 
 /* ---------- habilidades ----------

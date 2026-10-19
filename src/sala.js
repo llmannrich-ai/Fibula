@@ -20,15 +20,15 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha. */
-import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.27.0';
-import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.27.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.27.0';
-import {novaSemente} from './sim/base.js?v=0.27.0';
-import {drinkPot} from './sim/combate.js?v=0.27.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.27.0';
-import {rede,ID,anuncia} from './rede.js?v=0.27.0';
-import {persist} from './salvar.js?v=0.27.0';
-import {log} from './hud.js?v=0.27.0';
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.28.0';
+import {save,ch,confereFicha,valMochila,devolveComida} from './sim/progresso.js?v=0.28.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.28.0';
+import {novaSemente} from './sim/base.js?v=0.28.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.28.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.28.0';
+import {rede,ID,anuncia} from './rede.js?v=0.28.0';
+import {persist} from './salvar.js?v=0.28.0';
+import {log} from './hud.js?v=0.28.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -38,7 +38,7 @@ const RITMO=.1,BATIDA=25,PACIENCIA=12;
 /* papel: null (fora de sala), 'anfitriao' ou 'convidado'. membros: quem está
    na sala, o anfitrião primeiro: {id, nome, cl, lvl, ficha (só no anfitrião)} */
 export const SALA={papel:null,id:null,caca:null,membros:[],estado:'fora',aoMudar(){}};
-let ultDentro='',pedindo=false,pedT=0,ws=null,ref=0,pronto=false,espera=0,tenta=0,batida=0,ritmo=0,semAnf=0,potes=0,potesViu=[];
+let ultDentro='',pedindo=false,pedT=0,ws=null,ref=0,pronto=false,espera=0,tenta=0,batida=0,ritmo=0,semAnf=0,potes=0,potesViu=[],comidas=0,comidasViu=[];
 /* no anfitrião, durante a incursão da sala: o índice em G.ps de cada id, a
    entrada de cada convidado e quem já recebeu o resultado */
 const IDX=new Map(),ENTS=[];
@@ -71,7 +71,7 @@ export function criaSala(caca){
   if(SALA.papel)return;
   SALA.papel='anfitriao';SALA.id=ID;SALA.caca=cacaDe(caca);SALA.membros=[{id:ID,nome:nomeMeu(),cl:save.classe,lvl:ch().lvl}];
   newRun(novaSemente(),[fichaLocal()],true,SALA.caca);G.ps[0].fora='fora';G.active=true;G.sala=true;
-  IDX.clear();ENTS.length=0;potesViu=[];IDX.set(ID,0);
+  IDX.clear();ENTS.length=0;potesViu=[];comidasViu=[];IDX.set(ID,0);
   liga();avisa();log('Sala aberta, com a masmorra dela. Quem estiver na cidade a vê no Guia de caça.','info');
 }
 /* quem está dentro da masmorra da sala agora */
@@ -105,7 +105,7 @@ function abrePorta(q){
   let i=IDX.get(q.id);
   if(i===undefined){i=G.ps.length;if(i>=8)return;IDX.set(q.id,i)}
   if(G.ps[i]&&!G.ps[i].fora)return;
-  entra(i,f);ENTS[i]=null;potesViu[i]=0;m.ficha=f;m.lvl=f.c.lvl;
+  entra(i,f);ENTS[i]=null;potesViu[i]=0;comidasViu[i]=0;m.ficha=f;m.lvl=f.c.lvl;
   bc('porta',{id:q.id,i,semente:G.semente,h:G.caca,ps:G.ps.map(p=>({nome:p.nome,cl:p.cl,c:{lvl:p.c.lvl,equip:p.c.equip},up:{}}))});
   ritmo=0;mandaMembros();avisa();
 }
@@ -120,7 +120,7 @@ export function entradas(local){
 function mandaFim(p){
   const id=[...IDX].find(([,i])=>i===p.id);if(!id)return;
   const c=p.c;
-  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
+  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,com:p.com,
     c:{lvl:c.lvl,xp:c.xp,mag:c.mag,manaG:c.manaG,per:c.per,golpes:c.golpes,slots:c.slots}}});
 }
 /* chamado por saida.sai e saida.log/banner (src/main.js) para quem não é
@@ -152,6 +152,7 @@ function recebeAnf(ev,q,de){
     e.f=Number.isFinite(q.f)?q.f/100:e.f;
     /* a poção é um contador: cada aumento é um gole, mesmo que uma mensagem se perca */
     const n=q.pot|0;if(n>(potesViu[i]||0)){potesViu[i]=n;drinkPot(G.ps[i])}
+    const c=q.com|0;if(c>(comidasViu[i]||0)){comidasViu[i]=c;comer(G.ps[i])}
   }
 }
 const mandaMembros=()=>bc('membros',{h:SALA.caca,lista:SALA.membros.map(m=>({id:m.id,nome:m.nome,cl:m.cl,lvl:m.lvl,d:dentro(m.id)?1:0}))});
@@ -182,7 +183,7 @@ function recebeConv(ev,q){
     pedindo=false;if(correndo())return;
     const i=q.i|0,fichas=q.ps.slice(0,8).map((f,k)=>k===i?confereFicha(minhaFicha()):confereFicha(f));
     if(i<0||i>=fichas.length||fichas.some(f=>!f))return;
-    eu=i;potes=0;ritmo=0;SALA.caca=cacaDe(q.h);ganchos.comeca(q.semente>>>0,fichas,eu,SALA.caca);
+    eu=i;potes=0;comidas=0;ritmo=0;SALA.caca=cacaDe(q.h);ganchos.comeca(q.semente>>>0,fichas,eu,SALA.caca);
   }else if(ev==='estado'&&q&&correndo()&&G.convidado)aplicaRetrato(q,eu);
   else if(ev==='fim'&&q&&q.id===ID&&correndo()&&G.convidado)aplicaFim(q.r);
   else if(ev==='log'&&q&&(q.id===null||q.id===ID)&&(correndo()||q.id===null)){if(q.b)ganchos.banner(String(q.m));else log(String(q.m),typeof q.c==='string'?q.c:'info')}
@@ -201,18 +202,19 @@ function aplicaFim(r){
   p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);
   p.fora=kind;p.c=c;
   /* a mochila sai como o anfitrião contou, ou fica na masmorra */
-  if(kind==='extraiu'){c.mochila=Object.assign({},bag);save.ext++;save.best=Math.max(save.best,valMochila(bag)-valMochila(p.bag0||{}))}
+  if(kind==='extraiu'){c.mochila=Object.assign({},bag);save.ext++;devolveComida(r.com);save.best=Math.max(save.best,valMochila(bag)-valMochila(p.bag0||{}))}
   else{c.mochila={};save.deaths++;save.cofre+=p.sealed}
   persist();
   G.over=true;G.end=kind;G.dur=G.t;
   ganchos.fim(kind);
 }
 /* a entrada do convidado: o sqm em que está (ele anda no próprio aparelho), direção,
-   espaços segurados e quantas poções pediu */
+   espaços segurados e quantas poções e comidas pediu */
 export const pocao=()=>{potes++};
+export const comida=()=>{comidas++};
 function mandaEnt(ent){
   const p=G.p;let h=0;for(let k=0;k<4;k++)if(ent.held[k])h|=1<<k;
-  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,pot:potes});
+  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,pot:potes,com:comidas});
 }
 
 /* ---------- canal ---------- */

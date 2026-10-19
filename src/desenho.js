@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.27.0';
-import {CITY,CLASSES,ITEMS,HUNTS} from './sim/dados.js?v=0.27.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.27.0';
-import {G,solid} from './sim/incursao.js?v=0.27.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.27.0';
-import {bf} from './sim/combate.js?v=0.27.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.27.0';
-import {$,app,RM} from './dom.js?v=0.27.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.28.0';
+import {CITY,CLASSES,ITEMS,HUNTS} from './sim/dados.js?v=0.28.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.28.0';
+import {G,solid} from './sim/incursao.js?v=0.28.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.28.0';
+import {bf} from './sim/combate.js?v=0.28.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.28.0';
+import {$,app,RM} from './dom.js?v=0.28.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');

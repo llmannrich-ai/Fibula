@@ -95,6 +95,11 @@ canvas{image-rendering:pixelated}
 #bPot{width:54px;height:54px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:28px;--el:var(--hp)}
 #bPot .nm{font-size:9px;align-self:end}
 #app[data-arte] #bPot .nm{position:absolute;bottom:3px;left:0;right:0}
+#bCom{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:154px;--el:var(--torch-deep)}
+#bCom .nm{font-size:9px;align-self:end;font-variant-numeric:tabular-nums}
+#bCom.fome{--el:var(--hp)}
+#bCom.fome .nm{color:var(--warn)}
+#app[data-arte] #bCom .nm{position:absolute;bottom:2px;left:0;right:0}
 #app[data-arte] .act .ct{position:absolute;top:3px;right:5px;z-index:2;text-shadow:1px 1px 0 #000}
 #app[data-arte] .act.sl .nm{position:absolute;bottom:4px;left:0;right:0}
 #app[data-arte] .act.sl .ico{transform:translate(-50%,-64%) scale(var(--esc,1))}
@@ -372,6 +377,7 @@ h2.lost{color:var(--hp)}
     <div id="banner" class="out"></div>
     <div id="joy" class="idle"><div id="knob"></div></div>
     <button class="act pot" id="bPot" aria-label="Beber poção (P)"><span class="cd"></span><span class="nm out">Poção</span><span class="ct" id="potN">×3</span></button>
+    <button class="act fome" id="bCom" aria-label="Comer (C)"><span class="cd"></span><span class="nm out" id="comT">Fome</span><span class="ct" id="comN">×0</span></button>
     <button class="act sl" id="s3" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
@@ -608,7 +614,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.27.0"></script>
+<script type="module" src="src/main.js?v=0.28.0"></script>
 
 </body>
 </html>
