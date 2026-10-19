@@ -536,7 +536,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
   `soProv()`, `devolveComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
-  `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
+  `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`, `pegaPraMochila()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
   sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
@@ -544,7 +544,12 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
   vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
-  anda e devolve o NPC ao alcance (`C.perto`). É regra, não tela: na F3 é o
+  anda e devolve o NPC ao alcance (`C.perto`), e as **peças no chão**
+  (`C.chao`, de `city.chao`): sem `respawn`, vão ao cofre uma vez por conta
+  (`save.chao`); com `respawn` (segundos), vão à mochila se couber e voltam
+  ao sqm pelo relógio da cidade (`VOLTA`, `RELOGIO`, de cada aparelho e fora
+  do save) — a faca e a espada de madeira da casa vazia, com `val` 0 para
+  não virarem ouro nem entrarem na Feira. É regra, não tela: na F3 é o
   estado que o servidor da cidade compartilhada roda, e **os outros jogadores**
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
   e faz o boneco de cada um correr atrás da última posição recebida
