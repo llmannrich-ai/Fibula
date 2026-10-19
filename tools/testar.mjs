@@ -571,7 +571,8 @@ async function testaSimulacao() {
   const roda = (semente, extra, quadros = [0.05]) => {
     novoSave();
     let fim = null; saida.fim = (k) => { fim = k; };
-    I.newRun(semente); I.G.active = true;
+    /* alimentado a caçada inteira: o que se prova aqui é o relógio, não a fome */
+    I.newRun(semente); I.G.active = true; I.G.ps[0].ali = 1e9;
     const foto = retrato();
     /* o jogador parado mira no monstro mais perto: a mira é lida dentro de
        cada passo da regra, então o resultado não depende do quadro */
@@ -952,6 +953,8 @@ async function testaSimulacao() {
     if (!ruim((c) => { c.hunts.ilha.bands[0].weights = {grifo: 1}; })) falhas.push('mapa de caça com monstro inexistente foi aceito');
     if (!ruim((c) => { c.hunts.cripta.mapa.w = [5, 40]; })) falhas.push('mapa de caça com sala maior que o mapa foi aceito');
     if (!ruim((c) => { c.hunts.ilha.npc = 'guia'; })) falhas.push('NPC que abre cacadas sem mapa de caça nenhum foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.objetos = [{k: 'pilar', onde: 'teto', p: 0.1}]; })) falhas.push('objeto de mapa com onde desconhecido foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.arte.detalhes = [{s: [], onde: 'livre', p: 0.1}]; })) falhas.push('detalhe de mapa sem sprite foi aceito');
     const C3 = Cd.entraCidade('capitao'); Cd.updateCidade(0.05, parado);
     if (C3.perto !== 'capitao') falhas.push(`voltar da ilha não pôs o jogador ao lado do Capitão (${C3.perto})`);
     /* os mapas de caça: cada um com os monstros e o chefe dele, a mesma
@@ -969,6 +972,25 @@ async function testaSimulacao() {
       novoSave(); I.newRun(51, undefined, false, k);
       if (retrato() !== a) falhas.push(`mesma semente no mapa ${k}, masmorras diferentes`);
       fotos[k] = a.split('|')[0];
+      /* os objetos do lugar (mapa.objetos): existem, são os mesmos para a
+         mesma semente, ninguém nasce em cima deles e nenhum fecha caminho:
+         todo chão continua alcançável a partir da entrada */
+      {
+        const G = I.G, objs = [], chao = [];
+        for (let i = 0; i < G.g.length; i++) { if (G.g[i] === 2) objs.push(i + ':' + G.obj[i]); if (G.g[i] === 0) chao.push(i); }
+        if (h.mapa && h.mapa.objetos && !objs.length) falhas.push(`o mapa ${k} tem objetos no content.json e nenhum na masmorra`);
+        if (objs.some((o) => !+o.split(':')[1])) falhas.push(`o mapa ${k} tem sqm sólido de objeto sem objeto`);
+        const em = G.mons.filter((m) => G.g[m.ty * 64 + m.tx] !== 0).map((m) => m.k);
+        if (em.length) falhas.push(`no mapa ${k}, monstro nascido em cima de parede ou objeto: ${em}`);
+        if (G.ps.some((q) => G.g[q.ty * 64 + q.tx] !== 0)) falhas.push(`no mapa ${k}, o jogador começou em cima de um objeto`);
+        const vis = new Uint8Array(G.g.length), fila = [G.ps[0].ty * 64 + G.ps[0].tx]; vis[fila[0]] = 1;
+        while (fila.length) { const c = fila.pop(), x = c % 64; for (const d of [x > 0 ? -1 : 0, x < 63 ? 1 : 0, -64, 64]) { const n = c + d; if (d && n >= 0 && n < G.g.length && !vis[n] && G.g[n] === 0) { vis[n] = 1; fila.push(n); } } }
+        const preso = chao.filter((i) => !vis[i]).length;
+        if (preso) falhas.push(`no mapa ${k}, os objetos isolaram ${preso} sqm de chão`);
+        novoSave(); I.newRun(51, undefined, false, k);
+        const objs2 = []; for (let i = 0; i < I.G.g.length; i++) if (I.G.g[i] === 2) objs2.push(i + ':' + I.G.obj[i]);
+        if (objs2.join() !== objs.join()) falhas.push(`mesma semente no mapa ${k}, objetos diferentes`);
+      }
       I.G.active = true; let fim = null; saida.fim = (x) => { fim = x; };
       for (let i = 0; i < 40; i++) I.passo(0.05, {x: 0, y: 0, held: [true, true, false, false]});
       I.finish('desabou');
@@ -1021,24 +1043,34 @@ async function testaSimulacao() {
   } catch (e) { falhas.push('vestir na caçada quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* provisões das lojas: comprar tira do cofre e respeita o máximo; a caçada
      aplica poções e buffs do começo, o buff da provisão soma ao da habilidade
-     e acaba no tempo; a comida vai na mochila: sem comer não se regenera,
-     comer soma o tempo dela (a menor primeiro, nada passando do máximo), a
-     regeneração é a da classe e para quando o tempo acaba, e o que sobra
-     volta ao estoque só extraindo; e só start() (o cliente) gasta o estoque */
+     e acaba no tempo; a comida é item: a compra vai para a mochila (se
+     couber), sem comer não se regenera, comer tira da mochila e soma o tempo
+     (a menor primeiro, nada passando do máximo), a regeneração é a da classe
+     e para quando o tempo acaba, a comida volta com a mochila extraindo e
+     cai com ela morrendo, o Banco a guarda no cofre (em mats), os animais a
+     derrubam, e a comida da 0.29.0 (em prov) vai para o cofre; e só start()
+     (o cliente) gasta o estoque */
   try {
     novoSave(); const sv = P.save; sv.cofre = 1000;
     const C0 = JSON.parse(CONTEUDO).supplies;
     if (!P.compra('pocao') || !P.compra('pocao') || sv.prov.pocao !== 2 || sv.cofre !== 1000 - 2 * C0.pocao.preco) falhas.push(`comprar duas poções: prov ${JSON.stringify(sv.prov)}, cofre ${sv.cofre}`);
     for (let i = 0; i < 9; i++) P.compra('pocao');
     if (sv.prov.pocao !== C0.pocao.max || P.podeComprar('pocao') !== 'max') falhas.push(`a poção passou do máximo: ${sv.prov.pocao}`);
-    if (!P.compra('queijo') || !P.compra('presunto') || sv.prov.queijo !== 1 || sv.prov.presunto !== 1) falhas.push(`comida de dois tipos: ${JSON.stringify(sv.prov)}`);
+    if (!P.compra('queijo') || !P.compra('presunto') || P.ch().mochila.queijo !== 1 || P.ch().mochila.presunto !== 1 || sv.prov.queijo || sv.prov.presunto) falhas.push(`a comida comprada não foi para a mochila: mochila ${JSON.stringify(P.ch().mochila)}, prov ${JSON.stringify(sv.prov)}`);
+    const mo0 = P.ch().mochila; P.ch().mochila = {espada: JSON.parse(CONTEUDO).progression.mochila.espacos};
+    if (P.podeComprar('frutas') !== 'cheia' || P.compra('frutas')) falhas.push('comprou comida com a mochila cheia');
+    P.ch().mochila = mo0;
+    const mig = P.normaliza({prov: {presunto: 2, pocao: 1}, mats: {presunto: 1}});
+    if (mig.mats.presunto !== 3 || JSON.stringify(mig.prov) !== '{"pocao":1}') falhas.push(`a comida da 0.29.0 não foi para o cofre: ${JSON.stringify(mig.mats)}, prov ${JSON.stringify(mig.prov)}`);
+    if (!JSON.parse(CONTEUDO).loot.rato.some(l => l[0] === 'queijo') || !JSON.parse(CONTEUDO).loot.leao.some(l => l[0] === 'carne')) falhas.push('os animais não derrubam comida');
     P.compra('runa_pedra'); P.compra('pressa');
     sv.cofre = 0; if (P.podeComprar('frutas') === '' ) falhas.push('comprou sem ouro');
     if (JSON.stringify(P.normaliza(JSON.parse(JSON.stringify(sv))).prov) !== JSON.stringify(sv.prov)) falhas.push('o save não guarda as provisões');
     if (P.normaliza({prov: {pocao: 99, sumiu: 2}}).prov.pocao !== C0.pocao.max || 'sumiu' in P.normaliza({prov: {sumiu: 2}}).prov) falhas.push('save com provisão demais ou inexistente não foi aparado');
     I.newRun(31); const p = I.G.p, K = JSON.parse(CONTEUDO).classes.feiticeiro;
     if (p.pot !== 3 + C0.pocao.max) falhas.push(`levou ${C0.pocao.max} poções e começou com ${p.pot}`);
-    if (JSON.stringify(p.com) !== '{"queijo":1,"presunto":1}' || p.ali !== 0) falhas.push(`a comida não foi na mochila ou ele não entrou com fome: ${JSON.stringify(p.com)}, ${p.ali}`);
+    const IT = JSON.parse(CONTEUDO).items;
+    if (p.bag.queijo !== 1 || p.bag.presunto !== 1 || p.ali !== 0 || I.nComida(p.bag) !== 2) falhas.push(`a comida não entrou na mochila ou ele não entrou com fome: ${JSON.stringify(p.bag)}, ${p.ali}`);
     if (!(Cb.bf('arm', p) === C0.runa_pedra.efeito.buff.arm && Cb.bf('velo', p) === C0.pressa.efeito.buff.velo)) falhas.push(`buffs do começo: arm ${Cb.bf('arm', p)}, velo ${Cb.bf('velo', p)}`);
     p.buffs.arm = {v: 0.4, left: 6};
     if (Math.abs(Cb.bf('arm', p) - 0.55) > 1e-9) falhas.push(`o Provocar trocou a runa em vez de somar: ${Cb.bf('arm', p)}`);
@@ -1047,11 +1079,11 @@ async function testaSimulacao() {
     I.G.active = true; I.passo(1, PA);
     if (p.mp !== 0) falhas.push(`com fome, a mana subiu ${p.mp} em 1 s`);
     Cb.comer(p);
-    if (p.ali !== C0.queijo.efeito.comida || JSON.stringify(p.com) !== '{"presunto":1}') falhas.push(`comer devia comer o queijo, a menor: ${p.ali}, ${JSON.stringify(p.com)}`);
+    if (p.ali !== IT.queijo.comida || p.bag.queijo || p.bag.presunto !== 1) falhas.push(`comer devia comer o queijo, a menor, da mochila: ${p.ali}, ${JSON.stringify(p.bag)}`);
     I.passo(1, PA);
     if (!(p.mp >= 0.9 * K.rmp && p.mp <= 1.1 * K.rmp)) falhas.push(`alimentado, a mana subiu ${p.mp} em 1 s, esperado ${K.rmp} (o da classe)`);
     p.ali = JSON.parse(CONTEUDO).progression.comida.max - 100; p.cdCo = 0; Cb.comer(p);
-    if (p.com.presunto !== 1) falhas.push('comeu passando do máximo de alimentação');
+    if (p.bag.presunto !== 1) falhas.push('comeu passando do máximo de alimentação');
     p.ali = 0.5; p.mp = 0; I.passo(2, PA);
     if (p.ali !== 0 || !(p.mp < K.rmp)) falhas.push(`a alimentação acabou e a regeneração seguiu: ali ${p.ali}, mana ${p.mp}`);
     for (let i = 0; i < 100; i++) I.passo(1, {x: 0, y: 0, held: [false, false, false, false]});
@@ -1060,9 +1092,12 @@ async function testaSimulacao() {
     P.gastaProv(p.prov);
     if (Object.keys(sv.prov).length) falhas.push(`depois da caçada sobrou no estoque: ${JSON.stringify(sv.prov)}`);
     I.sai(p, 'extraiu');
-    if (JSON.stringify(sv.prov) !== '{"presunto":1}') falhas.push(`extraindo, a comida que sobrou não voltou: ${JSON.stringify(sv.prov)}`);
-    sv.prov = {presunto: 1}; I.newRun(32); P.gastaProv(I.G.p.prov); I.G.active = true; I.sai(I.G.p, 'morreu');
-    if (Object.keys(sv.prov).length) falhas.push(`morrendo, a comida voltou: ${JSON.stringify(sv.prov)}`);
+    if (P.ch().mochila.presunto !== 1) falhas.push(`extraindo, a comida que sobrou não ficou na mochila: ${JSON.stringify(P.ch().mochila)}`);
+    I.newRun(32); I.G.active = true; I.sai(I.G.p, 'morreu');
+    if (P.ch().mochila.presunto) falhas.push(`morrendo, a comida ficou na mochila: ${JSON.stringify(P.ch().mochila)}`);
+    P.ch().mochila = {carne: 3, ouro: 5}; const gu = P.guardaMochila();
+    if (sv.mats.carne !== 3 || Object.keys(P.ch().mochila).length) falhas.push(`o Banco não guardou a comida no cofre: ${JSON.stringify(sv.mats)}`);
+    if (P.vender('carne') || !P.leva('carne') || P.ch().mochila.carne !== 3 || sv.mats.carne) falhas.push(`levar a comida do cofre (e não vendê-la): mochila ${JSON.stringify(P.ch().mochila)}, cofre ${JSON.stringify(sv.mats)}`);
     const f = P.confereFicha({cl: 'feiticeiro', c: {lvl: 3}, up: {}, prov: {pocao: 50, nada: 1}});
     if (!f || f.prov.pocao !== C0.pocao.max || 'nada' in f.prov) falhas.push(`a ficha de fora não aparou as provisões: ${f && JSON.stringify(f.prov)}`);
     /* aprender com o Mestre de magias: nível e ouro; save de antes fica com o que o nível liberava */
@@ -1321,9 +1356,9 @@ const CASOS = [
     RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:0});await ate(function(){return !q.sd},40);
     q.hp=10;var pots=q.pot;RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:1});await quadros(2);
     ok('a poção do convidado é bebida pelo anfitrião', q.pot===pots-1&&q.hp>10, pots+' → '+q.pot+', vida '+q.hp);
-    q.com={frutas:2};q.ali=0;RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:1,com:1});await quadros(3);
+    q.bag.frutas=2;q.ali=0;RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:1,com:1});await quadros(3);
     var rc=RT.salaMandadas('estado').pop().ps[1];
-    ok('a comida do convidado é comida pelo anfitrião, e o retrato conta a alimentação', q.com.frutas===1&&q.ali>85&&rc.com.frutas===1&&rc.ali>85, JSON.stringify({com:q.com,ali:q.ali,r:[rc.com,rc.ali]}));
+    ok('a comida do convidado é comida pelo anfitrião, e o retrato conta a alimentação', q.bag.frutas===1&&q.ali>85&&rc.nc===1&&rc.ali>85, JSON.stringify({bag:q.bag,ali:q.ali,r:[rc.nc,rc.ali]}));
     I.G.t=400;await quadros(3);
     ok('a masmorra da sala não desaba: passou do tempo da solo e segue aberta', !I.G.over&&!q.fora&&I.G.active, I.G.t.toFixed(0)+' / '+q.fora);
     q.bag={ouro:12};q.bagVal=12;I.sai(q,'morreu');await quadros(1);
@@ -1434,13 +1469,13 @@ const CASOS = [
     ok('a poção vira pedido ao anfitrião', RT.salaMandadas('ent').pop().pot===1, RT.salaMandadas('ent').pop().pot);
     tecla('keydown','KeyC');tecla('keyup','KeyC');await quadros(4);
     ok('comer vira pedido ao anfitrião', RT.salaMandadas('ent').pop().com===1, RT.salaMandadas('ent').pop().com);
-    RT.sala('fim',{id:EU,r:{fora:'extraiu',bag:{ouro:40,inexistente:9},bagVal:40,sealed:0,xpPerdido:0,kills:3,xpGain:90,magGain:1,perGain:0,com:{frutas:2,inexistente:3,pocao:4},c:{lvl:3,xp:15,mag:1,manaG:10,per:10,golpes:0,slots:['gelo','golpe',null,null]}}});
+    RT.sala('fim',{id:EU,r:{fora:'extraiu',bag:{ouro:40,inexistente:9,carne:2},bagVal:52,sealed:0,xpPerdido:0,kills:3,xpGain:90,magGain:1,perGain:0,c:{lvl:3,xp:15,mag:1,manaG:10,per:10,golpes:0,slots:['gelo','golpe',null,null]}}});
     await ate(function(){return visivel('#end')},400);
     ok('o resultado do anfitrião vira a tela final', visivel('#end')&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
     var s=sv(),c=s&&s.chars.druida;
     ok('e vai para o save deste aparelho: mochila, extração e o personagem', s&&s.cofre===0&&c.mochila.ouro===40&&s.ext===1&&c.lvl===3&&c.xp===15&&c.mag===1, s&&JSON.stringify({cofre:s.cofre,mochila:c.mochila,ext:s.ext,lvl:c.lvl,xp:c.xp}));
     ok('item que não existe e habilidade de outra classe não entram', !c.mochila.inexistente&&c.slots[1]===null, JSON.stringify(c.slots));
-    ok('a comida que sobrou volta ao estoque, e só comida que existe', s.prov.frutas===2&&!s.prov.inexistente&&!s.prov.pocao, JSON.stringify(s.prov));
+    ok('a comida que sobrou volta na mochila', c.mochila.carne===2, JSON.stringify(c.mochila));
     clica($('#toMenu'));Tl.abreNpc('guia');
     ok('depois de sair, continua na sala, com a porta aberta', Sa.SALA.papel==='convidado'&&todos('#hSala button').some(function(b){return b.textContent==='Entrar pela porta'&&!b.disabled}), txt('#hSala'));
     clica(todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0]);await quadros(2);
@@ -1482,7 +1517,7 @@ const CASOS = [
   },
   {
     nome: 'lojas',
-    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, comida de vários tipos, o Guia mostra o que se leva, a caçada gasta tudo e entra com fome, e o botão Comer alimenta; o Mestre ensina a habilidade do nível por ouro, e ela vai para o espaço livre',
+    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, a comida vai para a mochila, o Guia mostra o que se leva, a caçada gasta tudo e entra com fome, e o botão Comer come da mochila; o Mestre ensina a habilidade do nível por ouro, e ela vai para o espaço livre',
     semente: 11,
     save: {'masmorra-runas-v2': {
       cofre: 300, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1498,8 +1533,8 @@ const CASOS = [
     ok('a loja lista o que ela vende, com preço', todos('#ljList li').length===4&&/ouro$/.test(txt('#ljList .buy')), todos('#ljList li').length+' / '+txt('#ljList .buy'));
     ok('nada guardado ainda', /Nada guardado/.test(txt('#ljLeva')), txt('#ljLeva'));
     clica(todos('#ljList .buy')[2]);
-    ok('comprar o presunto tira do cofre e guarda para a caçada', txt('#ljGold')==='260'&&sv().cofre===260&&sv().prov.presunto===1, txt('#ljGold')+' / '+JSON.stringify(sv().prov));
-    ok('a comida empilha e não trava as outras', todos('#ljList .buy').filter(function(b){return b.disabled}).length===0&&/Guardadas: 1 de 10/.test(txt('#ljList')), txt('#ljList'));
+    ok('comprar o presunto tira do cofre e põe na mochila', txt('#ljGold')==='260'&&sv().cofre===260&&sv().chars.cavaleiro.mochila.presunto===1&&!sv().prov.presunto, txt('#ljGold')+' / '+JSON.stringify(sv().chars.cavaleiro.mochila));
+    ok('a loja diz quanto há na mochila e não trava as outras', todos('#ljList .buy').filter(function(b){return b.disabled}).length===0&&/Na mochila: 1/.test(txt('#ljList')), txt('#ljList'));
     ok('a Quitandeira avisa que sem comer não se regenera', /sem comer não se regenera/.test(txt('#ljFala')), txt('#ljFala'));
     clica($('#ljBack'));
     ok('a volta da loja é para a cidade', $('#app').classList.contains('cidade')&&!visivel('#loja'));
@@ -1524,18 +1559,18 @@ const CASOS = [
     ok('a habilidade aprendida vai para o espaço livre', cv.slots[1]==='brutal', JSON.stringify(cv.slots));
     clica($('#ljBack'));
     Tl.abreNpc('guia');
-    ok('o Guia diz o que vai na caçada', /Presunto defumado/.test(txt('#hProv'))&&/2 × Poção de vida/.test(txt('#hProv')), txt('#hProv'));
+    ok('o Guia diz o que vai na caçada', /2 × Poção de vida/.test(txt('#hProv')), txt('#hProv'));
     clica($('#huntList button'));
     await quadros(3);
     ok('a caçada começa com as poções a mais', I.G.p.pot===5&&txt('#potN')==='×5', I.G.p.pot+' / '+txt('#potN'));
-    ok('o presunto vai na mochila, ele entra com fome, e a runa protege desde a entrada', I.G.p.com.presunto===1&&I.G.p.ali===0&&$('#bCom').classList.contains('fome')&&txt('#comT')==='Fome'&&I.G.p.sup.arm&&I.G.p.sup.arm.v===0.15, JSON.stringify({com:I.G.p.com,ali:I.G.p.ali,sup:I.G.p.sup})+' / '+txt('#comT'));
+    ok('o presunto entra na mochila, ele entra com fome, e a runa protege desde a entrada', I.G.p.bag.presunto===1&&I.G.p.ali===0&&$('#bCom').classList.contains('fome')&&txt('#comT')==='Fome'&&I.G.p.sup.arm&&I.G.p.sup.arm.v===0.15, JSON.stringify({bag:I.G.p.bag,ali:I.G.p.ali,sup:I.G.p.sup})+' / '+txt('#comT'));
     ok('o registro avisa da fome', /com fome: toque em Comer/.test(txt('#log')||''), txt('#log'));
     I.G.p.mp=0;await quadros(10);
     ok('com fome a mana não sobe', I.G.p.mp===0, I.G.p.mp);
     $('#bCom').dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,pointerId:7}));
     await quadros(10);
-    ok('o botão Comer come o presunto e a mana volta a subir', I.G.p.ali>290&&I.G.p.ali<=300&&!I.G.p.com.presunto&&I.G.p.mp>0&&!$('#bCom').classList.contains('fome')&&/^[45]:[0-9][0-9]$/.test(txt('#comT'))&&txt('#comN')==='×0', JSON.stringify({ali:I.G.p.ali,com:I.G.p.com,mp:I.G.p.mp})+' / '+txt('#comT')+' '+txt('#comN'));
-    ok('o registro diz o que foi levado', /Você levou .*Presunto defumado/.test(txt('#log')||''), txt('#log'));
+    ok('o botão Comer come o presunto e a mana volta a subir', I.G.p.ali>290&&I.G.p.ali<=300&&!I.G.p.bag.presunto&&I.G.p.mp>0&&!$('#bCom').classList.contains('fome')&&/^[45]:[0-9][0-9]$/.test(txt('#comT'))&&txt('#comN')==='×0', JSON.stringify({ali:I.G.p.ali,bag:I.G.p.bag,mp:I.G.p.mp})+' / '+txt('#comT')+' '+txt('#comN'));
+    ok('o registro diz o que foi levado', /Você levou .*Runa da pele de pedra/.test(txt('#log')||''), txt('#log'));
     ok('o estoque foi gasto ao entrar', sv()&&Object.keys(sv().prov).length===0, JSON.stringify(sv()&&sv().prov));
 `,
   },

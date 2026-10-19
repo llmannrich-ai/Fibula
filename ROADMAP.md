@@ -15,7 +15,11 @@ Parte 4; as decisões do dono, na Parte 6. Ao concluir, mova o item para
 `src/sala.js`), então o Esgoto muda a cada caçada e conhecer o mapa não vale
 nada. Cada lugar de `hunts` ganha uma semente fixa no `content.json`
 (`semente`), validada no carregamento, e a sala usa essa semente. O que ainda
-for sorteado por caçada (dano, loot, movimento) continua sorteado.
+for sorteado por caçada (dano, loot, movimento) continua sorteado: são duas
+sementes, a do mapa (forma, objetos e spawn inicial, fixa) e a da caçada
+(nova a cada sala), e a porta da sala manda as duas. Com isso os objetos e
+enfeites da 0.29.0 viram marcos que se aprendem
+([docs/plano-mapas.md](docs/plano-mapas.md), Fase 2).
 
 **Pronto quando:** duas salas do mesmo lugar, criadas em momentos diferentes,
 têm o mesmo mapa e os mesmos monstros nos mesmos sqm (caso no
@@ -93,9 +97,36 @@ ele, todos no `content.json`.
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
+### 8. Forma por lugar
+
+**Pilar 2.** Depende de "Mapas de caça fixos". `genMap()` ganha um `estilo`
+por lugar no `content.json` ([docs/plano-mapas.md](docs/plano-mapas.md), Fase
+3): salões de pilares na Masmorra de Runas, canal de água com pontes no
+Esgoto, caverna orgânica na Ilha, nichos de sarcófago na Cripta. Um lugar por
+execução, começando pelo Esgoto.
+
+**Pronto quando:** o lugar tem o estilo no `content.json`, a simulação no Node
+confere que todo chão é alcançável e que a mesma semente dá o mesmo mapa, e a
+captura em 360×640 está no diário.
+
+### 9. Bordas de chão do Tibia
+
+**Pilar 2.** Uma camada de chão por sqm (areia, grama, terra, água) e a peça
+de borda do OTSP (215–504) onde dois chãos se encontram, como o auto-border do
+Remere's Map Editor ([docs/plano-mapas.md](docs/plano-mapas.md), Fase 4).
+Primeiro na Ilha (areia, grama e margem de água), depois na cidade.
+
+**Pronto quando:** a tabela de bordas por material está no `content.json`, a
+Ilha mostra areia e grama com borda, e o caso `arte` cobre o desenho.
+
 ---
 
 ## Depois
+
+- **Mapas desenhados no editor** (pilar 2; precisa de decisão do Leonardo) —
+  o Remere's Map Editor com os `rme_files` do OTSP e um `tools/otbm.mjs` que
+  converte o `.otbm` em letras no `content.json`, como `city.mapa`
+  ([docs/plano-mapas.md](docs/plano-mapas.md), Fase 5).
 
 - **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
   raro com loot próprio; entrada em `MT` e em `LOOT`.
@@ -110,6 +141,15 @@ recomendado acima de 15, e o caso da cidade entra nele.
 ---
 
 ## Concluído
+
+- **2026-10-19 — Mapas vestidos (0.37.0)** *(pedido do Leonardo; pilar 2)*.
+  Objetos sólidos por lugar (`mapa.objetos`: pilar, barril, caixote, rocha,
+  sarcófago, gárgula, palmeira, cacto), que bloqueiam jogador, monstro e
+  projétil e nunca fecham caminho; detalhes do chão (`arte.detalhes`: teias,
+  ossadas, sangue, grade, lodo, tufos, velas); variantes de chão; a Ilha
+  fechada por mata em vez de muro (`arte.borda`). 54 sprites novos do OTSP.
+  Plano das fases seguintes e pesquisa de fontes legais de mapa em
+  [docs/plano-mapas.md](docs/plano-mapas.md).
 
 - **2026-10-19 — Grimório só na cidade, troca de personagem só na tela inicial (0.35.0)**
   *(pedido do Leonardo; pilar 5)*. O rodapé da tela inicial ficou Regras ·

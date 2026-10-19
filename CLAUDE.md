@@ -21,8 +21,9 @@ resto: se uma regra nova muda uma antiga, a antiga sai no mesmo commit.
 Fora deste arquivo há só **contratos de trabalho**, que cedem a ele: o
 [ROADMAP.md](ROADMAP.md) (a fila) e o [DIARIO.md](DIARIO.md) (o registro). As
 análises em `docs/` ([analise-tibia-habilidades.md](docs/analise-tibia-habilidades.md),
-[plano-multiplayer.md](docs/plano-multiplayer.md)) são **referência**: dizem
-como o Tibia fazia a conta e como chegar ao servidor, e quando discordarem
+[plano-multiplayer.md](docs/plano-multiplayer.md), [plano-mapas.md](docs/plano-mapas.md))
+são **referência**: dizem como o Tibia fazia a conta, como chegar ao servidor
+e como enriquecer os mapas, e quando discordarem
 daqui, vale este arquivo. O `AGENTS.md` só aponta para cá, e o `README.md` é
 para quem joga.
 
@@ -286,12 +287,12 @@ na mão.
   que o Banqueiro guarda no cofre está seguro.
 - **Cidade:** gastar, guardar, trocar, ver outros jogadores, formar a sala.
 
-### O que existe hoje (0.29.0)
+### O que existe hoje (0.36.0)
 
 | Área | Estado |
 |---|---|
 | Caçada | Quatro lugares em `hunts` do `content.json`: Masmorra de Runas (nível 1, pelo Guia), Esgoto (1, pela grade da rua), Ilha da Enseada (8, pelo Capitão do porto), Cripta Antiga (15, pelo Guia). Sala sem relógio, porta de entrada e saída, respawn de 60 s. A incursão solo com relógio de 6 min ficou só para os testes |
-| Personagem | 4 classes por taxa de crescimento; nível, magia e perícia; 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18); habilidades aprendidas com o Mestre de magias; regenera só alimentado, comendo pelo botão Comer |
+| Personagem | 4 classes por taxa de crescimento; nível, magia e perícia; 4 espaços de habilidade + poção (abrem nos níveis 1, 1, 8 e 18); habilidades aprendidas com o Mestre de magias; regenera só alimentado, comendo pelo botão Comer a comida da mochila (loot dos animais ou da Quitanda) |
 | Equipamento | Arma, armadura e amuleto, com raridade; Mochila no desenho do inventário do Tibia; veste-se pela Mochila, na cidade e na caçada; mochila do personagem com 20 espaços e cofre no Banco |
 | Cidade | Mapa de `city.mapa`, NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
@@ -535,12 +536,18 @@ principal, o markup das telas e do HUD, e a linha que carrega
   personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
-  `soProv()`, `devolveComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
+  `soProv()`); a **comida** (`ehComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
   `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`, `pegaPraMochila()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
-  sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
-  (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
+  sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, **objetos**
+  (`objetos()`: os sólidos do lugar, de `mapa.objetos` — pilar, rocha,
+  sarcófago, palmeira —, postos com um hash da semente e não com o sorteio da
+  regra, e recusados se fecharem caminho; ficam em `g` com o valor 2, sólido
+  com chão debaixo, e em `obj`, o número do objeto mais 1) e `pecas()` (qual
+  peça de parede cada bloco de valor 1 recebe; a cidade usa com a grade dela).
+  O plano do que vem depois (mapa fixo, forma por lugar, bordas de chão, mapa
+  desenhado no editor) está em [docs/plano-mapas.md](docs/plano-mapas.md)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
   vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
@@ -610,7 +617,10 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
-- `desenho.js` — canvas, `resize()`, **interpolação** (`render()` desenha
+- `desenho.js` — canvas, `resize()`, **o mapa vestido** (`vesteMapa()`:
+  variante do chão, detalhe e sprite de cada objeto por sqm, de
+  `hunts.<k>.arte`, montado uma vez por masmorra com um hash da semente; na
+  Ilha, `arte.borda` troca a parede por mato), **interpolação** (`render()` desenha
   entre o passo anterior e o atual e chama `cena()`), `spr()` (desenha com o canto inferior
   direito no tile, como o Tibia), `render()`, `drawPlayer()`, `drawMon()`,
   `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`, o
@@ -675,11 +685,16 @@ nível ou o grupo de quem entra (pilar 1): o `validaConteudo()` recusa
 **Só se regenera alimentado, como no Tibia** (decisão do Leonardo em
 19/10/2026). A regeneração é a da classe (`rhp`, `rmp` em `classes`), fixa, e
 só corre enquanto `p.ali` (segundos de alimentação) for maior que zero; todo
-jogador entra com fome. A comida é provisão com `efeito.comida` (os segundos
-dela): vai na mochila (`p.com`), se come pelo botão Comer (`comer()`, a menor
-primeiro, nada se passar de `progression.comida.max`, 1200 s como no Tibia),
-e o que sobra volta ao estoque só extraindo (`devolveComida()`). Na sala, o
-convidado pede pelo contador `com` da entrada, como a poção.
+jogador entra com fome. **A comida é item** (`comida` em `items`, os segundos
+dela), como no Tibia: cai dos animais pela tabela `loot`, se compra na
+Quitanda (provisão com `efeito.item`, que vai direto para a mochila), mora na
+mochila (volta com ela extraindo, cai com ela morrendo) e se guarda no cofre
+do Banco como item, em `save.mats` (não em `save.itens`, que é só de peças e
+é o que a Feira e o banco conhecem; por isso comida não vai à Feira, e o
+Banco não a compra). Come-se pelo botão Comer
+(`comer()`, a menor da mochila primeiro, nada se passar de
+`progression.comida.max`, 1200 s). Na sala, o convidado pede pelo contador
+`com` da entrada, como a poção, e o retrato manda quantas tem (`nc`).
 
 #### As três moedas de progressão
 
@@ -1515,7 +1530,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | Feira entre jogadores no banco: custódia, 2% de taxa, só o que tem origem registrada | Parte 3, Supabase |
 | 19/10 | Vestir e tirar pela Mochila, na cidade e na caçada | Parte 3 |
 | 19/10 | Inventário como no Tibia: só mochila e cofre. A mochila é do personagem, fica com ele entre as caçadas, entra inteira na seguinte e cai toda na morte (menos o Selo); 20 espaços (`progression.mochila`). O Banqueiro guarda e devolve | Parte 3, "O save é mesclado" |
-| 19/10 | **Alimentação como no Tibia:** sem comida não se regenera vida nem mana; a regeneração é a da classe, fixa; cada comida dá um tempo de alimentação, maior nas mais caras, até 1200 s acumulados (`progression.comida`). Come-se pelo botão Comer na caçada (escolha do dono contra a recomendação de comer sozinho); a comida que sobra volta ao estoque só extraindo | Parte 3, "Números que governam o jogo" |
+| 19/10 | **Alimentação como no Tibia:** sem comida não se regenera vida nem mana; a regeneração é a da classe, fixa; cada comida dá um tempo de alimentação, maior nas mais caras, até 1200 s acumulados (`progression.comida`). Come-se pelo botão Comer na caçada (escolha do dono contra a recomendação de comer sozinho). A comida é item: os animais a derrubam, vai na mochila e se guarda no cofre do Banco | Parte 3, "Números que governam o jogo" |
 | 19/10 | **Voz na sala de caçar junto:** WebRTC direto entre os aparelhos, segurar para falar, apresentação pelo canal da sala; só na sala, nunca na cidade aberta (moderação vem antes). Aceita o STUN público do Cloudflare e do Google, a única exceção a não falar com outro servidor; sem TURN até medir quantos não ligam | Parte 3, "Voz" |
 | 19/10 | **Um guia só** (este arquivo), com o princípio-mãe "a realidade como ela é" e os seis pilares | Parte 1 |
 | 19/10 | **O mundo é igual para todos:** nada escala com nível, classe ou grupo | Pilar 1 |

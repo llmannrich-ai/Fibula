@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.36.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.38.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -26,13 +26,15 @@ export function confereFicha(f){
 }
 export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),sabe:daClasse(c,lvl),equip:EQ0(),mochila:{}});
 /* cofre (ouro), itens (equipamento guardado), prov (provisões para a próxima
-   caçada), mats (materiais para o Gordon) e forja (encomendas entregues) são
-   da conta; equip e mochila são de cada personagem */
+   caçada), mats (o resto guardado: materiais, tesouros e comida) e forja
+   (encomendas entregues) são da conta; equip e mochila são de cada
+   personagem */
 /* chao: as peças do chão da cidade (city.chao) que esta conta já pegou, por id */
 export const SAVE0=()=>({cofre:0,itens:{},prov:{},mats:{},forja:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{},chao:{}});
 /* só as peças que existem no content.json, com quantidade inteira positiva:
    vale para o save cru e para o cofre que o mercado da nuvem devolve */
 export const soPecas=o=>{const r={};for(const[k,q]of Object.entries(o||{}))if(ITEMS[k]&&ITEMS[k].slot&&q>0)r[k]=q|0;return r};
+export const ehComida=k=>!!(ITEMS[k]&&ITEMS[k].comida);
 /* lê um save cru (do localStorage ou da nuvem) por cima dos padrões */
 export const normaliza=s=>{const n=Object.assign(SAVE0(),s);n.up=Object.assign({},UP0,s.up||{});n.chars=s.chars||{};
   /* save apontando para um personagem que não existe deixava a tela em branco */
@@ -41,6 +43,8 @@ export const normaliza=s=>{const n=Object.assign(SAVE0(),s);n.up=Object.assign({
   /* saves de antes do equipamento não têm itens nem equip; item que saiu do
      content.json some em vez de quebrar a tela */
   n.itens=soPecas(s.itens);n.prov=soProv(s.prov);n.mats=soMats(s.mats);
+  /* a comida da 0.29.0 ficava em prov; agora é item, e vai para o cofre */
+  for(const[k,q]of Object.entries(s.prov||{})){const it=SUP[k]&&SUP[k].efeito.item;if(it&&q>0)n.mats[it]=(n.mats[it]|0)+(q|0)}
   n.forja=Math.max(0,Math.min(FORJA.missoes.length,s.forja|0));
   n.chao=s.chao&&typeof s.chao==='object'&&!Array.isArray(s.chao)?s.chao:{};
   for(const[cl,c]of Object.entries(n.chars)){const e=EQ0();
@@ -118,7 +122,7 @@ export function pegaDoChao(id,k){if(!ITEMS[k]||save.chao[id])return false;save.c
 /* peça que renasce no chão da cidade: vai para a mochila, se couber */
 export function pegaPraMochila(k){const m=ch().mochila;if(!ITEMS[k]||!cabe(m,k))return false;m[k]=(m[k]|0)+1;return true}
 /* o Banco compra peça e tesouro pelo valor; material só o Gordon compra */
-export function vender(k){if(!ITEMS[k]||ehMat(k)||!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
+export function vender(k){if(!ITEMS[k]||ehMat(k)||ITEMS[k].comida||!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
 /* ---------- mochila ----------
    Como no Tibia (decisão do Leonardo, 19/10/2026): o loot fica na mochila do
    personagem (ch().mochila, {item: qtd}, ouro inclusive), ela entra inteira
@@ -177,31 +181,29 @@ export function comprarForja(k){const o=ofertaForja(k);
 /* ---------- provisões (lojas da cidade) ----------
    Compradas com o ouro do cofre, ficam em save.prov (da conta, até o max de
    cada uma) e vão inteiras na próxima caçada que começar: é ralo do cofre
-   (pilar 5) e aposta a mais na mesa (pilar 1). A comida vai na mochila, como
-   no Tibia: o que não se comeu volta ao estoque se o jogador extrair
-   (devolveComida) e fica na masmorra se ele morrer. Provisão com grupo:
-   só uma do mesmo grupo por caçada. */
-export const soProv=o=>{const r={};for(const[k,q]of Object.entries(o||{})){const s=SUP[k];if(s&&q>0)r[k]=Math.min(s.max,q|0)}return r};
-/* '' se dá para comprar; senão o motivo: 'ouro', 'max' ou a chave da
-   provisão do mesmo grupo que já está guardada */
+   (pilar 6) e aposta a mais na mesa (pilar 4). A comida é diferente: é item
+   (efeito.item), e a compra vai direto para a mochila, como no Tibia.
+   Provisão com grupo: só uma do mesmo grupo por caçada. */
+export const soProv=o=>{const r={};for(const[k,q]of Object.entries(o||{})){const s=SUP[k];if(s&&!s.efeito.item&&q>0)r[k]=Math.min(s.max,q|0)}return r};
+/* '' se dá para comprar; senão o motivo: 'ouro', 'max', 'cheia' (a comida
+   não cabe na mochila) ou a chave da provisão do mesmo grupo já guardada */
 export function podeComprar(k){
-  const s=SUP[k];if(!s||(save.prov[k]||0)>=s.max)return 'max';
+  const s=SUP[k];if(s&&s.efeito.item)return !cabe(ch().mochila,s.efeito.item)?'cheia':save.cofre<s.preco?'ouro':'';
+  if(!s||(save.prov[k]||0)>=s.max)return 'max';
   if(s.grupo){const o=Object.keys(save.prov).find(j=>j!==k&&SUP[j].grupo===s.grupo);if(o)return o}
   return save.cofre<s.preco?'ouro':'';
 }
 export function compra(k){
-  if(podeComprar(k))return false;save.cofre-=SUP[k].preco;save.prov[k]=(save.prov[k]||0)+1;return true}
+  if(podeComprar(k))return false;const s=SUP[k],it=s.efeito.item;save.cofre-=s.preco;
+  if(it){const m=ch().mochila;m[it]=(m[it]|0)+1}else save.prov[k]=(save.prov[k]||0)+1;return true}
 /* a caçada começou: o que o jogador levou (p.prov) sai do estoque */
 export function gastaProv(prov){for(const[k,q]of Object.entries(prov||{})){const n=(save.prov[k]||0)-q;if(n>0)save.prov[k]=n;else delete save.prov[k]}}
-/* a caçada acabou com o jogador saindo pela porta: a comida que sobrou volta */
-export function devolveComida(com){for(const[k,q]of Object.entries(com||{})){const n=q|0;
-  if(SUP[k]&&SUP[k].efeito.comida&&n>0)save.prov[k]=Math.min(SUP[k].max,(save.prov[k]||0)+n)}}
-/* o efeito somado das provisões de uma ficha, para novoJogador(): poções,
-   buffs do começo e a comida que vai na mochila (com) */
+/* o efeito somado das provisões de uma ficha, para novoJogador(): poções e
+   buffs do começo (a comida não passa por aqui: está na mochila) */
 export function efeitoProv(prov){
-  const e={pot:0,com:{},buffs:{}};
+  const e={pot:0,buffs:{}};
   for(const[k,q]of Object.entries(prov||{})){const f=SUP[k]&&SUP[k].efeito;if(!f)continue;
-    e.pot+=(f.pot||0)*q;if(f.comida)e.com[k]=q;
+    e.pot+=(f.pot||0)*q;
     if(f.buff)for(const b of BUFFS)if(f.buff[b]){const o=e.buffs[b];e.buffs[b]={v:(o?o.v:0)+f.buff[b],left:Math.max(o?o.left:0,f.buff.dur)}}}
   return e;
 }

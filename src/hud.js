@@ -1,19 +1,19 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.36.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.36.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.36.0';
-import {G} from './sim/incursao.js?v=0.36.0';
-import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.36.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.36.0';
-import {erroFeira} from './telas.js?v=0.36.0';
-import {persist} from './salvar.js?v=0.36.0';
-import {C} from './sim/cidade.js?v=0.36.0';
-import {ART,icone} from './arte.js?v=0.36.0';
-import {retrato} from './desenho.js?v=0.36.0';
-import {rede} from './rede.js?v=0.36.0';
-import {VOZ} from './voz.js?v=0.36.0';
-import {$,app} from './dom.js?v=0.36.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.38.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.38.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.38.0';
+import {G,nComida} from './sim/incursao.js?v=0.38.0';
+import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.38.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.38.0';
+import {erroFeira} from './telas.js?v=0.38.0';
+import {persist} from './salvar.js?v=0.38.0';
+import {C} from './sim/cidade.js?v=0.38.0';
+import {ART,icone} from './arte.js?v=0.38.0';
+import {retrato} from './desenho.js?v=0.38.0';
+import {rede} from './rede.js?v=0.38.0';
+import {VOZ} from './voz.js?v=0.38.0';
+import {$,app} from './dom.js?v=0.38.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -67,7 +67,7 @@ export function hud(){
   if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
   E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
   /* a comida: quantas restam e quanto tempo de alimentação falta (sem ele, fome) */
-  let nc=0;for(const k in p.com)nc+=p.com[k];
+  const nc=G.convidado?p.nc|0:nComida(p.bag);
   E.bCom.style.setProperty('--cd',clamp(p.cdCo,0,1));E.bCom.classList.toggle('fome',p.ali<=0);E.bCom.classList.toggle('dim',!nc);
   setT(E.comN,'×'+nc);setT(E.comT,p.ali>0?fmt(p.ali):'Fome');
   for(let i=0;i<4;i++){

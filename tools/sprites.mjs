@@ -72,6 +72,26 @@ const ARTE = {
   chao_esg: {i: 165}, esg_v: {i: 723}, esg_h: {i: 724}, esg_poste: {i: 725}, esg_canto: {i: 726},
   chao_ilha: {i: 128}, ilha_v: {i: 552}, ilha_h: {i: 553}, ilha_poste: {i: 554}, ilha_canto: {i: 555},
   chao_cripta: {i: 160}, cripta_v: {i: 542}, cripta_h: {i: 543}, cripta_poste: {i: 544}, cripta_canto: {i: 545},
+  /* variantes de chão, misturadas pelo desenho como o Tibia mistura lajes */
+  chao2: {i: 142}, chao_cripta2: {i: 161}, chao_ilha2: {i: 129},
+  /* objetos sólidos dos mapas de caça (hunts.<k>.mapa.objetos e arte.objetos
+     no content.json): ocupam o sqm, como no Tibia */
+  obj_pilar: {i: 1130}, obj_rocha: {i: 1641}, obj_rocha2: {i: 1642}, obj_rocha3: {i: 1643},
+  obj_musgo: {i: 1622}, obj_musgo2: {i: 1623}, obj_pedrao: {i: 1624}, obj_pedrao2: {i: 1625},
+  obj_estatua2: {i: 1159}, obj_gargula: {i: 1157}, obj_sarcofago: {i: 1146}, obj_altar: {i: 1152},
+  obj_palmeira: {i: 2584}, obj_cacto: {i: 2583}, obj_cacto2: {i: 2585},
+  /* árvores que fecham a Ilha no lugar de parede */
+  arv_1: {i: 1521}, arv_2: {i: 1523}, arv_3: {i: 1532},
+  /* detalhes do chão, por onde se anda (arte.detalhes): teias nos cantos,
+     pedrinhas, sangue, ossadas, a grade do esgoto, cogumelos, lodo, tufos */
+  det_teia1: {i: 1271}, det_teia2: {i: 1272}, det_teia3: {i: 1273}, det_teia4: {i: 1274},
+  det_pedra1: {i: 1598}, det_pedra2: {i: 1599}, det_pedra3: {i: 1600}, det_pedra4: {i: 1603}, det_pedra5: {i: 1604},
+  det_musgo: {i: 1610}, det_sangue1: {i: 2223}, det_sangue2: {i: 2225}, det_resto1: {i: 2229}, det_resto2: {i: 2230},
+  det_ossada: {i: 2232}, det_ossada2: {i: 2248}, det_grade: {i: 999}, det_lodo: {i: 1619}, det_vela: {i: 1178},
+  det_cogu1: {i: 1401}, det_cogu2: {i: 1402}, det_cogu3: {i: 1403},
+  det_tufo1: {i: 1425}, det_tufo2: {i: 1427}, det_tufo3: {i: 1430}, det_tufo4: {i: 1434},
+  det_planta1: {i: 1316}, det_planta2: {i: 1317}, det_planta3: {i: 1325}, det_planta4: {i: 1326},
+  det_graveto1: {i: 1440}, det_graveto2: {i: 1441}, det_graveto3: {i: 1442},
   /* cidade: chão de grama, rua de pedra, assoalho das casas, água, árvores e
      os NPCs das casas (as chaves de city.npcs no content.json) */
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
@@ -99,6 +119,9 @@ const ARTE = {
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},
   it_espada: {i: 1712}, it_faca: {i: 1750}, it_espadamadeira: {i: 1748}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
   it_gema: {i: 2211}, it_coroa: {i: 1984}, it_couraca: {i: 1998}, it_cota: {i: 2034}, pocao: {i: 2129},
+  /* comida: item da mochila (as quatro da Quitanda com o desenho da loja) */
+  it_frutas: {i: 2177}, it_queijo: {i: 2183}, it_presunto: {i: 2187}, it_ensopado: {i: 2701},
+  it_carne: {i: 2181}, it_presunto_dragao: {i: 2188, tom: 30},
   it_maca: {i: 1811}, it_gibao: {i: 2010}, it_machadoguerra: {i: 1844}, it_placas: {i: 2053},
   /* efeitos de impacto por elemento */
   ef_fisico: {e: 1}, ef_fogo: {e: 6}, ef_gelo: {e: 7}, ef_cura: {e: 2},
