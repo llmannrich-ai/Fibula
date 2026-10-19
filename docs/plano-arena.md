@@ -5,6 +5,14 @@
 > antes de o Leonardo decidir os pontos da seção 2 e, se for o caso, mudar a
 > Parte 1 à mão.
 >
+> **Feito na 0.48.0, com outra decisão do Leonardo (19/10/2026):** o
+> personagem entra e **sai com XP e itens**, como de qualquer lugar de caça
+> (a seção 2, A1 e A2, não vale), e o **PvP entrou já**, calculado por quem
+> roda o servidor da sala, com o risco de trapaça aceito até a F2. A partida
+> é um ciclo do relógio da arena (quem chega no meio tem menos tempo), a
+> mochila do morto fica no chão e o Selo não guarda lá. O que vale é o
+> CLAUDE.md, Parte 3, "Arena"; o resto deste plano fica como histórico.
+>
 > Plano de 19/10/2026, sobre a `main` em `b7e6286` (versão 0.47.0), a pedido
 > do Leonardo, a partir da conversa com os testadores (partida curta,
 > grupos de 1 a 4, mapa que fecha, extração, PvP entre grupos, loot de quem

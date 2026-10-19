@@ -4,8 +4,22 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.47.0';
-import {ALFA} from './mapa.js?v=0.47.0';
+import {MW,MH} from './base.js?v=0.48.0';
+import {ALFA} from './mapa.js?v=0.48.0';
+/* a Arena (hunts.<k>.arena, decisão do Leonardo em 19/10/2026): uma partida
+   de dur segundos que recomeça sozinha. Até entraAte se entra; os anéis
+   desabam da borda ao centro (r em sqm, contado como o maior dos dois eixos);
+   quem fica fora do anel perde desaba da vida máxima por segundo; as saídas
+   abrem em saidas; as fases dão aviso e chefe; pvp é quanto do dano passa de
+   jogador a jogador; max, quantos cabem */
+const E0=k=>t=>{throw new Error(`arena ${k}: ${t}`)};
+function validaArena(a,c,E){
+  const num=(v,a0,b)=>typeof v==='number'&&v>=a0&&v<=b;
+  if(!num(a.dur,60,3600)||!num(a.entraAte,0,a.dur)||!num(a.saidas,0,a.dur))E('dur, entraAte e saidas são segundos dentro da partida');
+  if(!num(a.desaba,0.001,1)||!num(a.pvp,0,1)||!Number.isInteger(a.max)||a.max<1||a.max>8)E('desaba e pvp vão de 0 a 1; max, de 1 a 8');
+  if(!Array.isArray(a.aneis)||a.aneis.some((r,i)=>!num(r.t,0,a.dur)||!num(r.r,0,64)||(i&&(r.t<=a.aneis[i-1].t||r.r>=a.aneis[i-1].r))))E('aneis em ordem de tempo, cada um menor que o anterior');
+  if(!Array.isArray(a.fases)||a.fases.some(f=>!num(f.t,0,a.dur-1)||typeof f.msg!=='string'||(f.chefe!==undefined&&!(c.enemies[f.chefe]&&c.enemies[f.chefe].boss))))E('fases com t, msg e, se houver, chefe (um inimigo com boss)');
+}
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
@@ -110,7 +124,10 @@ export function validaConteudo(c){
   if(!hs.length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
   for(const[k,h]of hs){
     if(typeof h.nome!=='string'||typeof h.nivel!=='number')throw new Error(`mapa de caça ${k} sem nome ou nível`);
-    if(!ci.npcs[h.npc]||ci.npcs[h.npc].abre!=='cacadas')throw new Error(`mapa de caça ${k} precisa de npc, um NPC da cidade que abre cacadas`);
+    /* a Arena (h.arena) não é do Guia: quem leva até ela é o Mestre da Arena */
+    const abre=h.arena?'arena':'cacadas';
+    if(!ci.npcs[h.npc]||ci.npcs[h.npc].abre!==abre)throw new Error(`mapa de caça ${k} precisa de npc, um NPC da cidade que abre ${abre}`);
+    if(h.arena)validaArena(h.arena,c,E0(k));
     for(const b of h.bands||[]){
       if(typeof b.untilDepth!=='number')throw new Error(`mapa de caça ${k}: banda sem untilDepth numérico`);
       const soma=Object.values(b.weights||{}).reduce((a,v)=>a+v,0);
@@ -134,13 +151,20 @@ export function validaConteudo(c){
     for(const t of m.spawn){const[x,y,e]=xy(t);
       if(!tem(c.enemies,e))E(`spawn cita monstro inexistente: ${e}`);
       if(kAt(+x,+y)!=='c'||vistos.has(x+','+y))E(`spawn de ${e} fora do chão ou repetido em ${x},${y}`);vistos.add(x+','+y)}
-    if(!m.spawn.some(t=>xy(t)[2]===bossK))E(`o chefe (${bossK}) não está no spawn`);
+    if(!h.arena&&!m.spawn.some(t=>xy(t)[2]===bossK))E(`o chefe (${bossK}) não está no spawn`);
+    /* os pontos da Arena: a entrada de cada time, as saídas e o centro, onde
+       os anéis se fecham, todos no chão (a entrada também com os sqm em volta) */
+    if(h.arena){const P=h.arena.pontos,ok=t=>{const[x,y]=xy(t).map(Number);return kAt(x,y)==='c'};
+      if(!P||!ok(P.centro)||!Array.isArray(P.entradas)||!P.entradas.length||!Array.isArray(P.saidas)||!P.saidas.length)E('arena.pontos precisa de centro, entradas e saidas');
+      for(const t of P.entradas){const[x,y]=xy(t).map(Number);if([[0,0],[1,0],[-1,0],[0,1]].some(([i,j])=>kAt(x+i,y+j)!=='c'))E(`a entrada ${t} da arena (e os sqm em volta) precisa ser chão`)}
+      for(const t of P.saidas)if(!ok(t))E(`a saída ${t} da arena precisa ser chão`)}
   }
+  for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='arena'&&!hs.some(([,h])=>h.arena&&h.npc===k))throw new Error(`o NPC ${k} abre arena, mas nenhuma arena é dele`);
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='cacadas'&&!hs.some(([,h])=>h.npc===k))throw new Error(`o NPC ${k} abre cacadas, mas nenhum mapa de caça é dele`);
   /* o portal é um lugar no chão (pisou, entrou) que leva a um mapa de caça;
      todo mapa tem o dele */
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='portal'&&(n.lugar!==true||!hs.some(([h])=>h===n.caca)))throw new Error(`o portal ${k} precisa de lugar: true e caca, a chave de um mapa de caça`);
-  for(const[k]of hs)if(!Object.values(ci.npcs).some(n=>n.abre==='portal'&&n.caca===k))throw new Error(`o mapa de caça ${k} não tem portal na cidade (um NPC com abre: portal e caca: ${k})`);
+  for(const[k,h]of hs)if(!h.arena&&!Object.values(ci.npcs).some(n=>n.abre==='portal'&&n.caca===k))throw new Error(`o mapa de caça ${k} não tem portal na cidade (um NPC com abre: portal e caca: ${k})`);
   const f=c.forja,inteiro=v=>Number.isInteger(v)&&v>0;
   if(!f.compra||typeof f.compra!=='object'||!Array.isArray(f.missoes)||!Array.isArray(f.loja))throw new Error('forja precisa de compra, missoes e loja');
   for(const[k,v]of Object.entries(f.compra)){
@@ -170,7 +194,7 @@ export function validaConteudo(c){
    mapa k, ou o primeiro se k não existe (o que vem da rede passa por aqui). */
 export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10};
 export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha'};
-export const ABRE=['mercador','banco','cacadas','mercado','forja','loja','portal'];
+export const ABRE=['mercador','banco','cacadas','mercado','forja','loja','portal','arena'];
 export let CITY,HUNTS;
 /* o portal da cidade que leva ao mapa k: é perto dele que se volta */
 export const portalDe=k=>Object.keys(CITY.npcs).find(n=>CITY.npcs[n].abre==='portal'&&CITY.npcs[n].caca===k)||HUNTS[k].npc;

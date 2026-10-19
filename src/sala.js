@@ -37,21 +37,23 @@
    e diz quem fica no lugar, com a herança) e fecha (saiu sozinho),
    e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
 
-import {CLASSES,ITEMS,SPELLS,HUNTS,cacaDe} from './sim/dados.js?v=0.47.0';
-import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.47.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid} from './sim/incursao.js?v=0.47.0';
-import {novaSemente} from './sim/base.js?v=0.47.0';
-import {drinkPot,comer} from './sim/combate.js?v=0.47.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.47.0';
-import {rede,ID,anuncia} from './rede.js?v=0.47.0';
-import {persist} from './salvar.js?v=0.47.0';
-import {log} from './hud.js?v=0.47.0';
-import {recebeVoz,desligaVoz} from './voz.js?v=0.47.0';
+import {CLASSES,ITEMS,SPELLS,HUNTS,cacaDe} from './sim/dados.js?v=0.48.0';
+import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.48.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid,arenaFechada,reabreEm,meuTime} from './sim/incursao.js?v=0.48.0';
+import {novaSemente} from './sim/base.js?v=0.48.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.48.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.48.0';
+import {rede,ID,anuncia} from './rede.js?v=0.48.0';
+import {persist} from './salvar.js?v=0.48.0';
+import {log} from './hud.js?v=0.48.0';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.48.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
    envios por segundo no canal, abaixo dos ~100 que o plano Free aceita */
 export const MAX=4;
+/* a Arena cabe mais gente (arena.max, até 8): com 8, ~80 envios por segundo */
+export const maxSala=(k=SALA.caca)=>HUNTS[k]&&HUNTS[k].arena?HUNTS[k].arena.max:MAX;
 const RITMO=.1,BATIDA=25,PACIENCIA=12,HERDA=1;
 /* papel: null (fora de sala), 'anfitriao' ou 'convidado'. id: o canal da
    sala, que não muda com o anfitrião; anf: o anfitrião de agora; gen: quantas
@@ -80,7 +82,7 @@ const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
 /* a apresentação da voz (src/voz.js) passa por este canal */
 export const sinal=q=>{if(pronto)bc('voz',Object.assign({de:ID},q))};
 const nomeMeu=()=>quemSou()||CLASSES[save.classe].nome;
-const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up),prov:Object.assign({},save.prov)});
+const minhaFicha=()=>({nome:nomeMeu(),time:meuTime,cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up),prov:Object.assign({},save.prov)});
 const avisa=()=>{rede.sala=SALA.papel==='anfitriao'?{n:SALA.membros.length,h:SALA.caca,id:SALA.id}:null;rede.naSala=SALA.papel?Math.max(1,SALA.membros.length):0;anuncia();SALA.aoMudar()};
 
 function liga(){
@@ -146,7 +148,11 @@ function decide(estado){
 /* quem está dentro da masmorra da sala agora */
 export const dentro=id=>{const i=IDX.get(id);return SALA.papel==='anfitriao'?!!(G&&G.sala&&i!==undefined&&G.ps[i]&&!G.ps[i].fora):!!(SALA.membros.find(m=>m.id===id)||{}).d};
 /* a porta: o anfitrião entra direto; o convidado pede e espera a resposta */
+/* a porta da Arena fecha no meio da partida: quanto falta para reabrir */
+const mmss=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+export const avisoFechada=s=>`A entrada da Arena está fechada: a próxima partida começa em ${mmss(s)}.`;
 export function entraPorta(){
+  if(SALA.papel==='anfitriao'&&arenaFechada()){log(avisoFechada(reabreEm()),'warn');return false}
   if(SALA.papel==='anfitriao'){const i=meuI(),p=entra(i,fichaLocal());G.p=p;ENTS[i]=null;return true}
   if(SALA.papel==='convidado'&&pronto&&!pedindo){pedindo=true;pedT=0;bc('entro',{id:ID,ficha:minhaFicha()});return true}
   return false;
@@ -184,6 +190,7 @@ export const correndo=()=>!!(G&&G.sala&&G.active&&!G.over);
 function abrePorta(q){
   const m=SALA.membros.find(x=>x.id===q.id),f=confereFicha(q.ficha);
   if(!m||!f||!G||!G.sala)return;
+  if(arenaFechada()){bc('fechada',{id:q.id,s:Math.ceil(reabreEm())});return}
   let i=IDX.get(q.id);
   if(i===undefined){i=G.ps.length;if(i>=8)return;IDX.set(q.id,i)}
   if(G.ps[i]&&!G.ps[i].fora)return;
@@ -220,7 +227,7 @@ function recebeAnf(ev,q,de){
     const f=confereFicha(q.ficha),ja=SALA.membros.find(m=>m.id===q.id);
     if(!f)return;
     if(ja){ja.ficha=f;ja.lvl=f.c.lvl;ja.cl=f.cl;ja.nome=f.nome}
-    else if(SALA.membros.length>=MAX){bc('cheia',{id:q.id});return}
+    else if(SALA.membros.length>=maxSala()){bc('cheia',{id:q.id});return}
     else{SALA.membros.push({id:q.id,nome:f.nome,cl:f.cl,lvl:f.c.lvl,ficha:f});log(`${f.nome} entrou na sua sala.`,'info')}
     mandaMembros();avisa();
   }else if(ev==='membros'&&q&&typeof q.anf==='string'&&q.anf!==ID&&Array.isArray(q.lista)){
@@ -259,7 +266,7 @@ function tira(id){
 let eu=-1;
 /* o src/telas.js liga isto: começar a incursão da sala e mostrar o fim */
 export const ganchos={comeca(){},fim(){},aborta(){},banner(){},entra(){}};
-const limpa=l=>l.slice(0,MAX).filter(m=>m&&CLASSES[m.cl]).map(m=>({id:String(m.id),nome:String(m.nome||'').slice(0,20),cl:m.cl,lvl:m.lvl|0,d:m.d?1:0}));
+const limpa=l=>l.slice(0,8).filter(m=>m&&CLASSES[m.cl]).map(m=>({id:String(m.id),nome:String(m.nome||'').slice(0,20),cl:m.cl,lvl:m.lvl|0,d:m.d?1:0}));
 /* o anfitrião mudou: quem estava na masmorra dele volta à cidade, porque a
    regra dela morava lá; se o novo sou eu, a sala passa a rodar aqui */
 function troca(anf,gen,motivo){
@@ -342,6 +349,7 @@ function recebeConv(ev,q){
   }else if(ev==='cheia'&&q&&q.id===ID){
     /* lotado: a cópia seguinte do mesmo lugar */
     const k=SALA.caca,n=SALA.n||1;solta();if(n<9)vaiCaca(k,n+1);else log('Todos os lugares deste mapa estão cheios.','warn')}
+  else if(ev==='fechada'&&q&&q.id===ID){pedindo=false;SALA.auto=false;log(avisoFechada(Math.max(0,q.s|0)),'warn')}
   else if(ev==='fecha'){if(correndo())ganchos.aborta('O anfitrião fechou a sala.');log('O anfitrião fechou a sala.','warn');solta()}
   else if(ev==='porta'&&q&&q.id===ID&&Array.isArray(q.ps)){
     /* a porta abriu para mim: a masmorra é a mesma semente, e eu sou o i */

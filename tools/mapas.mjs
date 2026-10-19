@@ -97,6 +97,7 @@ export function rascunho(h, prog) {
   /* os monstros: cada sala ganha os dela num sqm livre do miolo, pela banda
      da profundidade; o chefe e um da escolta na sala mais longe. Sorteados
      uma vez, aqui; no jogo o ponto é fixo */
+  if (h.arena) return arena(h, prog, g, rooms, pilha);
   const s0 = rooms[0], bands = h.bands || prog.bands, boss = h.boss || prog.boss, pr = prog.perRoom;
   let md = 1, fundo = s0;
   for (const r of rooms) { r.d = Math.hypot(r.cx - s0.cx, r.cy - s0.cy); if (r.d > md) { md = r.d; fundo = r; } }
@@ -114,6 +115,29 @@ export function rascunho(h, prog) {
     if (b) poe(k, b[0], b[1]); };
   livre(fundo, boss.type); livre(fundo, boss.escort[ri(0, boss.escort.length - 1)]);
   return codifica(pilha, `${s0.cx} ${s0.cy}`, spawn);
+}
+
+/* a Arena: rooms[0] é o centro, as R.entradas últimas salas são as entradas
+   dos times (sem monstro). A profundidade é a proximidade do centro: os
+   monstros fortes ficam no meio, onde estão as saídas, e os chefes nascem
+   na partida (arena.fases), não no spawn. Grava os pontos em arena.pontos */
+function arena(h, prog, g, rooms, pilha) {
+  const R = h.rascunho, c0 = rooms[0], ne = R.entradas, ents = rooms.slice(rooms.length - ne), pr = prog.perRoom;
+  const usado = new Set(), spawn = [], chao = (x, y) => g[y * MW + x] === 0;
+  const poe = (k, x, y) => { const i = y * MW + x; if (!chao(x, y) || usado.has(i)) return false; usado.add(i); spawn.push(`${x} ${y} ${k}`); return true; };
+  /* as saídas: três sqm do centro, que nenhum monstro ocupa */
+  const saidas = [[-3, 0], [3, 0], [0, 3]].map(([i, j]) => [c0.cx + i, c0.cy + j]).filter(([x, y]) => chao(x, y));
+  for (const [x, y] of saidas) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) usado.add((y + j) * MW + x + i);
+  let md = 1; for (const r of rooms) { r.d = Math.hypot(r.cx - c0.cx, r.cy - c0.cy); md = Math.max(md, r.d); }
+  const tipo = (d) => { const b = h.bands.find((b) => d < b.untilDepth) || h.bands[h.bands.length - 1]; let r = sorte();
+    for (const [k, w] of Object.entries(b.weights)) { if (r < w) return k; r -= w; } return Object.keys(b.weights).pop(); };
+  for (const r of rooms) {
+    if (ents.includes(r)) continue;
+    const n = ri(pr.min, pr.max) + (r.w * r.h > pr.largeRoomArea ? pr.largeRoomBonus : 0), d = 1 - r.d / md;
+    for (let k = 0; k < n; k++) poe(tipo(d), r.x + 1 + ri(0, Math.max(0, r.w - 3)), r.y + 1 + ri(0, Math.max(0, r.h - 3)));
+  }
+  h.arena.pontos = {centro: `${c0.cx} ${c0.cy}`, entradas: ents.map((r) => `${r.cx} ${r.cy}`), saidas: saidas.map(([x, y]) => `${x} ${y}`)};
+  return codifica(pilha, h.arena.pontos.entradas[0], spawn);
 }
 
 /* pilha por sqm → {pilhas, grade}: cada pilha diferente vira um número de

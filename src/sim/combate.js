@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.47.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.47.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.47.0';
-import {G,num,shake,sai,solid} from './incursao.js?v=0.47.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.48.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,HUNTS,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.48.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.48.0';
+import {G,num,shake,sai,solid} from './incursao.js?v=0.48.0';
 
 /* sem p, o jogador deste aparelho: é o que a tela pergunta */
 export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k],s=p.sup&&p.sup[k];return (b?b.v:0)+(s?s.v:0)};
@@ -33,15 +33,26 @@ function aplicaEfeitos(m,s,p){
   if(s.dot)m.dot={left:s.dot.dur,dps:Math.max(1,rolaDano(s,p)*s.dot.f),el:s.el,tick:0,p};
 }
 export const efeito=(x,y,el)=>G.fx.push({k:'ef',x,y,n:'ef_'+(el||'fisico'),t:0,life:.5});
+/* ---------- PvP ----------
+   Só na Arena (decisão do Leonardo em 19/10/2026): um jogador fere outro de
+   time diferente (o mesmo código de time não se fere; sem código, todos são
+   adversários). O dano é o da habilidade, vezes arena.pvp, e a armadura de
+   quem leva conta, como contra monstro. Quem calcula é o servidor da sala;
+   na F2, o servidor próprio, sempre por aqui */
+export const podeFerir=(p,q)=>!!(G.arena&&p&&q&&p!==q&&!p.fora&&!q.fora&&!(p.time&&p.time===q.time));
+/* os alvos de um golpe: os monstros e, na Arena, os adversários de p */
+const ALVOS=[];
+function alvos(p){ALVOS.length=0;for(const m of G.mons)ALVOS.push(m);if(G.arena)for(const q of G.ps)if(podeFerir(p,q))ALVOS.push(q);return ALVOS}
 export function atingir(m,s,mult,p){
+  if(m.cl){efeito(m.x,m.y,s.el);hurtPlayer(m,Math.max(1,Math.round(rolaDano(s,p)*(mult||1)*HUNTS[G.caca].arena.pvp)),p);if(s.esc==='per')registraGolpe(p);return}
   efeito(m.x,m.y,s.el);
   hitMon(m,Math.round(rolaDano(s,p)*(mult||1)),EL_COR[s.el],p);
   if(m.hp>0)aplicaEfeitos(m,s,p);
   if(s.esc==='per')registraGolpe(p);
 }
-function emCone(cx,cy,ang,raio,abertura,lim){
+function emCone(cx,cy,ang,raio,abertura,lim,p){
   const out=[];
-  for(const m of G.mons){
+  for(const m of p?alvos(p):G.mons){
     const dx=m.x-cx,dy=m.y-cy,d=hyp(dx,dy);
     if(d>raio+m.r)continue;
     if(abertura<Math.PI){let a=Math.atan2(dy,dx)-ang;while(a>Math.PI)a-=TAU;while(a<-Math.PI)a+=TAU;if(Math.abs(a)>abertura)continue}
@@ -50,9 +61,9 @@ function emCone(cx,cy,ang,raio,abertura,lim){
   out.sort((a,b)=>a.d-b.d);
   return (lim?out.slice(0,lim):out).map(o=>o.m);
 }
-function emLinha(cx,cy,ang,comp,lim){
+function emLinha(cx,cy,ang,comp,lim,p){
   const ux=Math.cos(ang),uy=Math.sin(ang),out=[];
-  for(const m of G.mons){
+  for(const m of p?alvos(p):G.mons){
     const dx=m.x-cx,dy=m.y-cy,t=dx*ux+dy*uy;
     if(t<0||t>comp)continue;
     if(Math.abs(-dx*uy+dy*ux)>18+m.r*.6)continue;
@@ -106,27 +117,27 @@ function lancar(id,p,ang,frac){
       break}
     case'cone':{
       G.fx.push({k:'cone',x:p.x,y:p.y,ang:p.face,raio:s.raio,ab:s.ang,col:EL_COR[s.el],el:s.el,t:0,life:.4});
-      for(const m of emCone(p.x,p.y,p.face,s.raio,s.ang))atingir(m,s,1,p);
+      for(const m of emCone(p.x,p.y,p.face,s.raio,s.ang,0,p))atingir(m,s,1,p);
       shake(4);break}
     case'aura':{
       G.fx.push({k:'anel',x:p.x,y:p.y,raio:s.raio,col:EL_COR[s.el],el:s.el,t:0,life:.45});
-      for(const m of emCone(p.x,p.y,0,s.raio,Math.PI))atingir(m,s,1,p);
+      for(const m of emCone(p.x,p.y,0,s.raio,Math.PI,0,p))atingir(m,s,1,p);
       shake(s.raio>120?7:4);break}
     case'feixe':{
       /* a linha de visão: a parede corta o raio */
       const comp=ondeBate(p.x,p.y,ux,uy,s.raio);
       G.fx.push({k:'feixe',x:p.x,y:p.y-8,ang:p.face,comp,col:EL_COR[s.el],el:s.el,t:0,life:.3});
-      for(const m of emLinha(p.x,p.y,p.face,comp,s.max))atingir(m,s,1,p);
+      for(const m of emLinha(p.x,p.y,p.face,comp,s.max,p))atingir(m,s,1,p);
       shake(3);break}
     case'melee':{
       /* o golpe sai mesmo sem ninguém na frente */
       p.swing=.24;p.swingA=p.face;p.swingR=s.raio;
-      const alvos=emCone(p.x,p.y,p.face,s.raio,s.ang,s.unico?1:0);
-      for(const m of alvos)atingir(m,s,1,p);
-      if(!alvos.length)efeito(p.x+ux*s.raio*.7,p.y+uy*s.raio*.7,s.el);
+      const al=emCone(p.x,p.y,p.face,s.raio,s.ang,s.unico?1:0,p);
+      for(const m of al)atingir(m,s,1,p);
+      if(!al.length)efeito(p.x+ux*s.raio*.7,p.y+uy*s.raio*.7,s.el);
       if(s.multi)for(let i=1;i<s.multi;i++)G.pend.push({t:i*.16,fn:()=>{
         if(p.fora)return;
-        const vivos=emCone(p.x,p.y,p.face,s.raio+8,s.ang,1);
+        const vivos=emCone(p.x,p.y,p.face,s.raio+8,s.ang,1,p);
         p.swing=.2;p.swingA=p.face;p.swingR=s.raio;
         for(const m of vivos)atingir(m,s,1,p);shake(5);
       }});
@@ -173,7 +184,7 @@ export function comer(p=G&&G.ps[0]){
 export function explode(x,y,s,p){
   const raio=s.raio||76;
   G.fx.push({k:'boom',x,y,raio,col:EL_COR[s.el],el:s.el,t:0,life:.5});shake(6);
-  for(const m of G.mons.slice())if(hyp(m.x-x,m.y-y)<raio+m.r)atingir(m,s,1,p);
+  for(const m of alvos(p).slice())if(hyp(m.x-x,m.y-y)<raio+m.r)atingir(m,s,1,p);
 }
 /* m.dn guarda o dano de cada jogador no monstro: decide quem ganha XP e de
    quem é a vez de pegar o loot */
@@ -225,12 +236,15 @@ function gainXp(x,p){
   }
   saida.persist();
 }
-export function hurtPlayer(p,d){
+/* de é o jogador que feriu (PvP, na Arena); sem ele, um monstro ou o chão */
+export function hurtPlayer(p,d,de){
   if(G.over||p.fora)return;
   /* armadura da classe (o shielding/armor do Tibia) somada ao buff de Provocar */
   d=Math.max(1,Math.round(d*(1-Math.min(.75,CLASSES[p.cl].red+eqBonus('red',p.c)+bf('arm',p)))));
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
-  if(p.hp<=0){p.hp=0;sai(p,'morreu')}
+  if(p.hp<=0){p.hp=0;
+    if(de){de.pk++;saida.log(`${de.nome||CLASSES[de.cl].nome} matou você.`,'warn',p);saida.log(`Você matou ${p.nome||CLASSES[p.cl].nome}.`,'rare',de)}
+    sai(p,'morreu')}
 }
 /* tirar e pôr na mochila da caçada, com o valor dela (p.bagVal) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}

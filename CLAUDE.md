@@ -169,9 +169,11 @@ motivo. A vida é assim.** Saber onde ir, com quem andar e de quem desconfiar
   3), e 25% do XP do nível, nunca o nível; o equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
   ordem de implementação está no `ROADMAP.md`. Desde a 0.43.2 a Mochila não
   vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
-  está na mochila só fica a salvo saindo pela porta. Ainda não há PvP: ele
-  entra com o servidor autoritativo da F2, porque hoje o resultado da sala é
-  calculado no aparelho de um jogador, que poderia forjar a morte de outro. A
+  está na mochila só fica a salvo saindo pela porta. Desde a 0.48.0 há PvP
+  **só na Arena** (decisão do Leonardo, 19/10/2026): lá, quem é de outro time
+  fere com metade do dano, e quem morre deixa a mochila no chão, sem Selo. O
+  Leonardo aceitou que, até a F2, quem roda o servidor da sala calcula o PvP
+  e pode forjar a morte de outro. Fora da Arena ainda não há PvP. A
   regra da cidade neutra já está na simulação (`protegido()` e `podeAtacar()`
   em `src/sim/cidade.js`, desde a 0.46.1), com teste na simulação no Node,
   à espera do PvP.
@@ -350,6 +352,7 @@ na mão.
 | Cidade | Mapa de `city.mapa`: a cidade murada no meio de um mundo de 240×180 sqm sem monstros (estradas, vilas, matas, rio, costa, clareiras para futuras entradas de caça); NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
+| Arena | Pelo Mestre da Arena (portão sul) ou pelo botão Arena do menu: partida de 10 min que recomeça sozinha, até 8 jogadores, times por código, PvP entre times, anéis que desabam, chefes e saídas no centro (0.48.0) |
 | Caçar junto | Uma sala por lugar, de até 4 (cópia 2 quando lota): pisa-se no portal do lugar e entra-se no servidor de quem já caça lá; o aparelho do anfitrião calcula, e o último que sai fica com ele |
 | Testes e CI | `node tools/testar.mjs` (sintaxe, simulação no Node, casos no Chromium headless); GitHub Actions em todo push |
 
@@ -634,7 +637,10 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
   **passo fixo** (`passo(dt,ent)`, `efeitos()`, `guarda()`),
   **atualização** (`update(dt,ent)`, `anda()`, `parado(dt)`, `updateMons()`,
-  `updateProj()`, `finish()`). **Solo é um grupo de um** (etapa M1 do
+  `updateProj()`, `finish()`) e a **Arena** (ver "Arena" abaixo: `arena()`,
+  `tempoArena()`, `arenaFechada()`, `reabreEm()`, `raioArena()`,
+  `entradaDe()`, `fimDaPartida()`, `chefeNoCentro()`, `largaMochila()`, e o
+  time deste aparelho em `meuTime`/`poeTime()`). **Solo é um grupo de um** (etapa M1 do
   [plano do multiplayer](docs/plano-multiplayer.md)): a incursão tem sempre
   uma lista de jogadores, `G.ps`, cada um com a ficha dele (`p.cl`, `p.c`,
   `p.up`) e o próprio saco, e `newRun(semente, fichas, aberta, caca)` aceita várias; `caca` é o mapa de
@@ -648,7 +654,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `ent.alc[i]`, quão longe a bomba cai; `formaMira()` diz à tela o que
   desenhar; não há alvo automático, e o tiro vai reto até o alcance),
   recebendo o jogador que age,
-  `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`, e o vestir na caçada (`vesteDoSaco()`, `tiraProSaco()`, `pecasDaCaca()`)
+  `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()` (com quem feriu, no
+  PvP), `pickup()`, o **PvP da Arena** (`podeFerir()`, `alvos()`: os golpes,
+  as áreas e o tiro acertam também o adversário, com `arena.pvp` do dano), e o vestir na caçada (`vesteDoSaco()`, `tiraProSaco()`, `pecasDaCaca()`)
 
 **`src/` — o cliente**
 
@@ -678,7 +686,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   por segundo; o convidado manda a entrada (o sqm em que está, espaços
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
   `saiDaSala()`, `quadro(dt,ent)` chamado pelo laço, e os `ganchos` que o
-  `main.js` liga às telas
+  `main.js` liga às telas. `maxSala()` é 4, ou `arena.max` na Arena; lá o
+  anfitrião responde `fechada` a quem pede a porta no meio da partida
 - `voz.js` — **voz da sala** (ver "Voz" na seção do Realtime): WebRTC
   nativo em malha entre quem está na sala, apresentação (`oi`, `oferta`,
   `resposta`, `tchau`) pelo canal da sala (`sinal()` de `sala.js`), segurar
@@ -728,6 +737,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `showRegras()`, cujos números saem do `content.json`; `start()`,
   `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
+  **arena** (`showArena()`, a tela do Mestre da Arena com as regras, o preço
+  da morte e o código do time; o botão Arena do menu e da escolha de
+  personagem leva a ela, por `vaiArena()`),
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
   **forja** (`showForja()`, o Gordon: encomenda, loja e depósito de
@@ -1194,6 +1206,41 @@ resposta do canal em 2 a 4 s, `vaiCaca` abre a caçada aqui).
   laço, a incursão congela para todos, e depois de 12 s sem notícia os
   convidados elegem o mais antigo, que assume a sala e a masmorra pela
   última herança.
+
+#### Arena — a partida que desaba
+
+Decisão do Leonardo em 19/10/2026 (o plano está em
+[docs/plano-arena.md](docs/plano-arena.md)): um lugar de caça com outra
+dinâmica, `hunts.arena` no `content.json`, levado pelo **Mestre da Arena**
+(`abre: "arena"`), não pelo Guia. O personagem entra como numa caçada e sai
+com a experiência e o loot. Roda na sala de sempre (`vaiCaca('arena')`), com
+até `arena.max` jogadores.
+
+- **O relógio é da arena, não de quem entra.** `arena()` em
+  `src/sim/incursao.js` conta partidas de `arena.dur` segundos no `G.t` da
+  masmorra aberta, enquanto o servidor da sala estiver de pé; quem chega no
+  meio tem menos tempo. Depois de `entraAte` a porta fecha (`arenaFechada()`).
+  As `fases` dão o aviso e o chefe do centro (`chefeNoCentro()`, sem
+  sorteio). `G.arF` diz em que partida cada fase já disparou, e `G.arC` qual
+  é a partida; os dois vão na herança.
+- **Os anéis** (`arena.aneis`): fora do raio, contado do centro como o maior
+  dos dois eixos, o chão tira `desaba` da vida máxima por segundo, igual para
+  todos. No fim da partida quem está dentro morre (`'desabou'`) e
+  `fimDaPartida()` põe os monstros do mapa de volta e limpa o chão.
+- **Saídas** só no centro (`arena.pontos.saidas`), abertas em `saidas`; a
+  porta da sala é só de entrada. `G.portal` é a primeira saída, para o HUD.
+- **Times:** o código (`p.time`, até 8 letras e números) vai na ficha
+  (`confereFicha()` limpa). O mesmo código nasce no mesmo canto
+  (`entradaDe()`) e não se fere. Sem código, todos são adversários.
+- **PvP e morte:** `podeFerir()` só vale com `G.arena`. Quem morre na Arena
+  deixa a mochila inteira no chão (`largaMochila()`, `dono: -1`), e o Selo
+  não guarda nada lá, para morrer de propósito não duplicar valor. Matar
+  jogador não dá XP; conta em `p.pk`.
+- **O mapa** é um rascunho de `tools/mapas.mjs` com salas fixas
+  (`rascunho.fixas`, `entradas`): o centro, um anel e um canto por time; a
+  profundidade é a proximidade do centro, e o script grava `arena.pontos`.
+  Os casos `arena` e `arena-convidado` e o bloco "Arena" da simulação no
+  Node cobrem a regra.
 
 ### Voz — falar na sala
 
@@ -1777,6 +1824,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 | 19/10 | **Monetização com impacto no jogo**, não só estética, inspirada no Tibia; substitui o não-objetivo "Compra que vira poder" por "Pagar para pular o mundo" (o mundo segue igual, a morte segue custando, e quem só joga alcança o que quem paga alcança). O mercado de itens com saque em dinheiro real foi analisado e deixado de lado por ora (regulação, fraude e escala) | Pilar 6; não-objetivos; Parte 2, F4; `ROADMAP.md`, Depois |
+| 19/10 | **A Arena:** um modo com outra dinâmica, pelo Mestre da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha, até 8 jogadores, times por código, anéis que desabam da borda ao centro, chefes e saídas no centro. O personagem sai com XP e itens, como de qualquer lugar de caça. **PvP só na Arena, já**, calculado por quem roda o servidor da sala, com o risco de trapaça aceito até a F2; lá a mochila do morto fica no chão e o Selo não guarda | Pilar 4; Parte 3, "Arena"; [docs/plano-arena.md](docs/plano-arena.md) |
 | 19/10 | **Teto de infraestrutura (era a D2):** até R$ 100 por mês na F2 (uma máquina pequena do Fly.io, Supabase grátis) e até R$ 600 por mês no lançamento (duas máquinas, Supabase Pro, e-mail de login). Passar disso pede nova decisão | Parte 2, Riscos e C6 |
 
 ### Pendentes

@@ -180,6 +180,14 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-19 — A Arena (0.48.0)** *(decisão do Leonardo; pilares 4 e 6,
+  a pedido dos testadores)*. Um lugar de caça com outra dinâmica, pelo Mestre
+  da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha,
+  até 8 jogadores, times por código, anéis que desabam, chefes e saídas no
+  centro, PvP entre times, a mochila do morto no chão e sem Selo. O
+  personagem sai com XP e itens. Plano em
+  [docs/plano-arena.md](docs/plano-arena.md); casos `arena` e
+  `arena-convidado` e o bloco "Arena" da simulação no Node.
 - **2026-10-19 — Telemetria mínima (0.47.0)** *(pedido do Leonardo; F1,
   serve à medição dos pilares 3 e 4 e às metas O2 e O3)*. Os seis eventos da
   Parte 2 sobem em lote para `telemetria_gravar`

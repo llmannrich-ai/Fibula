@@ -5,7 +5,7 @@
    gerado como rascunho por tools/mapas.mjs). leMapa() lê esse mapa; o
    gerador (genMap, objetos) ficou só para o rascunho, e pecas() serve também
    à cidade. */
-import {MW,MH,rnd,ri,hyp,sorte,semente} from './base.js?v=0.47.0';
+import {MW,MH,rnd,ri,hyp,sorte,semente} from './base.js?v=0.48.0';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
 function corridor(g,a,b){
@@ -33,6 +33,9 @@ export function genMap(m0){
   r.obj=objetos(r.g,r.rooms,m.objetos);return r;
 }
 function genSalas(m){
+  /* salas fixas (a Arena: o centro, o anel e as entradas nos cantos), na
+     ordem dada; os corredores ligam cada uma à mais perto das anteriores */
+  if(m.fixas){const g=new Uint8Array(MW*MH).fill(1),rooms=m.fixas.map(([x,y,w,h])=>({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)}));carveRooms(g,rooms,m.atalhos);return{g,rooms}}
   let fallback=null;
   for(let attempt=0;attempt<50;attempt++){
     const g=new Uint8Array(MW*MH).fill(1),rooms=[];

@@ -1002,7 +1002,7 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,barco,boticaria,capitao,corretor,gordon,grade,guia,mago,mercador,portal_cripta,portal_runas,quitandeira') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,barco,boticaria,capitao,corretor,gordon,grade,guia,mago,mercador,mestre_arena,portal_cripta,portal_runas,quitandeira') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     /* objetos (fonte, barril…) são sólidos e ficam sobre o chão do vizinho; a ponte atravessa o rio */
     const iObj = M.join('').indexOf('f'), iPonte = M.join('').indexOf('=');
     if (!(iObj >= 0 && C.obj[iObj] && C.sol[iObj] && C.t[iObj] !== 1)) falhas.push(`a fonte não virou objeto sólido sobre chão (obj ${C.obj[iObj]}, sol ${C.sol[iObj]}, chão ${C.t[iObj]})`);
@@ -1081,7 +1081,7 @@ async function testaSimulacao() {
     const H = JSON.parse(CONTEUDO).hunts, PR = JSON.parse(CONTEUDO).progression;
     const fotos = {};
     for (const k of Object.keys(H).filter((k) => k[0] !== '_')) {
-      const h = H[k], pode = new Set([...(h.bands || PR.bands).flatMap((b) => Object.keys(b.weights)), ...((h.boss || PR.boss).escort)]), chefe = (h.boss || PR.boss).type;
+      const h = H[k], pode = new Set([...(h.bands || PR.bands).flatMap((b) => Object.keys(b.weights)), ...((h.boss || PR.boss).escort)]), chefe = h.arena ? '' : (h.boss || PR.boss).type;
       novoSave(); I.newRun(51, undefined, false, k); const a = retrato();
       if (I.G.caca !== k) falhas.push(`newRun no mapa ${k} guardou ${I.G.caca}`);
       const fora = I.G.mons.filter((m) => !m.t.boss && !pode.has(m.k)).map((m) => m.k);
@@ -1265,6 +1265,54 @@ async function testaSimulacao() {
     } catch (e) { falhas.push(`tools/saves/${arq} quebrou: ` + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
     finally { for (const k of Object.keys(saida)) saida[k] = () => {}; }
   }
+  /* a Arena (hunts.arena): a partida com relógio que recomeça sozinha, a
+     porta que fecha, os anéis que desabam, os chefes das fases, as saídas do
+     centro, o PvP só entre times diferentes e a mochila do morto no chão */
+  try {
+    const AK = Object.keys(JSON.parse(CONTEUDO).hunts).find((k) => JSON.parse(CONTEUDO).hunts[k].arena), A = JSON.parse(CONTEUDO).hunts[AK].arena;
+    const ficha = (cl, time) => P.confereFicha({cl, nome: cl + time, time, c: P.novoChar(cl, 10), up: {}});
+    const PAR = {x: 0, y: 0, held: [false, false, false, false]};
+    const partida = (s) => { novoSave(); I.newRun(s, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B'), ficha('druida', 'A')], true, AK); I.G.active = true; for (const q of I.G.ps) q.ali = 1e9; return I.G; };
+    let G = partida(4);
+    const [a, b, c] = G.ps;
+    if (!Cb.podeFerir(a, b) || Cb.podeFerir(a, c)) falhas.push('Arena: o PvP não respeita o time (A fere B, A não fere A)');
+    if (Math.max(Math.abs(a.tx - c.tx), Math.abs(a.ty - c.ty)) > 1 || Math.max(Math.abs(a.tx - b.tx), Math.abs(a.ty - b.ty)) < 8) falhas.push(`Arena: o time não nasce no mesmo canto (${a.tx},${a.ty} / ${c.tx},${c.ty} / ${b.tx},${b.ty})`);
+    if (I.arenaFechada()) falhas.push('Arena: a porta nasce fechada');
+    /* o adversário ao lado, com loot: o golpe o derruba e a mochila fica no chão */
+    B.poeNoSqm(b, a.tx + 1, a.ty); b.bag = {ouro: 30}; b.bagVal = 30;
+    for (let q = 0; q < 600 && !b.fora; q++) I.passo(0.05, [{...PAR, held: [true, false, false, false], mira: [0, NaN, NaN, NaN]}, PAR, PAR]);
+    const d = G.drops.find((x) => x.items.some(([k]) => k === 'ouro'));
+    if (b.fora !== 'morreu' || a.pk !== 1 || b.sealed !== 0 || !d || d.dono !== -1) falhas.push(`Arena: o PvP não derrubou o adversário com a mochila no chão (${b.fora}, pk ${a.pk}, selo ${b.sealed}, ${JSON.stringify(G.drops.map((x) => x.items))})`);
+    /* fora da Arena ninguém fere ninguém */
+    novoSave(); I.newRun(4, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B')], true, 'runas');
+    if (Cb.podeFerir(I.G.ps[0], I.G.ps[1])) falhas.push('Arena: jogador fere jogador fora da Arena');
+    /* o relógio: a porta fecha, os chefes nascem, as saídas abrem, a borda mata */
+    G = partida(5); const [p1, , p3] = G.ps; G.ps[1].fora = 'fora';
+    const ate = (t) => { for (let q = 0; q < 20000 && I.tempoArena() < t; q++) I.passo(0.05, [PAR, PAR, PAR]); };
+    ate(A.entraAte + 1);
+    if (!I.arenaFechada()) falhas.push('Arena: a porta não fechou');
+    const chefes = A.fases.filter((f) => f.chefe).map((f) => f.chefe);
+    /* p3 vai ao centro (o anel não o alcança) e fica numa saída */
+    const [sx, sy] = A.pontos.saidas[0].split(' ').map(Number);
+    /* vida de sobra: aqui se prova o chão e a saída, não a luta com os monstros */
+    p1.mhp = p1.hp = 1e5; p3.mhp = p3.hp = 1e7;
+    ate(A.aneis[0].t - 1); B.poeNoSqm(p3, sx, sy);
+    ate(A.aneis[0].t + 20);
+    if (p1.fora !== 'desabou') falhas.push(`Arena: quem ficou na borda não morreu com ela (${p1.fora}, vida ${p1.hp})`);
+    if (p3.fora) falhas.push(`Arena: quem estava no centro saiu antes da hora (${p3.fora})`);
+    ate(A.saidas + B.EXT + 1);
+    if (p3.fora !== 'extraiu') falhas.push(`Arena: a saída do centro não deixou sair (${p3.fora}, saídas ${G.portal.open})`);
+    const vistos = G.mons.filter((m) => m.t.boss).map((m) => m.k).sort().join();
+    if (vistos !== chefes.slice().sort().join()) falhas.push(`Arena: os chefes das fases não nasceram (${vistos})`);
+    /* a partida seguinte: a arena volta como era, e a porta abre */
+    const n0 = JSON.parse(CONTEUDO).hunts[AK].mapa.spawn.length;
+    ate(A.dur - 0.1); I.passo(0.2, [PAR, PAR, PAR]);
+    if (I.arenaFechada() || G.mons.length !== n0 || G.drops.length || G.mons.some((m) => m.t.boss)) falhas.push(`Arena: a partida seguinte não recomeçou limpa (${G.mons.length}/${n0} monstros, ${G.drops.length} no chão)`);
+    /* a herança leva o relógio da Arena: quem assume não repete as fases */
+    const h = JSON.parse(JSON.stringify(I.heranca()));
+    if (!I.adota(h, -1, I.fichaLocal()) || I.G.arC !== G.arC || JSON.stringify(I.G.arF) !== JSON.stringify(G.arF)) falhas.push('Arena: a herança perdeu o relógio da partida');
+  } catch (e) { falhas.push('a Arena quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  finally { for (const k of Object.keys(saida)) saida[k] = () => {}; }
   return {falhas, a: a && a.r};
 }
 
@@ -1467,6 +1515,78 @@ const CASOS = [
     I.finish('morreu');await ate(function(){return visivel('#end')},200);
     clica($('#toMenu'));await quadros(3);
     ok('o navio traz de volta ao cais, em cima do barco', Cd.C.perto==='barco'&&/navio/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
+    `,
+  },
+  {
+    nome: 'arena',
+    o_que: 'a Arena: o Mestre da Arena na cidade e o botão na escolha de personagem abrem a mesma tela, com as regras e o preço da morte; o código do time vai na ficha; entrar abre a partida com relógio num canto; o relógio e as saídas aparecem no HUD; a morte deixa a mochila no chão; a volta é no Mestre; no meio da partida a porta fecha; o Guia não lista a Arena',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 8, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null], mochila: {ouro: 40}}},
+    }},
+    roteiro: `
+    entrar();
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    Tl.abreNpc('guia');
+    ok('o Guia de caça não lista a Arena: quem leva a ela é o Mestre', !/Arena/.test(txt('#huntList')||''), txt('#huntList h3'));
+    clica($('#huntBack'));
+    Tl.abreNpc('mestre_arena');
+    ok('o Mestre da Arena abre a tela dela, com as regras da partida', visivel('#arenaS')&&txt('#arenaS h2')==='Mestre da Arena'&&/10:00/.test(txt('#aRegras')||'')&&/Centopeia-rainha aos 3:00/.test(txt('#aRegras')||'')&&/saídas abrem no centro aos 7:00/.test(txt('#aRegras')||''), txt('#aRegras'));
+    ok('o preço da morte na Arena é dito antes: a mochila fica no chão e o Selo não guarda', /40 de ouro, que fica no chão/.test(txt('#aRisco')||'')&&/Selo não guarda nada/.test(txt('#aRisco')||''), txt('#aRisco'));
+    var inp=$('#aTime');inp.value='ab-1';inp.dispatchEvent(new Event('input'));
+    ok('o código do time fica em maiúsculas, só letras e números', I.meuTime==='AB1'&&/Time AB1/.test(txt('#aTimeT')||''), I.meuTime+' / '+txt('#aTimeT'));
+    clica($('#aEntra'));
+    var foi=await ate(function(){return $('#app').classList.contains('playing')},80);
+    var E=I.G&&I.G.p;
+    ok('entrar abre a Arena neste aparelho, sem ninguém lá', foi&&Sa.SALA.papel==='anfitriao'&&Sa.SALA.caca==='arena'&&I.G.arena&&E&&!E.fora&&E.time==='AB1', Sa.SALA.papel+' / '+Sa.SALA.caca+' / '+(E&&E.time));
+    ok('o time nasce num canto da arena', E&&(E.tx<12||E.tx>52)&&(E.ty<12||E.ty>52), E&&(E.tx+','+E.ty));
+    await quadros(4);
+    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^9:5|^10:00/.test(txt('#timeT')||'')&&/^Saídas em 6:5|^Saídas em 7:00/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
+    ok('a entrada diz quando abrem as saídas', /saídas abrem no centro aos 7 minutos/i.test(txt('#log')||''), txt('#log'));
+    I.finish('morreu');await ate(function(){return visivel('#end')},200);
+    ok('a tela final diz que a mochila ficou no chão da Arena', /chão da Arena/.test(txt('#endText')||''), txt('#endText'));
+    ok('a mochila ficou no chão para quem passar', I.G.drops.some(function(d){return d.dono===-1&&d.items.some(function(i){return i[0]==='ouro'&&i[1]===40})}), JSON.stringify(I.G.drops.map(function(d){return d.items})));
+    clica($('#toMenu'));await quadros(6);
+    ok('a volta é ao lado do Mestre da Arena', $('#app').classList.contains('cidade')&&Cd.C.perto==='mestre_arena'&&/saiu da Arena/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
+    I.G.t=250;
+    Tl.abreNpc('mestre_arena');clica($('#aEntra'));await quadros(3);
+    ok('no meio da partida a porta fecha até a seguinte', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 5:50/.test(txt('#log')||''), txt('#log'));
+    Tl.showPick();
+    ok('a escolha de personagem tem o botão da Arena', visivel('#toArena'), txt('#pick .rodape'));
+    clica($('#toArena'));await quadros(3);
+    ok('o botão leva o personagem à cidade e abre o Mestre da Arena', visivel('#arenaS')&&Tl.V.cidade&&/Voltar à cidade/.test(txt('#arenaBack')||''), txt('#arenaS h2'));
+    `,
+  },
+  {
+    nome: 'arena-convidado',
+    o_que: 'a Arena com servidor de outro jogador: o pedido leva o código do time, cabem 8, e no meio da partida o servidor responde que a porta fechou e diz quando a próxima começa',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'druida',
+      chars: {druida: {lvl: 8, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['gelo', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt;
+    entrar();
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    RT.entra('anf1',{nome:'Ana',classe:'cavaleiro',lvl:5,sala:{n:5,h:'arena',id:'arena-1'},longe:true,anf:true});await quadros(3);
+    Tl.abreNpc('mestre_arena');
+    var inp=$('#aTime');inp.value='lobo';inp.dispatchEvent(new Event('input'));
+    clica($('#aEntra'));
+    await ate(function(){return RT.salaMandadas('quero').length===1},40);
+    var q=RT.salaMandadas('quero')[0],EU=q.id;
+    ok('o pedido para entrar leva o código do time', q.ficha&&q.ficha.time==='LOBO', JSON.stringify(q.ficha&&q.ficha.time));
+    ok('a Arena cabe 8 jogadores', Sa.maxSala('arena')===8&&Sa.maxSala('esgoto')===4, Sa.maxSala('arena'));
+    RT.sala('membros',{anf:'anf1',gen:0,s:7,h:'arena',lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},{id:EU,nome:'Druida',cl:'druida',lvl:8}]});
+    await ate(function(){return RT.salaMandadas('entro').length===1},40);
+    ok('aceito na sala, pede a porta sozinho', RT.salaMandadas('entro').length===1, RT.salaMandadas('entro').length);
+    RT.sala('fechada',{id:EU,s:200});await quadros(3);
+    ok('a porta fechada diz quando começa a próxima partida, e o jogo não entra', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 3:20/.test(txt('#log')||''), txt('#log'));
     `,
   },
   {
