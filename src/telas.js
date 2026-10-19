@@ -338,7 +338,7 @@ async function showFeira(){
 }
 function desenhaFeira(){
   setT($('#mktGold'),String(save.cofre));$('#mktTaxa').textContent=taxaMk();
-  $('#mktLista').hidden=!!MK.peca;$('#mktPeca').hidden=!MK.peca;
+  $('#mktLista').hidden=!!MK.peca;$('#mktPeca').hidden=!MK.peca;mktS.classList.toggle('peca',!!MK.peca);
   if(MK.peca)return desenhaPeca();
   const ul=$('#mktItens');ul.textContent='';
   for(const k of pecasDaFeira()){
@@ -417,7 +417,7 @@ function resumoPeca(){
     if(save.cofre<tot)pode=false}
   else{const tot=pr*q,tx=taxaDe(tot);
     t=tem<q?`Você tem ${tem} no cofre.`
-      :`Se vender tudo a ${pr}, recebe ${tot-tx} de ouro (taxa de ${tx}). Quem pagar mais leva pelo preço que pediu.`+
+      :`Se vender tudo a ${pr}, recebe ${tot-tx} de ouro (taxa de ${tx}). Se alguém já paga mais, você recebe o preço dele.`+
        (l.compra.length&&l.compra[0][0]>=pr?'':' Ninguém compra por esse preço agora: a oferta fica no livro.');
     if(tem<q)pode=false}
   $('#mpRes').textContent=t;
@@ -445,7 +445,7 @@ async function cancelaOferta(o){
   }catch(e){erroMk(e)}
   MK.ocupado=false;desenhaFeira();
 }
-const passo=(id,d,lo,hi)=>$(id+(d>0?'+':'-')).addEventListener('click',()=>{const el=$(id);el.value=clamp((Math.round(+el.value)||0)+d,lo,hi);resumoPeca()});
+const passo=(id,d,lo,hi)=>$(id+(d>0?'Mais':'Menos')).addEventListener('click',()=>{const el=$(id);el.value=clamp((Math.round(+el.value)||0)+d,lo,hi);resumoPeca()});
 passo('#mpPreco',-1,1,1e6);passo('#mpPreco',1,1,1e6);passo('#mpQtd',-1,1,100);passo('#mpQtd',1,1,100);
 for(const id of['#mpPreco','#mpQtd'])$(id).addEventListener('input',resumoPeca);
 $('#mpLadoC').addEventListener('click',()=>abrePeca(MK.peca,'compra'));

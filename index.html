@@ -252,6 +252,8 @@ h2.lost{color:var(--hp)}
 .passo{display:grid;grid-template-columns:52px 1fr 52px;gap:6px}
 .passo input{min-width:0;text-align:center;font:700 16px var(--f-body);background:#151412;color:var(--bone);border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);padding:9px}
 .passo input:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+#mktLista,#mktPeca{display:grid;gap:10px} #mktLista[hidden],#mktPeca[hidden]{display:none} #mktPeca .cta,#mktPeca .ghost{width:100%}
+#mkt.peca .lede{display:none}
 .mpRes{margin:0;font:12px/1.45 var(--f-body);color:var(--muted)}
 #huntList .sp .meta.alto{color:var(--warn)}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
@@ -407,8 +409,8 @@ h2.lost{color:var(--hp)}
           <div><h4>Compram por</h4><ul id="mpCompra"></ul></div>
         </div>
         <div class="row2 lado" role="group" aria-label="Lado da oferta"><button class="ghost" type="button" id="mpLadoC" aria-pressed="false">Comprar</button><button class="ghost" type="button" id="mpLadoV" aria-pressed="true">Vender</button></div>
-        <div class="campo"><label for="mpPreco">Preço por peça</label><div class="passo"><button class="ghost" type="button" id="mpPreco-" aria-label="Baixar o preço">−</button><input id="mpPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1"><button class="ghost" type="button" id="mpPreco+" aria-label="Subir o preço">+</button></div></div>
-        <div class="campo"><label for="mpQtd">Quantidade</label><div class="passo"><button class="ghost" type="button" id="mpQtd-" aria-label="Uma peça a menos">−</button><input id="mpQtd" type="number" inputmode="numeric" min="1" max="100" step="1"><button class="ghost" type="button" id="mpQtd+" aria-label="Uma peça a mais">+</button></div></div>
+        <div class="campo"><label for="mpPreco">Preço por peça</label><div class="passo"><button class="ghost" type="button" id="mpPrecoMenos" aria-label="Baixar o preço">−</button><input id="mpPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1"><button class="ghost" type="button" id="mpPrecoMais" aria-label="Subir o preço">+</button></div></div>
+        <div class="campo"><label for="mpQtd">Quantidade</label><div class="passo"><button class="ghost" type="button" id="mpQtdMenos" aria-label="Uma peça a menos">−</button><input id="mpQtd" type="number" inputmode="numeric" min="1" max="100" step="1"><button class="ghost" type="button" id="mpQtdMais" aria-label="Uma peça a mais">+</button></div></div>
         <p class="mpRes" id="mpRes"></p>
         <button class="cta" type="button" id="mpOk">Anunciar</button>
         <button class="ghost" type="button" id="mpVolta">Outras peças</button>

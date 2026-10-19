@@ -141,6 +141,14 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — A Feira: mercado entre jogadores (0.10.0)** *(pedido do
+  Leonardo, antecipado da F3; pilares 2 e 5)*. O Corretor, na praça, abre o
+  livro de ofertas das peças de equipamento. Compra e venda com preço por
+  peça, match automático no banco (melhor preço, depois ordem de chegada,
+  pelo preço de quem já estava no livro), custódia no save da nuvem, caixa
+  para quem estava fora, cancelamento e 2% de taxa na venda como ralo.
+  Esquema em `tools/supabase/003_mercado.sql`; caso `feira` no harness.
+
 - **2026-10-19 — Andar por sqm (0.9.0)** *(decisão do Leonardo: "faça para
   tudo"; pilares 2 e 3, base do servidor da F2)*. Jogador, monstros e os outros
   jogadores da cidade andam um sqm por vez, em 8 direções, como no Tibia. A

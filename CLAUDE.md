@@ -171,7 +171,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   migração v1→v2, `persist()`, `saveFalhou`
 - `nuvem.js` — **conta e save na nuvem** (Supabase); registra-se em
   `aoGravar()` para subir cada gravação; exporta `SB_URL`, `SB_KEY` e
-  `quemSou()` para a rede
+  `quemSou()` para a rede, e `mercado(fn,args)`, que sobe o save, chama uma
+  função da Feira e adota o cofre e as peças que o banco devolve
 - `rede.js` — **a cidade compartilhada**: o canal `realtime:cidade-<x.y>` do
   Supabase Realtime, por `WebSocket` nativo. `quadro(dt,naCidade)`, chamado
   pelo laço, liga ao entrar na cidade e desliga ao sair dela (caçar, menu) ou
@@ -197,6 +198,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   falar e a frase do NPC no registro)
 - `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
+  **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
+  Corretor),
   **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
   cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
@@ -355,6 +358,16 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   o sha256 do token) e `public.saves_jogador` (um save por jogador, mesmo JSON
   da `masmorra-runas-v2`). Esquema e funções em
   [tools/supabase/002_login_simples.sql](tools/supabase/002_login_simples.sql).
+- **Mercado entre jogadores (a Feira)** — `public.mercado_ordens` (o livro
+  de ofertas), `public.mercado_negocios` (histórico de preços) e
+  `public.mercado_caixa` (o que alguém recebeu e ainda não entrou no save
+  dele). O match é do banco: preço e depois ordem de chegada, o negócio sai
+  pelo preço de quem já estava no livro, ninguém casa consigo mesmo, a venda
+  paga 2% (ralo). O que se anuncia sai do save **da nuvem** na mesma
+  transação (custódia), e cada operação soma 1 em `save.mkt`: o
+  `save_gravar` recusa save com `mkt` menor (`'mercado'`) e o cliente relê a
+  nuvem. Esquema em
+  [tools/supabase/003_mercado.sql](tools/supabase/003_mercado.sql).
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
@@ -362,10 +375,12 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
 O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 `fetch` puro (sem `supabase-js`) e só a chave **publishable** em `SB_KEY`, que
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
-`conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`
-(`POST /rest/v1/rpc/<nome>`), que rodam como dono e conferem senha ou token por
-dentro. As tabelas têm RLS ligada e nenhuma política, de propósito. Por isso
-os avisos de segurança do Supabase listam essas cinco funções como "executáveis
+`conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`, e as
+quatro da Feira (`mercado_livro`, `mercado_anunciar`, `mercado_cancelar`,
+`mercado_coletar`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
+conferem senha ou token por dentro. As tabelas têm RLS ligada e nenhuma
+política, de propósito. Por isso os avisos de segurança do Supabase listam
+essas nove funções como "executáveis
 por anon" e as tabelas como "RLS sem política": é o desenho, não um furo. Se
 um aviso **novo** aparecer, aí sim investigue.
 

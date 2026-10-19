@@ -18,6 +18,27 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 04:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a Feira, mercado entre jogadores (0.10.0), a pedido do Leonardo ("cada player vende para cada player, buy e sell, match"). O Corretor (`city.npcs.corretor`, letra `T`, ao lado do chafariz; sprite OTSP 45) abre a tela `#mkt`. Livro de ofertas por peça de equipamento, compra e venda com preço por peça e quantidade, match automático. Banco: `tools/supabase/003_mercado.sql` — `mercado_ordens`, `mercado_negocios`, `mercado_caixa` e as funções `mercado_livro/anunciar/cancelar/coletar`; `save_gravar` reescrito com a guarda de `mkt`. Cliente: `mercado()` e `temConta()` em `nuvem.js`, `showFeira()` em `telas.js`, `soPecas()` em `progresso.js`.
+
+**Validação:** SQL aplicado duas vezes num Postgres 16 local (idempotente) e exercitado com três contas: match em vários níveis de preço, preço do maker, devolução da diferença ao comprador, taxa de 2% arredondada para cima, caixa e coleta, cancelamento, sem auto-match, `sem_ouro`, `sem_peca`, `sessao`, guarda `mercado` no `save_gravar`, `anon` sem acesso a tabela nem a função auxiliar; soma de ouro conservada (1060 − 5 de taxa = 1055). `node tools/testar.mjs` — 23/23, com o caso novo `feira` (24 asserções; o Supabase falso ganhou as quatro funções e a guarda de `mkt`) e o Corretor no caso `cidade` e na cidade do Node. Tela conferida em 360×740 com Playwright fora do repositório, sem erro de página.
+
+**Análise:** o save continua do cliente, então a única forma de o banco decidir o mercado foi tornar o save **da nuvem** a fonte do cofre e das peças durante a operação: o cliente sobe o save, o banco debita na mesma transação do livro e devolve cofre, peças e `mkt`, que o cliente adota. A outra ponta nunca tem o save reescrito (ela pode estar no meio de uma incursão e sobrescreveria): recebe na `mercado_caixa`, que entra ao abrir a Feira. Um seletor `#mpPreco+` derrubava o grafo de módulos inteiro (todos os casos davam "não reportou em 45000 ms"): `querySelector` estoura com `+` no id.
+
+**Roadmap:** Feira em `Concluído` (antecipada da F3, decisão registrada no PRD 15.1). `Agora` segue "sair cedo".
+
+**Pendências e riscos:**
+- **A migração 003 não está aplicada no banco de produção.** Sem ela, a Feira mostra "sem conexão" e o resto do jogo segue normal. Aplicar **antes** do merge na `main` (conector do Supabase ou `psql` no pooler).
+- **Trapaça vira problema dos outros.** Quem editar o JSON do próprio save cria ouro e peças e agora pode gastá-los com jogadores honestos. É a dívida do D-M3: o mercado deixa de ser seguro para abrir a desconhecidos sem cofre autoritativo no servidor.
+- Dois aparelhos na mesma conta: se um negociar enquanto o outro está numa incursão, a gravação do segundo é recusada e ele adota a nuvem, perdendo o resultado dessa incursão. Raro, mas real.
+- Sem expiração de oferta; limite de 10 abertas por jogador. Ouro preso numa compra não conta no cofre do menu.
+- Volume de match serializado num único `pg_advisory_xact_lock`: suficiente para dezenas de jogadores, não para milhares.
+
+**Próximo passo recomendado:** aplicar a 003 no projeto `bpwljbualdjlwmzcryzl`, fazer o merge, e testar com duas contas reais vendendo uma peça uma para a outra.
+
+---
+
 ## 2026-10-19 03:00 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** andar por sqm em tudo (0.9.0), a pedido do Leonardo depois do estudo do movimento do Tibia. `base.js` ganhou o passo de sqm (`poeNoSqm`, `comeca`, `avanca`, `dir8`, `passoPara`, `DIR8`, `centro`), usado pelo jogador e pelos monstros da incursão, pelo jogador da cidade e pelos outros jogadores da cidade. `progresso.js` tem `durPasso()`; `progression.walk` no `content.json` (validado em `dados.js`). Na incursão: `G.ocu` (bloqueio de corpo), `passoM()`, monstros que descem o fluxo sqm a sqm, contornam por sqm de mesma distância quando perto, atacam do vizinho e o xamã recua um sqm; `move()`, `blocked()` e o empurrão entre monstros saíram; o fluxo parte do sqm do jogador. Rede: `pos` agora é `{id,x,y,d}` em sqm e ms, um por passo.
@@ -549,30 +570,3 @@ já está feita (caso `migracao-save`), sobrou o aviso de falha do `persist()`.
 `FIBULA_EDGE` apontado — é o que transforma o portão em rede de verdade, já que
 hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
 roadmap.
-
-
-
----
-
-## 2026-10-18 23:50 UTC — Desenvolvedor
-
-**Item desenvolvido:** CI no GitHub Actions — `.github/workflows/ci.yml`, commits `fea2e5e` e `9b92a55`.
-
-**Validação:** run `39162120905` verde na `main`. Branch descartável `teste-ci-quebrada` com erro de sintaxe proposital: CI falhou (sem PR, o push do branch já dispara).
-
-**Análise:**
-- A primeira versão da CI chamava `tools/teste.js`, que o dono removera ao consolidar tudo em `tools/testar.mjs` ("um harness só"). Falhou com MODULE_NOT_FOUND. Lição: `git pull` e ler `tools/` antes de apontar a CI para um script.
-- `tools/testar.mjs` já inclui a checagem de sintaxe, então a CI tem um passo só.
-- O C4 foi concedido pelo dono (app Claude com acesso de escrita a workflows em todos os repositórios); o push do workflow passou direto na `main`.
-- `gh api .../logs` falha (proxy); os logs saem pela ferramenta `get_job_logs` do GitHub MCP.
-
-**Roadmap:** CI em `Concluído`; aviso de falha do save + teste da migração promovido a `Agora`. O teste da migração v1→v2 já existe em `testar.mjs` (caso de migração): conferir antes de duplicar.
-
-**Pendências e riscos:**
-- O branch remoto `teste-ci-quebrada` ficou: a exclusão deu 403. Apagar à mão (GitHub → Branches).
-- Node 20 nas actions `checkout@v4`/`setup-node@v4` gera aviso de depreciação; subir versão quando houver.
-- C3 (proteger a `main` exigindo CI) segue com o dono, e `modo.txt` continua `direto`. Proteger a `main` obrigaria PR; o dono decidiu direto na `main`, então não sugerir.
-
-**Próximo passo recomendado:** aviso de falha do `persist()` no menu; o teste da migração já existe.
-
----

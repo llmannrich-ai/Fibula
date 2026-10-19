@@ -1493,7 +1493,7 @@ const CASOS = [
     clica(lis[0].querySelector('button'));
     ok('quem tem a peça abre vendendo, pelo melhor preço de compra', visivel('#mktPeca')&&$('#mpLadoV').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='18', $('#mpPreco').value);
     ok('o resumo diz o que recebe, já com a taxa', /recebe 17 de ouro \\(taxa de 1\\)/.test(txt('#mpRes')||''), txt('#mpRes'));
-    clica($('#mpQtd+'));
+    clica($('#mpQtdMais'));
     ok('o + soma uma peça e o resumo acompanha', $('#mpQtd').value==='2'&&/recebe 35/.test(txt('#mpRes')||''), txt('#mpRes'));
     clica($('#mpOk'));
     var vendeu=await ate(function(){return /Vendeu/.test(txt('#mktMsg')||'')},300);
