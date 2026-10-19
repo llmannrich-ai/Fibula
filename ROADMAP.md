@@ -38,30 +38,9 @@ sair aos 5:30, e o diário registra qual das três opções foi escolhida e por 
 Ordem decidida em 18/10/2026, depois do primeiro playtest do Leonardo
 ("razoável"): primeiro o que faz a **decisão de extrair** existir (morte que
 custa, progressão que não dispara, sair cedo valendo a pena), depois o resto
-da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução. A M1 (item 1) entrou em 19/10 a pedido do Leonardo.
+da F0. Itens técnicos da F0 entram em paralelo quando couberem numa execução.
 
-### 1. Multiplayer M1: a simulação com N jogadores
-
-**Pilar 2** (base da F2). Solo vira um grupo de um: `G.p` vira `G.ps`, a ficha
-do personagem entra no jogador em vez de a simulação ler o `save`, os ganhos
-da incursão são acumulados e aplicados no fim, e o campo de fluxo parte de
-todos os jogadores. Detalhes na etapa M1 do
-[plano do multiplayer](docs/plano-multiplayer.md).
-
-Antecipada pelo Leonardo em 19/10/2026 (D-M1: só a M1, sem rede nem gasto),
-com as regras de grupo da seção 3 do plano (D-M2), com uma mudança dele: o
-**loot não é instanciado**. Cada monstro deixa um drop só, e só um jogador o
-pega. Os números do grupo ficam em `progression.party` do `content.json`.
-Troca entre jogadores fica para o Mercado, mais tarde.
-
-**Pronto quando:** o harness roda no Node incursões com 1, 2 e 4 jogadores e a
-mesma semente com as mesmas entradas dá o mesmo resultado, um drop pego por um
-jogador some para os outros, os casos atuais continuam passando, e o solo não
-muda.
-
-**Fase:** F2, antecipação sem gasto.
-
-### 2. Tela de créditos no jogo
+### 1. Tela de créditos no jogo
 
 **Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição. Hoje ela está em
 `assets/CREDITOS.md` e no README; a seção 9 do PRD pede que o jogo mostre esse
@@ -71,7 +50,7 @@ autores.
 **Fase:** F0 (5, fecho). **Pronto quando:** a tela existe, lista o OTSP com
 licença e link para os autores, e há caso no `tools/testar.mjs`.
 
-### 3. PWA instalável
+### 2. PWA instalável
 
 **Pilar 3.** Manifesto e service worker para instalar na tela inicial e abrir
 offline, com o último conteúdo baixado. As fontes já são do sistema, então não
@@ -81,7 +60,7 @@ há folha externa para embutir. Sem biblioteca.
 o jogo abre sem rede depois da primeira visita, e um caso no harness confere
 que o manifesto e o service worker carregam.
 
-### 4. Revisar a economia do Selo de resguardo
+### 3. Revisar a economia do Selo de resguardo
 
 **Pilar 1.** No nível 3 o Selo guarda 60% do loot do saco na morte, o que pode
 reduzir demais o risco da extração tardia — exatamente o que o pilar 1 existe
@@ -162,6 +141,18 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Multiplayer M1: a simulação com N jogadores (0.8.2)**
+  *(antecipada da F2 pelo Leonardo, D-M1; regras de grupo D-M2; pilar 2)*.
+  Solo é um grupo de um: a incursão tem sempre a lista `G.ps`, cada jogador
+  com a ficha, a entrada, o saco e a saída dele, e `newRun(semente, fichas)`
+  aceita vários. Regras de grupo em `progression.party` do `content.json`:
+  ×1,6 de monstros por jogador a mais, ×1,8 na vida do Guardião, **loot
+  único** (um drop por monstro, um jogador pega, quem causou mais dano tem 10
+  s de vez), XP cheia para quem bateu ou estava perto, extração individual.
+  O campo de fluxo parte de todos e cada monstro persegue o mais perto. Nada
+  muda para quem joga sozinho: a mesma semente dá a mesma incursão do código
+  anterior, conferido nas quatro classes. Ainda **não há como jogar junto**:
+  a tela é solo, e a rede é a M2. Testes de 1, 2 e 4 jogadores no Node.
 - **2026-10-19 — A cidade compartilhada (0.8.0)** *(primeiro teste do
   multiplayer, a pedido do Leonardo: só na cidade, caçadas sozinhas; pilar 2)*.
   Quem está na cidade vê os outros andando, com nome (o da conta, ou o da

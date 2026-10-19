@@ -94,10 +94,31 @@ travado (olho humano, viewport de celular).
 **Risco:** o efeito de 20 Hz sem interpolação é feio. A interpolação é parte
 da entrega, não melhoria futura.
 
-### M1 · A simulação com N jogadores
+### M1 · A simulação com N jogadores — feita em 19/10, versão 0.8.2
 
 O princípio: **solo é um grupo de um**. Um caminho de código só, senão o
 modo multiplayer apodrece sem ninguém perceber.
+
+**Como entrou** (o `CLAUDE.md` descreve o resultado): itens 1, 2, 4 e 5
+abaixo como escritos, e as regras de grupo da tabela, com os números em
+`progression.party` (`monsters`, `bossHp`, `lootProtection`, `shareTiles`).
+Duas diferenças, que a M2 precisa resolver:
+
+- **Item 3 pela metade.** A ficha do solo aponta para o próprio personagem
+  do save (`fichaLocal()`), então nível, Magia e Perícia continuam subindo
+  direto nele, como antes; os ganhos da incursão ficam contados em cada
+  jogador (`p.xpGain`, `p.magGain`, `p.perGain`, `p.bag`). O servidor passa
+  fichas que são cópias e grava no banco a partir delas no fim.
+- **Item 6 não entrou.** `G.pend` ainda guarda função e `m.t`, `m.dot.p` e
+  `q.p` guardam objetos: o estado ainda não é JSON puro. É pré-requisito do
+  snapshot da M2.
+
+Escolhas que o plano não cobria: o nível que escala os monstros é o **maior**
+do grupo (`G.lvl`), para o nível 1 não deixar a masmorra fácil para o 20; o
+alvo do monstro é o dono do tile no campo de fluxo (`G.fdono`); quem sai
+(portal ou morte) deixa de ser alvo, e a sala acaba quando não sobra ninguém.
+O teste no Node roda 1, 2 e 4 jogadores com entradas roteirizadas; cinco
+sabotagens das regras de grupo foram barradas.
 
 **Mudanças na regra**
 
@@ -127,7 +148,7 @@ modo multiplayer apodrece sem ninguém perceber.
 |---|---|---|
 | Monstros por sala | × (1 + 0,6 · (n − 1)) | PRD 7.3: mais jogadores = mais monstros |
 | Vida do Guardião | × (1 + 0,8 · (n − 1)) | Chefe não pode derreter com 4 |
-| Loot | **Único** (decisão do Leonardo, 19/10): cada morte deixa um drop só, visível a todos, e só um jogador o pega. Nos primeiros 10 s (`progression.party.protecao`) só quem causou mais dano no monstro pode pegar, como no Tibia; depois, qualquer um. Troca entre jogadores fica para o Mercado (F3) | Tibia raiz: o drop é disputado, e quem matou tem a vez |
+| Loot | **Único** (decisão do Leonardo, 19/10): cada morte deixa um drop só, visível a todos, e só um jogador o pega. Nos primeiros 10 s (`progression.party.lootProtection`) só quem causou mais dano no monstro pode pegar, como no Tibia; depois, qualquer um. Troca entre jogadores fica para o Mercado (F3) | Tibia raiz: o drop é disputado, e quem matou tem a vez |
 | XP | Cheia para cada participante | Tibia tinha XP dividida; aqui o grupo já cobra em monstro a mais |
 | Extração | **Individual**: cada um para no portal e sai com o seu saco | Pilar 4: a decisão de sair é de cada um |
 | Morte | O jogador morto perde o próprio saco e vira espectador da sala até ela acabar | Pilar 1 sem punir o grupo |
@@ -288,4 +309,5 @@ também dispensa moderação de chat por enquanto. PvP fica fora (D1).
 
 Pôr a **M0 (passo fixo)** no `ROADMAP.md` como item de F0 — ela já está na
 lista da F0 do PRD e não depende de nenhuma decisão. D-M1 e D-M2 foram
-decididas em 19/10: a M1 está em `Próximo` no `ROADMAP.md`.
+decididas em 19/10, e a M1 entrou na 0.8.2. O próximo passo de rede é a M2,
+que depende de D2 (teto de gasto) e C6/C7.

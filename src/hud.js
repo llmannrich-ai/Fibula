@@ -1,13 +1,13 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.8.1';
-import {SPELLS,CITY} from './sim/dados.js?v=0.8.1';
-import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.8.1';
-import {G} from './sim/incursao.js?v=0.8.1';
-import {C} from './sim/cidade.js?v=0.8.1';
-import {ART,icone} from './arte.js?v=0.8.1';
-import {rede} from './rede.js?v=0.8.1';
-import {$} from './dom.js?v=0.8.1';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.8.2';
+import {SPELLS,CITY} from './sim/dados.js?v=0.8.2';
+import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.8.2';
+import {G} from './sim/incursao.js?v=0.8.2';
+import {C} from './sim/cidade.js?v=0.8.2';
+import {ART,icone} from './arte.js?v=0.8.2';
+import {rede} from './rede.js?v=0.8.2';
+import {$} from './dom.js?v=0.8.2';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -50,7 +50,7 @@ export function hud(){
   E.mpI.style.width=(p.mp/p.mmp*100)+'%';setT(E.mpT,`${Math.floor(p.mp)}/${p.mmp}`);
   E.xpI.style.width=(c.xp/xpNeed(c.lvl)*100)+'%';setT(E.lvlT,'Nv '+c.lvl);
   setT(E.clsT,KL().nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
-  setT(E.bagT,String(G.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
+  setT(E.bagT,String(p.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
   const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
   if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;

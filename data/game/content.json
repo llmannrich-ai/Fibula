@@ -1001,6 +1001,13 @@
       "max": 3,
       "largeRoomArea": 50,
       "largeRoomBonus": 1
+    },
+    "party": {
+      "_note": "Regras de grupo (decisao do Leonardo, 19/10/2026; plano do multiplayer, secao 3). Com n jogadores, cada sala tem os monstros de uma sala solo vezes (1 + monsters*(n-1)) e o Guardiao tem a vida vezes (1 + bossHp*(n-1)). O loot e unico: cada monstro deixa um drop so, e nos primeiros lootProtection segundos so quem causou mais dano pode pega-lo; depois, qualquer um. XP cheia para quem causou dano ou estava a ate shareTiles tiles. Solo (n=1) nao muda nada.",
+      "monsters": 0.6,
+      "bossHp": 0.8,
+      "lootProtection": 10,
+      "shareTiles": 9
     }
   },
   "city": {

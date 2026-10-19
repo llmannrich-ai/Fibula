@@ -3,19 +3,19 @@
    (src/sim/, sem DOM) às telas, ao desenho e ao save, e roda o laço.
    O carregamento do conteúdo é a primeira coisa que acontece porque a migração
    de save chama slotsIniciais() e portanto já precisa de SPELLS e SLOT_LVL. */
-import {saida} from './sim/base.js?v=0.8.1';
-import {carrega} from './sim/dados.js?v=0.8.1';
-import {G,passo,parado} from './sim/incursao.js?v=0.8.1';
-import {C,updateCidade} from './sim/cidade.js?v=0.8.1';
-import {carregaSave,persist} from './salvar.js?v=0.8.1';
-import {puxa} from './nuvem.js?v=0.8.1';
-import {carregaArte} from './arte.js?v=0.8.1';
-import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.8.1';
-import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.8.1';
-import {showMenu,showPick,showEnd,pickS,endS,conteudoFalhou,V} from './telas.js?v=0.8.1';
-import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.8.1';
-import {quadro} from './rede.js?v=0.8.1';
-import {app} from './dom.js?v=0.8.1';
+import {saida} from './sim/base.js?v=0.8.2';
+import {carrega} from './sim/dados.js?v=0.8.2';
+import {G,passo,parado} from './sim/incursao.js?v=0.8.2';
+import {C,updateCidade} from './sim/cidade.js?v=0.8.2';
+import {carregaSave,persist} from './salvar.js?v=0.8.2';
+import {puxa} from './nuvem.js?v=0.8.2';
+import {carregaArte} from './arte.js?v=0.8.2';
+import {W,H,resize,render,renderCidade,drawMini} from './desenho.js?v=0.8.2';
+import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.8.2';
+import {showMenu,showPick,showEnd,pickS,endS,conteudoFalhou,V} from './telas.js?v=0.8.2';
+import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.8.2';
+import {quadro} from './rede.js?v=0.8.2';
+import {app} from './dom.js?v=0.8.2';
 
 /* ---------- conteúdo do jogo (data/game/content.json) ---------- */
 const DATA_URL='data/game/content.json';
@@ -31,7 +31,10 @@ if(pronto){
   carregaArte(()=>{if(!pickS.hidden)showPick();if(!endS.hidden&&G)showEnd();montaIcones()});
   carregaSave();
   /* o que a simulação conta para fora vira tela, botão e gravação */
-  saida.log=log;saida.banner=banner;saida.nivel=montaBotoes;saida.persist=persist;
+  /* mensagem com jogador (o último argumento) só aparece na tela dele */
+  const meu=p=>!p||!G||p===G.p;
+  saida.log=(m,c,p)=>{if(meu(p))log(m,c)};saida.banner=(t,p)=>{if(meu(p))banner(t)};
+  saida.nivel=p=>{if(meu(p))montaBotoes()};saida.persist=persist;
   saida.fim=kind=>{soltaTudo();setTimeout(showEnd,kind==='extraiu'?450:1100)};
 
   /* ---------- laço ---------- */

@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.8.1';
-import {CITY,CLASSES} from './sim/dados.js?v=0.8.1';
-import {save,KL} from './sim/progresso.js?v=0.8.1';
-import {G,solid} from './sim/incursao.js?v=0.8.1';
-import {C} from './sim/cidade.js?v=0.8.1';
-import {bf} from './sim/combate.js?v=0.8.1';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.8.1';
-import {$,app,RM} from './dom.js?v=0.8.1';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.8.2';
+import {CITY,CLASSES} from './sim/dados.js?v=0.8.2';
+import {save,KL} from './sim/progresso.js?v=0.8.2';
+import {G,solid} from './sim/incursao.js?v=0.8.2';
+import {C} from './sim/cidade.js?v=0.8.2';
+import {bf} from './sim/combate.js?v=0.8.2';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.8.2';
+import {$,app,RM} from './dom.js?v=0.8.2';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -177,7 +177,7 @@ function cena(){
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(MW-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(MH-1,Math.ceil((cy+H)/T)+1);
   G.torches.length=0;
-  const A=ART.ok,pDead=G.over&&G.end!=='extraiu',pArm=bf('arm');ctx.imageSmoothingEnabled=false;
+  const A=ART.ok,pDead=!!p.fora&&p.fora!=='extraiu',pArm=bf('arm');ctx.imageSmoothingEnabled=false;
   if(A)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     /* com os sprites: o chão aqui, as paredes depois, linha a linha junto com as criaturas */
     const h=hash(x,y),cx=x*T+T/2,cy=y*T+T/2;
@@ -298,11 +298,11 @@ function cena(){
     outText(m.t.nome,mx,top-6,col);
     ctx.fillStyle='#000';ctx.fillRect(mx-bw/2-1,top-2,bw+2,5);ctx.fillStyle=col;ctx.fillRect(mx-bw/2,top-1,bw*pct,3);
   }
-  if(!(G.over&&G.end!=='extraiu')){
+  if(!(p.fora&&p.fora!=='extraiu')){
     const pct=p.hp/p.mhp,col=corVida(pct),top=A?p.y-30:p.y-34,px=p.x-(A?desl('cls_'+save.classe):0);
     outText('Você',px,top-6,col);ctx.fillStyle='#000';ctx.fillRect(px-14,top-2,29,5);ctx.fillStyle=col;ctx.fillRect(px-13,top-1,27*pct,3);
   }
-  if(po.ch>0){ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y,24,0,TAU);ctx.stroke();ctx.strokeStyle='#ffd68a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,24,-Math.PI/2,-Math.PI/2+TAU*po.ch/EXT);ctx.stroke();outText('Extraindo…',p.x,p.y+40,'#ffd68a')}
+  if(p.pch>0){ctx.strokeStyle='rgba(0,0,0,.6)';ctx.lineWidth=5;ctx.beginPath();ctx.arc(p.x,p.y,24,0,TAU);ctx.stroke();ctx.strokeStyle='#ffd68a';ctx.lineWidth=3;ctx.beginPath();ctx.arc(p.x,p.y,24,-Math.PI/2,-Math.PI/2+TAU*p.pch/EXT);ctx.stroke();outText('Extraindo…',p.x,p.y+40,'#ffd68a')}
   for(const f of G.fx){if(f.k!=='num')continue;const a=1-f.t/f.life;ctx.globalAlpha=Math.min(1,a*1.6);ctx.font=`700 ${f.big?13:11}px Verdana,Tahoma,sans-serif`;outText(f.txt,f.x,f.y-f.t*32,f.col);ctx.globalAlpha=1}
 }
 /* ---------- cidade ----------

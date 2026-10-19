@@ -1,16 +1,16 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final e Mercador. */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.8.1';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.8.1';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.8.1';
-import {G,setG,newRun} from './sim/incursao.js?v=0.8.1';
-import {C,entraCidade} from './sim/cidade.js?v=0.8.1';
-import {persist,saveFalhou} from './salvar.js?v=0.8.1';
-import {desenhaConta} from './nuvem.js?v=0.8.1';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade} from './hud.js?v=0.8.1';
-import {icone} from './arte.js?v=0.8.1';
-import {$,app} from './dom.js?v=0.8.1';
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.8.2';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.8.2';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.8.2';
+import {G,setG,newRun} from './sim/incursao.js?v=0.8.2';
+import {C,entraCidade} from './sim/cidade.js?v=0.8.2';
+import {persist,saveFalhou} from './salvar.js?v=0.8.2';
+import {desenhaConta} from './nuvem.js?v=0.8.2';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade} from './hud.js?v=0.8.2';
+import {icone} from './arte.js?v=0.8.2';
+import {$,app} from './dom.js?v=0.8.2';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS];
@@ -240,28 +240,29 @@ function drawEquip(){
 }
 
 export function showEnd(){
-  const k=G.end,ok=k==='extraiu';
+  /* o resultado é do jogador deste aparelho, não da sala */
+  const p=G.p,k=p.fora||G.end,ok=k==='extraiu';
   $('#endEye').textContent=ok?'Incursão concluída':'Fim da incursão';
   const t=$('#endTitle');t.textContent=ok?'Extraído!':k==='morreu'?'Você morreu':'Soterrado';t.classList.toggle('lost',!ok);
-  $('#endText').textContent=ok?(G.pecas
-      ?`Você saiu pelo portal com ${G.bagVal} de ouro em loot. ${G.ouroExt} viraram ouro no cofre, e ${G.pecas} peça${G.pecas>1?'s':''} de equipamento ${G.pecas>1?'esperam':'espera'} lá para vestir ou vender.`
-      :`Você saiu pelo portal com ${G.bagVal} de ouro em loot. Tudo foi para o cofre.`)
+  $('#endText').textContent=ok?(p.pecas
+      ?`Você saiu pelo portal com ${p.bagVal} de ouro em loot. ${p.ouroExt} viraram ouro no cofre, e ${p.pecas} peça${p.pecas>1?'s':''} de equipamento ${p.pecas>1?'esperam':'espera'} lá para vestir ou vender.`
+      :`Você saiu pelo portal com ${p.bagVal} de ouro em loot. Tudo foi para o cofre.`)
     :k==='morreu'?`O loot que você carregava ficou na masmorra, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
     :`A masmorra desabou antes de você chegar ao portal. O loot ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
-  const l=$('#eLoot');l.textContent=`${G.bagVal} ouro · ${ok?'guardado':'perdido'}`;l.className=ok?'ok':'bad';
-  const sealOn=!ok&&G.sealed>0,sl=$('#eSeal');
+  const l=$('#eLoot');l.textContent=`${p.bagVal} ouro · ${ok?'guardado':'perdido'}`;l.className=ok?'ok':'bad';
+  const sealOn=!ok&&p.sealed>0,sl=$('#eSeal');
   $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;
-  if(sealOn){sl.textContent=`+${G.sealed} ouro (${Math.round(sealPct()*100)}%)`;sl.className='ok'}
+  if(sealOn){sl.textContent=`+${p.sealed} ouro (${Math.round(sealPct(p.up)*100)}%)`;sl.className='ok'}
   const xl=$('#eXpPerda');$('#eXpPerdaDt').hidden=ok;xl.hidden=ok;
-  if(!ok){xl.textContent=`−${G.xpPerdido} xp (${pctPerdaXp()}% do nível)`;xl.className='bad'}
-  const c=ch();
-  $('#eKills').textContent=G.kills;$('#eXp').textContent=`+${G.xpGain} (nível ${c.lvl})`;
-  $('#eTrain').textContent=(G.magGain||G.perGain)
-    ? [G.magGain&&`+${G.magGain} de Magia`,G.perGain&&`+${G.perGain} de Perícia`].filter(Boolean).join(' · ')
+  if(!ok){xl.textContent=`−${p.xpPerdido} xp (${pctPerdaXp()}% do nível)`;xl.className='bad'}
+  const c=p.c;
+  $('#eKills').textContent=p.kills;$('#eXp').textContent=`+${p.xpGain} (nível ${c.lvl})`;
+  $('#eTrain').textContent=(p.magGain||p.perGain)
+    ? [p.magGain&&`+${p.magGain} de Magia`,p.perGain&&`+${p.perGain} de Perícia`].filter(Boolean).join(' · ')
     : `Magia ${c.mag} · Perícia ${c.per}`;
   $('#eTime').textContent=fmtEl(G.dur);$('#eSeed').textContent=nMasmorra(G.semente);$('#eCofre').textContent=`${save.cofre} ouro`;
   const ul=$('#endItems');ul.textContent='';
-  const rows=Object.entries(G.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
+  const rows=Object.entries(p.bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
   if(!rows.length){const li=document.createElement('li');li.textContent='O saco estava vazio.';ul.appendChild(li)}
   for(const[k,q]of rows){const li=document.createElement('li');li.className='r'+ITEMS[k].rar;
     const a=document.createElement('span'),ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');

@@ -143,12 +143,20 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
   e faz o boneco de cada um correr atrás da última posição recebida
 - `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
-  `spawn()`, `pickType()`), **física** (`solid()`, `blocked()`, `move()`,
+  `spawn()`, `pickType()`), **jogadores** (`G.ps`, `fichaLocal()`,
+  `novoJogador()`, `sai()`), **física** (`solid()`, `blocked()`, `move()`,
   `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
   **passo fixo** (`passo(dt,ent)`, `efeitos()`, `guarda()`),
-  **atualização** (`update(dt,ent)`, `parado(dt)`, `updateMons()`,
-  `updateProj()`, `finish()`)
-- `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`),
+  **atualização** (`update(dt,ent)`, `anda()`, `parado(dt)`, `updateMons()`,
+  `updateProj()`, `finish()`). **Solo é um grupo de um** (etapa M1 do
+  [plano do multiplayer](docs/plano-multiplayer.md)): a incursão tem sempre
+  uma lista de jogadores, `G.ps`, cada um com a ficha dele (`p.cl`, `p.c`,
+  `p.up`) e o próprio saco, e `newRun(semente, fichas)` aceita várias. A regra
+  nunca lê `G.p` nem o `save` para saber quem joga: `G.p` é só o jogador
+  deste aparelho, para a tela. No solo a ficha aponta para o personagem do
+  save, e o que é da conta (cofre, peças) só muda para a ficha local, em `sai()`
+- `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`), todas
+  recebendo o jogador que age,
   `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`
 
 **`src/` — o cliente**

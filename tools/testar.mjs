@@ -138,13 +138,13 @@ const P = {
   /* encurta a incursão: sem isso um caso de ponta a ponta levaria 6 minutos */
   tempo: (run, portal) => (h) => patch(h, 'RUN=360,PORTAL_AT=90', `RUN=${run},PORTAL_AT=${portal}`, 'tempo da incursão'),
   /* o saco entra semeado para a aritmética do cofre ficar determinística */
-  saco: (h) => patch(h, 't:0,bag:{},bagVal:0,', 't:0,bag:{ouro:200},bagVal:200,', 'saco semeado'),
+  saco: (h) => patch(h, 'pch:0,bag:{},bagVal:0,', 'pch:0,bag:{ouro:200},bagVal:200,', 'saco semeado'),
   /* o mesmo saco com uma espada (20): equipamento vai para o cofre como peça */
-  sacoEquip: (h) => patch(h, 't:0,bag:{},bagVal:0,', 't:0,bag:{ouro:200,espada:1},bagVal:220,', 'saco semeado com espada'),
+  sacoEquip: (h) => patch(h, 'pch:0,bag:{},bagVal:0,', 'pch:0,bag:{ouro:200,espada:1},bagVal:220,', 'saco semeado com espada'),
   /* portal na sala de entrada: no headless não há quem arraste o joystick até
      a sala do Guardião, e o que está sob teste é a extração, não a caminhada */
-  portalNaEntrada: (h) => patch(h, 'portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false,ch:0}',
-    'portal:{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false,ch:0}', 'portal na entrada'),
+  portalNaEntrada: (h) => patch(h, 'portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false}',
+    'portal:{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false}', 'portal na entrada'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
   /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
@@ -519,7 +519,7 @@ async function testaSimulacao() {
     const ent = {x: 0, y: 0, held: [true, false, false, false]};
     let q = 0;
     while (!I.G.over && q < 60000) { I.passo(quadros[q % quadros.length], ent); for (let i = 0; i < (extra || 0); i++) B.frr(0, 1); q++; }
-    return {foto, r: {fim, t: I.G.t, passos: Math.round(I.G.t / B.TICK), kills: I.G.kills, xp: I.G.xpGain, saco: I.G.bagVal, mons: I.G.mons.length, semente: I.G.semente}};
+    return {foto, r: {fim, t: I.G.t, passos: Math.round(I.G.t / B.TICK), kills: I.G.kills, xp: I.G.ps[0].xpGain, saco: I.G.ps[0].bagVal, mons: I.G.mons.length, semente: I.G.semente}};
   };
   const rnd0 = Math.random;
   let a, b, c, d, e, f;
@@ -559,7 +559,7 @@ async function testaSimulacao() {
   try {
     for (const [fim, xp0, esperado] of [['morreu', 1000, 750], ['desabou', 101, 76], ['extraiu', 1000, 1000]]) {
       novoSave(); P.ch().lvl = 4; P.ch().xp = xp0; I.newRun(9); I.finish(fim);
-      if (P.ch().xp !== esperado || P.ch().lvl !== 4 || I.G.xpPerdido !== xp0 - esperado) falhas.push(`${fim} com ${xp0} de XP deixou ${P.ch().xp} no nível ${P.ch().lvl} (esperado ${esperado} no 4)`);
+      if (P.ch().xp !== esperado || P.ch().lvl !== 4 || I.G.ps[0].xpPerdido !== xp0 - esperado) falhas.push(`${fim} com ${xp0} de XP deixou ${P.ch().xp} no nível ${P.ch().lvl} (esperado ${esperado} no 4)`);
     }
     if (P.xpNeed(1) !== 520 || P.xpNeed(8) !== 3379) falhas.push(`a curva não veio do content.json: xpNeed(1)=${P.xpNeed(1)}, xpNeed(8)=${P.xpNeed(8)}`);
   } catch (e) { falhas.push('a perda de XP na morte quebrou: ' + e.message); }
@@ -577,6 +577,93 @@ async function testaSimulacao() {
     if (a.r.fim !== 'desabou') falhas.push(`a incursão parada devia acabar soterrada, acabou em ${a.r.fim} após ${a.r.passos} passos`);
     if (!(a.r.kills >= 1)) falhas.push(`nenhum monstro abatido no Node (${JSON.stringify(a.r)})`);
   }
+  /* ---------- grupo (etapa M1 do plano do multiplayer) ----------
+     Solo é um grupo de um: newRun(semente, fichas) aceita 1, 2 ou 4
+     jogadores, cada um com a própria ficha e a própria entrada. Prova que:
+     - a ficha do save sozinha dá a mesma incursão de newRun() sem fichas;
+     - 1, 2 e 4 jogadores com entradas roteirizadas são deterministas (mesma
+       semente, mesmas entradas, mesmo resultado, a 20 e a 60 quadros);
+     - o grupo põe mais monstros e mais vida no Guardião (progression.party);
+     - o loot é único: só um jogador leva o drop, e quem causou mais dano tem
+       a vez durante lootProtection;
+     - a extração é de cada um, e só a ficha local mexe no cofre. */
+  try {
+    const CLS = ['cavaleiro', 'feiticeiro', 'cacador', 'druida'];
+    const fichas = (n, lvl) => {
+      novoSave();
+      return Array.from({length: n}, (_, i) => i ? {cl: CLS[i], c: P.novoChar(CLS[i], lvl || 4 + i), up: {...P.UP0}} : I.fichaLocal());
+    };
+    /* cada jogador anda num círculo próprio e segura os espaços 1 e 2 */
+    const entradas = (n, q) => Array.from({length: n}, (_, i) => { const a = q * 0.011 + i * 1.7; return {x: Math.cos(a), y: Math.sin(a * 0.8), held: [true, i % 2 === 0, false, false]}; });
+    const grupo = (n, sem, quadro = 0.05) => {
+      const f = fichas(n); let fim = null; saida.fim = (k) => { fim = k; };
+      I.newRun(sem, f); I.G.active = true;
+      const mons0 = I.G.mons.length, chefe = I.G.mons.find((m) => m.t.boss).mhp;
+      let q = 0;
+      /* a entrada muda a cada passo da regra, qualquer que seja o quadro */
+      while (!I.G.over && q < 40000) { I.passo(quadro, entradas(n, Math.round(I.G.t / B.TICK))); q++; }
+      return {fim, mons0, chefe, t: I.G.t.toFixed(2), kills: I.G.kills, ps: I.G.ps.map((p) => [p.fora, p.kills, p.xpGain, p.bagVal, Math.round(p.hp), Math.round(p.x), Math.round(p.y), p.c.lvl, p.c.xp].join(':')).join(' ')};
+    };
+    Math.random = () => { throw new Error('Math.random chamado dentro da simulação'); };
+    /* a ficha local explícita é o solo de sempre */
+    novoSave(); I.newRun(21); I.G.active = true; let q0 = 0;
+    while (!I.G.over && q0 < 40000) { I.passo(0.05, entradas(1, q0)[0]); q0++; }
+    const solo = [I.G.t.toFixed(2), I.G.kills, I.G.ps[0].xpGain, I.G.ps[0].bagVal].join();
+    novoSave(); I.newRun(21, [I.fichaLocal()]); I.G.active = true; q0 = 0;
+    while (!I.G.over && q0 < 40000) { I.passo(0.05, [entradas(1, q0)[0]]); q0++; }
+    const soloF = [I.G.t.toFixed(2), I.G.kills, I.G.ps[0].xpGain, I.G.ps[0].bagVal].join();
+    if (solo !== soloF) falhas.push(`a ficha do save mudou o solo: ${solo} / ${soloF}`);
+    const r = {};
+    for (const n of [1, 2, 4]) {
+      const x = grupo(n, 21), y = grupo(n, 21), z = grupo(n, 21, 1 / 60);
+      r[n] = x;
+      if (JSON.stringify(x) !== JSON.stringify(y)) falhas.push(`${n} jogadores, mesma semente e mesmas entradas, resultados diferentes: ${JSON.stringify(x)} / ${JSON.stringify(y)}`);
+      if (JSON.stringify(x) !== JSON.stringify(z)) falhas.push(`${n} jogadores: o resultado depende do quadro (50 ms × 1/60 s): ${JSON.stringify(x)} / ${JSON.stringify(z)}`);
+      if (x.ps.split(' ').length !== n) falhas.push(`${n} jogadores pedidos, a incursão teve ${x.ps.split(' ').length}`);
+      if (!x.fim) falhas.push(`${n} jogadores: a incursão não acabou (${JSON.stringify(x)})`);
+    }
+    const PT = JSON.parse(CONTEUDO).progression.party;
+    if (!(r[2].mons0 > r[1].mons0 && r[4].mons0 > r[2].mons0)) falhas.push(`o grupo não pôs mais monstros: ${r[1].mons0}, ${r[2].mons0}, ${r[4].mons0} para 1, 2 e 4`);
+    const chefe = (n) => { I.newRun(21, fichas(n, 1)); return I.G.mons.find((m) => m.t.boss).mhp; };
+    if (Math.abs(chefe(2) / chefe(1) - (1 + PT.bossHp)) > 0.02) falhas.push(`a vida do Guardião com 2 do mesmo nível não é ×${1 + PT.bossHp} (${chefe(1)} → ${chefe(2)})`);
+    if (!r[4].ps.split(' ').some((p) => +p.split(':')[1] > 0 && p !== r[4].ps.split(' ')[0])) falhas.push(`com 4 jogadores, só o primeiro abateu monstros: ${r[4].ps}`);
+    /* loot único e a vez de quem causou mais dano */
+    const f2 = fichas(2); I.newRun(22, f2); I.G.active = true; I.G.mons.length = 0;
+    const [p0, p1] = I.G.ps, parado = {x: 0, y: 0, held: [false, false, false, false]};
+    p0.x += 6 * 32;
+    I.G.drops.push({x: p1.x, y: p1.y, items: [['ouro', 30]], rar: 0, t: 0, dono: 0});
+    I.update(0.05, [parado, parado]);
+    if (!I.G.drops.length || p1.bagVal) falhas.push('o drop de outro jogador foi pego antes de acabar a vez dele');
+    I.G.drops[0].t = PT.lootProtection;
+    I.update(0.05, [parado, parado]);
+    if (I.G.drops.length || p1.bagVal !== 30 || p0.bagVal) falhas.push(`passada a vez, o drop não foi para quem encostou (sacos ${p0.bagVal} / ${p1.bagVal}, ${I.G.drops.length} no chão)`);
+    I.G.drops.push({x: p0.x, y: p0.y, items: [['ouro', 5]], rar: 0, t: 0, dono: 0}, {x: p0.x, y: p0.y, items: [['ouro', 7]], rar: 0, t: 0, dono: 1});
+    I.update(0.05, [parado, parado]);
+    if (p0.bagVal !== 5 || I.G.drops.length !== 1) falhas.push(`o dono pegou ${p0.bagVal} e sobraram ${I.G.drops.length} drops (esperado 5 e 1)`);
+    /* quem bateu mais é o dono do drop do monstro (até sair um drop) */
+    const H = await import(url('combate.js')), rato = JSON.parse(CONTEUDO).enemies.rato;
+    let dono = null;
+    for (let i = 0; i < 40 && dono === null; i++) {
+      const m = {k: 'rato', t: {...rato}, x: p0.x, y: p0.y, hp: 50, mhp: 50, r: 9, dn: [0, 0], xpm: 1}, n0 = I.G.drops.length;
+      I.G.mons.push(m); H.hitMon(m, 10, '#fff', p0); H.hitMon(m, 30, '#fff', p1); H.hitMon(m, 15, '#fff', p0);
+      if (I.G.mons.includes(m)) { falhas.push('o rato com 55 de dano em 50 de vida não morreu'); break; }
+      if (I.G.drops.length > n0) dono = I.G.drops[I.G.drops.length - 1].dono;
+    }
+    if (dono !== 1) falhas.push(`o drop foi para o jogador ${dono}, não para quem causou mais dano (o 1: 30 contra 25 do 0, que deu o golpe final)`);
+    if (!(p0.xpGain > 0 && p1.xpGain > 0)) falhas.push(`XP do abate: ${p0.xpGain} / ${p1.xpGain}, os dois bateram`);
+    /* extração individual: quem sai pelo portal não acaba a sala dos outros,
+       e só a ficha local mexe na conta */
+    const f3 = fichas(2); I.newRun(23, f3); I.G.active = true; I.G.mons.length = 0;
+    const [a0, a1] = I.G.ps, sv = P.save, cofre0 = sv.cofre, ext0 = sv.ext;
+    I.G.t = 200; I.G.portal.open = true; a1.x = I.G.portal.x; a1.y = I.G.portal.y; a1.bag = {ouro: 40}; a1.bagVal = 40;
+    for (let i = 0; i < 80 && !a1.fora; i++) I.update(0.05, [parado, parado]);
+    if (a1.fora !== 'extraiu' || I.G.over || a0.fora) falhas.push(`a extração de um encerrou a sala ou não aconteceu (${a1.fora}, over=${I.G.over}, ${a0.fora})`);
+    if (sv.cofre !== cofre0 || sv.ext !== ext0) falhas.push('a extração de outro jogador mexeu no cofre deste aparelho');
+    a0.x = I.G.portal.x; a0.y = I.G.portal.y; a0.bag = {ouro: 25}; a0.bagVal = 25;
+    for (let i = 0; i < 80 && !I.G.over; i++) I.update(0.05, [parado, parado]);
+    if (!I.G.over || sv.cofre !== cofre0 + 25 || sv.ext !== ext0 + 1) falhas.push(`o último a extrair não fechou a sala ou não guardou o saco (cofre ${cofre0} → ${sv.cofre})`);
+  } catch (e) { falhas.push('o grupo quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
   /* a cidade: mapa do conteúdo, paredes, NPCs sólidos, quem está perto e a
      chegada pelo portão; e o conteúdo com mapa torto é recusado */
   try {
@@ -1479,7 +1566,7 @@ async function main() {
     console.log('\u2717 simulação no Node');
     for (const f of sim.falhas) console.log(`    falhou: ${f}`);
   } else {
-    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.passos} passos, ${sim.a.kills} abates; sorteio com semente: mesma masmorra, mesmo resultado a 20, 60 e quadros irregulares, efeitos isolados, sem Math.random`);
+    console.log(`\u2713 simulação no Node — incursão inteira sem navegador: ${sim.a.passos} passos, ${sim.a.kills} abates; sorteio com semente: mesma masmorra, mesmo resultado a 20, 60 e quadros irregulares, efeitos isolados, sem Math.random; grupo de 1, 2 e 4 jogadores determinista, com loot único e extração individual`);
   }
 
   const edge = achaNavegador();

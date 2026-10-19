@@ -2,12 +2,12 @@
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
    nada daqui direto: o laço pede leEntrada() e passa o resultado a update(),
    ou a updateCidade() quando se anda na cidade. */
-import {hyp} from './sim/base.js?v=0.8.1';
-import {G} from './sim/incursao.js?v=0.8.1';
-import {drinkPot} from './sim/combate.js?v=0.8.1';
-import {W,H} from './desenho.js?v=0.8.1';
-import {E} from './hud.js?v=0.8.1';
-import {$,app} from './dom.js?v=0.8.1';
+import {hyp} from './sim/base.js?v=0.8.2';
+import {G} from './sim/incursao.js?v=0.8.2';
+import {drinkPot} from './sim/combate.js?v=0.8.2';
+import {W,H} from './desenho.js?v=0.8.2';
+import {E} from './hud.js?v=0.8.2';
+import {$,app} from './dom.js?v=0.8.2';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};

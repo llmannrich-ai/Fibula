@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.8.1';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.8.2';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -30,26 +30,28 @@ export const KL=()=>CLASSES[save.classe];
 export const xpNeed=l=>Math.round(PROG.xp.base*Math.pow(l,PROG.xp.exp));
 /* a morte leva uma fatia do XP do nível atual, nunca o nível */
 export const pctPerdaXp=()=>Math.round(PROG.xp.deathLoss*100);
-export const perdaXp=()=>Math.floor(Math.max(0,ch().xp)*PROG.xp.deathLoss);
+export const perdaXp=(c=ch())=>Math.floor(Math.max(0,c.xp)*PROG.xp.deathLoss);
 /* custo exponencial de Magia e Perícia — mesma forma das fórmulas de
    vocation.cpp (1600*manaMultiplier^(ml-1) e skillBase*mult^(nivel-11)),
-   com as bases encolhidas para a escala de uma incursão de 6 minutos */
-export const manaPraMag=n=>Math.round(240*Math.pow(KL().mMult,n));
-export const golpesPraPer=n=>Math.round(12*Math.pow(KL().pMult,n-10));
-export const nSlots=()=>SLOT_LVL.filter(l=>ch().lvl>=l).length;
-export const desbloqueadas=()=>listaDaClasse(save.classe).filter(k=>ch().lvl>=SPELLS[k].lvl);
+   com as bases encolhidas para a escala de uma incursão de 6 minutos.
+   Os parâmetros opcionais são a ficha de um jogador da incursão (personagem,
+   classe, melhorias); sem eles, vale o personagem do save */
+export const manaPraMag=(n,K=KL())=>Math.round(240*Math.pow(K.mMult,n));
+export const golpesPraPer=(n,K=KL())=>Math.round(12*Math.pow(K.pMult,n-10));
+export const nSlots=(c=ch())=>SLOT_LVL.filter(l=>c.lvl>=l).length;
+export const desbloqueadas=(c=ch(),cl=save.classe)=>listaDaClasse(cl).filter(k=>c.lvl>=SPELLS[k].lvl);
 
-export const stats=()=>{const c=ch(),K=KL(),u=save.up,l=c.lvl;return{
-  mhp:Math.round(K.hp+K.ghp*(l-1)+15*u.vigor+eqBonus('vida')),
-  mmp:Math.round(K.mp+K.gmp*(l-1)+10*u.foco+eqBonus('mana')),
-  pow:1+.08*u.poder+eqBonus('dano')
+export const stats=(c=ch(),cl=save.classe,u=save.up)=>{const K=CLASSES[cl],l=c.lvl;return{
+  mhp:Math.round(K.hp+K.ghp*(l-1)+15*u.vigor+eqBonus('vida',c)),
+  mmp:Math.round(K.mp+K.gmp*(l-1)+10*u.foco+eqBonus('mana',c)),
+  pow:1+.08*u.poder+eqBonus('dano',c)
 }};
 
 /* ---------- cofre e equipamento ----------
    O cofre é da conta: ouro em save.cofre, peças em save.itens, servem a
    qualquer personagem. O que está vestido mora em ch().equip, é só daquele
    personagem e não cai na morte — só o saco cai. */
-export const eqBonus=b=>{const e=ch().equip;let v=0;if(!e)return v;
+export const eqBonus=(b,c=ch())=>{const e=c.equip;let v=0;if(!e)return v;
   for(const sl of SLOTS_EQ){const id=e[sl],bo=id&&ITEMS[id]&&ITEMS[id].bonus;if(bo&&bo[b])v+=bo[b]}
   return v};
 const tiraDoCofre=k=>{if(!(save.itens[k]>0))return false;if(--save.itens[k]<=0)delete save.itens[k];return true};
@@ -67,4 +69,4 @@ export function guardaSaco(bag){let ouro=0,pecas=0;
 
 /* ---------- melhorias permanentes (ralo do cofre) ---------- */
 export const upCost=(k,n)=>Math.round(UP[k].base*Math.pow(UP[k].mult,n)/5)*5;
-export const sealPct=()=>.2*save.up.seguro;
+export const sealPct=(u=save.up)=>.2*u.seguro;
