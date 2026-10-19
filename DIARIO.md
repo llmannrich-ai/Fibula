@@ -30,6 +30,8 @@ execução precisa saber e não vai descobrir lendo o código.
 
 O caso `semente-na-url` falhava de vez em quando (inclusive antes desta mudança): comparava duas fotos da tela, e com tocha, água e luz animadas pelo tempo interpolado do desenho (que depende do relógio do navegador) as fotos nunca batem pixel a pixel. Passou a comparar o retrato da regra ao começar (semente e monstros com sqm e vida), que é o que o caso quer provar; 4 de 4 execuções verdes depois.
 
+A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 2,0): cronometrar no navegador mede a CPU da máquina de teste, e a da CI é mais lenta. O limite de 3 s passou a ser **calculado** no orçamento (idas e voltas em fila pela profundidade dos imports, mais os bytes pela banda: hoje 1,0 s e 1,7 s, igual em qualquer máquina); o cronometrado continua impresso e só reprova acima de 6 s. A sabotagem de 2,5 MB segue barrada (3,2 s calculados).
+
 **Pendências e riscos:** o 4G simulado é o do servidor de teste, não um aparelho de verdade; não modela o TCP começando devagar nem a CPU do celular, então o tempo real tende a ser maior. A primeira visita é o pior caso; o PWA (item da fila) resolve as seguintes. A CI roda numa máquina mais lenta: se o `rede-4g` oscilar perto de 3 s lá, investigar antes de mexer no limite.
 
 **Próximo passo recomendado:** filtro de linha no PNG do atlas (ganho sem mudar o jogo) e o item `Agora`.

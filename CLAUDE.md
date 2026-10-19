@@ -1235,15 +1235,19 @@ contra outra cópia do jogo (com o `src/` ao lado). `FIBULA_SAIDA` muda a pasta 
 **O orçamento de download** (pedido do Leonardo em 19/10/2026: o jogo está
 começando e precisa continuar abrindo rápido). Toda execução do harness
 imprime, antes dos casos, o que o jogador baixa antes de jogar, como a rede
-leva (texto em gzip, como o Pages manda; imagem como está), parte por parte:
-`DOWNLOAD_OK`, `DOWNLOAD_AVISO` acima de 1,2 MB e `DOWNLOAD_FALHOU` acima de
-1,8 MB, que conta como um caso reprovado. O caso `rede-4g` serve a cópia como
-num 4G (9 Mbit/s, 170 ms de ida e volta, banda dividida entre os pedidos) e
-reprova se a primeira tela ou a arte passarem de 3 s; os dois tempos saem
-impressos mesmo quando passa. Os números moram num lugar só, `ORCAMENTO` no
-`tools/testar.mjs`. Quando o aviso aparecer, a fila trata o contorno: atlas
-por lugar, `content.json` dividido, PWA. Registre o total e os tempos no
-diário quando mudarem.
+leva (texto em gzip, como o Pages manda; imagem como está), parte por parte,
+e o tempo **calculado** num 4G (9 Mbit/s, 170 ms de ida e volta): as idas e
+voltas em fila (`index.html`, `main.js`, cada nível de import, o
+`content.json` e o atlas) mais todos os bytes pela banda. `DOWNLOAD_OK`,
+`DOWNLOAD_AVISO` acima de 1,2 MB, e `DOWNLOAD_FALHOU` acima de 1,8 MB ou de
+3 s calculados, que conta como um caso reprovado. O tempo que reprova é
+calculado porque cronometrar mede também a CPU da máquina de teste: na CI,
+mais lenta, a mesma arte que chega em 2,0 s aqui chegou em 3,5 s. O caso
+`rede-4g` cronometra de verdade num 4G servido pelo coletor e imprime os dois
+tempos, mas só reprova acima de 6 s (regressão grande). Os números moram num
+lugar só, `ORCAMENTO` no `tools/testar.mjs`. Quando o aviso aparecer, a fila
+trata o contorno: atlas por lugar, `content.json` dividido, PWA. Registre o
+total e os tempos no diário quando mudarem.
 
 **Há um só harness, e é este.** Se você for escrever outro, estenda a tabela
 `CASOS` em vez disso — dois portões para o mesmo item significam que um dos dois

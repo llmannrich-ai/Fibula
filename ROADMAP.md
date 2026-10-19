@@ -133,7 +133,9 @@ pode desenhar pelo `.otbm` também.
   Leonardo; pilar 5)*. O harness imprime o que o jogador baixa, parte por
   parte, como a rede leva (hoje ~920 KB, 774 KB deles o atlas), avisa acima
   de 1,2 MB e reprova acima de 1,8 MB; o caso `rede-4g` serve o jogo como num
-  4G e reprova acima de 3 s. Ele achou a arte chegando em 3,3 s: o atlas
+  4G (o limite de 3 s é calculado, idas e voltas mais bytes pela banda, para
+  não depender da máquina; o cronometrado só reprova acima de 6 s). Ele achou
+  a arte chegando em 3,3 s: o atlas
   esperava o `content.json` e a imagem esperava o `atlas.json`; agora os dois
   saem junto com o `content.json`, e a arte chega em ~2,0 s (primeira tela em
   ~1,3 s). Sabotagem com um atlas de 2,5 MB: os dois portões reprovaram.
