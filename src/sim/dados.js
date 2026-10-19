@@ -24,6 +24,7 @@ export function validaConteudo(c){
     if(typeof u.base!=='number'||typeof u.mult!=='number'||typeof u.max!=='number')
       throw new Error(`melhoria ${k} sem base/mult/max numéricos`);
   for(const[k,it]of Object.entries(c.items)){
+    if(it.comida!==undefined&&(!(typeof it.comida==='number'&&it.comida>0)||it.slot!==undefined))throw new Error(`item ${k}: comida é um número de segundos positivo, e comida não se veste`);
     if(it.slot===undefined)continue;
     if(!SLOTS_EQ.includes(it.slot))throw new Error(`item ${k} com slot desconhecido: ${it.slot}`);
     for(const[b,v]of Object.entries(it.bonus||{}))
@@ -67,10 +68,11 @@ export function validaConteudo(c){
   for(const[k,s]of Object.entries(c.supplies)){
     if(typeof s.nome!=='string'||!(Number.isInteger(s.preco)&&s.preco>0))throw new Error(`provisão ${k} sem nome ou preço inteiro positivo`);
     const e=s.efeito;
-    if(!e||typeof e!=='object'||!Object.keys(e).length||!(Number.isInteger(s.max)&&s.max>=1))throw new Error(`provisão ${k} precisa de efeito e de max inteiro >= 1`);
+    if(!e||typeof e!=='object'||!Object.keys(e).length||(e.item===undefined&&!(Number.isInteger(s.max)&&s.max>=1)))throw new Error(`provisão ${k} precisa de efeito e de max inteiro >= 1`);
     for(const[a,v]of Object.entries(e)){
-      if(a==='buff'){if(!v||!(v.dur>0)||!Object.keys(v).every(b=>b==='dur'||(BUFFS.includes(b)&&typeof v[b]==='number')))throw new Error(`provisão ${k} com buff inválido: ${BUFFS.join(', ')} e dur positivo`)}
-      else if(!['pot','comida'].includes(a)||!(typeof v==='number'&&v>0))throw new Error(`provisão ${k} com efeito inválido: ${a}`);
+      if(a==='item'){if(Object.keys(e).length>1||!tem(c.items,v)||!(c.items[v].comida>0))throw new Error(`provisão ${k}: item é uma comida de items, sozinho no efeito`)}
+      else if(a==='buff'){if(!v||!(v.dur>0)||!Object.keys(v).every(b=>b==='dur'||(BUFFS.includes(b)&&typeof v[b]==='number')))throw new Error(`provisão ${k} com buff inválido: ${BUFFS.join(', ')} e dur positivo`)}
+      else if(a!=='pot'||!(typeof v==='number'&&v>0))throw new Error(`provisão ${k} com efeito inválido: ${a}`);
     }
   }
   for(const[k,n]of Object.entries(ci.npcs||{})){
@@ -142,9 +144,9 @@ export let CITY,HUNTS;
 export const cacaDe=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(HUNTS,k)?k:HUNTS.runas?'runas':Object.keys(HUNTS)[0];
 /* ---------- provisões ----------
    O que as lojas da cidade vendem (supplies no content.json): comida, poção
-   e runa, que vão inteiras na próxima caçada. A comida (efeito.comida, em
-   segundos de alimentação) se come na caçada e o que sobra volta ao
-   extrair; poção e runa valem desde a entrada. BUFFS são os buffs que uma
+   e runa. A comida (efeito.item) é um item de items com comida (segundos de
+   alimentação): a compra vai para a mochila, como no Tibia. Poção e runa
+   ficam guardadas e vão inteiras na próxima caçada. BUFFS são os buffs que uma
    provisão pode dar, os mesmos das habilidades */
 export let SUP;
 export const BUFFS=['velo','dano','arm','alc'];

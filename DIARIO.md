@@ -18,6 +18,24 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 11:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a comida virou item (0.30.0), a pedido do Leonardo ("animais também devem ter loot de comidas para guardar na mochila ou no cofre"). `items` ganhou seis comidas com `comida` (segundos): frutas, queijo, presunto, ensopado, carne e presunto de dragão (720 s). Loot: rato → queijo; leão → carne e presunto; orc e troll → carne; dragão → presunto de dragão. As provisões de comida da Quitanda viraram `efeito.item`: a compra vai direto para a mochila do personagem (recusa com a mochila cheia). `comer()` tira da mochila (`p.bag`); saíram `p.com` e `devolveComida()`, porque a mochila já volta extraindo e cai morrendo. Cofre de comida no Banco (`save.comida`, com "levar" o tipo inteiro); `normaliza()` move a comida da 0.29.0 (em `prov`) para ele. Sprites `it_*` das comidas no atlas (`tools/sprites.mjs`; o presunto de dragão é o pernil do pacote com o matiz girado).
+
+**Validação:** `node tools/testar.mjs` — 34/34 (simulação no Node refeita para comida-item: compra na mochila, mochila cheia, migração da 0.29.0, loot dos animais, comer da mochila, extrair/morrer, Banco guardar e levar; casos `lojas`, `sala-anfitriao` e `sala-convidado` ajustados). Capturas do Banco em 375×740.
+
+**Análise:** o cofre de comida ficou separado de `save.itens` de propósito: `itens` é o que a Feira, a origem e o `nuvem.js` (`soPecas`) conhecem, e misturar comida ali pediria mudar o banco. Por isso **comida não se negocia na Feira**.
+
+**Roadmap:** item fora da fila (pedido do dono), decisão na Parte 6 do `CLAUDE.md`.
+
+**Pendências e riscos:**
+- Só cinco monstros derrubam comida; insetos, morcego e mortos-vivos não (como no Tibia). No Esgoto (nível 1) só há insetos e morcego: quem caça lá depende da Quitanda.
+- Comida ocupa uma casa da mochila por tipo: com 20 casas, carregar vários tipos aperta o loot.
+- Personagem novo sem ouro continua entrando sem comida (pendência da 0.29.0).
+- Comida não vai à Feira; se o Leonardo quiser, é mudança no banco (`003_mercado.sql`, `004_origem.sql`).
+
+**Próximo passo recomendado:** caçar ratos no nível 1 e ver se o queijo (30%) segura a regeneração; ajustar as chances no `content.json`.
+
 ## 2026-10-19 10:35 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** alimentação como no Tibia (0.29.0), a pedido do Leonardo. Sem comida não se regenera vida nem mana; a regeneração é a da classe (`rhp`, `rmp`), fixa, e só corre com `p.ali > 0`. Cada comida tem `efeito.comida` em segundos (frutas 90 s/15 ouro, queijo 180 s/25, presunto 300 s/40, ensopado 540 s/60), até `progression.comida.max` = 1200 s. Botão Comer no HUD (tecla C), acima da Mochila: come a menor comida que o jogador levou, mostra o tempo que falta ou "Fome". A comida empilha na loja (até 10 de cada, sem o grupo "refeição"), vai na mochila (`p.com`) e o que sobra volta ao estoque só extraindo (`devolveComida()`); na sala, o convidado pede pelo contador `com` e o `fim` traz a sobra.
@@ -359,18 +377,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - Volume de match serializado num único `pg_advisory_xact_lock`: suficiente para dezenas de jogadores, não para milhares.
 
 **Próximo passo recomendado:** testar com duas contas reais vendendo uma peça uma para a outra, no jogo publicado.
-## 2026-10-19 04:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** velocidade do Tibia para jogador e monstros (0.13.0), a pedido do Leonardo ("reduza a velocidade dos monstros e do player para se assemelhar ao Tibia"). `passoDaVel()` em `progresso.js` é a fórmula do Forgotten Server (`Creature::getStepDuration`: 857,36·ln(vel/2+261,29)−4795,01, chão 150, arredondado para cima em 50 ms). Jogador: 220 + 2 por nível, teto 1500 (`progression.walk`, campos novos `speedBase`, `speedPerLevel`, `speedMax`, `ground`); monstros: `spd` agora em unidades do Tibia — rato 134 (900 ms), aranha 200 (600 ms), esqueleto e orc 150 (800 ms), xamã e Guardião 140 (850 ms). Andar à toa: 1,5× mais lento (era 2,5×).
-
-**Validação:** `node tools/testar.mjs` — 23/23. Na simulação no Node: nível 1 = 0,55 s, nível 200 = 0,25 s, velocidade 150 = 0,8 s, buff de 50% = 0,4 s, 2,2 s para leste = 4 sqm. O caso `rato letal` sobe o rato para 400. Os roteiros da cidade andam até chegar, não por tempo fixo. Caçada no Chromium em 360×640 sem erro (Cavaleiro nível 6: 3 sqm em 1,5 s).
-
-**Análise:** do sqm de entrada ao portal são 70 sqm na mediana (52 a 103, 40 sementes, em 4 direções). No nível 1 isso dá ~40 s em linha reta, contra ~18 s no 0.9.0: cabe na incursão de 6 min, mas a masmorra cobre menos. Monstros ficaram mais lentos que o jogador (a aranha, a mais rápida, a 600 ms contra 550 ms do nível 1): fugir ficou fácil, como no Tibia de níveis baixos.
-
-**Roadmap:** sem mudança de fila.
-
-**Pendências e riscos:** **balanceamento a medir** — com monstros mais lentos que o jogador, a morte pode ter ficado rara (pilar 1); se ficar, a alavanca é o `spd` de cada monstro no `content.json`. O `wander` só pede ≥ 1 na validação.
-
-**Próximo passo recomendado:** o Leonardo jogar no celular e dizer se o ritmo agrada; o agente de Balanceamento medir mortes e XP por incursão com a velocidade nova.
 
 ---

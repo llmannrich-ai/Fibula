@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.29.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,SUP,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.29.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.29.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.29.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.30.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.30.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.30.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.30.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -149,15 +149,16 @@ export function drinkPot(p=G&&G.ps[0]){
   num(p.x,p.y-30,'+'+h,'#7ee07a',true);efeito(p.x,p.y,'cura');
 }
 /* comer, como no Tibia: a comida soma os segundos dela ao tempo de
-   alimentação (p.ali), e só alimentado se regenera. Come a menor que o
-   jogador levou; se o tempo passaria do máximo, não come nada */
+   alimentação (p.ali), e só alimentado se regenera. Come a menor que está
+   na mochila (comprada ou caída de monstro); se o tempo passaria do máximo,
+   não come nada */
 export function comer(p=G&&G.ps[0]){
   if(!G||!G.active||G.over||p.fora||p.cdCo>0)return;
-  let k=null;for(const j in p.com)if(p.com[j]>0&&(!k||SUP[j].efeito.comida<SUP[k].efeito.comida))k=j;
+  let k=null;for(const j in p.bag)if(ITEMS[j].comida&&p.bag[j]>0&&(!k||ITEMS[j].comida<ITEMS[k].comida))k=j;
   if(!k){saida.log('Sem comida na mochila.','warn',p);return}
-  const s=SUP[k].efeito.comida;
+  const s=ITEMS[k].comida;
   if(p.ali+s>PROG.comida.max){saida.log('Você está satisfeito.','info',p);p.cdCo=1;return}
-  p.ali+=s;p.com[k]--;if(!p.com[k])delete p.com[k];p.cdCo=1;
+  tiraDoSaco(p,k,1);p.ali+=s;p.cdCo=1;
   num(p.x,p.y-30,'Nham.','#e8c872');
 }
 export function explode(x,y,s,p){

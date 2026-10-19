@@ -20,15 +20,15 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha. */
-import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.29.0';
-import {save,ch,confereFicha,valMochila,devolveComida} from './sim/progresso.js?v=0.29.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.29.0';
-import {novaSemente} from './sim/base.js?v=0.29.0';
-import {drinkPot,comer} from './sim/combate.js?v=0.29.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.29.0';
-import {rede,ID,anuncia} from './rede.js?v=0.29.0';
-import {persist} from './salvar.js?v=0.29.0';
-import {log} from './hud.js?v=0.29.0';
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.30.0';
+import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.30.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.30.0';
+import {novaSemente} from './sim/base.js?v=0.30.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.30.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.30.0';
+import {rede,ID,anuncia} from './rede.js?v=0.30.0';
+import {persist} from './salvar.js?v=0.30.0';
+import {log} from './hud.js?v=0.30.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -120,7 +120,7 @@ export function entradas(local){
 function mandaFim(p){
   const id=[...IDX].find(([,i])=>i===p.id);if(!id)return;
   const c=p.c;
-  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,com:p.com,
+  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
     c:{lvl:c.lvl,xp:c.xp,mag:c.mag,manaG:c.manaG,per:c.per,golpes:c.golpes,slots:c.slots}}});
 }
 /* chamado por saida.sai e saida.log/banner (src/main.js) para quem não é
@@ -202,7 +202,7 @@ function aplicaFim(r){
   p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);
   p.fora=kind;p.c=c;
   /* a mochila sai como o anfitrião contou, ou fica na masmorra */
-  if(kind==='extraiu'){c.mochila=Object.assign({},bag);save.ext++;devolveComida(r.com);save.best=Math.max(save.best,valMochila(bag)-valMochila(p.bag0||{}))}
+  if(kind==='extraiu'){c.mochila=Object.assign({},bag);save.ext++;save.best=Math.max(save.best,valMochila(bag)-valMochila(p.bag0||{}))}
   else{c.mochila={};save.deaths++;save.cofre+=p.sealed}
   persist();
   G.over=true;G.end=kind;G.dur=G.t;

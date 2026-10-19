@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.29.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.29.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.29.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.29.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.29.0';
-import {persist,saveFalhou} from './salvar.js?v=0.29.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.29.0';
-import {rede,SALAS} from './rede.js?v=0.29.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.29.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.29.0';
-import {icone} from './arte.js?v=0.29.0';
-import {$,app} from './dom.js?v=0.29.0';
-import {retrato} from './desenho.js?v=0.29.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.30.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.30.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,levaComida,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.30.0';
+import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.30.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.30.0';
+import {persist,saveFalhou} from './salvar.js?v=0.30.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.30.0';
+import {rede,SALAS} from './rede.js?v=0.30.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.30.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.30.0';
+import {icone} from './arte.js?v=0.30.0';
+import {$,app} from './dom.js?v=0.30.0';
+import {retrato} from './desenho.js?v=0.30.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -66,7 +66,7 @@ export function start(prepara,caca){
   const H=HUNTS[G.caca];
   log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com a mochila.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
   if(levou)log(`Você levou ${levou}.`,'info');
-  log(Object.keys(G.p.com).length?'Você está com fome: toque em Comer para regenerar vida e mana.':'Você não levou comida: sem comer, não se regenera vida nem mana.','warn');
+  log(nComida(G.p.bag)?'Você está com fome: toque em Comer para regenerar vida e mana.':'Não há comida na mochila: sem comer, não se regenera vida nem mana.','warn');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
 
@@ -89,20 +89,20 @@ export function abreNpc(k){
 /* ---------- lojas de provisões ----------
    Uma tela para todas: o NPC diz o que vende (vende, no content.json). A
    provisão fica guardada e vai inteira na próxima caçada; a comida que
-   sobrar volta com quem extrai */
+   comida é item: vai para a mochila na hora */
 const listaProv=o=>Object.entries(o).map(([k,q])=>q>1?`${q} × ${SUP[k].nome}`:SUP[k].nome).join(', ');
-const leva=()=>Object.keys(save.prov).length?`Na próxima caçada você leva: ${listaProv(save.prov)}. Vai tudo; a comida que sobrar volta se você sair pela porta.`:'Nada guardado para a próxima caçada.';
+const leva=()=>Object.keys(save.prov).length?`Na próxima caçada você leva: ${listaProv(save.prov)}. Vai tudo.`:'Nada guardado para a próxima caçada.';
 let lojaDe=null;
 function drawLoja(){
   const n=CITY.npcs[lojaDe];
   setT($('#ljCasa'),n.casa);setT($('#ljNome'),n.nome);setT($('#ljGold'),String(save.cofre));
-  const comida=n.vende.some(k=>SUP[k].efeito.comida);
-  setT($('#ljFala'),n.fala+(n.ensina?' Habilidade aprendida é para sempre; provisão vale para uma caçada só.':comida?' Na caçada, sem comer não se regenera vida nem mana.':' Provisão vale para uma caçada só.'));setT($('#ljLeva'),leva());
+  const comida=n.vende.some(k=>SUP[k].efeito.item);
+  setT($('#ljFala'),n.fala+(n.ensina?' Habilidade aprendida é para sempre; provisão vale para uma caçada só.':comida?' A comida vai para a sua mochila: na caçada, sem comer não se regenera vida nem mana.':' Provisão vale para uma caçada só.'));setT($('#ljLeva'),leva());
   for(const id of['#ljHabT','#ljHab','#ljProvT'])$(id).hidden=!n.ensina;
   if(n.ensina)drawEnsina();
   const ul=$('#ljList');ul.textContent='';
   for(const k of n.vende){
-    const s=SUP[k],por=podeComprar(k),tem=save.prov[k]||0;
+    const s=SUP[k],it=s.efeito.item,por=podeComprar(k),tem=it?ch().mochila[it]|0:save.prov[k]||0;
     const li=document.createElement('li');li.className='up';
     const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');
     if(icone(ic,'sup_'+k,0,0,32))li.appendChild(ic);
@@ -110,12 +110,12 @@ function drawLoja(){
     const h=document.createElement('h3');h.textContent=s.nome;
     const d=document.createElement('p');d.textContent=s.desc;
     const m=document.createElement('p');m.className='meta';
-    m.textContent=por&&por!=='ouro'&&por!=='max'?`Você já leva ${SUP[por].nome}: uma por caçada.`:s.max>1?`Guardadas: ${tem} de ${s.max}`:tem?'Guardada para a próxima caçada.':'';
+    m.textContent=it?(por==='cheia'?'A mochila está cheia.':tem?`Na mochila: ${tem}`:''):por&&por!=='ouro'&&por!=='max'?`Você já leva ${SUP[por].nome}: uma por caçada.`:s.max>1?`Guardadas: ${tem} de ${s.max}`:tem?'Guardada para a próxima caçada.':'';
     info.append(h,d);if(m.textContent)info.appendChild(m);
     const b=document.createElement('button');b.type='button';
-    const cheio=por==='max';b.className=cheio?'buy max':'buy';
-    b.textContent=cheio?(s.max>1?'cheio':'guardada'):s.preco+' ouro';b.disabled=!!por;
-    b.setAttribute('aria-label',cheio?`${s.nome}: já guardou o máximo para a próxima caçada`:`Comprar ${s.nome} por ${s.preco} de ouro`);
+    const cheio=por==='max'||por==='cheia';b.className=cheio?'buy max':'buy';
+    b.textContent=por==='cheia'?'sem espaço':cheio?(s.max>1?'cheio':'guardada'):s.preco+' ouro';b.disabled=!!por;
+    b.setAttribute('aria-label',por==='cheia'?`${s.nome}: não cabe na mochila`:cheio?`${s.nome}: já guardou o máximo para a próxima caçada`:`Comprar ${s.nome} por ${s.preco} de ouro`);
     b.addEventListener('click',()=>{if(compra(k)){persist();drawLoja()}});
     li.append(info,b);ul.appendChild(li);
   }
@@ -337,6 +337,7 @@ export const desenhaBoneco=()=>{const b=$('#eqBoneco');b.hidden=!retrato(b.first
 /* o que guardar faz com cada coisa da mochila, para a mensagem do Banco */
 function guardou(r){const t=[];if(!r)return '';
   if(r.ouro)t.push(`${r.ouro} de ouro`);if(r.pecas)t.push(`${r.pecas} peça${r.pecas>1?'s':''} de equipamento`);
+  if(r.comida)t.push(`${r.comida} comida${r.comida>1?'s':''}`);
   return (t.length?`Foram para o cofre: ${t.join(' e ')}.`:'')+(r.mats?` ${r.mats} ${r.mats>1?'materiais foram':'material foi'} para o depósito do Gordon, na Forja.`:'')}
 const msgEq=t=>{$('#eqMsg').textContent=t};
 function drawEquip(){
@@ -357,7 +358,7 @@ function drawEquip(){
     const ic=icoItem(k);if(ic)li.appendChild(ic);
     const info=document.createElement('div');info.className='info';
     const h=document.createElement('h3');h.textContent=fmtItem([k,q]);
-    const p=document.createElement('p');p.textContent=it.slot?`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`:ehMat(k)?'material: vai para o depósito do Gordon':k==='ouro'?'vai para o cofre':`vira ${it.val*q} de ouro no cofre`;
+    const p=document.createElement('p');p.textContent=it.slot?`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`:it.comida?`comida: ${fmtEl(it.comida)} de alimentação cada`:ehMat(k)?'material: vai para o depósito do Gordon':k==='ouro'?'vai para o cofre':`vira ${it.val*q} de ouro no cofre`;
     info.append(h,p);
     const b=document.createElement('button');b.type='button';b.textContent='guardar';
     b.setAttribute('aria-label',it.slot?`Guardar ${it.nome} no cofre`:`Guardar ${fmtItem([k,q])} no cofre`);
@@ -407,6 +408,24 @@ function drawEquip(){
     if(!cabe(mo,k))b3.disabled=true;
     else b3.addEventListener('click',()=>{if(levaDoCofre(k)){persist();drawEquip();msgEq(`${it.nome} está na mochila: cai se você morrer.`)}});
     bt.append(b1,b2,b3);li.append(info,bt);ul.appendChild(li);
+  }
+  /* o cofre de comida: levar põe o tipo inteiro na mochila (empilha numa casa) */
+  const uc=$('#eqCom');uc.textContent='';
+  const crows=Object.entries(save.comida).sort((a,b)=>ITEMS[b[0]].comida-ITEMS[a[0]].comida);
+  if(!crows.length){const li=document.createElement('li');li.className='vazio';
+    li.textContent='Sem comida guardada. A comida que você guardar, comprada ou caída de monstro, aparece aqui.';uc.appendChild(li)}
+  for(const[k,q]of crows){
+    const it=ITEMS[k],li=document.createElement('li');li.className='sp r0';
+    const ic=icoItem(k);if(ic)li.appendChild(ic);
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=fmtItem([k,q]);
+    const p=document.createElement('p');p.textContent=`${fmtEl(it.comida)} de alimentação cada`;
+    info.append(h,p);
+    const b=document.createElement('button');b.type='button';b.textContent='levar';
+    b.setAttribute('aria-label',`Pôr ${fmtItem([k,q])} na mochila`);
+    if(!cabe(mo,k))b.disabled=true;
+    else b.addEventListener('click',()=>{if(levaComida(k)){persist();drawEquip();msgEq(`${fmtItem([k,q])} na mochila: cai se você morrer.`)}});
+    li.append(info,b);uc.appendChild(li);
   }
   soTela(equipS);
 }
