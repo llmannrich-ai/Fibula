@@ -40,6 +40,7 @@
 import {execFileSync, spawn, spawnSync} from 'node:child_process';
 import {copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync} from 'node:fs';
 import {createServer} from 'node:http';
+import {gzipSync} from 'node:zlib';
 import {tmpdir} from 'node:os';
 import {dirname, extname, join, relative, resolve} from 'node:path';
 import {fileURLToPath, pathToFileURL} from 'node:url';
@@ -274,6 +275,31 @@ const ARTE = (() => {
   process.exit(2);
 })();
 
+/* ---------- orçamento de download ----------
+   O que o jogador baixa antes de jogar, medido como a rede leva: texto
+   comprimido (o GitHub Pages entrega gzip), imagem como está. O requisito da
+   Parte 2 é menos de 2 MB e menos de 3 s em 4G; o aviso vem antes, para dar
+   tempo de separar o atlas por lugar, dividir o content.json ou guardar no
+   aparelho (item "Orçamento de download vigiado" do ROADMAP). A rede de 4G é a
+   do caso rede-4g: 9 Mbit/s e 170 ms de ida e volta, o "4G" do Chrome. */
+const ORCAMENTO = {aviso: 1.2e6, limite: 1.8e6, tempo4g: 3000, rede: {kbps: 9000, rtt: 170}};
+function orcamento(fontes) {
+  const pesa = (txt) => gzipSync(Buffer.from(txt)).length, kb = (n) => (n / 1000).toFixed(0).padStart(5) + ' KB';
+  const partes = [
+    ['index.html', pesa(fontes['index.html'])],
+    [`src/ (${Object.keys(fontes).length - 1} módulos)`, Object.entries(fontes).filter(([k]) => k !== 'index.html').reduce((a, [, t]) => a + pesa(t), 0)],
+    ['data/game/content.json', pesa(CONTEUDO)],
+    ['assets/otsp/atlas.json', pesa(readFileSync(ARTE.json))],
+    ['assets/otsp/atlas.png', statSync(ARTE.png).size],
+  ];
+  const total = partes.reduce((a, [, n]) => a + n, 0);
+  const estado = total > ORCAMENTO.limite ? 'FALHOU' : total > ORCAMENTO.aviso ? 'AVISO ' : 'OK    ';
+  console.log(`DOWNLOAD_${estado} ${kb(total)} de ${kb(ORCAMENTO.limite)} (aviso em ${(ORCAMENTO.aviso / 1e6).toFixed(1)} MB), como a rede leva:`);
+  for (const [n, b] of partes) console.log(`    ${kb(b)}  ${n}`);
+  if (estado === 'AVISO ') console.log('    o download passou do aviso: a fila trata o atlas por lugar, o content.json dividido e o PWA (ROADMAP)');
+  return total <= ORCAMENTO.limite;
+}
+
 function prelude(caso) {
   const semeadura = Object.entries(caso.save || {})
     .map(([k, v]) => `localStorage.setItem(${JSON.stringify(k)},${JSON.stringify(JSON.stringify(v))});`)
@@ -394,7 +420,7 @@ ${caso.roteiro}
      tiverem de erro antes de fechar a conta */
   await quadros(8);
   H.setAttribute('data-done','1');
-  var carga={caso:${JSON.stringify(caso.nome)},quadros:window.__quadros(),errs:window.__erros(),checks:checks,dom:'<!doctype html>\\n'+H.outerHTML};
+  var carga={caso:${JSON.stringify(caso.nome)},tempos:window.__tempos||null,quadros:window.__quadros(),errs:window.__erros(),checks:checks,dom:'<!doctype html>\\n'+H.outerHTML};
   try{await fetch(${JSON.stringify(alvo)},{method:'POST',mode:'no-cors',body:JSON.stringify(carga)})}catch(e){}
   setTimeout(function(){try{window.close()}catch(e){}},150);
 })();
@@ -452,13 +478,34 @@ function achaNavegador() {
    POST recebe o resultado do roteiro. */
 const TIPOS = {'.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.png': 'image/png'};
-async function abreColetor() {
-  const pendentes = new Map();
+/* lentos: os casos (rede: '4g') servidos como num 4G (ORCAMENTO.rede): cada
+   pedido espera a ida e volta, e todos dividem a mesma banda, com o texto em
+   gzip como o GitHub Pages manda */
+async function abreColetor(lentos = new Set()) {
+  const pendentes = new Map(), R = ORCAMENTO.rede;
+  let livre = 0;
+  const devagar = (res, buf) => setTimeout(() => {
+    let off = 0;
+    const vai = () => {
+      if (off >= buf.length) { res.end(); return; }
+      const n = Math.min(16384, buf.length - off), agora = Date.now(), ini = Math.max(agora, livre);
+      livre = ini + n * 8 / R.kbps;
+      setTimeout(() => { res.write(buf.subarray(off, off + n)); off += n; vai(); }, livre - agora);
+    };
+    vai();
+  }, R.rtt);
   const srv = createServer((req, res) => {
     if (req.method === 'GET') {
-      const arq = join(SAIDA, decodeURIComponent(req.url.split('?')[0]));
+      const url = decodeURIComponent(req.url.split('?')[0]), arq = join(SAIDA, url);
       if (!arq.startsWith(SAIDA) || !existsSync(arq) || !statSync(arq).isFile()) { res.writeHead(404); res.end(); return; }
-      res.writeHead(200, {'content-type': TIPOS[extname(arq)] || 'application/octet-stream', 'cache-control': 'no-store'});
+      const tipo = TIPOS[extname(arq)] || 'application/octet-stream';
+      if (lentos.has(url.split('/')[1])) {
+        const texto = !tipo.startsWith('image/') && /gzip/.test(req.headers['accept-encoding'] || '');
+        res.writeHead(200, {'content-type': tipo, 'cache-control': 'no-store', ...(texto ? {'content-encoding': 'gzip'} : {})});
+        devagar(res, texto ? gzipSync(readFileSync(arq)) : readFileSync(arq));
+        return;
+      }
+      res.writeHead(200, {'content-type': tipo, 'cache-control': 'no-store'});
       res.end(readFileSync(arq));
       return;
     }
@@ -1129,6 +1176,19 @@ async function testaSimulacao() {
 
 /* ---------- os casos ---------- */
 const CASOS = [
+  {
+    nome: 'rede-4g',
+    o_que: 'num 4G (9 Mbit/s, 170 ms de ida e volta, texto em gzip), a primeira tela e a arte chegam em menos de 3 s',
+    rede: '4g',
+    limite: 60000,
+    roteiro: `
+    var tela=performance.now(),lim=${ORCAMENTO.tempo4g};
+    var arte=await new Promise(function(r){var f=function(){if(document.getElementById('app').dataset.arte==='1')r(performance.now());else if(performance.now()>20000)r(null);else setTimeout(f,20)};f()});
+    ok('a primeira tela abre em menos de '+lim/1000+' s', visivel('#menu')&&tela<lim, Math.round(tela)+' ms');
+    ok('a arte chega em menos de '+lim/1000+' s', arte!==null&&arte<lim, arte===null?'não chegou em 20 s':Math.round(arte)+' ms');
+    window.__tempos={tela:Math.round(tela),arte:arte&&Math.round(arte)};
+    `,
+  },
   {
     nome: 'menu-mercador',
     o_que: 'menu abre, Mercador debita o cofre e a melhoria aparece em stats()',
@@ -2417,16 +2477,20 @@ const CASOS = [
     var arte=await ate(function(){return $('#app').dataset.arte==='1'},400);
     ok('o atlas carregou antes das fotos', arte);
     cacar();
+    /* o retrato da regra logo ao começar: a foto da tela não serve, porque
+       tocha, água e luz se mexem com o tempo interpolado do desenho, que
+       depende do relógio do navegador */
+    var foto=function(){return I.G.semente+'|'+I.G.mons.map(function(m){return m.k+'@'+m.tx+','+m.ty+':'+m.hp}).join(';')};
+    var foto1=foto();
     await quadros(2);
     ok('o log avisa que a masmorra veio do endereço', todos('#log .ln').some(function(l){return /Masmorra nº 12\.345, escolhida pelo endereço/.test(l.textContent)}), todos('#log .ln').map(function(l){return l.textContent}).join(' | '));
-    var foto1=$('#c').toDataURL();
     var fim1=await ate(function(){return visivel('#end')},400);
     ok('a primeira incursão terminou', fim1);
     ok('a tela final mostra o número da masmorra', txt('#eSeed')==='nº 12.345', txt('#eSeed'));
     clica($('#again'));
+    var foto2=foto();
     await quadros(2);
-    var foto2=$('#c').toDataURL();
-    ok('a mesma semente desenhou a mesma masmorra', foto1===foto2, foto1.length+' / '+foto2.length);
+    ok('a mesma semente deu a mesma masmorra', foto1===foto2&&I.G.semente===12345, foto1.slice(0,60)+' / '+foto2.slice(0,60));
     await ate(function(){return visivel('#end')},400);
     ok('a segunda incursão também é a nº 12.345', txt('#eSeed')==='nº 12.345', txt('#eSeed'));
 `,
@@ -2909,6 +2973,7 @@ async function main() {
     return 1;
   }
   console.log(`VERSAO_OK   (v${VERSAO} no index.html e em todos os imports)`);
+  const orcOk = orcamento(fontes);
 
   const sim = await testaSimulacao();
   if (sim.falhas.length) {
@@ -2919,12 +2984,12 @@ async function main() {
   }
 
   const edge = achaNavegador();
-  const coletor = await abreColetor();
+  const coletor = await abreColetor(new Set(casos.filter((c) => c.rede === '4g').map((c) => c.nome)));
   console.log(`navegador    ${edge}`);
   console.log(`coletor      http://127.0.0.1:${coletor.porta}`);
   console.log(`trabalho     ${SAIDA}\n`);
 
-  let falhas = sim.falhas.length ? 1 : 0;
+  let falhas = (sim.falhas.length ? 1 : 0) + (orcOk ? 0 : 1);
   for (const caso of casos) {
     const dir = join(SAIDA, caso.nome);
     mkdirSync(dir, {recursive: true});
@@ -2950,6 +3015,7 @@ async function main() {
 
     console.log(`${bom ? '\u2713' : '\u2717'} ${caso.nome} — ${caso.o_que}`);
     if (carga) console.log(`    ${carga.checks.length - ruins.length}/${carga.checks.length} asserções, ${carga.quadros} quadros de jogo`);
+    if (carga && carga.tempos) console.log(`    no 4G: primeira tela em ${carga.tempos.tela} ms, arte em ${carga.tempos.arte === null ? '—' : carga.tempos.arte + ' ms'} (limite ${ORCAMENTO.tempo4g} ms)`);
     if (erro) console.log(`    não rodou: ${erro}`);
     if (carga && carga.errs) console.log(`    erro de janela: ${carga.errs}`);
     for (const c of ruins) console.log(`    falhou: ${c.nome}${c.obs ? ` — leu: ${c.obs}` : ''}`);
@@ -2957,8 +3023,8 @@ async function main() {
   }
 
   await coletor.fecha();
-  const total = casos.length + 1;
-  console.log(`\n${total - falhas}/${total} casos passaram (a simulação no Node conta como um).`);
+  const total = casos.length + 2;
+  console.log(`\n${total - falhas}/${total} casos passaram (a simulação no Node e o orçamento de download contam como um cada).`);
   if (manter) console.log(`cópias e dumps guardados em ${SAIDA}`);
   return falhas ? 1 : 0;
 }

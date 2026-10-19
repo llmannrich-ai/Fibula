@@ -4,18 +4,28 @@
    não segura o jogo: enquanto não chega, ou se não chegar, o render() usa o
    desenho em código de antes. app.dataset.arte marca que chegou (o CSS usa
    para os ícones). */
-import {TAU} from './sim/base.js?v=0.43.0';
-import {app} from './dom.js?v=0.43.0';
+import {TAU} from './sim/base.js?v=0.43.1';
+import {app} from './dom.js?v=0.43.1';
 
 export const ART_URL='assets/otsp/';
 /* a imagem leva a versão do jogo (?v=, como os módulos): sem ela, um atlas
    velho do cache com o atlas.json novo recortaria os sprites errado */
 const PNG='atlas.png'+(()=>{try{return new URL(import.meta.url).search}catch(e){return ''}})();
 export const ART={ok:false,img:null,s:{},w:1,h:1};
+/* o atlas começa a baixar assim que este módulo carrega, junto do
+   content.json e não depois dele, e a imagem não espera o atlas.json: no 4G
+   é a diferença entre a arte chegar a tempo ou não (caso rede-4g) */
+let pedido=null;
+function pede(){
+  if(pedido)return pedido;
+  const im=new Image(),png=new Promise((ok,ko)=>{im.onload=()=>ok(im);im.onerror=()=>ko(new Error('atlas.png'))});
+  im.src=ART_URL+PNG;
+  const js=fetch(ART_URL+'atlas.json',{cache:'no-cache'}).then(r=>{if(!r.ok)throw new Error('HTTP '+r.status);return r.json()});
+  pedido=Promise.all([js,png]);pedido.catch(()=>{});return pedido;
+}
+try{pede()}catch(e){/* sem DOM: carregaArte tenta de novo */}
 export async function carregaArte(aoChegar){try{
-  const r=await fetch(ART_URL+'atlas.json',{cache:'no-cache'});if(!r.ok)throw new Error('HTTP '+r.status);
-  const j=await r.json(),im=new Image();
-  await new Promise((ok,ko)=>{im.onload=ok;im.onerror=()=>ko(new Error('atlas.png'));im.src=ART_URL+PNG});
+  const[j,im]=await pede();
   ART.img=im;ART.s=j.sprites||{};ART.w=im.naturalWidth;ART.h=im.naturalHeight;ART.ok=true;app.dataset.arte='1';
   aoChegar();
 }catch(e){/* sem arte: segue o desenho em código */}}

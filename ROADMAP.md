@@ -62,39 +62,7 @@ entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 4. Orçamento de download vigiado
-
-**Pilar 5** (e o não-objetivo "o jogo abre em dois segundos num 3G ruim").
-Pedido do Leonardo em 19/10/2026: o jogo está só começando, e cada mapa,
-monstro e item novo faz o download crescer. Hoje o jogador baixa ~1 MB de
-cara (atlas de 784 KB, `content.json` de ~100 KB e o código); o requisito da
-Parte 2 é **menos de 2 MB e menos de 3 s em 4G**. Em vez de descobrir tarde,
-o harness passa a medir:
-
-- o total do que o jogador baixa antes de jogar (`index.html`, `src/`,
-  `content.json`, `atlas.png`, `atlas.json`), com dois limites num lugar só
-  do `tools/testar.mjs`: **aviso** acima de 1,2 MB e **falha** acima de 1,8 MB;
-- o tamanho de cada parte, impresso em toda execução, para o diário registrar
-  a tendência;
-- o tempo até a primeira tela num 4G simulado no Chromium headless
-  (limitação de rede do próprio navegador), com falha acima de 3 s.
-
-Quando o aviso aparecer, a execução seguinte trata o contorno, nesta ordem
-(cada um é um item próprio na fila):
-1. **um atlas por lugar** (regra 3 de "Arte e licenças"): a cidade e a
-   interface no atlas de entrada; cada lugar de caça baixa o dele só ao
-   entrar, com a tela de carregamento curta;
-2. **`content.json` dividido** da mesma forma: o mapa de cada lugar num
-   arquivo próprio, buscado ao entrar;
-3. **o PWA** (item seguinte) guardando no aparelho o que já foi baixado, para
-   a segunda abertura não baixar nada.
-
-**Pronto quando:** `node tools/testar.mjs` imprime o tamanho de cada parte e o
-total, avisa acima de 1,2 MB, falha acima de 1,8 MB ou de 3 s em 4G
-simulado (caso de sabotagem no diário prova que o portão barra), e a Parte 4
-do `CLAUDE.md` descreve o orçamento.
-
-### 5. PWA instalável
+### 4. PWA instalável
 
 **Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
@@ -103,7 +71,7 @@ sem rede com o último conteúdo baixado. Sem biblioteca.
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 6. Escada de lugares de caça
+### 5. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -113,7 +81,7 @@ ele, todos no `content.json`.
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
-### 7. Pincéis do Fibula no editor
+### 6. Pincéis do Fibula no editor
 
 **Pilar 2.** O OTSP traz para o Remere's Map Editor só um pincel (grama com
 borda); o resto se pinta item por item. `node tools/otbm.mjs rme` passa a
@@ -129,14 +97,14 @@ jogo como item da pilha, sem código novo no jogo
 harness confere que todo id citado existe no `items.otb`, e o
 [docs/rme.md](docs/rme.md) diz como usar.
 
-### 8. Redesenhar os lugares no editor
+### 7. Redesenhar os lugares no editor
 
 **Pilar 2.** Os quatro mapas de hoje são rascunhos do gerador antigo. Cada
 um é redesenhado no Remere's Map Editor com intenção do Tibia: o Esgoto com
 canal de água e pontes, a Ilha como clareira irregular com margem de areia e
 água, a Cripta com nichos de sarcófago, a Masmorra de Runas com salões de
 pilares; marcos que se reconhecem e uma segunda saída onde a P8 pedir. Um
-lugar por vez, começando pelo Esgoto, depois do item 4 (cada item novo pesa no download). **Precisa do Leonardo** na primeira
+lugar por vez, começando pelo Esgoto, com o orçamento de download vigiado (cada item novo pesa). **Precisa do Leonardo** na primeira
 configuração do editor ([docs/rme.md](docs/rme.md)); depois disso, um agente
 pode desenhar pelo `.otbm` também.
 
@@ -160,6 +128,15 @@ pode desenhar pelo `.otbm` também.
 ---
 
 ## Concluído
+
+- **2026-10-19 — Orçamento de download vigiado (0.43.1)** *(pedido do
+  Leonardo; pilar 5)*. O harness imprime o que o jogador baixa, parte por
+  parte, como a rede leva (hoje ~920 KB, 774 KB deles o atlas), avisa acima
+  de 1,2 MB e reprova acima de 1,8 MB; o caso `rede-4g` serve o jogo como num
+  4G e reprova acima de 3 s. Ele achou a arte chegando em 3,3 s: o atlas
+  esperava o `content.json` e a imagem esperava o `atlas.json`; agora os dois
+  saem junto com o `content.json`, e a arte chega em ~2,0 s (primeira tela em
+  ~1,3 s). Sabotagem com um atlas de 2,5 MB: os dois portões reprovaram.
 
 - **2026-10-19 — Escolha de personagem sem rolagem (0.43.0)** *(pedido do
   Leonardo; pilar 5)*. Saiu a rolagem própria da lista; a tela cabe em

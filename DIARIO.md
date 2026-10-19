@@ -18,6 +18,22 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 12:06 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** orçamento de download vigiado (0.43.1), pedido do Leonardo ("temos que ter um mecanismo para garantir a velocidade rápida de download"). `tools/testar.mjs`: `orcamento()` mede antes dos casos o que o jogador baixa, como a rede leva (gzip no texto), e reprova acima de 1,8 MB (aviso em 1,2 MB); o coletor serve os casos com `rede: '4g'` a 9 Mbit/s com 170 ms por pedido e banda dividida; o caso `rede-4g` mede a primeira tela e a arte, com limite de 3 s, e imprime os dois tempos. Números em `ORCAMENTO`. O caso achou a arte em 3.298 ms: o atlas só começava depois do `content.json`, e a imagem depois do `atlas.json`. `src/arte.js` passou a pedir os dois ao carregar o módulo, em paralelo (`pede()`).
+
+**Validação:** `node tools/testar.mjs` — todos os casos, mais a simulação e o orçamento. Hoje: 920 KB no total (774 KB atlas.png, 106 KB src/, 21 KB content.json, 13 KB index.html, 2 KB atlas.json); no 4G, primeira tela em ~1.300 ms e arte em ~2.000 ms (antes da correção, 3.298 ms). Sabotagem: uma cópia com atlas de 2,5 MB deu `DOWNLOAD_FALHOU` e arte em 3.540 ms, reprovada.
+
+**Análise:** o atlas é 84% do download. O caminho de maior ganho, quando o aviso chegar, é o atlas por lugar (a cidade não precisa dos itens da Cripta). Outro ganho barato e sem mudança no jogo: o PNG do `tools/sprites.mjs` sai sem filtro de linha (filtro 0); com filtro por linha, como os otimizadores fazem, deve encolher.
+
+**Roadmap:** "Orçamento de download vigiado" para `Concluído`; os itens de `Próximo` foram renumerados.
+
+O caso `semente-na-url` falhava de vez em quando (inclusive antes desta mudança): comparava duas fotos da tela, e com tocha, água e luz animadas pelo tempo interpolado do desenho (que depende do relógio do navegador) as fotos nunca batem pixel a pixel. Passou a comparar o retrato da regra ao começar (semente e monstros com sqm e vida), que é o que o caso quer provar; 4 de 4 execuções verdes depois.
+
+**Pendências e riscos:** o 4G simulado é o do servidor de teste, não um aparelho de verdade; não modela o TCP começando devagar nem a CPU do celular, então o tempo real tende a ser maior. A primeira visita é o pior caso; o PWA (item da fila) resolve as seguintes. A CI roda numa máquina mais lenta: se o `rede-4g` oscilar perto de 3 s lá, investigar antes de mexer no limite.
+
+**Próximo passo recomendado:** filtro de linha no PNG do atlas (ganho sem mudar o jogo) e o item `Agora`.
+
 ## 2026-10-19 11:32 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** escolha de personagem sem rolagem (0.43.0), a pedido do Leonardo ("retire a barra de rolagem dos personagens, deixe somente a tela"). O `#pickList` perdeu o `max-height:58vh;overflow:auto`; para caber, o texto de apresentação saiu, os números da conta ficaram numa linha de seis, os cartões ficaram mais baixos e o de quem já existe mostra o preço da morte no lugar da descrição da classe (o novo segue com a descrição). As barras de crescimento ficaram. As telas não mostram mais barra de rolagem (`scrollbar-width:none`) quando, num aparelho muito baixo, precisarem rolar.
@@ -318,20 +334,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - Peça vestida, tirada para o saco e morta perde-se, como o resto do saco, mas a origem dela (se tinha) fica sobrando no lastro: inofensivo, como já era com venda ao Banco.
 
 **Próximo passo recomendado:** o Leonardo vestir uma peça na caçada, morrer e anunciá-la na Feira.
-
-## 2026-10-19 23:55 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** vestir e tirar pela Mochila (0.26.0), a pedido do Leonardo ("como o personagem vai equipar? não existe ferramenta para isso"), com a decisão dele de valer também na caçada, como no Tibia. Tocar numa peça mostra um botão grande abaixo do corpo: na cidade, **Vestir/Trocar** (do cofre, `equipar()`) e **Guardar no cofre** (`desequipar()`); na caçada, **Vestir/Trocar** do saco e **Tirar para o saco** (`vesteDoSaco()`/`tiraProSaco()`, em `src/sim/combate.js`). Vida e mana máximas mudam na hora, a atual não sobe (senão tirar e pôr cura). `p.troca` guarda o saldo de peças que entraram e saíram do corpo, e `pecasDaCaca()` manda à `caca_fim` o saco corrigido por ele. A descrição, o botão e a venda na Feira subiram para logo abaixo do corpo, senão o botão ficava fora da tela.
-
-**Validação:** `node tools/testar.mjs` — 32/32. No Node: vestir do saco, tirar para o saco, vida máxima ±15 sem curar, origem só do que veio da caçada, nada depois de sair. No caso `mochila`: guardar e vestir na cidade (o save muda), trocar na caçada (saco 220→228, bônus da espada) e a espada fica no corpo depois do fim. Sabotagem (trocar cura) barrada. Print em 390×844.
-
-**Análise:** vestir sai do cliente direto na regra, como a venda do saco já fazia (fora de `update()`); no solo não muda o determinismo de nada que os testes medem. Na sala de caçar junto os botões não aparecem: a ficha é do anfitrião.
-
-**Roadmap:** item novo em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **(Resolvido na 0.26.1.)** **Peça vestida na caçada e morte = peça sem origem na nuvem.** A `caca_fim` só dá origem na extração; quem veste do saco e morre fica com a peça, mas não consegue anunciá-la na Feira (`sem_origem`). Vender ao Banco funciona. Resolver pede mudar a `caca_fim` para aceitar as peças vestidas também na morte.
-- Vestir do saco é uma forma de proteger loot da morte (só uma peça por casa, e a do corpo vai para o risco). Ficar de olho se a morte perde peso.
-- O convidado da sala não vê os botões (a ficha dele é do anfitrião). Na mescla com a 0.25.0 (toda caçada numa sala), a venda do saco na Feira tinha ficado desligada para todos (`!G.sala`); voltou para quem não é convidado (`!G.convidado`). Quando o servidor da F2 existir, vestir vira entrada (`ent`) da regra.
-
-**Próximo passo recomendado:** o Leonardo vestir uma peça no meio da caçada e dizer se o fluxo está claro; depois, "Sair cedo" (`Agora`).

@@ -618,7 +618,10 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `resposta`, `tchau`) pelo canal da sala (`sinal()` de `sala.js`), segurar
   para falar (`fala()`), `ligaVoz()`, `desligaVoz()`, `quadro(dt)` chamado
   pelo laço e `VOZ`, que o botão `#bVoz` do HUD lê (`hudVoz()`)
-- `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
+- `arte.js` — `ART`, `pede()` (o atlas começa a baixar quando o módulo
+  carrega, em paralelo com o `content.json`, e a imagem não espera o
+  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`),
+  `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
 - `desenho.js` — canvas, `resize()`, **o mapa fixo** (`preparaPilhas()`,
@@ -1228,6 +1231,19 @@ entra sozinho, porque o contêiner da nuvem não sobe o sandbox.
 Para conferir que o portão realmente barra código quebrado,
 `FIBULA_JOGO=<cópia quebrada>/index.html node tools/testar.mjs` roda a suíte
 contra outra cópia do jogo (com o `src/` ao lado). `FIBULA_SAIDA` muda a pasta de trabalho.
+
+**O orçamento de download** (pedido do Leonardo em 19/10/2026: o jogo está
+começando e precisa continuar abrindo rápido). Toda execução do harness
+imprime, antes dos casos, o que o jogador baixa antes de jogar, como a rede
+leva (texto em gzip, como o Pages manda; imagem como está), parte por parte:
+`DOWNLOAD_OK`, `DOWNLOAD_AVISO` acima de 1,2 MB e `DOWNLOAD_FALHOU` acima de
+1,8 MB, que conta como um caso reprovado. O caso `rede-4g` serve a cópia como
+num 4G (9 Mbit/s, 170 ms de ida e volta, banda dividida entre os pedidos) e
+reprova se a primeira tela ou a arte passarem de 3 s; os dois tempos saem
+impressos mesmo quando passa. Os números moram num lugar só, `ORCAMENTO` no
+`tools/testar.mjs`. Quando o aviso aparecer, a fila trata o contorno: atlas
+por lugar, `content.json` dividido, PWA. Registre o total e os tempos no
+diário quando mudarem.
 
 **Há um só harness, e é este.** Se você for escrever outro, estenda a tabela
 `CASOS` em vez disso — dois portões para o mesmo item significam que um dos dois
