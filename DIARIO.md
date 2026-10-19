@@ -30,7 +30,25 @@ execução precisa saber e não vai descobrir lendo o código.
 
 **Pendências e riscos:** rodar `node tools/mundo.mjs` de novo apaga edição à mão fora dos muros (a cidade fica). O portão é só um vão na muralha, sem sprite de portão; um portão aberto do OTSP pede `tools/sprites.mjs` com o `cwebp`. Quem está numa versão velha não vê quem está na nova (o canal da cidade é por versão), como sempre. Pilar 5: andar longe sem nada a decidir é tempo morto; enquanto o mundo não tiver entradas de caça, ele é passeio opcional (os NPCs continuam todos dentro dos muros).
 
-**Próximo passo recomendado:** pôr a entrada de um lugar de caça numa clareira (item 6 da fila).
+**Próximo passo recomendado:** pôr a entrada de um lugar de caça numa clareira (item "Escada de lugares de caça" da fila).
+## 2026-10-19 — sessão manual (nuvem): fila para fechar o canal da sala
+
+**Item desenvolvido:** nenhum código. A pedido do Leonardo, entrou no `ROADMAP.md` (Próximo 3, antes da morte da opção B) o item "Só o servidor da sala manda na sala", e a decisão foi registrada na Parte 6 do `CLAUDE.md`.
+
+**Validação:** só documentação.
+
+**Análise:** com os portais (0.45.0) o canal de cada lugar tem nome previsível, e a chave publicável está no site. Qualquer um com conhecimento técnico pode mandar `fim` (morte ou loot falso), `passa`, `membros` ou `heranca` forjados a quem está caçando, sem estar na caçada. Na fase de teste o risco prático é baixo; com a morte da opção B (perda de nível e de peça vestida), vira perda causada de fora da regra (pilar 4).
+
+**Roadmap:** item novo em `Próximo` 3; a morte da opção B passa a depender dele; os seguintes foram renumerados.
+
+**Pendências e riscos:**
+- O login de hoje não é o Supabase Auth. O item começa escolhendo como emitir a identidade aceita pela autorização do Realtime, e essa escolha (autenticação, **sensível**) vai numa issue `decisao-do-dono`.
+- A trapaça de quem roda o servidor (mexer no resultado dos outros) só sai com o servidor da F2.
+
+**Próximo passo recomendado:** o item de `Agora` ("Queda de conexão não mata").
+
+---
+
 ## 2026-10-19 — sessão manual (nuvem): uma sala por lugar, com portal
 
 **Item desenvolvido:** a pedido do Leonardo ("ao entrar no mapa de caça, estar no quadrado que migra para o mapa, um portal, e criar o servidor dele se ninguém estiver jogando lá; se já houver, entra nele; sem ninguém, o servidor fica com a última pessoa que saiu"), 0.45.0, com as escolhas dele: entrada automática para todos na fase de teste (aceitando a trapaça do anfitrião entre desconhecidos), cópia 2 quando lota, voz opcional, portal no chão. `content.json`: NPCs `abre: "portal"` com `caca` (a grade passou a portal; novos `portal_runas`, `portal_cripta` ao lado do portão e `barco` no cais); o Esgoto agora é explicado pelo Guia. `dados.js`: `ABRE` com `portal`, validação (todo mapa tem portal) e `portalDe()`. `sala.js`: canal por lugar (`sala-<x.y>-<mapa>-<cópia>`), `vaiCaca()` procura pela presença quem tem `anf` e entra nele (pede a porta sozinho) ou vira o servidor (`viraServidor()`); `cheia` leva à cópia seguinte; o anfitrião que sai da masmorra com gente lá dentro passa o servidor (`passaPara()`, com a herança), e o último que sai fica com ele até alguém entrar; convidado que sai da masmorra sai da sala. `telas.js`: `pisa()` (só ao chegar no sqm, para quem volta em cima do portal não entrar de novo), o Guia com Entrar, quantos caçam e onde é a entrada; a volta é em cima do portal.
@@ -331,21 +349,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 **Próximo passo recomendado:** o Leonardo testar a voz com um amigo em 4G e em Wi-Fi e dizer se ligou e se o atraso está bom.
 
 ---
-
-## 2026-10-19 10:35 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** alimentação como no Tibia (0.29.0), a pedido do Leonardo. Sem comida não se regenera vida nem mana; a regeneração é a da classe (`rhp`, `rmp`), fixa, e só corre com `p.ali > 0`. Cada comida tem `efeito.comida` em segundos (frutas 90 s/15 ouro, queijo 180 s/25, presunto 300 s/40, ensopado 540 s/60), até `progression.comida.max` = 1200 s. Botão Comer no HUD (tecla C), acima da Mochila: come a menor comida que o jogador levou, mostra o tempo que falta ou "Fome". A comida empilha na loja (até 10 de cada, sem o grupo "refeição"), vai na mochila (`p.com`) e o que sobra volta ao estoque só extraindo (`devolveComida()`); na sala, o convidado pede pelo contador `com` e o `fim` traz a sobra.
-
-**Validação:** `node tools/testar.mjs` — 34/34. Simulação no Node: entra com fome, não regenera, come a menor, regenera o da classe, recusa passar do máximo, para quando acaba, sobra volta extraindo e não volta morrendo. Casos `lojas` (compra, botão Comer, HUD), `sala-anfitriao` (o anfitrião come pelo convidado, retrato com `ali` e `com`) e `sala-convidado` (tecla C vira pedido; `fim` devolve só comida que existe). Captura em 375×740 do HUD com fome e alimentado.
-
-**Análise:** as taxas `rhp`/`rmp` das classes foram calibradas quando a regeneração era permanente e somada ao bônus da comida antiga (até +3/s). Agora o alimentado regenera só o da classe, e o faminto nada: a caçada ficou mais dura, sobretudo para o cavaleiro (2,6 de vida/s) e para quem não tem ouro para comida. Mesclado com a 0.28.0 (guia único, mundo igual para todos): os conflitos foram só nas linhas de `import`.
-
-**Roadmap:** item fora da fila (pedido do dono), decisão na Parte 6 do `CLAUDE.md`.
-
-**Pendências e riscos:**
-- **Jogador novo sem ouro entra sem comida** e não regenera: só as 3 poções o sustentam. Considerar comida de saída para personagem novo (como o Tibia dá em Rookgaard) ou um preço de frutas que caiba na primeira caçada.
-- **Balanceamento das taxas da classe** precisa ser refeito com a regeneração condicionada; medir no pilar 3 (nível 20 em ~3 h).
-- O botão come sempre a menor comida; não há escolha de qual comer. Se o Leonardo quiser escolher, o caminho é pela Mochila.
-- `comer()` roda fora do `update()`, como `drinkPot()`: na F2 vira entrada (`ent`).
-
-**Próximo passo recomendado:** o Leonardo jogar uma caçada com e sem comida e decidir se o personagem novo ganha comida de saída.
