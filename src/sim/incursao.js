@@ -1,14 +1,16 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.21.0';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.21.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv} from './progresso.js?v=0.21.0';
-import {genMap,pecas} from './mapa.js?v=0.21.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.21.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.23.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.23.0';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv} from './progresso.js?v=0.23.0';
+import {genMap,pecas} from './mapa.js?v=0.23.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.23.0';
 
 export let G=null;
 export const setG=v=>{G=v};
+/* a tabela de spawn e o chefe são do mapa de caça (G.caca); sem eles, os de progression */
+const bandas=()=>HUNTS[G.caca].bands||PROG.bands,chefe=()=>HUNTS[G.caca].boss||PROG.boss;
 function pickType(d){
-  const bandas=PROG.bands,b=bandas.find(b=>d<b.untilDepth)||bandas[bandas.length-1];
+  const bs=bandas(),b=bs.find(b=>d<b.untilDepth)||bs[bs.length-1];
   const linhas=Object.entries(b.weights);
   let r=sorte();
   for(const[k,w]of linhas){if(r<w)return k;r-=w}
@@ -20,8 +22,12 @@ function spawn(k,r,d,boss){
 function spawn0(k,r,d,boss){
   const t=MT[k],sc=PROG.scaling,lv=sc.hpPerCharLevel*(G.lvl-1),
     hpm=boss?(1+lv*sc.bossLevelFactor)*(1+PROG.party.bossHp*(G.ps.length-1)):1+sc.hpPerDepth*d+lv;
-  /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce */
-  const tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
+  /* um monstro por sqm: se o sorteado já tem dono, o monstro não nasce. O
+     chefe nasce sempre: com o sqm dele ocupado, vai para o livre mais perto
+     do centro da sala (sem sorteio, para não mudar a masmorra de ninguém) */
+  let tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
+  if(boss&&G.ocu[ty*MW+tx]){let bd=1e9;
+    for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++){const d=(i-r.cx)**2+(j-r.cy+1)**2;if(!G.ocu[j*MW+i]&&d<bd){bd=d;tx=i;ty=j}}}
   if(G.ocu[ty*MW+tx])return;G.ocu[ty*MW+tx]=1;
   const hp=Math.round(t.hp*hpm);
   G.mons.push({id:G.nid++,k,t,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
@@ -54,17 +60,19 @@ function novoJogador(f,i,s){
 /* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
    sorteia uma nova (é o caso normal do jogador). fichas são os jogadores;
    sem elas, o personagem do save sozinho. aberta é a masmorra da sala (ver
-   "masmorra aberta" abaixo): sem tempo, com a porta na sala de entrada */
-export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false){
-  semeia(s0);
-  const {g,rooms}=genMap(),s=rooms[0];
+   "masmorra aberta" abaixo): sem tempo, com a porta na sala de entrada.
+   caca é o mapa de caça (hunts no content.json): a mesma semente no mesmo
+   mapa de caça dá a mesma masmorra */
+export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false,caca){
+  semeia(s0);caca=cacaDe(caca);
+  const {g,rooms}=genMap(HUNTS[caca].mapa),s=rooms[0];
   let pr=s,md=1;
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
   G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
      lvl:Math.max(...fichas.map(f=>f.c.lvl)),nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
-     t:0,kills:0,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
+     t:0,kills:0,caca,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
   const mais=1+PROG.party.monsters*(ps.length-1);
   rooms.forEach((r,i)=>{r.i=i});
@@ -76,7 +84,7 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false){
     for(let k=0;k<n;k++)spawn(pickType(d),r,d,false);
   }
   pr.chefe=true;
-  const bs=PROG.boss;
+  const bs=chefe();
   spawn(bs.type,pr,1,true);
   spawn(bs.escort[rnd(bs.escort.length)],pr,1,false);
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=0;
@@ -179,7 +187,7 @@ export function update(dt,ent){
     for(const p of G.ps){if(p.fora||(p.id!==d.dono&&d.t<prot))continue;
       if(hyp(d.x-p.x,d.y-p.y)<p.r+16){pickup(d,i,p);break}}}
   const po=G.portal;
-  if(!po.open&&G.t>=PORTAL_AT){po.open=true;saida.banner('Portal de saída aberto');saida.log('Um portal se abriu na sala do Guardião. Siga o ponto dourado no mapa.','info')}
+  if(!po.open&&G.t>=PORTAL_AT){po.open=true;saida.banner('Portal de saída aberto');saida.log(`Um portal se abriu na sala de ${MT[chefe().type].nome}. Siga o ponto dourado no mapa.`,'info')}
   /* a extração é de cada um: quem fica parado no portal sai com o próprio saco */
   if(po.open)for(const p of G.ps){
     if(p.fora)continue;
@@ -344,14 +352,14 @@ function repovoa(dt){
   const R=PROG.respawn,dentro=G.ps.filter(p=>!p.fora),mais=1+PROG.party.monsters*Math.max(0,dentro.length-1),perto=R.clearTiles*T;
   for(const r of G.rooms){
     if(r.base===undefined&&!r.chefe)continue;
-    /* a sala do Guardião tem os monstros dela mais o Guardião e a escolta */
+    /* a sala do chefe tem os monstros dela mais o chefe e a escolta */
     const vivos=G.mons.filter(m=>m.sala===r.i),alvo=Math.round((r.base||0)*mais)+(r.chefe?2:0);
     if(vivos.length>=alvo){r.esp=0;continue}
     r.esp=(r.esp||0)+pas;
     if(r.esp<R.seconds||dentro.some(p=>hyp(p.x-(r.cx+.5)*T,p.y-(r.cy+.5)*T)<perto))continue;
     r.esp=0;
     let falta=alvo-vivos.length;
-    if(r.chefe&&!vivos.some(m=>m.t.boss)){const bs=PROG.boss;spawn(bs.type,r,1,true);spawn(bs.escort[rnd(bs.escort.length)],r,1,false);falta-=2}
+    if(r.chefe&&!vivos.some(m=>m.t.boss)){const bs=chefe();spawn(bs.type,r,1,true);spawn(bs.escort[rnd(bs.escort.length)],r,1,false);falta-=2}
     for(;falta>0;falta--)spawn(pickType(r.prof),r,r.prof,false);
   }
 }

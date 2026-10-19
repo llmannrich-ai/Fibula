@@ -1,5 +1,5 @@
 /* ---------- mapa ---------- */
-import {MW,MH,rnd,ri,hyp,sorte} from './base.js?v=0.21.0';
+import {MW,MH,rnd,ri,hyp,sorte} from './base.js?v=0.23.0';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
 function corridor(g,a,b){
@@ -9,29 +9,33 @@ function corridor(g,a,b){
   if(sorte()<.5){sx();sy()}else{sy();sx()}
   carve(g,x,y);carve(g,x+1,y);carve(g,x,y+1);
 }
-function carveRooms(g,rooms){
+function carveRooms(g,rooms,atalhos){
   for(const r of rooms)for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++)g[j*MW+i]=0;
   for(let i=1;i<rooms.length;i++){
     let best=0,bd=1e9;
     for(let j=0;j<i;j++){const d=hyp(rooms[i].cx-rooms[j].cx,rooms[i].cy-rooms[j].cy);if(d<bd){bd=d;best=j}}
     corridor(g,rooms[best],rooms[i]);
   }
-  for(let k=0;k<3;k++)corridor(g,rooms[rnd(rooms.length)],rooms[rnd(rooms.length)]);
+  for(let k=0;k<atalhos;k++)corridor(g,rooms[rnd(rooms.length)],rooms[rnd(rooms.length)]);
 }
-export function genMap(){
+/* m é o mapa do mapa de caça (hunts.<k>.mapa no content.json): quantas
+   salas, de que tamanho e quantos corredores a mais; sem ele, a Masmorra de
+   Runas de sempre, na mesma sequência de sorteio */
+const PADRAO={salas:[9,15],w:[5,10],h:[5,9],atalhos:3};
+export function genMap(m=PADRAO){
   let fallback=null;
   for(let attempt=0;attempt<50;attempt++){
     const g=new Uint8Array(MW*MH).fill(1),rooms=[];
-    for(let t=0;t<600&&rooms.length<15;t++){
-      const w=ri(5,10),h=ri(5,9),x=ri(2,MW-w-3),y=ri(2,MH-h-3);
+    for(let t=0;t<600&&rooms.length<m.salas[1];t++){
+      const w=ri(m.w[0],m.w[1]),h=ri(m.h[0],m.h[1]),x=ri(2,MW-w-3),y=ri(2,MH-h-3);
       if(rooms.some(r=>x<r.x+r.w+2&&x+w+2>r.x&&y<r.y+r.h+2&&y+h+2>r.y))continue;
       rooms.push({x,y,w,h,cx:x+(w>>1),cy:y+(h>>1)});
     }
-    if(rooms.length<9){if(!fallback||rooms.length>fallback.rooms.length)fallback={g,rooms};continue}
-    carveRooms(g,rooms);
+    if(rooms.length<m.salas[0]){if(!fallback||rooms.length>fallback.rooms.length)fallback={g,rooms};continue}
+    carveRooms(g,rooms,m.atalhos);
     return{g,rooms};
   }
-  const{g,rooms}=fallback;carveRooms(g,rooms);return{g,rooms};
+  const{g,rooms}=fallback;carveRooms(g,rooms,m.atalhos);return{g,rooms};
 }
 /* peça de parede de cada bloco sólido que encosta no chão, como o Tibia monta
    uma sala: 1 vertical, 2 horizontal, 3 poste (canto de cima à esquerda),

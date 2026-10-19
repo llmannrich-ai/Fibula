@@ -837,7 +837,7 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,boticaria,corretor,gordon,guia,mago,mercador,quitandeira') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,boticaria,capitao,corretor,gordon,guia,mago,mercador,quitandeira,vigia') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     /* objetos (fonte, barril…) são sólidos e ficam sobre o chão do vizinho; a ponte atravessa o rio */
     const iObj = M.join('').indexOf('f'), iPonte = M.join('').indexOf('=');
     if (!(iObj >= 0 && C.obj[iObj] && C.sol[iObj] && C.t[iObj] !== 1)) falhas.push(`a fonte não virou objeto sólido sobre chão (obj ${C.obj[iObj]}, sol ${C.sol[iObj]}, chão ${C.t[iObj]})`);
@@ -864,6 +864,38 @@ async function testaSimulacao() {
     if (!ruim((c) => { c.city.npcs.mago.letra = 'f'; })) falhas.push('NPC com a letra de um objeto foi aceito');
     if (!ruim((c) => { c.city.chao = [{x: 26, y: 17, item: 'espada'}]; })) falhas.push('peça do chão em cima da fonte foi aceita');
     if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
+    if (!ruim((c) => { c.hunts.esgoto.npc = 'mercador'; })) falhas.push('mapa de caça levado por quem não abre cacadas foi aceito');
+    if (!ruim((c) => { c.hunts.ilha.bands[0].weights = {grifo: 1}; })) falhas.push('mapa de caça com monstro inexistente foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.w = [5, 40]; })) falhas.push('mapa de caça com sala maior que o mapa foi aceito');
+    if (!ruim((c) => { c.hunts.ilha.npc = 'guia'; })) falhas.push('NPC que abre cacadas sem mapa de caça nenhum foi aceito');
+    const C3 = Cd.entraCidade('capitao'); Cd.updateCidade(0.05, parado);
+    if (C3.perto !== 'capitao') falhas.push(`voltar da ilha não pôs o jogador ao lado do Capitão (${C3.perto})`);
+    /* os mapas de caça: cada um com os monstros e o chefe dele, a mesma
+       semente no mesmo mapa dá a mesma masmorra, e mapas diferentes dão
+       masmorras diferentes; nome que não existe (da rede) vira a de Runas */
+    const H = JSON.parse(CONTEUDO).hunts, PR = JSON.parse(CONTEUDO).progression;
+    const fotos = {};
+    for (const k of Object.keys(H).filter((k) => k[0] !== '_')) {
+      const h = H[k], pode = new Set([...(h.bands || PR.bands).flatMap((b) => Object.keys(b.weights)), ...((h.boss || PR.boss).escort)]), chefe = (h.boss || PR.boss).type;
+      novoSave(); I.newRun(51, undefined, false, k); const a = retrato();
+      if (I.G.caca !== k) falhas.push(`newRun no mapa ${k} guardou ${I.G.caca}`);
+      const fora = I.G.mons.filter((m) => !m.t.boss && !pode.has(m.k)).map((m) => m.k);
+      if (fora.length) falhas.push(`o mapa ${k} tem monstros de outro lugar: ${[...new Set(fora)]}`);
+      if (I.G.mons.filter((m) => m.t.boss).map((m) => m.k).join() !== chefe) falhas.push(`o mapa ${k} não tem o chefe dele (${chefe}) uma vez só`);
+      novoSave(); I.newRun(51, undefined, false, k);
+      if (retrato() !== a) falhas.push(`mesma semente no mapa ${k}, masmorras diferentes`);
+      fotos[k] = a.split('|')[0];
+      I.G.active = true; let fim = null; saida.fim = (x) => { fim = x; };
+      for (let i = 0; i < 40; i++) I.passo(0.05, {x: 0, y: 0, held: [true, true, false, false]});
+      I.finish('desabou');
+      if (fim !== 'desabou') falhas.push(`a incursão no mapa ${k} não terminou (${fim})`);
+    }
+    if (new Set(Object.values(fotos)).size !== Object.keys(fotos).length) falhas.push('mapas de caça diferentes com a mesma semente deram o mesmo mapa');
+    novoSave(); I.newRun(51, undefined, false, 'constructor');
+    if (I.G.caca !== 'runas' || retrato().split('|')[0] !== fotos.runas) falhas.push(`mapa de caça que não existe não virou a Masmorra de Runas (${I.G.caca})`);
+    /* sem mapa de caça, a Masmorra de Runas de sempre: o mesmo mapa da semente */
+    novoSave(); I.newRun(51);
+    if (I.G.caca !== 'runas' || retrato().split('|')[0] !== fotos.runas) falhas.push('newRun sem mapa de caça não deu a Masmorra de Runas');
   } catch (e) { falhas.push('a cidade quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* provisões das lojas: comprar tira do cofre e respeita o máximo e o grupo
      (uma refeição); a caçada aplica poções, regeneração e buffs do começo,
@@ -896,6 +928,19 @@ async function testaSimulacao() {
     if (Object.keys(sv.prov).length) falhas.push(`depois da caçada sobrou no estoque: ${JSON.stringify(sv.prov)}`);
     const f = P.confereFicha({cl: 'feiticeiro', c: {lvl: 3}, up: {}, prov: {pocao: 50, nada: 1}});
     if (!f || f.prov.pocao !== C0.pocao.max || 'nada' in f.prov) falhas.push(`a ficha de fora não aparou as provisões: ${f && JSON.stringify(f.prov)}`);
+    /* aprender com o Mestre de magias: nível e ouro; save de antes fica com o que o nível liberava */
+    novoSave(); const s2 = P.save; P.ch().lvl = 9; s2.cofre = 600;
+    if (JSON.stringify(P.ch().sabe) !== '["faisca"]') falhas.push(`personagem novo devia saber só a Faísca: ${JSON.stringify(P.ch().sabe)}`);
+    if (P.podeAprender('bolaenergia') !== 'nivel' || P.podeAprender('faisca') !== 'sabe' || P.podeAprender('gelo') !== 'sabe') falhas.push('aprender ignora nível, o que já sabe ou a classe');
+    if (!P.aprende('ondafogo') || s2.cofre !== 100 || !P.ch().sabe.includes('ondafogo') || P.ch().slots[1] !== 'ondafogo') falhas.push(`aprender Onda de Fogo: cofre ${s2.cofre}, sabe ${JSON.stringify(P.ch().sabe)}, espaços ${JSON.stringify(P.ch().slots)}`);
+    if (P.aprende('flam') || P.podeAprender('flam') !== 'ouro') falhas.push('aprendeu sem ouro');
+    const velho = P.normaliza({classe: 'druida', chars: {druida: {lvl: 13, xp: 0, slots: ['gelo', 'exura', null, null]}}});
+    if (velho.chars.druida.sabe.join() !== 'gelo,exura,tera,avalanche') falhas.push(`save de antes perdeu habilidade: ${velho.chars.druida.sabe}`);
+    const f2 = P.confereFicha({cl: 'feiticeiro', c: {lvl: 9, slots: ['faisca', 'ondafogo', 'flam', null], sabe: ['faisca', 'flam', 'nucleo']}, up: {}});
+    if (!f2 || f2.c.slots[1] !== null || f2.c.slots[2] !== 'flam' || f2.c.sabe.includes('nucleo')) falhas.push(`a ficha de fora usou habilidade que não sabe: ${f2 && JSON.stringify(f2.c)}`);
+    const ruim2 = (f) => { const c = JSON.parse(CONTEUDO); f(c); try { carrega(c); return null; } catch (e) { return e.message; } finally { carrega(JSON.parse(CONTEUDO)); } };
+    if (!ruim2((c) => { c.spells.faisca.preco = 10; })) falhas.push('classe sem habilidade grátis no nível 1 foi aceita');
+    if (!ruim2((c) => { delete c.city.npcs.mago.ensina; })) falhas.push('habilidade com preço sem ninguém que ensine foi aceita');
   } catch (e) { falhas.push('as provisões quebraram no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   return {falhas, a: a && a.r};
 }
@@ -1017,6 +1062,54 @@ const CASOS = [
 `,
   },
   {
+    nome: 'mapas-de-caca',
+    o_que: 'os outros mapas de caça: o Vigia leva ao Esgoto, o Capitão à Ilha, o Guia à Masmorra e à Cripta; cada um com os monstros dele e a volta ao lado de quem levou; a sala é de um mapa, e a porta dela fica com quem leva até lá',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 3, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt,nomes=function(){return todos('#huntList h3').map(function(h){return h.textContent}).join(', ')};
+    clica($('#play'));
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    Tl.abreNpc('guia');
+    ok('o Guia leva à Masmorra de Runas e à Cripta', nomes()==='Masmorra de Runas, Cripta Antiga'&&txt('#hunts h2')==='Guia de caça', nomes());
+    ok('cada lugar diz o que mora lá', /Guardião do Portal/.test(txt('#huntList')||'')&&/Senhora das Sombras/.test(txt('#huntList')||''), txt('#huntList .meta'));
+    clica($('#huntBack'));
+    Tl.abreNpc('vigia');
+    ok('o Vigia do esgoto leva ao Esgoto', nomes()==='Esgoto'&&txt('#hunts h2')==='Vigia do esgoto'&&txt('#hunts .eyebrow')==='Grade do esgoto', nomes()+' / '+txt('#hunts h2'));
+    clica($('#huntList button'));await quadros(3);
+    var tipos=I.G.mons.map(function(m){return m.k});
+    ok('o Esgoto tem os bichos dele e a Centopeia-rainha', I.G.caca==='esgoto'&&tipos.indexOf('centopeia')>=0&&tipos.indexOf('orc')<0&&tipos.indexOf('guardiao')<0, I.G.caca+' / '+tipos.join());
+    ok('a chegada é pela grade', /grade do esgoto/.test(txt('#log')||''), txt('#log'));
+    I.finish('desabou');await ate(function(){return visivel('#end')},200);
+    clica($('#toMenu'));await quadros(3);
+    ok('a volta do Esgoto é ao lado do Vigia', Cd.C.perto==='vigia'&&/subiu pela grade/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
+    Tl.abreNpc('capitao');
+    ok('o Capitão leva à Ilha da Enseada, acima do nível', nomes()==='Ilha da Enseada'&&/acima do seu/.test(txt('#huntList .meta')||''), nomes());
+    var criar=todos('#huntList button').filter(function(b){return b.textContent==='criar sala'})[0];
+    clica(criar);var ligou=await ate(function(){return Sa.SALA.estado==='ligado'},40);
+    ok('a sala criada no Capitão é da Ilha', ligou&&Sa.SALA.caca==='ilha'&&I.G.caca==='ilha'&&I.G.aberta, Sa.SALA.caca+' / '+(I.G&&I.G.caca));
+    var anunc=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0&&d.payload.payload.sala}).pop();
+    ok('a sala anuncia o mapa dela na cidade', anunc&&anunc.payload.payload.sala.h==='ilha', anunc&&JSON.stringify(anunc.payload.payload.sala));
+    ok('o Capitão mostra a sala e a porta dela', /Ilha da Enseada/.test(txt('#hSala')||'')&&todos('#hSala button').some(function(b){return b.textContent==='Entrar pela porta'&&!b.disabled}), txt('#hSala'));
+    clica($('#huntBack'));Tl.abreNpc('guia');
+    var porta=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
+    ok('no Guia, a porta da sala da Ilha fica fechada e ele diz onde ela está', porta&&porta.disabled&&/Capitão/.test(txt('#hSala')||''), txt('#hSala'));
+    clica(todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0]);await quadros(3);
+    ok('fechar a sala volta tudo ao normal', Sa.SALA.papel===null&&Sa.SALA.caca===null, Sa.SALA.papel);
+    clica($('#huntBack'));Tl.abreNpc('capitao');clica($('#huntList button'));await quadros(3);
+    ok('a Ilha tem os bichos dela e o dragão', I.G.caca==='ilha'&&I.G.mons.some(function(m){return m.k==='dragao'})&&/navio/.test(txt('#log')||''), I.G.caca+' / '+txt('#log'));
+    await quadros(20);
+    I.finish('morreu');await ate(function(){return visivel('#end')},200);
+    clica($('#toMenu'));await quadros(3);
+    ok('o navio traz de volta ao porto, ao lado do Capitão', Cd.C.perto==='capitao'&&/navio/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
+    `,
+  },
+  {
     nome: 'sala-anfitriao',
     o_que: 'caçar junto, lado do anfitrião: a sala nasce com a masmorra dela, sem tempo; o convidado entra e sai pela porta quando quer e volta a entrar; o anfitrião também; a sala some da cidade só quando ele fecha',
     semente: 7,
@@ -1032,8 +1125,8 @@ const CASOS = [
     clica($('#play'));
     await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
     Tl.abreNpc('guia');
-    var criar=todos('#hSala button').filter(function(b){return b.textContent==='Criar sala'})[0];
-    ok('o Guia de caça oferece criar sala', !!criar, txt('#hSala'));
+    var criar=todos('#huntList button').filter(function(b){return b.textContent==='criar sala'})[0];
+    ok('o Guia de caça oferece criar sala em cada lugar', !!criar&&!criar.disabled, txt('#huntList'));
     clica(criar);
     var ligou=await ate(function(){return Sa.SALA.estado==='ligado'},40);
     var join=RT.enviadas.filter(function(d){return d.event==='phx_join'&&d.topic.indexOf('realtime:sala-')===0})[0];
@@ -1096,7 +1189,7 @@ const CASOS = [
     Tl.abreNpc('guia');
     var fecha=todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0];clica(fecha);await quadros(3);
     ok('fechar a sala acaba com a masmorra e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&I.G.over&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
-    ok('o Guia volta a oferecer criar sala e os lugares sozinho', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'})&&!$('#huntList button').disabled, txt('#hSala'));
+    ok('o Guia volta a oferecer criar sala e os lugares sozinho', todos('#huntList button').some(function(b){return b.textContent==='criar sala'&&!b.disabled})&&!$('#huntList button').disabled, txt('#huntList'));
     `,
   },
   {
@@ -1123,7 +1216,7 @@ const CASOS = [
     var qr=RT.salaMandadas('quero')[0],EU=qr&&qr.id;
     ok('entrar na sala manda a ficha', qr&&qr.ficha.cl==='druida'&&qr.ficha.c.lvl===2, qr&&JSON.stringify(qr.ficha).slice(0,80));
     RT.sala('membros',{lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5,d:1},{id:EU,nome:'Druida',cl:'druida',lvl:2,d:0}]});await quadros(3);
-    ok('o convidado vê quem está na sala e quem está na masmorra', /Sala de Ana · 2\\/4/.test(txt('#hSala')||'')&&/Ana .*na masmorra/.test(txt('#hSala')||''), txt('#hSala'));
+    ok('o convidado vê quem está na sala e quem está na masmorra', /Sala de Ana · Masmorra de Runas · 2\\/4/.test(txt('#hSala')||'')&&/Ana .*lá dentro/.test(txt('#hSala')||''), txt('#hSala'));
     var porta=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
     ok('a porta está aberta para ele', porta&&!porta.disabled, txt('#hSala'));
     clica(porta);await quadros(3);
@@ -1169,13 +1262,13 @@ const CASOS = [
   },
   {
     nome: 'lojas',
-    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, só uma refeição por vez, o Guia mostra o que se leva e a caçada gasta tudo',
+    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, só uma refeição por vez, o Guia mostra o que se leva e a caçada gasta tudo; o Mestre ensina a habilidade do nível por ouro, e ela vai para o espaço livre',
     semente: 11,
     save: {'masmorra-runas-v2': {
       cofre: 300, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'cavaleiro',
-      chars: {cavaleiro: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+      chars: {cavaleiro: {lvl: 4, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null], sabe: ['golpe']}},
     }},
     roteiro: `
     clica($('#play'));
@@ -1198,6 +1291,16 @@ const CASOS = [
     ok('o Mestre de magias vende runas', txt('#ljNome')==='Mestre de magias'&&todos('#ljList li').length===3, txt('#ljList'));
     clica(todos('#ljList .buy')[0]);
     ok('a runa da pele de pedra fica guardada', sv().prov.runa_pedra===1&&todos('#ljList .buy')[0].disabled, JSON.stringify(sv().prov));
+    ok('o Mestre lista as habilidades da classe', visivel('#ljHab')&&todos('#ljHab li').length===6, todos('#ljHab li').length);
+    var hb=todos('#ljHab .buy');
+    ok('a de nível 1 já é sabida, a do nível 4 tem preço, a do 10 pede nível', hb[0].textContent==='sabe'&&hb[1].textContent==='150 ouro'&&!hb[1].disabled&&hb[2].disabled&&hb[2].textContent==='nível 10', hb.map(function(b){return b.textContent}).join(' | '));
+    Tl.abreNpc('quitandeira');
+    ok('a loja que não ensina não mostra habilidades', $('#ljHab').hidden&&$('#ljHabT').hidden);
+    Tl.abreNpc('mago');
+    clica(todos('#ljHab .buy')[1]);
+    var cv=sv().chars.cavaleiro;
+    ok('aprender tira do cofre e é para sempre', sv().cofre===5&&cv.sabe.indexOf('brutal')>=0&&todos('#ljHab .buy')[1].textContent==='sabe', sv().cofre+' / '+JSON.stringify(cv.sabe));
+    ok('a habilidade aprendida vai para o espaço livre', cv.slots[1]==='brutal', JSON.stringify(cv.slots));
     clica($('#ljBack'));
     Tl.abreNpc('guia');
     ok('o Guia diz o que vai na caçada', /Presunto defumado/.test(txt('#hProv'))&&/2 × Poção de vida/.test(txt('#hProv')), txt('#hProv'));
@@ -1800,18 +1903,18 @@ const CASOS = [
   },
   {
     nome: 'nivel-na-incursao',
-    o_que: 'subir de nível no meio da incursão: espaço novo e habilidade aprendida precisam virar botão na hora',
+    o_que: 'subir de nível no meio da incursão: a habilidade com preço do nível novo não vem sozinha, o registro diz que o Mestre de magias ensina e por quanto',
     semente: 23,
     limite: 90000,
     patches: [P.tempo(30, 25), P.spawnNaEntrada],
     /* xpNeed(8) é 3379 (progression.xp do content.json): a primeira morte de
-       rato estoura o nível 9, que é onde o Feiticeiro aprende Onda de Fogo e
-       ganha o terceiro espaço */
+       rato estoura o nível 9, que é onde o Feiticeiro pode aprender Onda de
+       Fogo com o Mestre de magias (o terceiro espaço, aberto no 8, fica vago) */
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'feiticeiro',
-      chars: {feiticeiro: {lvl: 8, xp: 3378, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null]}},
+      chars: {feiticeiro: {lvl: 8, xp: 3378, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null], sabe: ['faisca', 'flam']}},
     }},
     roteiro: `
     cacar();
@@ -1824,10 +1927,9 @@ const CASOS = [
     ok('subiu de nível matando no meio da incursão', subiu, txt('#lvlT'));
     await quadros(4);
     var c=sv().chars.feiticeiro;
-    ok('a habilidade nova foi para um espaço', c.slots[2]==='ondafogo', JSON.stringify(c.slots));
-    ok('o terceiro botão de ação apareceu na hora', !$('#s2').hidden, 'visíveis: '+[0,1,2,3].filter(function(i){return !$('#s'+i).hidden}).join(','));
-    ok('o terceiro botão mostra a habilidade nova', $('#s2').querySelector('.nm').textContent==='Onda', $('#s2').querySelector('.nm').textContent);
-    ok('o terceiro botão mostra o custo de mana', $('#s2').querySelector('.ct').textContent==='42 mana', $('#s2').querySelector('.ct').textContent);
+    ok('a habilidade com preço não vem sozinha', c.slots[2]===null&&c.sabe.indexOf('ondafogo')<0, JSON.stringify(c.slots)+' / '+JSON.stringify(c.sabe));
+    ok('o registro diz quem ensina e quanto custa', /Onda de Fogo já pode ser aprendida com o Mestre de magias, por 500 de ouro/.test(txt('#log')||''), txt('#log'));
+    ok('sem habilidade nova, o terceiro botão continua escondido', $('#s2').hidden, 'visíveis: '+[0,1,2,3].filter(function(i){return !$('#s'+i).hidden}).join(','));
 `,
   },
   {

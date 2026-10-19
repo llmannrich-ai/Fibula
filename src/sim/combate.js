@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.21.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.21.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.21.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.21.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.23.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.23.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots} from './progresso.js?v=0.23.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.23.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -176,20 +176,23 @@ function kill(m){
   /* um drop só, e quem causou mais dano tem a vez (ver update) */
   if(got.length)G.drops.push({x:m.x,y:m.y,items:got,rar,t:0,dono});
   saida.log(`Loot de ${m.t.nome}: ${got.length?got.map(fmtItem).join(', '):'nada'}.`,['loot','rare','epic'][rar]);
-  if(m.t.boss){saida.banner('Guardião derrotado');}
+  if(m.t.boss){saida.banner(m.t.nome+' caiu');}
 }
 function gainXp(x,p){
   const c=p.c;c.xp+=x;p.xpGain+=x;num(p.x,p.y-40,x+' xp','#f3ead6');
   while(c.xp>=xpNeed(c.lvl)){
-    const slotsAntes=nSlots(c),tinha=desbloqueadas(c,p.cl).length;
+    const slotsAntes=nSlots(c);
     c.xp-=xpNeed(c.lvl);c.lvl++;
     const st=stats(c,p.cl,p.up),dh=st.mhp-p.mhp,dm=st.mmp-p.mmp;
     p.mhp=st.mhp;p.mmp=st.mmp;
     p.hp=Math.min(p.mhp,p.hp+dh);p.mp=Math.min(p.mmp,p.mp+dm);
     saida.banner(`Nível ${c.lvl}`,p);saida.log(`Você subiu para o nível ${c.lvl}. Vida e mana máximas aumentaram.`,'info',p);
     if(nSlots(c)>slotsAntes)saida.log(`Novo espaço de habilidade liberado: agora você leva ${nSlots(c)} para a masmorra.`,'rare',p);
-    const novas=desbloqueadas(c,p.cl);
-    if(novas.length>tinha)for(const k of novas.slice(tinha)){
+    /* a habilidade do nível novo: de graça vem sozinha; com preço, o Mestre
+       de magias ensina na cidade */
+    for(const k of listaDaClasse(p.cl)){if(SPELLS[k].lvl!==c.lvl||(c.sabe&&c.sabe.includes(k)))continue;
+      if(precoHab(k)){saida.log(`${SPELLS[k].n} já pode ser aprendida com o Mestre de magias, por ${precoHab(k)} de ouro.`,'epic',p);continue}
+      if(c.sabe)c.sabe.push(k);
       saida.log(`Habilidade aprendida: ${SPELLS[k].n}. Equipe no Grimório.`,'epic',p);
       const vago=c.slots.indexOf(null);
       if(vago>=0&&vago<nSlots(c)){c.slots[vago]=k;saida.log(`${SPELLS[k].n} foi para o espaço ${vago+1}.`,'info',p)}
