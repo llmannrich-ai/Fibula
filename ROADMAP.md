@@ -52,7 +52,7 @@ e a issue existe.
 
 ### 3. Morte da opção B
 
-**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 e da pendência P9 (**sensível**: os
+**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 (o ritmo) e da pendência P9 (**sensível**: os
 números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
@@ -115,14 +115,6 @@ pode desenhar pelo `.otbm` também.
 
 ## Depois
 
-- **Atlas em WebP sem perda** (pilar 5; **precisa de decisão do Leonardo**)
-  — medido em 19/10/2026: o mesmo atlas cai de 793 KB (PNG) para 422 KB
-  (WebP sem perda, os mesmos pixels), quase metade do download. O filtro de
-  linha do PNG não ajuda (794 KB). O Node não grava WebP: o `tools/sprites.mjs`
-  passaria a chamar o `cwebp` ou o Pillow, uma ferramenta de fora só na
-  montagem do atlas. **Pronto quando:** o atlas sai em WebP, o orçamento de
-  download cai e os casos `arte` e `rede-4g` passam.
-
 - **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
   raro com loot próprio; entrada em `MT` e em `LOOT`.
 - **Log legível em tela estreita** (pilar 5) — o `#log` usa
@@ -136,6 +128,26 @@ pode desenhar pelo `.otbm` também.
 ---
 
 ## Concluído
+
+- **2026-10-19 — Sem venda na Feira durante a caçada (0.43.2 e banco)** *(pilar 4;
+  era a P7)*. A Mochila não oferece mais a venda do saco na caçada, e o banco
+  recusa `mercado_anunciar` com caçada aberta (`006_sem_venda_na_caca.sql`,
+  aplicada em 19/10/2026). O caso `feira-saco` cobre os dois lados.
+
+- **2026-10-19 — Uma sala por lugar, com portal (0.45.0)** *(pedido do
+  Leonardo; pilares 2 e 5)*. Cada mapa de caça tem um portal na cidade;
+  pisar nele entra no servidor de quem já caça lá ou abre a caçada aqui;
+  cópia 2 quando lota; o servidor fica com quem está lá dentro, e com o
+  último que saiu quando não há ninguém. Casos `mapas-de-caca`,
+  `sala-anfitriao`, `sala-convidado` e `sala-lotada`.
+
+- **2026-10-19 — Atlas em WebP sem perda (0.44.0)** *(decisão do Leonardo:
+  "pode usar o cwebp"; pilar 5)*. `tools/sprites.mjs` grava o `atlas.webp`
+  pelo `cwebp` (420 KB contra 793 KB, os mesmos pixels); o jogo baixa o WebP
+  e cai no PNG se o aparelho não abrir. Download antes de jogar: 938 KB →
+  564 KB; arte no 4G calculado: 1,7 s → 1,35 s. O caso `arte` reprova WebP
+  com pixel diferente do PNG (sabotagem: 4.096 pixels, reprovado);
+  `arte-sem-webp` prova a volta para o PNG.
 
 - **2026-10-19 — Orçamento de download vigiado (0.43.1)** *(pedido do
   Leonardo; pilar 5)*. O harness imprime o que o jogador baixa, parte por

@@ -20,7 +20,9 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 16:10 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** a cidade enriquecida (0.44.0), pedido do Leonardo ("o mapa da cidade ainda está muito pobre; se inspire em Venore, Thais"). Mapa novo de 60×48 (antes 54×38), por bairros: templo de pedra com lajota, pilares, monumento e tapete (Thais), cemitério cercado, torre dos magos, praça com fonte, postes, canteiros e bandeira, Banco e Mercador ao lado dela, Quitanda e Forja ao sul, feira com bancas sob toldos, bairro dos canais com casas de enxaimel sobre cais e pontes (Venore; a Botica está lá), porto com armazém, areia e píer (o Capitão na ponta), casas mobiliadas (cama, mesa, cadeira, baú, estante) e a muralha de pedra bruta com o portão. A cara de cada letra virou dado: `city.arte` no `content.json` (ids do OTSP), lida por `preparaCidade()` em `src/desenho.js` e posta no atlas pelo `tools/sprites.mjs`. Bordas de grama automáticas (o conjunto 227–238 do pacote), cinco estilos de parede com janelas e arco de porta, árvores variadas e detalhes soltos na grama. Letras novas em `LEGENDA`/`OBJETOS` (`src/sim/dados.js`), com `SOLIDO_C` e `PISAVEL` (cadeira e toldo se pisam). O `C.par` e o `PECA` saíram: a peça da parede sai de com quem ela emenda. Pilar 2 (o mundo se aprende, e a cidade passa a ter lugares com cara própria).
+**Item desenvolvido:** a cidade enriquecida (0.46.0, depois de mesclar a 0.45.0 dos portais), pedido do Leonardo ("o mapa da cidade ainda está muito pobre; se inspire em Venore, Thais"). Mapa novo de 60×48 (antes 54×38), por bairros: templo de pedra com lajota, pilares, monumento e tapete (Thais), cemitério cercado, torre dos magos, praça com fonte, postes, canteiros e bandeira, Banco e Mercador ao lado dela, Quitanda e Forja ao sul, feira com bancas sob toldos, bairro dos canais com casas de enxaimel sobre cais e pontes (Venore; a Botica está lá), porto com armazém, areia e píer (o Capitão na ponta), casas mobiliadas (cama, mesa, cadeira, baú, estante) e a muralha de pedra bruta com o portão. A cara de cada letra virou dado: `city.arte` no `content.json` (ids do OTSP), lida por `preparaCidade()` em `src/desenho.js` e posta no atlas pelo `tools/sprites.mjs`. Bordas de grama automáticas (o conjunto 227–238 do pacote), cinco estilos de parede com janelas e arco de porta, árvores variadas e detalhes soltos na grama. Letras novas em `LEGENDA`/`OBJETOS` (`src/sim/dados.js`), com `SOLIDO_C` e `PISAVEL` (cadeira e toldo se pisam). O `C.par` e o `PECA` saíram: a peça da parede sai de com quem ela emenda. Pilar 2 (o mundo se aprende, e a cidade passa a ter lugares com cara própria).
+
+**Mescla com a main:** a 0.44.0 (atlas em WebP) e a 0.45.0 (portais) entraram antes; a rocha passou de X para K (o X é o Portal da Cripta), os portais das Runas e da Cripta ficaram ao lado do portão, perto do Guia, e o barco da Ilha na ponta do píer, ao lado do Capitão. O atlas foi refeito com o WebP gravado pelo Pillow (sem perda, `exact`), porque esta máquina não tem o `cwebp`.
 
 **Validação:** `SINTAXE_OK`; `node tools/testar.mjs` — 38/38. O caso da cidade no Node ganhou: todo id de `city.arte` está no atlas, toda letra de chão, parede e objeto do mapa tem desenho, a cadeira se pisa e o poste bloqueia. As coordenadas dos casos `chao-da-cidade` e da peça sobre a fonte foram para o mapa novo. Download: 1.057 KB (atlas 909 KB, +115 KB), 4G calculado: primeira tela 980 ms, arte 1.789 ms. Capturas no Chromium em 1920×1536 (o mapa inteiro) e 360×640.
 
@@ -31,6 +33,40 @@ execução precisa saber e não vai descobrir lendo o código.
 **Pendências e riscos:** as peças de enxaimel (600/601/598/599) e a cerca (639–643) foram escolhidas olhando o catálogo; se alguma ficar torta no jogo, é trocar o id em `city.arte.paredes`. O texto do Guia ainda fala em "portal abre em 1:30", que não existe mais (não é desta mudança).
 
 **Próximo passo recomendado:** o Leonardo andar pela cidade no celular e apontar o que trocar; a mudança de cara é só dado (`city.arte` e `city.mapa`).
+
+## 2026-10-19 — sessão manual (nuvem): uma sala por lugar, com portal
+
+**Item desenvolvido:** a pedido do Leonardo ("ao entrar no mapa de caça, estar no quadrado que migra para o mapa, um portal, e criar o servidor dele se ninguém estiver jogando lá; se já houver, entra nele; sem ninguém, o servidor fica com a última pessoa que saiu"), 0.45.0, com as escolhas dele: entrada automática para todos na fase de teste (aceitando a trapaça do anfitrião entre desconhecidos), cópia 2 quando lota, voz opcional, portal no chão. `content.json`: NPCs `abre: "portal"` com `caca` (a grade passou a portal; novos `portal_runas`, `portal_cripta` ao lado do portão e `barco` no cais); o Esgoto agora é explicado pelo Guia. `dados.js`: `ABRE` com `portal`, validação (todo mapa tem portal) e `portalDe()`. `sala.js`: canal por lugar (`sala-<x.y>-<mapa>-<cópia>`), `vaiCaca()` procura pela presença quem tem `anf` e entra nele (pede a porta sozinho) ou vira o servidor (`viraServidor()`); `cheia` leva à cópia seguinte; o anfitrião que sai da masmorra com gente lá dentro passa o servidor (`passaPara()`, com a herança), e o último que sai fica com ele até alguém entrar; convidado que sai da masmorra sai da sala. `telas.js`: `pisa()` (só ao chegar no sqm, para quem volta em cima do portal não entrar de novo), o Guia com Entrar, quantos caçam e onde é a entrada; a volta é em cima do portal.
+
+**Validação:** `node tools/testar.mjs` inteiro verde. Casos reescritos: `mapas-de-caca` (pisar na grade e no barco, volta em cima do portal, o último fica com o servidor, ir a outro lugar fecha a caçada vazia), `sala-anfitriao` (canal do lugar, passar o servidor ao sair com gente dentro, último que sai fica, quem chega recebe o servidor com a herança), `sala-convidado` (acha o servidor pela presença, entra sozinho, sai da sala ao sair da masmorra, volta pelo portal); novo `sala-lotada` (cópia 2). Não testado com aparelhos de verdade.
+
+**Análise:** com um canal por lugar, a presença do canal é o "servidor de nomes": quem tem `anf: true` é o servidor. Dois chegando no mesmo instante viram servidores ao mesmo tempo; a disputa de geração e id (já existente) resolve, e quem perde vira convidado e pede a porta sozinho, mas a caçada que ele tinha aberto se perde.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Queda de conexão não mata".
+
+**Pendências e riscos:**
+- Desconhecidos caçam no aparelho uns dos outros: quem tem o servidor pode trapacear no XP e no loot de quem está com ele. Aceito pelo Leonardo só na fase de teste; cai com o servidor da F2.
+- O último que sai segura a caçada no aparelho dele (CPU e dados na cidade). Se ele fechar o jogo ou for a outro lugar, a caçada se perde; o próximo abre uma nova.
+- Dois chegando juntos no lugar vazio: o que perde a disputa volta à cidade e entra de novo no servidor do outro (uma ida e volta visível).
+- O portal da Ilha fica sobre a água do cais, e os portais das Runas e da Cripta usam o sprite do portal da masmorra (sem sprite próprio).
+
+**Próximo passo recomendado:** testar com 2 ou 3 celulares: um pisa na grade; o segundo pisa e deve cair na mesma caçada; o primeiro sai e o segundo continua com o servidor; o segundo sai e, depois, um terceiro entra e encontra os monstros como ficaram.
+
+---
+
+## 2026-10-19 15:10 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** atlas em WebP sem perda (0.44.0), por decisão do Leonardo ("pode usar o cwebp, execute"). `tools/sprites.mjs` grava o PNG e, pelo `cwebp` (`-lossless -z 9 -exact -metadata none`; PATH ou `FIBULA_CWEBP`), o `atlas.webp`; sem o `cwebp`, para antes de gravar. `src/arte.js` pede o WebP e, se não abrir, o PNG; `ART.url` guarda o que chegou e os ícones da interface usam ele. O harness copia o WebP, conta o WebP no orçamento, confere no caso `arte` que o WebP tem os mesmos pixels do PNG e prova a volta para o PNG no caso novo `arte-sem-webp`.
+
+**Validação:** `node tools/testar.mjs` completo, todos verdes. Download antes de jogar 938 → 564 KB (atlas 793 → 420 KB); 4G calculado: primeira tela 976 ms, arte 1.352 ms; cronometrado aqui: 1.415 e 1.786 ms. WebP determinístico (duas gerações, mesmos bytes) e com os mesmos pixels do PNG. Sabotagem: WebP com um quadrado vermelho de 64×64 → "4096 pixels diferentes", reprovado.
+
+**Análise:** o `cwebp` desta sessão é o 1.3.2 do apt (o pacote de binários do Google respondeu 404 por aqui). Outra versão pode gerar bytes diferentes do mesmo PNG; os pixels continuam iguais, e é isso que o caso `arte` confere.
+
+**Roadmap:** "Atlas em WebP sem perda" de `Depois` para `Concluído`.
+
+**Pendências e riscos:** quem rodar `node tools/sprites.mjs` (por exemplo depois de importar um mapa do editor) precisa do `cwebp`: no Windows do Leonardo, o zip da libwebp com a pasta `bin` no PATH (`docs/rme.md`). O PNG continua no repositório como reserva (iOS antes do 14).
+
+**Próximo passo recomendado:** o item `Agora` da fila.
 
 ## 2026-10-19 15:04 UTC — sessão manual (nuvem)
 
@@ -298,35 +334,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 **Próximo passo recomendado:** o Leonardo testar a voz com um amigo em 4G e em Wi-Fi e dizer se ligou e se o atraso está bom.
 
 ---
-
-## 2026-10-19 10:35 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** alimentação como no Tibia (0.29.0), a pedido do Leonardo. Sem comida não se regenera vida nem mana; a regeneração é a da classe (`rhp`, `rmp`), fixa, e só corre com `p.ali > 0`. Cada comida tem `efeito.comida` em segundos (frutas 90 s/15 ouro, queijo 180 s/25, presunto 300 s/40, ensopado 540 s/60), até `progression.comida.max` = 1200 s. Botão Comer no HUD (tecla C), acima da Mochila: come a menor comida que o jogador levou, mostra o tempo que falta ou "Fome". A comida empilha na loja (até 10 de cada, sem o grupo "refeição"), vai na mochila (`p.com`) e o que sobra volta ao estoque só extraindo (`devolveComida()`); na sala, o convidado pede pelo contador `com` e o `fim` traz a sobra.
-
-**Validação:** `node tools/testar.mjs` — 34/34. Simulação no Node: entra com fome, não regenera, come a menor, regenera o da classe, recusa passar do máximo, para quando acaba, sobra volta extraindo e não volta morrendo. Casos `lojas` (compra, botão Comer, HUD), `sala-anfitriao` (o anfitrião come pelo convidado, retrato com `ali` e `com`) e `sala-convidado` (tecla C vira pedido; `fim` devolve só comida que existe). Captura em 375×740 do HUD com fome e alimentado.
-
-**Análise:** as taxas `rhp`/`rmp` das classes foram calibradas quando a regeneração era permanente e somada ao bônus da comida antiga (até +3/s). Agora o alimentado regenera só o da classe, e o faminto nada: a caçada ficou mais dura, sobretudo para o cavaleiro (2,6 de vida/s) e para quem não tem ouro para comida. Mesclado com a 0.28.0 (guia único, mundo igual para todos): os conflitos foram só nas linhas de `import`.
-
-**Roadmap:** item fora da fila (pedido do dono), decisão na Parte 6 do `CLAUDE.md`.
-
-**Pendências e riscos:**
-- **Jogador novo sem ouro entra sem comida** e não regenera: só as 3 poções o sustentam. Considerar comida de saída para personagem novo (como o Tibia dá em Rookgaard) ou um preço de frutas que caiba na primeira caçada.
-- **Balanceamento das taxas da classe** precisa ser refeito com a regeneração condicionada; medir no pilar 3 (nível 20 em ~3 h).
-- O botão come sempre a menor comida; não há escolha de qual comer. Se o Leonardo quiser escolher, o caminho é pela Mochila.
-- `comer()` roda fora do `update()`, como `drinkPot()`: na F2 vira entrada (`ent`).
-
-**Próximo passo recomendado:** o Leonardo jogar uma caçada com e sem comida e decidir se o personagem novo ganha comida de saída.
-
-## 2026-10-19 10:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** um guia só e o mundo igual para todos (0.28.0), por decisão do Leonardo. (1) O `VISAO.md`, o `docs/PRD.md` e as seis instruções de `docs/agentes/` viraram um único `CLAUDE.md` em seis partes (jogo, produto, código, testes, agentes, decisões), sem contradição entre si: o princípio-mãe "a realidade como ela é" e os seis pilares novos (mundo igual para todos; mundo fixo que se aprende; evoluir lento, nível 20 em ~3 h; morte cara da opção B, sempre visível e nunca pela rede; uma mão e parar a qualquer hora; todo recurso com ralo). Cada pilar tem regra verificável e "estado hoje". O `AGENTS.md` só aponta para o guia; `docs/analise-tibia-habilidades.md` e `docs/plano-multiplayer.md` ficaram como referência. Só o `modo.txt` continua em `docs/agentes/`. (2) Os monstros deixaram de escalar com o nível e com o grupo: saíram `hpPerCharLevel`, `bossLevelFactor`, `party.monsters` e `party.bossHp` (e o respawn que crescia com o grupo); o `validaConteudo()` recusa esses campos.
-
-**Validação:** `node tools/testar.mjs` — 32/32. A simulação no Node troca "o grupo põe mais monstros" por "o mesmo mundo para 1 ou 4 jogadores, de nível 1 ou 30" (monstro, sqm e vida). Sabotagem (monstros vezes o tamanho do grupo numa cópia) barrada com a mensagem certa.
-
-**Análise:** a fila estava presa em "Sair cedo" desde 18/10, um item que perdeu o sentido quando a caçada virou sala sem relógio. O mapa de caça ainda é sorteado a cada sala, o que fere o pilar 2.
-
-**Roadmap:** fila refeita pelos pilares. `Agora`: mapas de caça fixos. `Próximo`: queda de conexão não mata; saída segura perto; medir o ritmo até o nível 20; morte da opção B; créditos; PWA; escada de lugares. Saíram "Sair cedo", "Revisar a escala de HP", "Selo de resguardo" e "três profundidades".
-
-**Pendências e riscos:** jogador de nível alto agora acha os lugares baixos fáceis — é o pilar 1 funcionando, mas falta lugar acima do nível 15 (item 7). As quatro tarefas agendadas ainda mandam ler `docs/agentes/comum.md` e `docs/agentes/<papel>.md` (a instrução só pode ser trocada na conversa de cada uma); esses arquivos agora só redirecionam para o `CLAUDE.md`. O ciclo continua `pausado`. Pendências do dono na Parte 6: P7 (venda do saco na caçada, sensível, em conflito com o pilar 4), P8 (saída a ≤ 60 s), P9 (números da morte B, sensível).
-
-**Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).

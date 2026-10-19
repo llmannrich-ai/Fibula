@@ -138,11 +138,9 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   personagem entre as caçadas, então só o cofre do Banco é seguro (decisão do
   Leonardo, 0.27.0) — menos o que o Selo de resguardo guarda (até 60% no nível
   3), e 25% do XP do nível, nunca o nível; o equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
-  ordem de implementação está no `ROADMAP.md`.
-- **Conflito aberto:** a venda de peça da mochila na Feira **durante** a caçada,
-  livre mesmo que o jogador morra depois, é decisão do Leonardo e está em
-  vigor, mas tira peso da morte. Está na Parte 6 como pendência **sensível**:
-  nenhum agente muda isso sem ele.
+  ordem de implementação está no `ROADMAP.md`. Desde a 0.43.2 a Mochila não
+  vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
+  está na mochila só fica a salvo saindo pela porta.
 
 #### Pilar 5 — Duas mãos, e pode parar a qualquer hora
 
@@ -303,7 +301,7 @@ na mão.
 | Cidade | Mapa de `city.mapa`, NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
-| Caçar junto | Salas de até 4, com o aparelho do anfitrião calculando (só entre amigos) |
+| Caçar junto | Uma sala por lugar, de até 4 (cópia 2 quando lota): pisa-se no portal do lugar e entra-se no servidor de quem já caça lá; o aparelho do anfitrião calcula, e o último que sai fica com ele |
 | Testes e CI | `node tools/testar.mjs` (sintaxe, simulação no Node, casos no Chromium headless); GitHub Actions em todo push |
 
 ### Fases
@@ -460,7 +458,7 @@ confundidas com precedente:
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~780 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão) | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`assets/otsp/atlas.webp`](assets/otsp/atlas.webp) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, em WebP sem perda, ~420 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão). O [`atlas.png`](assets/otsp/atlas.png), com os mesmos pixels (~790 KB), só desce para o aparelho que não abre WebP | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs), que chama o `cwebp` | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -482,7 +480,10 @@ arte da seção "Arte e licenças" da Parte 2: só OTSP ou outra fonte com licen
 aberta, montado por script versionado, nunca à mão, com cada arquivo listado em
 [`assets/CREDITOS.md`](assets/CREDITOS.md). Para trocar o sprite de um monstro,
 edite a tabela `ARTE` do `tools/sprites.mjs` e rode `node tools/sprites.mjs`
-(o `--catalogo` grava folhas com o id de cada sprite do pacote).
+(o `--catalogo` grava folhas com o id de cada sprite do pacote). O script
+precisa do **`cwebp`** (libwebp do Google; no PATH ou em `FIBULA_CWEBP`) para
+gravar o `atlas.webp`, e para sem gravar nada se não o achar; o caso `arte`
+reprova se o WebP não tiver os mesmos pixels do PNG.
 
 **Não adicione dependência de terceiro nenhuma.** Para dado do próprio
 repositório, o teste é se ele serve para alguém ajustar o jogo sem programar —
@@ -607,7 +608,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   regra nenhuma. Anuncia na presença a sala aberta deste aparelho
   (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
 - `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
-  `realtime:sala-<x.y>-<id da sala>` por sala (o id de quem a criou; não muda quando o anfitrião muda). O anfitrião roda a
+  `realtime:sala-<x.y>-<mapa>-<cópia>` por lugar (não muda quando o anfitrião muda); `vaiCaca(k)` é o portal. O anfitrião roda a
   incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
   por segundo; o convidado manda a entrada (o sqm em que está, espaços
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
@@ -620,7 +621,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   pelo laço e `VOZ`, que o botão `#bVoz` do HUD lê (`hudVoz()`)
 - `arte.js` — `ART`, `pede()` (o atlas começa a baixar quando o módulo
   carrega, em paralelo com o `content.json`, e a imagem não espera o
-  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`),
+  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`; pede o
+  `atlas.webp` e cai no `atlas.png` se o aparelho não abrir WebP, caso
+  `arte-sem-webp`; `ART.url` é o que chegou, e os ícones usam ele),
   `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -675,10 +678,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
   com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
-  cidade → quem leva à caçada (o Guia, a Grade do esgoto — um lugar no chão
-  da rua, não uma pessoa: `lugar: true` no NPC —, o Capitão do porto,
-  cada um com os mapas dele, `showHunts(npc)`) → incursão → tela final → a
-  cidade, ao lado de quem levou; as telas abertas na
+  cidade → o portal do lugar (um "lugar" no chão: `lugar: true` e `abre:
+  "portal"` no NPC; pisar nele chama `pisa()` → `vaiCaca()`; o Guia e o
+  Capitão, `showHunts(npc)`, dizem o que há em cada lugar, quantos caçam lá
+  e onde é a entrada, com um botão Entrar) → incursão → tela final → a
+  cidade, em cima do portal de onde se volta; as telas abertas na
   cidade voltam para ela (`volta()`)
 - `controles.js` — joystick por ponteiro, `bindHold()`, teclado, `held` e
   `leEntrada()`
@@ -914,10 +918,12 @@ arquitetura (Parte 2). Hoje guarda:
   (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
   negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
   tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
-  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
-  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
-  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
-  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). A
+  extração tem limites de plausibilidade (30 peças por caçada, 60 por dia,
+  só depois de 85 s). Não se vende do saco durante a caçada (decisão do
+  Leonardo): o cliente não oferece desde a 0.43.2, e o `mercado_anunciar`
+  recusa `p_caca` com `'caca'` desde a
+  [006_sem_venda_na_caca.sql](tools/supabase/006_sem_venda_na_caca.sql). Esquema em
   [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql); na morte, a
   `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
   [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
@@ -1023,17 +1029,33 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 #### Sala — caçar junto, com o anfitrião calculando
 
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
-co-op na masmorra **sem servidor próprio**. Em quem leva à caçada, qualquer um cria
-uma sala; quem está na cidade a vê e entra (até 4).
-**Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): o lugar de
-caça do Guia cria uma sala e entra pela porta, e sozinho é uma sala de um. A
+co-op na masmorra **sem servidor próprio**.
+**Uma sala por lugar, com entrada automática** (decisão do Leonardo em
+19/10/2026): cada mapa de caça tem um **portal** na cidade (`abre: "portal"`
+e `caca` em `city.npcs`: a grade do esgoto, os portais das Runas e da Cripta
+ao lado do portão, o barco da Ilha no cais). Pisar nele (`pisa()` em
+`src/telas.js`, só ao chegar no sqm) ou tocar em Entrar no Guia chama
+`vaiCaca(k)` em `src/sala.js`: entra no canal do lugar
+(`sala-<x.y>-<mapa>-<cópia>`) e olha a presença. Há quem tenha `anf` →
+entra no servidor dele (manda `quero` e, aceito, pede a porta sozinho);
+não há → vira o servidor e entra. Cheio (`cheia`, 4 na sala) → a cópia
+seguinte do mesmo lugar. **O anfitrião é sempre alguém lá dentro**: quem
+tem o servidor e sai da masmorra com gente caçando o passa (`passa`, com a
+herança) ao mais antigo lá dentro; **o último que sai fica com ele**, e a
+masmorra segue rodando no aparelho dele, na cidade, até alguém entrar e
+recebê-lo, ou até ele ir a outro lugar ou fechar o jogo (aí ela se perde).
+Convidado que sai da masmorra sai da sala. A volta à cidade é em cima do
+portal do lugar (`portalDe()` em `dados.js`).
+**Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): sozinho é
+uma sala de um. A
 incursão solo com relógio (`start()` sem `prepara`) continua no código só para
 os testes e a simulação; o jogador não a alcança. O anfitrião entra pela porta
-mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
+mesmo com o canal da sala caído: a masmorra roda no aparelho dele (sem
+resposta do canal em 2 a 4 s, `vaiCaca` abre a caçada aqui).
 
-- **A sala é de um mapa de caça** (`SALA.caca`), escolhido ao criar ("criar
-  sala" na linha do lugar). Vai no anúncio da cidade (`rede.sala.h`), na lista
-  de membros e na porta; a porta só abre no NPC que leva a esse mapa.
+- **A sala é de um mapa de caça** (`SALA.caca`, com a cópia em `SALA.n`). Vai
+  no anúncio da cidade (`rede.sala`: `h` o mapa, `id` o canal, `n` quantos),
+  e o Guia mostra quantos caçam em cada lugar.
 - **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
   nasce com a sala, no aparelho do anfitrião, e fica aberta enquanto ele
   estiver nela. Ninguém é soterrado. É o modo
@@ -1088,9 +1110,10 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
   (`fim`), passando por conferência (item que existe, número inteiro,
   habilidade da classe). A ficha que o convidado manda passa por
   `confereFicha()` em `src/sim/progresso.js`.
-- **Só o anfitrião pode trapacear**, porque é ele quem calcula. É aceitável
-  entre amigos e é a exceção à regra acima, de propósito; para abrir a
-  desconhecidos, o caminho é o servidor da F2 (M2).
+- **Só o anfitrião pode trapacear**, porque é ele quem calcula. Com a entrada
+  automática, desconhecidos caçam no aparelho uns dos outros: o Leonardo
+  aceitou esse risco na fase de teste (19/10/2026), e ele só cai com o
+  servidor da F2 (M2). É a exceção à regra acima, de propósito.
 - Custo: com 4 na sala, ~40 envios por segundo no canal, abaixo dos ~100 do
   plano Free; a cota mensal (2 milhões, contando cada entrega) dá algumas
   dezenas de horas de caçada a dois por mês.
@@ -1101,9 +1124,11 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
 
 ### Voz — falar na sala
 
-Decisão do Leonardo em 19/10/2026: **voz só dentro da sala de caçar junto**,
-entre quem se chamou; na cidade aberta, não, porque com desconhecidos pede a
-moderação da F3. `src/voz.js`, sem biblioteca:
+Decisão do Leonardo em 19/10/2026: **voz só dentro da sala de caçar junto**;
+na cidade aberta, não, porque com desconhecidos pede a moderação da F3. Com a
+entrada automática a sala pode ter desconhecidos, então a voz é **opcional**:
+só se ouve quem ligou, e o Guia avisa que pode haver desconhecidos.
+`src/voz.js`, sem biblioteca:
 
 - **O som não passa pelo Supabase.** Cada par de aparelhos abre um
   `RTCPeerConnection` direto (malha: com 4, cada um manda para 3, ~30 kbit/s
@@ -1607,6 +1632,9 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
+| 19/10 | **Uma sala por lugar, com entrada automática:** pisa-se no portal do lugar na cidade; há servidor, entra-se nele; não há, abre-se aqui; cheio (4), cópia 2. O servidor fica com quem está lá dentro, e com o último que saiu quando não há ninguém. Aceito o risco de trapaça do anfitrião entre desconhecidos na fase de teste; voz opcional | Parte 3, Sala e Voz |
+| 19/10 | **Atlas em WebP sem perda**, gravado pelo `cwebp` do Google em `tools/sprites.mjs` (só na montagem; o jogador baixa um arquivo de imagem), com o PNG de reserva | Parte 3, "O que mais o jogador baixa" |
+| 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco recusa desde a 006 | Pilar 4; Parte 3, Supabase |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes
@@ -1621,6 +1649,5 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Ao religar o ciclo |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |
-| P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |

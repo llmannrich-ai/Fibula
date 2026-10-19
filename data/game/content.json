@@ -1727,7 +1727,7 @@
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, t terra, d cais de madeira, a areia, l lajota, m tapete, z piso de pedra, @ onde se chega. Obstaculo: A arvore, ~ agua, P portao da muralha, | cerca e as paredes: # pedra, & tijolo, % enxaimel, $ reboco, + pedra bruta (a muralha); o vao de assoalho numa parede e a porta. Objetos (sobre o chao vizinho; solidos, menos cadeira e toldo): f fonte, p poco, b barril, c caixote, e estatua, E monumento, y arbusto florido, H sebe, r cerejeira, q arvore de frutas, Y pinheiro, X rocha, n forno, s estante, k banca, Z toldo, w lenha, L poste, i pilar, W bandeira, u tumulo, x mesa, C cadeira, o bau, j cama, g fogueira. Como cada letra se desenha esta em arte. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, t terra, d cais de madeira, a areia, l lajota, m tapete, z piso de pedra, @ onde se chega. Obstaculo: A arvore, ~ agua, P portao da muralha, | cerca e as paredes: # pedra, & tijolo, % enxaimel, $ reboco, + pedra bruta (a muralha); o vao de assoalho numa parede e a porta. Objetos (sobre o chao vizinho; solidos, menos cadeira e toldo): f fonte, p poco, b barril, c caixote, e estatua, E monumento, y arbusto florido, H sebe, r cerejeira, q arvore de frutas, Y pinheiro, K rocha, n forno, s estante, k banca, Z toldo, w lenha, L poste, i pilar, W bandeira, u tumulo, x mesa, C cadeira, o bau, j cama, g fogueira. Como cada letra se desenha esta em arte. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
     "nome": "Cidade",
     "_chao": "Pecas no chao da cidade. Sem respawn (as de teste, pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao); nao tem origem no banco, entao nao entra na Feira. Com respawn (segundos): pisou, vai para a mochila se couber, e a peca volta ao mesmo sqm depois desse tempo de cidade, contado em cada aparelho (as armas de quem comeca, na casa vazia do bairro dos canais). Val 0: nao vira ouro no Banco. Para tirar, apague da lista.",
     "chao": [
@@ -1788,7 +1788,7 @@
       "A,,$LllSlll$,|,t,,|,#lllllllllmlllllllll#,,w~~dd_____%,,AAAA",
       "A,,$lllllll$,|,u,u|,#lllllllllmlllllllll#,,,~~dd%__Cx%,,AAAA",
       "AA,$xlllllx$,|,tt,|,#lllillillmllillilll#,,,~~dd%%%%%%,,AAAA",
-      "A,,$lllllll$,|,u,X|,#lllllllllmlllllllll#,,,~~dd%%%%%%,,AAAA",
+      "A,,$lllllll$,|,u,K|,#lllllllllmlllllllll#,,,~~dd%%%%%%,,AAAA",
       "A,,$olllllL$,|,t,,|,#lClllllllmlllllllCl#,,,~~dd%_b_o%,,AAAA",
       "A,,$$$$l$$$$,||t|||,##########l##########,,A~~Ld_____%~~~~~~",
       "AAA,,,y,y,,,,,,,,,,,,vrvvvrvv...vvrvvvrv,,,,~~dd%%%%%%~~~~~~",
@@ -1820,12 +1820,12 @@
       "A,..................:::::::::...:::::::::.............~~~~~~",
       "A,..&&&_&&&,$$$_$$$H::::::b:x.T.x:c::::::,,,aaaaaadddLdbddd~",
       "AA..&j___s&,$s___j$,:ZZ::ZZ::...:ZZ::ZZ::,,,aaaaaadddddddNd~",
-      "A,..&_____&H$_____$A:kk::kk::...:kk::kk::,A,agaaaadddLdcddd~",
-      "A,..&xC__o&,$n_x_b$,L::::::::...::::::::L,,,aaaXaaaaaa~~~~~~",
-      "A,..&&&&&&&,$$$$$$$H,,,,,,,,,...,,,,,,,,,,,,aaaaaaaXaa~~~~~~",
+      "A,..&_____&H$_____$A:kk::kk::...:kk::kk::,A,agaaaadddLdcddI~",
+      "A,..&xC__o&,$n_x_b$,L::::::::...::::::::L,,,aaaKaaaaaa~~~~~~",
+      "A,..&&&&&&&,$$$$$$$H,,X,,R,,,...,,,,,,,,,,,,aaaaaaaKaa~~~~~~",
       "AA..........................G.........................~~~~~~",
       "A+++++++++++++++++++++++++++++P+++++++++++++++++++++++~~~~~~",
-      "A,,,,,,,,,,,A,,,,,,,,,,,,,X,,ttt,,Y,,,,,,,,,A,,,,,,,,,~~~~~~",
+      "A,,,,,,,,,,,A,,,,,,,,,,,,,K,,ttt,,Y,,,,,,,,,A,,,,,,,,,~~~~~~",
       "A,,,,A,,,,,A,,,,,,,,,,,,A,,,,ttt,,,,,A,,,,,,,,,,,,,,,,~~~~~~",
       "A,,,,,,,,,,,,,,,,,,A,,,,,,,,,ttt,,,,,,,,,,,,,,,,,,A,,,~~~~~~"
     ],
@@ -2106,7 +2106,7 @@
         "nome": "Guia de caça",
         "casa": "Portão da cidade",
         "abre": "cacadas",
-        "fala": "Daqui saem a Masmorra de Runas e a Cripta. O portal abre em 1:30. Quem leva provisões, leva para uma caçada só."
+        "fala": "Os portais ao lado do portão levam à Masmorra de Runas e à Cripta; o Esgoto é pela grade da rua do mercado. Pise no portal e entre: se alguém já caça lá, você cai junto. Quem leva provisões, leva para uma caçada só."
       },
       "corretor": {
         "letra": "T",
@@ -2163,7 +2163,8 @@
         "letra": "V",
         "nome": "Grade do esgoto",
         "casa": "Rua do mercado",
-        "abre": "cacadas",
+        "abre": "portal",
+        "caca": "esgoto",
         "lugar": true,
         "acao": "Descer",
         "fala": "Uma grade de ferro no chão da rua, e o cheiro que sobe dela. Lá embaixo, ratos e baratas, e dizem que uma centopeia do tamanho de um homem."
@@ -2173,7 +2174,37 @@
         "nome": "Capitão",
         "casa": "Porto",
         "abre": "cacadas",
-        "fala": "O navio leva até a Ilha da Enseada e espera pelo portal. Lá o bicho é grande: venha forte."
+        "fala": "O barco no cais leva até a Ilha da Enseada. Lá o bicho é grande: venha forte."
+      },
+      "portal_runas": {
+        "letra": "R",
+        "nome": "Portal das Runas",
+        "casa": "Portão da cidade",
+        "abre": "portal",
+        "caca": "runas",
+        "lugar": true,
+        "acao": "Entrar",
+        "fala": "Um portal de pedra gravada. Do outro lado, a Masmorra de Runas."
+      },
+      "portal_cripta": {
+        "letra": "X",
+        "nome": "Portal da Cripta",
+        "casa": "Portão da cidade",
+        "abre": "portal",
+        "caca": "cripta",
+        "lugar": true,
+        "acao": "Entrar",
+        "fala": "Um portal frio, de pedra escura. Do outro lado, a Cripta Antiga. Não é lugar para quem começa."
+      },
+      "barco": {
+        "letra": "I",
+        "nome": "Barco da Ilha",
+        "casa": "Porto",
+        "abre": "portal",
+        "caca": "ilha",
+        "lugar": true,
+        "acao": "Embarcar",
+        "fala": "O barco do Capitão, amarrado no cais. Leva à Ilha da Enseada."
       }
     }
   },
@@ -2183,7 +2214,7 @@
       "nome": "Esgoto",
       "desc": "Galerias úmidas sob a cidade. Morcegos e ratos perto da grade, baratas e lesmas lá embaixo, e a Centopeia-rainha no ninho.",
       "nivel": 1,
-      "npc": "grade",
+      "npc": "guia",
       "entrada": "Você desceu pela grade do esgoto.",
       "bands": [
         {

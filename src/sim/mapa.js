@@ -5,7 +5,7 @@
    gerado como rascunho por tools/mapas.mjs). leMapa() lê esse mapa; o
    gerador (genMap, objetos) ficou só para o rascunho, e pecas() serve também
    à cidade. */
-import {MW,MH,rnd,ri,hyp,sorte,semente} from './base.js?v=0.44.0';
+import {MW,MH,rnd,ri,hyp,sorte,semente} from './base.js?v=0.46.0';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
 function corridor(g,a,b){

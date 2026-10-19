@@ -11,7 +11,11 @@
  *                                          trabalho, para escolher sprites novos
  *
  * Saída, sempre a mesma para a mesma entrada:
- *   assets/otsp/atlas.png   só os sprites que o jogo usa, num PNG só
+ *   assets/otsp/atlas.webp  só os sprites que o jogo usa, em WebP sem perda:
+ *                           é o que o jogador baixa (420 KB contra 793 KB do PNG,
+ *                           os mesmos pixels; decisão do Leonardo, 19/10/2026)
+ *   assets/otsp/atlas.png   os mesmos pixels em PNG, para o aparelho que não
+ *                           abre WebP (iOS antes do 14)
  *   assets/otsp/atlas.json  onde cada um está: {nome:{x,y,w,h,d,f,ox,oy}}
  *   assets/otsp/LICENSE.txt e AUTHORS.md, copiados do pacote
  *
@@ -26,9 +30,14 @@
  * de novo. O nome à esquerda é o que o index.html procura; o id à direita é do
  * pacote (descubra com --catalogo).
  *
- * Sem dependência: só node:fs, node:zlib e git para baixar o pacote.
+ * Sem dependência no jogo. Aqui, além de node:fs, node:zlib e git para baixar
+ * o pacote, o cwebp do Google (libwebp, https://developers.google.com/speed/webp/download)
+ * grava o WebP: no PATH, ou o caminho em FIBULA_CWEBP. Sem ele o script para
+ * antes de gravar qualquer coisa, para o WebP nunca ficar velho ao lado de um
+ * atlas.json novo. O node não grava WebP, e é só na montagem: o jogador baixa
+ * um arquivo de imagem, sem biblioteca nenhuma.
  */
-import {copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync} from 'node:fs';
+import {copyFileSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync} from 'node:fs';
 import {deflateSync} from 'node:zlib';
 import {execFileSync} from 'node:child_process';
 import {dirname, join, resolve} from 'node:path';
@@ -309,16 +318,26 @@ function catalogo(t, spr, pasta) {
   console.log(`catálogo em ${pasta} (o .txt diz linha e coluna de cada id)`);
 }
 
+/* o WebP sem perda do mesmo PNG: -exact guarda a cor dos pixels transparentes
+   (o PNG tem zero ali), -z 9 é a compressão máxima; mesma entrada, mesmos bytes */
+const CWEBP = process.env.FIBULA_CWEBP || 'cwebp';
+function temCwebp() { try { execFileSync(CWEBP, ['-version'], {stdio: 'pipe'}); return true; } catch (e) { return false; } }
+if (!temCwebp()) {
+  console.error(`não achei o cwebp (${CWEBP}). Instale a libwebp (Windows: o zip de https://developers.google.com/speed/webp/download, ` +
+    'Linux: apt install webp, macOS: brew install webp) e ponha o cwebp no PATH, ou o caminho em FIBULA_CWEBP.');
+  process.exit(1);
+}
 const dir = otspDir();
 const t = leDat(readFileSync(join(dir, 'client_files', 'otsp.dat')));
 const spr = leSpr(readFileSync(join(dir, 'client_files', 'otsp.spr')));
 const {img, mapa} = atlas(t, spr);
 mkdirSync(DESTINO, {recursive: true});
 writeFileSync(join(DESTINO, 'atlas.png'), png(img));
+execFileSync(CWEBP, ['-quiet', '-lossless', '-z', '9', '-exact', '-metadata', 'none', join(DESTINO, 'atlas.png'), '-o', join(DESTINO, 'atlas.webp')], {stdio: 'inherit'});
 writeFileSync(join(DESTINO, 'atlas.json'), JSON.stringify({
   _meta: {fonte: 'OpenTibia Sprite Pack', commit: OTSP_COMMIT, licenca: 'CC BY 4.0', gerado_por: 'tools/sprites.mjs'},
   sprites: mapa,
 }, null, 0).replace(/\},"/g, '},\n"') + '\n');
 for (const f of ['LICENSE.txt', 'AUTHORS.md']) copyFileSync(join(dir, f), join(DESTINO, f));
-console.log(`atlas ${img.w}×${img.h}, ${Object.keys(mapa).length} sprites → ${DESTINO}`);
+console.log(`atlas ${img.w}×${img.h}, ${Object.keys(mapa).length} sprites → ${DESTINO} (WebP ${Math.round(statSync(join(DESTINO, 'atlas.webp')).size / 1000)} KB, PNG ${Math.round(statSync(join(DESTINO, 'atlas.png')).size / 1000)} KB)`);
 if (process.argv.includes('--catalogo')) catalogo(t, spr, join(tmpdir(), 'fibula-otsp-catalogo'));
