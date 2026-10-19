@@ -2,12 +2,15 @@
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
    nada daqui direto: o laço pede leEntrada() e passa o resultado a update(),
    ou a updateCidade() quando se anda na cidade. */
-import {hyp} from './sim/base.js?v=0.8.2';
-import {G} from './sim/incursao.js?v=0.8.2';
-import {drinkPot} from './sim/combate.js?v=0.8.2';
-import {W,H} from './desenho.js?v=0.8.2';
-import {E} from './hud.js?v=0.8.2';
-import {$,app} from './dom.js?v=0.8.2';
+import {hyp} from './sim/base.js?v=0.9.0';
+import {G} from './sim/incursao.js?v=0.9.0';
+import {drinkPot} from './sim/combate.js?v=0.9.0';
+import {pocao} from './sala.js?v=0.9.0';
+/* na sala, o convidado pede a poção ao anfitrião, que é quem a bebe */
+const bebe=()=>{if(G&&G.convidado)pocao();else drinkPot()};
+import {W,H} from './desenho.js?v=0.9.0';
+import {E} from './hud.js?v=0.9.0';
+import {$,app} from './dom.js?v=0.9.0';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};
@@ -46,7 +49,7 @@ function bindHold(el,down,up){
 }
 /* segurar qualquer espaço repete a habilidade quando ela sai do cooldown */
 for(let i=0;i<4;i++)bindHold(E.slots[i],()=>{held[i]=true},()=>{held[i]=false});
-bindHold(E.bPot,drinkPot);
+bindHold(E.bPot,bebe);
 const TECLAS=['KeyJ','KeyK','KeyL','KeyI'];
 addEventListener('keydown',e=>{
   keys[e.code]=true;
@@ -54,7 +57,7 @@ addEventListener('keydown',e=>{
     if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
     const i=TECLAS.indexOf(e.code);
     if(i>=0||e.code==='Space')held[i<0?0:i]=true;
-    if(e.code==='KeyP'&&!e.repeat)drinkPot();
+    if(e.code==='KeyP'&&!e.repeat)bebe();
   }
 });
 addEventListener('keyup',e=>{keys[e.code]=false;

@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.8.2';
-import {CITY,CLASSES} from './sim/dados.js?v=0.8.2';
-import {save,KL} from './sim/progresso.js?v=0.8.2';
-import {G,solid} from './sim/incursao.js?v=0.8.2';
-import {C} from './sim/cidade.js?v=0.8.2';
-import {bf} from './sim/combate.js?v=0.8.2';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.8.2';
-import {$,app,RM} from './dom.js?v=0.8.2';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.9.0';
+import {CITY,CLASSES} from './sim/dados.js?v=0.9.0';
+import {save,KL} from './sim/progresso.js?v=0.9.0';
+import {G,solid} from './sim/incursao.js?v=0.9.0';
+import {C} from './sim/cidade.js?v=0.9.0';
+import {bf} from './sim/combate.js?v=0.9.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.9.0';
+import {$,app,RM} from './dom.js?v=0.9.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -68,7 +68,7 @@ function sprCriatura(n,face,mv,fase,flash,x,y){
 /* dead: caído no fim da incursão; arm: o escudo de apoio ativo */
 /* p.classe só existe nos outros jogadores da cidade; o próprio é o do save */
 function drawPlayer(p,dead,arm){
-  const x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2),cl=p.classe||save.classe;
+  const x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2),cl=p.classe||p.cl||save.classe;
   if(ART.ok){
     if(dead){if(spr('cad_'+cl,0,0,p.x,p.y))return}
     else{
@@ -160,14 +160,15 @@ const lerp=(e,a)=>{e.xr=e.x;e.yr=e.y;if(e.x0!==undefined){e.x=e.x0+(e.x-e.x0)*a;
 const volta=e=>{e.x=e.xr;e.y=e.yr};
 export function render(){
   if(!G)return cena();
-  const a=G.alfa,p=G.p,tr=G.t,wr=p.walk;
+  const a=G.alfa,tr=G.t;
   if(a<1){
-    G.t-=(1-a)*TICK;lerp(p,a);if(p.w0!==undefined)p.walk=p.w0+(p.walk-p.w0)*a;
+    G.t-=(1-a)*TICK;
+    for(const q of G.ps){lerp(q,a);q.wr=q.walk;if(q.w0!==undefined)q.walk=q.w0+(q.walk-q.w0)*a}
     for(const m of G.mons){lerp(m,a);m.ar=m.anim;if(m.a0!==undefined)m.anim=m.a0+(m.anim-m.a0)*a}
     for(const q of G.proj)lerp(q,a);
   }
   cena();
-  if(a<1){G.t=tr;volta(p);p.walk=wr;for(const m of G.mons){volta(m);m.anim=m.ar}for(const q of G.proj)volta(q)}
+  if(a<1){G.t=tr;for(const q of G.ps){volta(q);q.walk=q.wr}for(const m of G.mons){volta(m);m.anim=m.ar}for(const q of G.proj)volta(q)}
 }
 function cena(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0a0910';ctx.fillRect(0,0,W,H);
@@ -177,7 +178,7 @@ function cena(){
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(MW-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(MH-1,Math.ceil((cy+H)/T)+1);
   G.torches.length=0;
-  const A=ART.ok,pDead=!!p.fora&&p.fora!=='extraiu',pArm=bf('arm');ctx.imageSmoothingEnabled=false;
+  const A=ART.ok,jogador=q=>drawPlayer(q,!!q.fora&&q.fora!=='extraiu',bf('arm',q));ctx.imageSmoothingEnabled=false;
   if(A)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     /* com os sprites: o chão aqui, as paredes depois, linha a linha junto com as criaturas */
     const h=hash(x,y),cx=x*T+T/2,cy=y*T+T/2;
@@ -236,7 +237,10 @@ function cena(){
   }
   // entidades por profundidade
   const vis=G.mons.filter(m=>m.x>cx-40&&m.x<cx+W+40&&m.y>cy-40&&m.y<cy+H+40);
-  const ents=vis.map(m=>({y:m.y,m}));ents.push({y:p.y,pl:true});ents.sort((a,b)=>a.y-b.y);
+  const ents=vis.map(m=>({y:m.y,m}));
+  /* os jogadores da sala também; quem saiu pelo portal some */
+  for(const q of G.ps)if(q.fora!=='extraiu')ents.push({y:q.y,pl:q});
+  ents.sort((a,b)=>a.y-b.y);
   if(A){
     /* ordem do cliente do Tibia: linha por linha, as paredes da linha e depois
        quem está nela. Parede de baixo cobre o pé de quem encosta nela, e a
@@ -245,10 +249,10 @@ function cena(){
     for(let y=y0;y<=y1;y++){
       for(let x=x0;x<=x1;x++){const q=G.par[y*MW+x];if(q)spr(PECA[q],0,0,x*T+T/2,y*T+T/2)}
       for(const t of G.torches)if((t.y/T|0)===y)spr('tocha',0,0,t.x+6,t.y+14);
-      while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m)}
+      while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?jogador(e.pl):drawMon(e.m)}
     }
-    while(k<ents.length){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m)}
-  }else for(const e of ents)e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m);
+    while(k<ents.length){const e=ents[k++];e.pl?jogador(e.pl):drawMon(e.m)}
+  }else for(const e of ents)e.pl?jogador(e.pl):drawMon(e.m);
   // projéteis
   for(const q of G.proj){
     if(A){
@@ -277,6 +281,7 @@ function cena(){
   dctx.fillStyle='rgba(6,5,10,.82)';dctx.fillRect(0,0,W,H);dctx.globalCompositeOperation='destination-out';
   const light=(x,y,r,a)=>{x-=cx;y-=cy;if(x<-r||y<-r||x>W+r||y>H+r)return;const g=dctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(.5,`rgba(0,0,0,${a*.75})`);g.addColorStop(1,'rgba(0,0,0,0)');dctx.fillStyle=g;dctx.fillRect(x-r,y-r,r*2,r*2)};
   light(p.x,p.y,250+(RM?0:Math.sin(G.t*9)*5),1);
+  for(const q of G.ps)if(q!==p&&!q.fora)light(q.x,q.y,170,.9);
   if(po.open)light(po.x,po.y,180,.9);
   for(const t of G.torches)light(t.x,t.y,120,.75);
   for(const q of G.proj)light(q.x,q.y,q.k==='r'?90:55,.8);
@@ -298,6 +303,10 @@ function cena(){
     outText(m.t.nome,mx,top-6,col);
     ctx.fillStyle='#000';ctx.fillRect(mx-bw/2-1,top-2,bw+2,5);ctx.fillStyle=col;ctx.fillRect(mx-bw/2,top-1,bw*pct,3);
   }
+  /* os outros da sala com o nome; você, como sempre, "Você" */
+  for(const q of G.ps){if(q===p||q.fora)continue;
+    const pct=q.hp/q.mhp,col=corVida(pct),top=A?q.y-30:q.y-34,px=q.x-(A?desl('cls_'+q.cl):0);
+    outText(q.nome||CLASSES[q.cl].nome,px,top-6,col);ctx.fillStyle='#000';ctx.fillRect(px-14,top-2,29,5);ctx.fillStyle=col;ctx.fillRect(px-13,top-1,27*pct,3)}
   if(!(p.fora&&p.fora!=='extraiu')){
     const pct=p.hp/p.mhp,col=corVida(pct),top=A?p.y-30:p.y-34,px=p.x-(A?desl('cls_'+save.classe):0);
     outText('Você',px,top-6,col);ctx.fillStyle='#000';ctx.fillRect(px-14,top-2,29,5);ctx.fillStyle=col;ctx.fillRect(px-13,top-1,27*pct,3);

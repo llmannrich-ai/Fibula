@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.8.2';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.8.2';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp} from './progresso.js?v=0.8.2';
-import {genMap,pecas} from './mapa.js?v=0.8.2';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.8.2';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida} from './base.js?v=0.9.0';
+import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.9.0';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp} from './progresso.js?v=0.9.0';
+import {genMap,pecas} from './mapa.js?v=0.9.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.9.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -19,7 +19,7 @@ function spawn(k,r,d,boss){
     hpm=boss?(1+lv*sc.bossLevelFactor)*(1+PROG.party.bossHp*(G.ps.length-1)):1+sc.hpPerDepth*d+lv;
   const x=boss?(r.cx+.5)*T:(r.x+1+rnd(r.w-2)+.5)*T,y=boss?(r.cy-.5)*T:(r.y+1+rnd(r.h-2)+.5)*T;
   const hp=Math.round(t.hp*hpm);
-  G.mons.push({k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
+  G.mons.push({id:G.nid++,k,t,x,y,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,wa:0,wm:false,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
 }
 /* ---------- jogadores ----------
    Solo é um grupo de um: a incursão sempre tem uma lista de jogadores, G.ps,
@@ -35,7 +35,7 @@ export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,local:true});
 const LADO=[[0,0],[16,0],[-16,0],[0,16]];
 function novoJogador(f,i,s){
   const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0];
-  return{id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,
+  return{id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',
     x:(s.cx+.5)*T+o[0],y:(s.cy+.5)*T+o[1],r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+f.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,xpPerdido:0};
@@ -51,7 +51,7 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()]){
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
   G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
-     lvl:Math.max(...fichas.map(f=>f.c.lvl)),mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
+     lvl:Math.max(...fichas.map(f=>f.c.lvl)),nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
      t:0,kills:0,portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   const mais=1+PROG.party.monsters*(ps.length-1);
   for(const r of rooms){
@@ -166,13 +166,25 @@ export function update(dt,ent){
   if(left<=60&&!G.warned){G.warned=true;saida.banner('A masmorra está desabando');saida.log('Falta 1 minuto. Chegue ao portal ou perca o saco.','warn')}
   if(left<=0)finish('desabou');
 }
-/* movimento, regeneração e recargas de um jogador */
-function anda(p,dt,ent){
+/* o movimento pelo joystick; o convidado de uma sala anda assim no próprio
+   aparelho e conta a posição ao anfitrião (ver anda) */
+export function movimenta(p,dt,ent){
   let mx=ent.x,my=ent.y;
   const ml=hyp(mx,my);if(ml>1){mx/=ml;my/=ml}
   const vel=128*(1+bf('velo',p));
   p.mv=ml>.08;
   if(p.mv){move(p,mx*vel*dt,my*vel*dt);p.face=Math.atan2(my,mx);p.walk+=dt*Math.min(1,ml)*12}
+}
+/* movimento, regeneração e recargas de um jogador. Com ent.pos (o convidado
+   de uma sala, que anda no próprio aparelho), o anfitrião leva o boneco até a
+   posição contada, sem atravessar parede e a no máximo 1,5× a velocidade:
+   posição de fora nunca teleporta */
+function anda(p,dt,ent){
+  if(ent.pos){
+    const dx=ent.pos.x-p.x,dy=ent.pos.y-p.y,l=hyp(dx,dy),pa=Math.min(l,128*(1+bf('velo',p))*1.5*dt);
+    p.mv=l>1;if(l>.5){move(p,dx/l*pa,dy/l*pa);p.walk+=dt*12}
+    if(Number.isFinite(ent.f))p.face=ent.f;
+  }else movimenta(p,dt,ent);
   const K=CLASSES[p.cl];
   p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
   p.cdC-=dt;p.flash-=dt;p.swing-=dt;
@@ -259,6 +271,8 @@ export function sai(p,kind){
   if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag);p.ouroExt=r.ouro;p.pecas=r.pecas;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
   else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
+  if(p.local)saida.persist();
+  saida.sai(p);
   for(const q of G.ps)if(!q.fora)return;
   G.over=true;G.end=kind;G.dur=G.t;
   saida.persist();
@@ -267,3 +281,74 @@ export function sai(p,kind){
 }
 /* a sala acaba para todos que ainda estão nela (o desabamento, ou o teste) */
 export function finish(kind){if(G.over)return;for(const p of G.ps)if(!p.fora)sai(p,kind)}
+
+/* ---------- retrato da sala ----------
+   Na sala (caçar junto, src/sala.js), quem roda a regra é o aparelho do
+   anfitrião; os convidados só desenham. retrato() é o estado que ele manda,
+   umas 10 vezes por segundo, em números e listas planas para caber no
+   Realtime: monstros, jogadores, projéteis, sacos no chão e os efeitos e
+   cadáveres novos desde o retrato anterior. O mapa não vai: o convidado gera
+   o mesmo pela semente. aplicaRetrato() é o lado do convidado. */
+let KMT=null,KEL=null;
+const ks=()=>KMT||(KMT=Object.keys(MT)),kel=()=>KEL||(KEL=Object.keys(EL_COR));
+const FXR={num:1,ef:1,cone:1,anel:1,feixe:1,boom:1};
+const r1=v=>Math.round(v*100)/100;
+export function retrato(){
+  const K=ks(),L=kel(),m=[],pr=[],fx=[],cad=[];
+  for(const o of G.mons)m.push(o.id,K.indexOf(o.k),Math.round(o.x),Math.round(o.y),Math.ceil(o.hp),o.mhp,Math.round(o.face*100),(o.mv?1:0)|(o.flash>0?2:0));
+  for(const q of G.proj)pr.push(q.k,Math.round(q.x),Math.round(q.y),Math.round((q.k==='r'?Math.atan2(q.ty-q.y,q.tx-q.x):Math.atan2(q.vy,q.vx))*100),q.s?L.indexOf(q.s.el):-1);
+  for(const f of G.fx)if(!f.s&&FXR[f.k]){f.s=1;fx.push(f)}
+  for(const c of G.cad)if(!c.s){c.s=1;cad.push([Math.round(c.x),Math.round(c.y),c.k])}
+  return{t:r1(G.t),po:G.portal.open?1:0,k:G.kills,m,pr,fx,cad,
+    dr:G.drops.map(d=>[Math.round(d.x),Math.round(d.y),d.rar,d.dono,r1(d.t)]),
+    ps:G.ps.map(p=>({x:Math.round(p.x),y:Math.round(p.y),hp:Math.ceil(p.hp),mhp:p.mhp,mp:Math.floor(p.mp),mmp:p.mmp,f:Math.round(p.face*100),
+      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,
+      cdC:r1(p.cdC),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
+}
+/* o convidado (o jogador eu de G.ps) aplica o retrato: cada coisa guarda a
+   posição de antes (x0, y0) e o render() interpola até o próximo retrato. A
+   posição dele mesmo não vem do anfitrião, porque ele anda no próprio
+   aparelho; só volta para a do anfitrião se as duas se separarem demais
+   (parede que um viu e o outro não) */
+const PORID=new Map();
+const num0=v=>Number.isFinite(+v)?+v:0;
+export function aplicaRetrato(r,eu){
+  if(!r||!Array.isArray(r.m)||!Array.isArray(r.ps))return;
+  const K=ks(),L=kel();
+  G.t=num0(r.t);G.portal.open=!!r.po;G.kills=num0(r.k);G.rT=0;
+  const velhos=G.mons;G.mons=[];
+  for(let i=0;i+7<r.m.length;i+=8){
+    const k=K[r.m[i+1]];if(!k)continue;
+    let o=PORID.get(r.m[i]);
+    if(!o||o.k!==k){o={id:r.m[i],k,t:MT[k],r:MT[k].r,anim:frr(0,9),x:r.m[i+2],y:r.m[i+3],slow:0,dot:null};PORID.set(o.id,o)}
+    o.x0=o.x;o.y0=o.y;o.a0=o.anim;o.x=num0(r.m[i+2]);o.y=num0(r.m[i+3]);o.hp=num0(r.m[i+4]);o.mhp=num0(r.m[i+5])||1;
+    o.face=num0(r.m[i+6])/100;o.mv=r.m[i+7]&1;o.flash=r.m[i+7]&2?.1:0;o.anim+=.1;
+    G.mons.push(o);
+  }
+  for(const o of velhos)if(!G.mons.includes(o))PORID.delete(o.id);
+  for(let i=0;i<G.ps.length&&i<r.ps.length;i++){
+    const p=G.ps[i],q=r.ps[i];if(!q)continue;
+    if(i!==eu||hyp(q.x-p.x,q.y-p.y)>96){p.x0=p.x;p.y0=p.y;p.w0=p.walk;p.x=num0(q.x);p.y=num0(q.y);if(i!==eu){p.face=num0(q.f)/100;p.mv=!!q.mv;if(p.mv)p.walk+=.6}}
+    p.hp=num0(q.hp);p.mhp=num0(q.mhp)||1;p.mp=num0(q.mp);p.mmp=num0(q.mmp)||1;p.flash=q.fl?.1:0;
+    if(Array.isArray(q.sw)){p.swing=num0(q.sw[0]);p.swingA=num0(q.sw[1]);p.swingR=num0(q.sw[2])}
+    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);
+    p.cds=q.cds&&typeof q.cds==='object'?q.cds:{};p.gcd=q.gcd&&typeof q.gcd==='object'?q.gcd:{};
+    p.buffs=q.arm?{arm:{v:num0(q.arm),left:1}}:{};
+    if(Array.isArray(q.c)){p.c.lvl=num0(q.c[0])||1;p.c.xp=num0(q.c[1]);p.c.mag=num0(q.c[2]);p.c.per=num0(q.c[3])}
+  }
+  G.proj=[];
+  for(let i=0;i+4<(Array.isArray(r.pr)?r.pr.length:0);i+=5){
+    const a=num0(r.pr[i+3])/100,x=num0(r.pr[i+1]),y=num0(r.pr[i+2]),el=L[r.pr[i+4]];
+    G.proj.push({k:r.pr[i]==='b'||r.pr[i]==='r'?r.pr[i]:'m',x,y,vx:Math.cos(a),vy:Math.sin(a),tx:x+Math.cos(a)*40,ty:y+Math.sin(a)*40,s:{el},col:el&&EL_COR[el]});
+  }
+  if(Array.isArray(r.dr))G.drops=r.dr.map(d=>({x:num0(d[0]),y:num0(d[1]),rar:Math.max(0,Math.min(2,d[2]|0)),dono:d[3]|0,t:num0(d[4]),items:[]}));
+  if(Array.isArray(r.fx))for(const f of r.fx.slice(0,40))if(f&&FXR[f.k]){f.t=0;f.life=Math.min(2,num0(f.life)||.5);G.fx.push(f)}
+  if(Array.isArray(r.cad))for(const c of r.cad)if(Array.isArray(c)&&MT[c[2]]){G.cad.push({x:num0(c[0]),y:num0(c[1]),k:c[2]});if(G.cad.length>60)G.cad.shift()}
+}
+/* um quadro do convidado: ele anda no próprio aparelho, os efeitos correm, e
+   G.alfa diz quanto do caminho até o próximo retrato (0,1 s) já passou */
+export function assiste(dt,eu,ent){
+  const p=G.ps[eu];
+  if(!p.fora){movimenta(p,dt,ent);p.x0=p.x;p.y0=p.y;p.w0=p.walk;reveal(p)}
+  G.rT=(G.rT||0)+dt;G.alfa=Math.min(1,G.rT/.1);efeitos(dt);
+}

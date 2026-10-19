@@ -238,6 +238,13 @@ h2.lost{color:var(--hp)}
 #huntList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
 #huntList .sp{border-left-color:var(--torch)}
 #huntList .sp .meta.alto{color:var(--warn)}
+#hSala{border:1px solid var(--line,#3b3546);padding:8px 10px;margin:0 0 8px;display:grid;gap:6px}
+#hSala h3{margin:0;font-size:13px;color:var(--torch)}
+#hSala p{margin:0;font-size:12px}
+#hSala ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+#hSala li{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px}
+#hSala .acoes{display:flex;gap:6px;flex-wrap:wrap}
+#hSala button{min-height:44px}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
 </style>
 
@@ -378,6 +385,7 @@ h2.lost{color:var(--hp)}
       <h2>Guia de caça</h2>
       <p class="lede">Cada lugar tem o perigo dele, e ele não muda para você. Entrar acima do seu nível é permitido.</p>
       <p class="risco" id="hRisco"></p>
+      <div class="sala" id="hSala"></div>
       <ul id="huntList"></ul>
       <button class="ghost voltar" id="huntBack">Voltar à cidade</button>
     </div>
@@ -406,7 +414,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.8.2"></script>
+<script type="module" src="src/main.js?v=0.9.0"></script>
 
 </body>
 </html>

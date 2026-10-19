@@ -1,13 +1,13 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.8.2';
-import {SPELLS,CITY} from './sim/dados.js?v=0.8.2';
-import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.8.2';
-import {G} from './sim/incursao.js?v=0.8.2';
-import {C} from './sim/cidade.js?v=0.8.2';
-import {ART,icone} from './arte.js?v=0.8.2';
-import {rede} from './rede.js?v=0.8.2';
-import {$} from './dom.js?v=0.8.2';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.9.0';
+import {SPELLS,CITY,CLASSES} from './sim/dados.js?v=0.9.0';
+import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.9.0';
+import {G} from './sim/incursao.js?v=0.9.0';
+import {C} from './sim/cidade.js?v=0.9.0';
+import {ART,icone} from './arte.js?v=0.9.0';
+import {rede} from './rede.js?v=0.9.0';
+import {$} from './dom.js?v=0.9.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -45,11 +45,11 @@ export function montaBotoes(){ // chamado ao entrar na incursão: os espaços mu
   }
 }
 export function hud(){
-  const p=G.p,c=ch(),left=Math.max(0,RUN-G.t);
+  const p=G.p,c=p.c,left=Math.max(0,RUN-G.t);
   E.hpI.style.width=(p.hp/p.mhp*100)+'%';setT(E.hpT,`${Math.ceil(p.hp)}/${p.mhp}`);
   E.mpI.style.width=(p.mp/p.mmp*100)+'%';setT(E.mpT,`${Math.floor(p.mp)}/${p.mmp}`);
   E.xpI.style.width=(c.xp/xpNeed(c.lvl)*100)+'%';setT(E.lvlT,'Nv '+c.lvl);
-  setT(E.clsT,KL().nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
+  setT(E.clsT,CLASSES[p.cl].nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
   setT(E.bagT,String(p.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
   const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
@@ -71,7 +71,7 @@ let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
   setT(EC.cls,KL().nome);setT(EC.lvl,'Nv '+c.lvl);setT(EC.cofre,String(save.cofre));
-  setT(EC.rede,rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…');
+  setT(EC.rede,(rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…')+(rede.naSala?` · sala ${rede.naSala}/4`:''));
   if(C.perto===pertoAntes)return;
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
   if(!C.perto)return;

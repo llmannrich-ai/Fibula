@@ -9,28 +9,34 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES} from './sim/dados.js?v=0.8.2';
-import {save,ch} from './sim/progresso.js?v=0.8.2';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.8.2';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.8.2';
-import {log} from './hud.js?v=0.8.2';
+import {CLASSES} from './sim/dados.js?v=0.9.0';
+import {save,ch} from './sim/progresso.js?v=0.9.0';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.9.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.9.0';
+import {log} from './hud.js?v=0.9.0';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 const TOPICO='realtime:cidade-'+VER;
 /* identidade desta aba, não da conta: duas abas da mesma conta são dois bonecos */
-const ID=Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(16).padStart(2,'0')).join('');
+export const ID=Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(16).padStart(2,'0')).join('');
 /* o Realtime do plano Free aceita ~100 envios por segundo por canal (medido em
    19/10/2026: 11 pessoas a 8/s passam, 13 perdem mensagens e são expulsas).
    A 5 por segundo, e só de quem está andando, cabem 20 andando ao mesmo tempo */
 const ENVIO=.2,BATIDA=25;
-export const rede={estado:'fora',n:0};
+/* rede.sala: a sala que este aparelho anuncia na presença, {n} quem está nela
+   (src/sala.js põe e tira). SALAS: as salas abertas de quem está na cidade,
+   para o Guia de caça listar */
+export const rede={estado:'fora',n:0,sala:null,naSala:0,aoMudar(){}};
+export const SALAS=new Map();
 let ws=null,ref=0,pronto=false,quer=false,espera=0,tenta=0,batida=0,envio=0,mandou={x:NaN,y:NaN,mv:false},primeiro=true;
 
 const manda=(event,payload,topic=TOPICO)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic,event,payload,ref:String(++ref),join_ref:'1'}))};
 const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
 /* sem conta, o nome é o da classe: "Cavaleiro" diz mais que "Visitante" */
-const eu=()=>({nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl});
+const eu=()=>({nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl,sala:rede.sala});
+/* a presença muda (abriu ou fechou sala, entrou alguém nela) */
+export function anuncia(){if(pronto)manda('presence',{type:'presence',event:'track',payload:eu()})}
 function minhaPos(){
   const p=C.p;mandou.x=p.x;mandou.y=p.y;mandou.mv=p.mv;
   bc('pos',{id:ID,x:Math.round(p.x),y:Math.round(p.y),f:Math.round(p.face*100)/100});
@@ -46,20 +52,23 @@ function liga(){
   s.onerror=()=>{};
 }
 function caiu(){
-  pronto=false;OUTROS.clear();rede.n=0;
+  pronto=false;OUTROS.clear();SALAS.clear();rede.n=0;
   if(!quer){rede.estado='fora';return}
   rede.estado='sem rede';espera=Math.min(30,2**tenta++);
 }
 function desliga(){
   quer=false;espera=0;
   if(ws){manda('phx_leave',{});try{ws.close()}catch(e){}}
-  ws=null;pronto=false;OUTROS.clear();rede.n=0;rede.estado='fora';
+  ws=null;pronto=false;OUTROS.clear();SALAS.clear();rede.n=0;rede.estado='fora';
 }
-function conta(){rede.n=OUTROS.size}
+function conta(){rede.n=OUTROS.size;rede.aoMudar()}
 function chegou(id,meta,avisa){
   if(id===ID||!meta)return;
   const o=poeOutro(id,meta);
   if(o&&avisa)log(`${o.nome} chegou à cidade.`,'info');
+  /* a sala anunciada: só o número de gente, o resto é o nome já conferido */
+  const n=meta.sala&&meta.sala.n|0;
+  if(o&&n>=1&&n<=4)SALAS.set(id,{id,nome:o.nome,classe:o.classe,n});else SALAS.delete(id);
 }
 /* o servidor pode tirar o cliente do canal (excesso de mensagens, canal
    reiniciado) sem fechar o socket: aí o jogo ficaria "ligado" e invisível.
@@ -78,7 +87,7 @@ function recebe(d){
   }else if(d.event==='presence_diff'){
     let novo=false;
     for(const id in p.joins||{}){if(id===ID)continue;const ja=OUTROS.has(id);chegou(id,p.joins[id].metas&&p.joins[id].metas[0],!primeiro&&!ja);novo=true}
-    for(const id in p.leaves||{}){if(id===ID||(p.joins&&p.joins[id]))continue;const o=OUTROS.get(id);if(o&&o.vis)log(`${o.nome} saiu da cidade.`,'info');tiraOutro(id)}
+    for(const id in p.leaves||{}){if(id===ID||(p.joins&&p.joins[id]))continue;SALAS.delete(id);const o=OUTROS.get(id);if(o&&o.vis)log(`${o.nome} saiu da cidade.`,'info');tiraOutro(id)}
     /* quem chegou ainda não sabe onde estou */
     if(novo&&pronto)minhaPos();
     conta();
