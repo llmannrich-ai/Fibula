@@ -127,7 +127,7 @@ modo multiplayer apodrece sem ninguém perceber.
 |---|---|---|
 | Monstros por sala | × (1 + 0,6 · (n − 1)) | PRD 7.3: mais jogadores = mais monstros |
 | Vida do Guardião | × (1 + 0,8 · (n − 1)) | Chefe não pode derreter com 4 |
-| Loot | **Instanciado**: cada morte gera o drop de cada jogador que participou (causou dano ou estava a ≤ 9 de fluxo); cada um só vê e pega o seu | Coop sem briga por item; pilar 1 continua individual |
+| Loot | **Único** (decisão do Leonardo, 19/10): cada morte deixa um drop só, visível a todos, e só um jogador o pega. Nos primeiros 10 s (`progression.party.protecao`) só quem causou mais dano no monstro pode pegar, como no Tibia; depois, qualquer um. Troca entre jogadores fica para o Mercado (F3) | Tibia raiz: o drop é disputado, e quem matou tem a vez |
 | XP | Cheia para cada participante | Tibia tinha XP dividida; aqui o grupo já cobra em monstro a mais |
 | Extração | **Individual**: cada um para no portal e sai com o seu saco | Pilar 4: a decisão de sair é de cada um |
 | Morte | O jogador morto perde o próprio saco e vira espectador da sala até ela acabar | Pilar 1 sem punir o grupo |
@@ -278,8 +278,8 @@ também dispensa moderação de chat por enquanto. PvP fica fora (D1).
 
 | # | Decisão | Proposta | Bloqueia |
 |---|---|---|---|
-| D-M1 | Antecipar a F2? | Não antecipar a rede. Antecipar só M0 (já é F0) e M1 (sem gasto) | M2 |
-| D-M2 | Regras de grupo da seção 3 (loot instanciado, extração individual, sem reviver) | Aceitar como padrão e ajustar no playtest | M1 |
+| D-M1 | Antecipar a F2? | **Decidida em 19/10:** antecipar só a M1 (sem rede, sem gasto). A rede (M2 em diante) segue na F2 | M2 |
+| D-M2 | Regras de grupo da seção 3 | **Decidida em 19/10:** as regras da seção 3, com o loot **único** (um drop por monstro, um jogador pega) no lugar do instanciado. Ajustar no playtest | M1 |
 | D-M3 | Solo continua local ou também passa pelo servidor? | Solo local (abre sem rede, ônibus, 3G); só co-op é autoritativo. Revisar quando houver ranking ou mercado (F3), porque aí o solo editado vira problema de todos | M3 |
 | D2 | Teto mensal de infraestrutura (já no PRD, sensível) | — | M4 |
 | C6/C7 | Conta Fly.io, `FLY_API_TOKEN`, liberar `api.fly.io` e `registry.npmjs.org` na rede do ambiente | — | M2 (npm) e M4 (deploy) |
@@ -287,5 +287,5 @@ também dispensa moderação de chat por enquanto. PvP fica fora (D1).
 ## 8. Próximo passo concreto
 
 Pôr a **M0 (passo fixo)** no `ROADMAP.md` como item de F0 — ela já está na
-lista da F0 do PRD e não depende de nenhuma decisão. A M1 entra em `Próximo`
-se o Leonardo aceitar D-M1 e D-M2.
+lista da F0 do PRD e não depende de nenhuma decisão. D-M1 e D-M2 foram
+decididas em 19/10: a M1 está em `Próximo` no `ROADMAP.md`.
