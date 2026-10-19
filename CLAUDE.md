@@ -385,7 +385,9 @@ Eventos `sessao_inicio`, `caca_inicio`, `caca_fim` (saiu ou morreu, duração,
 valor da mochila, lugar), `compra`, `nivel_up`, `erro_cliente`. Painel com DAU/MAU,
 retenção D1/D7/D30, taxa de saída viva, duração da caçada e da sessão,
 simultâneos, custo e receita. Nenhum dado pessoal além do necessário para conta
-e pagamento.
+e pagamento. Desde a 0.47.0 os seis eventos sobem para o Supabase e o painel
+são as views `tel_*` (Parte 3, Supabase); simultâneos, custo e receita ainda
+não estão nele.
 
 ### Arte e licenças
 
@@ -654,7 +656,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `nuvem.js` — **conta e save na nuvem** (Supabase); registra-se em
   `aoGravar()` para subir cada gravação; exporta `SB_URL`, `SB_KEY` e
   `quemSou()` para a rede, e `mercado(fn,args)`, que sobe o save, chama uma
-  função da Feira e adota o cofre e as peças que o banco devolve
+  função da Feira e adota o cofre e as peças que o banco devolve; e a
+  **telemetria** (`tel(e,d)`, `telCacaInicio()`, `telCacaFim()`, os erros por
+  `error` e `unhandledrejection`), que funciona sem conta
 - `rede.js` — **a cidade compartilhada**: o canal `realtime:cidade-<x.y>` do
   Supabase Realtime, por `WebSocket` nativo. `quadro(dt,naCidade)`, chamado
   pelo laço, liga ao entrar na cidade e desliga ao sair dela (caçar, menu) ou
@@ -976,6 +980,23 @@ arquitetura (Parte 2). Hoje guarda:
   `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
   [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
   guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
+- **Telemetria** (desde a 0.47.0, pedido do Leonardo) — `public.telemetria`,
+  uma linha por evento da Parte 2 (`sessao_inicio`, `caca_inicio`,
+  `caca_fim`, `compra`, `nivel_up`, `erro_cliente`), gravada só por
+  `telemetria_gravar(p_aparelho, p_token, p_versao, p_eventos)`, em lote de
+  até 50, com no máximo 1.000 por aparelho por hora; evento desconhecido ou
+  dado acima de 2 KB fica de fora, sem erro. Quem manda é o **aparelho**, um
+  uuid sorteado no navegador (`masmorra-runas-v2-aparelho`), sem relação com
+  nome ou IP; com conta, o banco tira o jogador do token. A fila do que não
+  subiu fica em `masmorra-runas-v2-tel` (até 300). O painel são as views
+  `tel_dia` (ativos, sessões, caçadas, saída viva, duração mediana, erros),
+  `tel_retencao` (D1/D7/D30 por turma), `tel_sessoes` (eventos com menos de
+  30 min entre eles), `tel_niveis` (horas de caçada até cada nível, por
+  classe: o pilar 3) e `tel_erros`, com `security_invoker` e sem `select` para
+  o anon: lê-se pelo SQL do painel ou pelo conector. Esquema em
+  [tools/supabase/007_telemetria.sql](tools/supabase/007_telemetria.sql).
+  Evento novo entra no `check` da tabela e na lista da função, no mesmo
+  arquivo novo. A tela de Regras diz o que se registra, em "Dados".
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
@@ -985,8 +1006,8 @@ O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
 `conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`, e as
 quatro da Feira (`mercado_livro`, `mercado_anunciar`, `mercado_cancelar`,
-`mercado_coletar`) e as três da origem (`caca_comecar`, `caca_fim`,
-`lastro_banco`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
+`mercado_coletar`), as três da origem (`caca_comecar`, `caca_fim`,
+`lastro_banco`) e a da telemetria (`telemetria_gravar`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
 conferem senha ou token por dentro. As tabelas têm RLS ligada e nenhuma
 política, de propósito. Por isso os avisos de segurança do Supabase listam
 essas funções como "executáveis
@@ -1749,6 +1770,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Sai o pilar "Duas mãos, e pode parar a qualquer hora"**: os pilares passam a ser cinco (o do ralo vira o 5). Sai a regra da saída segura a ≤ 60 s (era a P8) e a pergunta "dá para parar no meio" do teste de ideias; a regra para sair do jogo durante a luta virá depois. O controle e a tela de celular ficam como requisito da Parte 2 | Parte 1; Parte 2, "Controle e tela" |
 | 19/10 | **PvP aberto:** qualquer jogador pode matar outro a qualquer momento, mesmo sem motivo; a morte para um jogador custa o mesmo que para um monstro. Substitui "PvP só em arena opcional". Entra com o servidor autoritativo da F2 | Pilar 4; não-objetivos |
 | 19/10 | **Cidade neutra no PvP:** dentro dos muros da cidade nenhum jogador ataca nem é atacado por outro; o PvP aberto vale fora deles. A regra é conferida no servidor da F2, nunca no aparelho | Pilar 4 |
+| 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 
 ### Pendentes

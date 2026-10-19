@@ -179,7 +179,7 @@ const P = {
     MODULO,
     `<script>
 window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0,
-  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100, lastro: {ouro: 0, itens: {}}, caca: 500}, mk || {}))},chamadas:[],args:{},forcaErro:''};
+  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100, lastro: {ouro: 0, itens: {}}, caca: 500}, mk || {}))},chamadas:[],args:{},forcaErro:'',tel:[],telArgs:null};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
   const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
     erro=m=>r(400,{code:'P0001',message:m}),fn=u.split('/rpc/')[1];
@@ -213,6 +213,7 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
   if(fn==='conta_criar'){N.login=b.p_usuario;if(b.p_usuario.toLowerCase() in N.contas)return erro('usuario_existe');
     N.contas[b.p_usuario.toLowerCase()]=b.p_senha;return r(200,{token:'tk1',id:'u1',usuario:b.p_usuario})}
   if(fn==='conta_sair'){N.saiu++;return r(204,null)}
+  if(fn==='telemetria_gravar'){N.telArgs=b;N.tel=N.tel.concat(b.p_eventos||[]);return r(204,null)}
   return r(404,{})}}
 </script>
 ${MODULO}`, 'Supabase falso'),
@@ -2895,6 +2896,49 @@ const CASOS = [
     ok('o ouro extraído vai como origem', f.p_ouro>=200&&window.__nuvem.mk.lastro.ouro===f.p_ouro, f.p_ouro+' / '+window.__nuvem.mk.lastro.ouro);
     ok('a espada volta com a mochila', sv()&&(sv().chars.feiticeiro.mochila||{}).espada===1, sv()&&JSON.stringify(sv().chars.feiticeiro.mochila));
     ok('a fila da origem esvaziou', (localStorage.getItem('masmorra-runas-v2-fila')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-fila'));
+`,
+  },
+  {
+    nome: 'telemetria',
+    o_que: 'telemetria: a sessão, o começo e o fim da caçada (morte, duração, mochila, XP perdido) sobem em lote, com o aparelho anônimo e o token da conta',
+    semente: 3,
+    patches: [P.tempo(12, 3), P.saco, P.spawnNaEntrada, P.nuvem(null, {})],
+    conteudo: [A.ratoLetal],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 400, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    },
+    'masmorra-runas-v2-sessao': SESSAO},
+    roteiro: `
+    var N=window.__nuvem,ev=function(e){return N.tel.filter(function(x){return x.e===e})};
+    var abriu=await ate(function(){return ev('sessao_inicio').length>0},200);
+    ok('a sessão sobe logo ao abrir', abriu&&ev('sessao_inicio').length===1, JSON.stringify(N.tel));
+    var A=N.telArgs||{};
+    ok('com o aparelho anônimo, o token da conta e a versão', /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(A.p_aparelho||'')&&A.p_token==='tk1'&&/^0\\./.test(A.p_versao||''), JSON.stringify(A));
+    ok('o aparelho fica guardado', localStorage.getItem('masmorra-runas-v2-aparelho')===A.p_aparelho, localStorage.getItem('masmorra-runas-v2-aparelho'));
+    cacar();
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    ok('morreu', acabou&&txt('#endTitle')==='Você morreu', txt('#endTitle'));
+    var foi=await ate(function(){return ev('caca_fim').length>0},200);
+    var i=(ev('caca_inicio')[0]||{}).d||{},f=(ev('caca_fim')[0]||{}).d||{};
+    ok('o começo da caçada diz o lugar, a classe, o nível e o grupo', i.lugar&&i.classe==='feiticeiro'&&i.nivel===1&&i.grupo===1, JSON.stringify(i));
+    ok('o fim diz a morte, a duração, a mochila e o XP perdido', foi&&f.fim==='morreu'&&f.lugar===i.lugar&&f.dur>=0&&f.mochila===200&&f.perdeu>0, JSON.stringify(f));
+    ok('sem nível novo, nenhum nivel_up', ev('nivel_up').length===0, JSON.stringify(ev('nivel_up')));
+    ok('cada evento leva a hora do aparelho', N.tel.every(function(x){return typeof x.t==='number'&&x.t>0}), JSON.stringify(N.tel));
+    ok('a fila do aparelho esvaziou', (localStorage.getItem('masmorra-runas-v2-tel')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-tel'));
+`,
+  },
+  {
+    nome: 'telemetria-sem-rede',
+    o_que: 'telemetria sem rede e sem conta: o evento espera na fila do aparelho e o jogo segue sem erro',
+    roteiro: `
+    $('#play').click();
+    await quadros(4);
+    var fila=JSON.parse(localStorage.getItem('masmorra-runas-v2-tel')||'[]');
+    ok('a sessão ficou na fila do aparelho', fila.length===1&&fila[0].e==='sessao_inicio'&&fila[0].d.conta===false, JSON.stringify(fila));
+    ok('o jogo seguiu para a escolha de personagem', visivel('#pick'));
 `,
   },
   {

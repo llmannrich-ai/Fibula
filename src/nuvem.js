@@ -11,13 +11,13 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.46.1';
-import {ITEMS} from './sim/dados.js?v=0.46.1';
-import {G} from './sim/incursao.js?v=0.46.1';
-import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.46.1';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.46.1';
-import {menu,showMenu,pickS,showPick} from './telas.js?v=0.46.1';
-import {$} from './dom.js?v=0.46.1';
+import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.47.0';
+import {ITEMS} from './sim/dados.js?v=0.47.0';
+import {G} from './sim/incursao.js?v=0.47.0';
+import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.47.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.47.0';
+import {menu,showMenu,pickS,showPick} from './telas.js?v=0.47.0';
+import {$} from './dom.js?v=0.47.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
@@ -172,3 +172,64 @@ export async function sairDaConta(){
 }
 /* fechar a aba ou trocar de app não pode deixar a última gravação para trás */
 addEventListener('visibilitychange',()=>{if(document.hidden&&nuvem.sujo){clearTimeout(nuvem.timer);empurra(true)}});
+/* ---------- telemetria ----------
+   Os eventos da Parte 2 do CLAUDE.md (sessao_inicio, caca_inicio, caca_fim,
+   compra, nivel_up, erro_cliente) vão em lote para telemetria_gravar
+   (tools/supabase/007_telemetria.sql). Sem dado pessoal: quem manda é o
+   aparelho, um uuid sorteado aqui e guardado no localStorage; com conta, o
+   banco tira o jogador do token. Funciona sem conta. O que não subiu espera
+   numa fila no aparelho (até 300 eventos) e vai na próxima chance; nada aqui
+   segura o jogo nem mostra erro. */
+const KEYT=KEY+'-tel',KEYA=KEY+'-aparelho',TEL_MAX=300,TEL_LOTE=50;
+const VER=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'dev'}catch(e){return 'dev'}})();
+const aparelho=(()=>{let a=null;try{a=localStorage.getItem(KEYA)}catch(e){}
+  if(!a||!/^[0-9a-f-]{36}$/.test(a)){
+    const h=[...crypto.getRandomValues(new Uint8Array(16))].map(b=>b.toString(16).padStart(2,'0')).join('');
+    a=`${h.slice(0,8)}-${h.slice(8,12)}-4${h.slice(13,16)}-a${h.slice(17,20)}-${h.slice(20)}`;
+    try{localStorage.setItem(KEYA,a)}catch(e){}}
+  return a})();
+let telFila=[];try{telFila=JSON.parse(localStorage.getItem(KEYT)||'[]')||[]}catch(e){}
+const tGuarda=()=>{try{localStorage.setItem(KEYT,JSON.stringify(telFila))}catch(e){}};
+const telV={timer:0,voo:false};
+async function telSobe(keepalive){
+  clearTimeout(telV.timer);telV.timer=0;
+  if(!telFila.length)return;
+  if(telV.voo){telV.timer=setTimeout(telSobe,5000);return}
+  telV.voo=true;const lote=telFila.slice(0,TEL_LOTE);let foi=false;
+  try{
+    const r=await rpc('telemetria_gravar',{p_aparelho:aparelho,p_token:sessao?sessao.tk:null,p_versao:VER,p_eventos:lote},keepalive);
+    /* 4xx: o banco não quer este lote (formato velho); descarta para não travar a fila */
+    if(r.ok||r.status<500){telFila.splice(0,lote.length);tGuarda();foi=true}
+  }catch(e){}
+  telV.voo=false;
+  /* sobrou: o lote seguinte logo; sem rede, de novo em 60 s */
+  if(telFila.length&&!telV.timer)telV.timer=setTimeout(telSobe,foi?2000:60000);
+}
+export function tel(e,d,ja){
+  telFila.push({e,t:Date.now(),d:d||{}});
+  if(telFila.length>TEL_MAX)telFila.splice(0,telFila.length-TEL_MAX);
+  tGuarda();
+  if(ja)telSobe();else if(!telV.timer)telV.timer=setTimeout(telSobe,20000);
+}
+export const telAparelho=()=>aparelho;
+/* a caçada: o começo guarda lugar, nível e hora; o fim manda a duração, o que
+   havia na mochila e os níveis que subiram (o save já tem o resultado) */
+const telCaca={t0:0,lugar:'',lvl:0,classe:''};
+export function telCacaInicio(lugar,c,classe,grupo){
+  Object.assign(telCaca,{t0:Date.now(),lugar,lvl:c.lvl,classe});
+  tel('caca_inicio',{lugar,classe,nivel:c.lvl,grupo});
+}
+export function telCacaFim(fim,c,mochila,xp,perdeu){
+  if(!telCaca.t0)return;
+  const dur=Math.round((Date.now()-telCaca.t0)/1000),{lugar,classe,lvl}=telCaca;telCaca.t0=0;
+  tel('caca_fim',{lugar,classe,fim,dur,nivel:c.lvl,mochila,xp:xp|0,perdeu:perdeu|0});
+  for(let n=lvl+1;n<=c.lvl;n++)tel('nivel_up',{classe,nivel:n});
+  telSobe();
+}
+/* erros: um de cada mensagem, no máximo 5 por sessão */
+const errosVistos=new Set();
+const telErro=(msg,onde)=>{msg=String(msg||'').slice(0,200);if(errosVistos.has(msg)||errosVistos.size>=5)return;
+  errosVistos.add(msg);tel('erro_cliente',{msg,onde:String(onde||'').replace(/^.*\/(src\/)/,'$1').slice(0,120)},true)};
+addEventListener('error',ev=>telErro(ev.message,ev.filename?`${ev.filename}:${ev.lineno}`:''));
+addEventListener('unhandledrejection',ev=>{const r=ev.reason;telErro(r&&r.message||r,r&&r.stack&&String(r.stack).split('\n')[1])});
+addEventListener('visibilitychange',()=>{if(document.hidden&&telFila.length)telSobe(true)});

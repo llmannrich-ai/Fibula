@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.46.1';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.46.1';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.46.1';
-import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.46.1';
-import {C,entraCidade} from './sim/cidade.js?v=0.46.1';
-import {persist,saveFalhou} from './salvar.js?v=0.46.1';
-import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.46.1';
-import {rede,SALAS} from './rede.js?v=0.46.1';
-import {SALA,MAX,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.46.1';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.46.1';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.46.1';
-import {icone} from './arte.js?v=0.46.1';
-import {$,app} from './dom.js?v=0.46.1';
-import {retrato} from './desenho.js?v=0.46.1';
+import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.47.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.47.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.47.0';
+import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.47.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.47.0';
+import {persist,saveFalhou} from './salvar.js?v=0.47.0';
+import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.47.0';
+import {rede,SALAS} from './rede.js?v=0.47.0';
+import {SALA,MAX,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.47.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.47.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.47.0';
+import {icone} from './arte.js?v=0.47.0';
+import {$,app} from './dom.js?v=0.47.0';
+import {retrato} from './desenho.js?v=0.47.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -72,6 +72,7 @@ export function start(prepara,caca){
   const levou=G.p&&G.p.prov&&Object.keys(G.p.prov).length?listaProv(G.p.prov):'';
   if(levou)gastaProv(G.p.prov);
   G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
+  telCacaInicio(G.caca,ch(),save.classe,G.ps.length);
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
   const H=HUNTS[G.caca];
   log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com a mochila.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
@@ -127,7 +128,7 @@ function drawLoja(){
     const cheio=por==='max'||por==='cheia';b.className=cheio?'buy max':'buy';
     b.textContent=por==='cheia'?'sem espaço':cheio?(s.max>1?'cheio':'guardada'):s.preco+' ouro';b.disabled=!!por;
     b.setAttribute('aria-label',por==='cheia'?`${s.nome}: não cabe na mochila`:cheio?`${s.nome}: já guardou o máximo para a próxima caçada`:`Comprar ${s.nome} por ${s.preco} de ouro`);
-    b.addEventListener('click',()=>{if(compra(k)){persist();drawLoja()}});
+    b.addEventListener('click',()=>{if(compra(k)){persist();tel('compra',{tipo:'provisao',item:k,preco:s.preco});drawLoja()}});
     li.append(info,b);ul.appendChild(li);
   }
 }
@@ -148,7 +149,7 @@ function drawEnsina(){
     b.className=por==='sabe'?'buy max':'buy';
     b.textContent=por==='sabe'?'sabe':por==='nivel'?'nível '+s.lvl:pr+' ouro';
     b.setAttribute('aria-label',por==='sabe'?`${s.n}: já aprendida`:por==='nivel'?`${s.n}: pede o nível ${s.lvl}`:`Aprender ${s.n} por ${pr} de ouro`);
-    b.addEventListener('click',()=>{if(aprende(k)){persist();log(`Você aprendeu ${s.n}.`,'epic');drawLoja()}});
+    b.addEventListener('click',()=>{if(aprende(k)){persist();tel('compra',{tipo:'magia',item:k,preco:pr});log(`Você aprendeu ${s.n}.`,'epic');drawLoja()}});
     li.append(info,b);ul.appendChild(li);
   }
 }
@@ -507,7 +508,7 @@ function drawShop(){
 function buy(k){
   const n=save.up[k];if(n>=UP[k].max)return;
   const cost=upCost(k,n);if(save.cofre<cost)return;
-  save.cofre-=cost;save.up[k]=n+1;persist();drawShop();
+  save.cofre-=cost;save.up[k]=n+1;persist();tel('compra',{tipo:'melhoria',item:k,nivel:n+1,preco:cost});drawShop();
 }
 function showShop(){drawShop();soTela(shopS)}
 
@@ -540,7 +541,7 @@ function drawForja(){
     const li=fgLi(o.item,'r'+it.rar+(livre?'':' locked'));
     li.append(fgInfo(it.nome,`${SLOT_NOME[it.slot]} · ${fmtBonus(it)}`,livre?'':`depois da encomenda ${o.missao}`));
     li.appendChild(fgBt(`${o.preco} ouro`,livre?`Comprar ${it.nome} por ${o.preco} de ouro`:`${it.nome}: liberada depois da encomenda ${o.missao}`,()=>{
-      if(comprarForja(o.item)){persist();drawForja();msgFg(`${it.nome} foi para o cofre. Vista no Banco.`)}},!livre||save.cofre<o.preco));
+      if(comprarForja(o.item)){persist();tel('compra',{tipo:'forja',item:o.item,preco:o.preco});drawForja();msgFg(`${it.nome} foi para o cofre. Vista no Banco.`)}},!livre||save.cofre<o.preco));
     ul.appendChild(li)}
   const ml=$('#fgMats');ml.textContent='';
   const rows=Object.keys(FORJA.compra).filter(k=>save.mats[k]>0);

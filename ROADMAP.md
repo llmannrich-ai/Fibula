@@ -166,12 +166,20 @@ pode desenhar pelo `.otbm` também.
   pedido fixo (um feito, não um nível) e, cumprido, a chave de um lugar de
   caça especial, igual para todos. Pede antes a decisão de como o save guarda
   as missões cumpridas (**sensível**: formato do save).
-- **Telemetria mínima** (F1) — os eventos da Parte 2; dado pessoal é sensível.
 
 ---
 
 ## Concluído
 
+- **2026-10-19 — Telemetria mínima (0.47.0)** *(pedido do Leonardo; F1,
+  serve à medição dos pilares 3 e 4 e às metas O2 e O3)*. Os seis eventos da
+  Parte 2 sobem em lote para `telemetria_gravar`
+  ([007_telemetria.sql](tools/supabase/007_telemetria.sql)), por um id de
+  aparelho anônimo (com conta, ligado ao jogador), com fila no aparelho sem
+  rede. Painel nas views `tel_dia`, `tel_retencao`, `tel_sessoes`,
+  `tel_niveis` (horas de caçada até cada nível, por classe) e `tel_erros`,
+  que o anon não lê. Aviso na tela de Regras, em "Dados". Casos
+  `telemetria` e `telemetria-sem-rede` no harness.
 - **2026-10-19 — O mundo em volta da cidade (0.46.0)** *(decisão do Leonardo;
   pilar 2)*. `city.mapa` virou um mundo de 240×180 sqm gerado por
   `node tools/mundo.mjs`: a cidade de antes, intacta, cercada por muralha com
