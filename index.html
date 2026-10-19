@@ -212,6 +212,10 @@ h2.lost{color:var(--hp)}
 .slots.eqs button{min-height:76px;justify-items:center}
 .slots.eqs button.full{box-shadow:inset 0 0 0 2px var(--torch)}
 .slots.eqs .ico{display:block}
+.boneco{display:block;margin:10px auto 8px;padding:0;background:radial-gradient(ellipse 34% 9% at 50% 88%,rgba(0,0,0,.45),transparent),#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);cursor:pointer}
+.boneco[hidden]{display:none}
+.boneco canvas{display:block;width:128px;height:128px;image-rendering:pixelated}
+.boneco:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
 .slots.eqs em{font:normal 9px/1.2 var(--f-body);color:var(--loot)}
 .eqtot{margin:0;font:11px/1.4 var(--f-body);color:var(--muted);text-align:center}
 .sub{margin:4px 0 0;font:700 12px var(--f-body);color:var(--bone)}
@@ -435,6 +439,7 @@ h2.lost{color:var(--hp)}
       <h2>Banco</h2>
       <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
+      <button type="button" class="boneco" id="eqBoneco" aria-label="Girar o personagem para ver o que ele veste" hidden><canvas width="256" height="256"></canvas></button>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
       <h3 class="sub">Peças no cofre</h3>
@@ -506,7 +511,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.11.0"></script>
+<script type="module" src="src/main.js?v=0.12.0"></script>
 
 </body>
 </html>

@@ -5,10 +5,10 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.11.0';
-import {ch,durPasso} from './progresso.js?v=0.11.0';
-import {CITY,LEGENDA,CLASSES,PROG} from './dados.js?v=0.11.0';
-import {pecas} from './mapa.js?v=0.11.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.12.0';
+import {ch,durPasso} from './progresso.js?v=0.12.0';
+import {CITY,LEGENDA,CLASSES,PROG,ITEMS,SLOTS_EQ} from './dados.js?v=0.12.0';
+import {pecas} from './mapa.js?v=0.12.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
@@ -63,7 +63,8 @@ export function updateCidade(dt,ent){
 /* ---------- os outros ----------
    Quem mais está na cidade chega pela rede (src/rede.js), que só escreve aqui,
    por poeOutro() e tiraOutro(). É dado de fora, então tudo é conferido: número
-   preso ao mapa, classe que existe, nome curto e sem caractere de controle.
+   preso ao mapa, classe que existe, nome curto e sem caractere de controle,
+   peça que existe e é daquele espaço (o equipamento só se vê, não vale nada aqui).
    Cada mensagem é um passo ("fui para o sqm tal, levo d ms"), e o boneco do
    outro anda aquele passo com a mesma duração: o que se vê é o que ele fez,
    um passo atrás, sem adivinhar caminho. Nada daqui é regra de jogo: na cidade não se
@@ -75,10 +76,11 @@ export function poeOutro(id,d){
   if(typeof id!=='string'||!id||id.length>40)return null;
   let o=OUTROS.get(id);
   if(!o){if(OUTROS.size>=MAX_OUTROS)return null;
-    o={id,nome:'…',classe:'feiticeiro',lvl:1,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,vis:false,r:11,face:Math.PI/2,walk:0,mv:false,flash:0,swing:0};OUTROS.set(id,o)}
+    o={id,nome:'…',classe:'feiticeiro',lvl:1,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,vis:false,r:11,face:Math.PI/2,walk:0,mv:false,flash:0,swing:0,eq:{arma:null,armadura:null,amuleto:null}};OUTROS.set(id,o)}
   if(typeof d.nome==='string'){const n=d.nome.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,16);if(n)o.nome=n}
   if(typeof d.classe==='string'&&CLASSES[d.classe])o.classe=d.classe;
   o.lvl=Math.round(num(d.lvl,1,999,o.lvl));
+  if(d.eq&&typeof d.eq==='object')for(const sl of SLOTS_EQ){const k=d.eq[sl];o.eq[sl]=typeof k==='string'&&Object.prototype.hasOwnProperty.call(ITEMS,k)&&ITEMS[k].slot===sl?k:null}
   /* x, y: o sqm para onde foi; d: quanto o passo dura, em ms (0: chegou lá
      sem andar, como ao entrar na cidade). Longe demais do último sqm
      (mensagem perdida, aba que voltou do fundo), salta direto */

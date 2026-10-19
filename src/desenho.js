@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.11.0';
-import {CITY,CLASSES} from './sim/dados.js?v=0.11.0';
-import {save,KL} from './sim/progresso.js?v=0.11.0';
-import {G,solid} from './sim/incursao.js?v=0.11.0';
-import {C} from './sim/cidade.js?v=0.11.0';
-import {bf} from './sim/combate.js?v=0.11.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.11.0';
-import {$,app,RM} from './dom.js?v=0.11.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.12.0';
+import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.12.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.12.0';
+import {G,solid} from './sim/incursao.js?v=0.12.0';
+import {C} from './sim/cidade.js?v=0.12.0';
+import {bf} from './sim/combate.js?v=0.12.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.12.0';
+import {$,app,RM} from './dom.js?v=0.12.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -65,16 +65,130 @@ function sprCriatura(n,face,mv,fase,flash,x,y){
   if(flash){ctx.globalAlpha=.6;ctx.globalCompositeOperation='lighter';spr(n,d,f,x,y);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1}
   return true;
 }
-/* dead: caído no fim da incursão; arm: o escudo de apoio ativo */
+/* ---------- equipamento no corpo ----------
+   O que o personagem veste aparece nele. Os bonecos das classes no OTSP têm
+   uma camada só, sem a máscara de cor dos outfits do Tibia, então nada de
+   sprite novo: a armadura retinge a roupa do tronco do próprio boneco
+   (guardando a sombra dele, e o resto do boneco continua dizendo a classe), a
+   arma é o sprite do item na mão — e é ela que corta no golpe — e o amuleto é
+   a pedra dele no peito. A cor e a malha vêm de items.<k>.veste no
+   content.json. Onde ficam o tronco, o pescoço e as mãos sai dos pixels de
+   cada quadro, medido uma vez; o quadro retingido fica em cache por classe,
+   armadura, direção e quadro, então nada é alocado por quadro desenhado. */
+const MEDE=new Map(),VESTE=new Map();
+let tela0=null;
+function pixels(s,d,f){
+  if(!tela0){tela0=document.createElement('canvas');tela0.width=tela0.height=64}
+  const g=tela0.getContext('2d',{willReadFrequently:true});g.clearRect(0,0,64,64);
+  g.drawImage(ART.img,s.x+f*s.w,s.y+d*s.h,s.w,s.h,0,0,s.w,s.h);
+  return g.getImageData(0,0,s.w,s.h);
+}
+const hsl=(r,g,b)=>{const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/510,dl=(mx-mn)/255;
+  let h=0;if(dl)h=mx===r?((g-b)/255/dl+6)%6:mx===g?(b-r)/255/dl+2:(r-g)/255/dl+4;
+  return [h*60,dl?dl/(1-Math.abs(2*l-1)||1):0,l]};
+/* o corpo de um quadro: topo e altura do boneco, o pescoço, as mãos e quais
+   pixels do tronco são roupa (a cor que domina a faixa: o manto do mago, o
+   couro do caçador, o aço do cavaleiro), fora contorno, cabelo e cajado */
+function mede(n,d,f){
+  const k=n+'|'+d+'|'+f;let m=MEDE.get(k);if(m)return m;
+  const s=ART.s[n],im=pixels(s,d,f),w=s.w,h=s.h,D=im.data;
+  let top=h,bot=-1,l=w,r=-1;
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++)if(D[(j*w+i)*4+3]){if(j<top)top=j;bot=j;if(i<l)l=i;if(i>r)r=i}
+  const alt=Math.max(1,bot-top+1),y0=top+Math.round(alt*.3),y1=top+Math.round(alt*.64);
+  const linha=j=>{let a=w,b=-1,sx=0,n=0;for(let i=0;i<w;i++)if(D[(j*w+i)*4+3]){if(i<a)a=i;b=i;sx+=i;n++}return {a,b,c:n?sx/n:w/2}};
+  const pe=linha(top+Math.round(alt*.3)),mao=linha(top+Math.round(alt*.5));
+  /* a cor da roupa: o matiz que mais aparece na faixa do tronco, ou cinza se
+     o que domina é sem cor (armadura do cavaleiro) */
+  const hist=new Float32Array(12);let cinza=0;
+  for(let j=y0;j<=y1;j++)for(let i=0;i<w;i++){const o=(j*w+i)*4;if(!D[o+3])continue;
+    const [hu,sa,l]=hsl(D[o],D[o+1],D[o+2]);if(l<.16)continue;if(sa<.22)cinza++;else hist[(hu/30|0)%12]+=sa}
+  let hb=0;for(let q=1;q<12;q++)if(hist[q]>hist[hb])hb=q;
+  const somaC=hist.reduce((a,v)=>a+v,0),ehCinza=cinza>somaC,hc=hb*30+15;
+  const roupa=new Uint8Array(w*h);
+  for(let j=y0;j<=y1;j++)for(let i=0;i<w;i++){const o=(j*w+i)*4;if(!D[o+3])continue;
+    const [hu,sa,l]=hsl(D[o],D[o+1],D[o+2]);if(l<.16)continue;
+    let dh=Math.abs(hu-hc);if(dh>180)dh=360-dh;
+    if(ehCinza?sa<.22:sa>=.22&&dh<=40)roupa[j*w+i]=1}
+  /* a força da tinta: cheia no meio do tronco, sumindo nas três linhas da
+     borda, para a armadura não cortar o manto numa reta */
+  for(let j=y0;j<=y1;j++){const q=Math.min(255,(Math.min(j-y0,y1-j)+1)*85);for(let i=0;i<w;i++)if(roupa[j*w+i])roupa[j*w+i]=q}
+  m={top,alt,l,r,nx:pe.c,ny:top+Math.round(alt*.3),la:mao.a,lb:mao.b,my:top+Math.round(alt*.5),roupa};
+  MEDE.set(k,m);return m;
+}
+const corRGB=h=>{const n=parseInt(h.slice(1),16);return [n>>16&255,n>>8&255,n&255]};
+/* o quadro com a armadura: a cor dela vezes a luz do pixel original, para a
+   dobra do manto continuar dobra; a malha alterna claro e escuro pixel a pixel */
+function vestido(n,d,f,a){
+  const k=n+'|'+a+'|'+d+'|'+f;let c=VESTE.get(k);if(c!==undefined)return c;
+  const s=ART.s[n],v=a&&ITEMS[a]&&ITEMS[a].veste;c=null;
+  if(v&&v.cor){
+    const m=mede(n,d,f),im=pixels(s,d,f),D=im.data,[R,G_,B]=corRGB(v.cor);
+    for(let j=0;j<s.h;j++)for(let i=0;i<s.w;i++){const q=m.roupa[j*s.w+i]/255;if(!q)continue;const o=(j*s.w+i)*4;
+      let l=(D[o]*.299+D[o+1]*.587+D[o+2]*.114)/255*1.1+.2;if(v.malha)l*=(i+j)&1?1.15:.85;
+      D[o]+=(Math.min(255,R*l)-D[o])*q;D[o+1]+=(Math.min(255,G_*l)-D[o+1])*q;D[o+2]+=(Math.min(255,B*l)-D[o+2])*q}
+    c=document.createElement('canvas');c.width=s.w;c.height=s.h;c.getContext('2d').putImageData(im,0,0);
+  }
+  VESTE.set(k,c);return c;
+}
+/* a arma na mão: o sprite do item pela metade, com o cabo na mão e a lâmina
+   para cima. Só olhando para oeste ela fica na mão esquerda da tela; nas
+   outras, na direita, longe do cajado que os magos já seguram de frente. De
+   costas (norte) ela fica atrás do corpo. No golpe, gira junto com o arco */
+const CABO=[25,25],ESC_ARMA=.55;
+function poeArma(g,k,d,m,bx,by,sw){
+  const s=ART.s['it_'+k];if(!s)return;
+  const fr=d===3?1:-1,hx=bx+(fr<0?m.lb-1:m.la+1),hy=by+m.my;
+  g.save();g.translate(hx,hy);
+  if(sw!==null)g.rotate(sw);
+  g.scale(fr*ESC_ARMA,ESC_ARMA);
+  g.drawImage(ART.img,s.x,s.y,s.w,s.h,-CABO[0],-CABO[1],s.w,s.h);g.restore();
+}
+/* o amuleto: a pedra no peito, dois por dois, com contorno; de costas não aparece */
+function poeAmuleto(g,k,m,bx,by){
+  const v=ITEMS[k]&&ITEMS[k].veste,x=Math.round(bx+m.nx)-1,y=by+m.ny;
+  g.fillStyle='#1a1410';g.fillRect(x-1,y-1,4,4);
+  g.fillStyle=v&&v.cor||'#e8c040';g.fillRect(x,y,2,2);
+  g.fillStyle='rgba(255,255,255,.75)';g.fillRect(x,y,1,1);
+}
+const corpo=(g,c,s,d,f,bx,by)=>c?g.drawImage(c,bx,by):g.drawImage(ART.img,s.x+f*s.w,s.y+d*s.h,s.w,s.h,bx,by,s.w,s.h);
+/* boneco com o equipamento, em qualquer canvas: o mapa e o retrato do Banco */
+function bonecoVestido(g,cl,eq,d,f,x,y,flash,sw){
+  const n='cls_'+cl,s=ART.s[n];if(!s)return false;
+  const bx=Math.round(x+T/2-s.w-s.ox),by=Math.round(y+T/2-s.h-s.oy),m=eq&&mede(n,d,f);
+  const arma=eq&&eq.arma&&ITEMS[eq.arma]?eq.arma:null;
+  if(arma&&d===0)poeArma(g,arma,d,m,bx,by,sw);
+  const c=eq&&eq.armadura?vestido(n,d,f,eq.armadura):null;
+  corpo(g,c,s,d,f,bx,by);
+  if(flash){g.globalAlpha=.6;g.globalCompositeOperation='lighter';corpo(g,c,s,d,f,bx,by);g.globalCompositeOperation='source-over';g.globalAlpha=1}
+  if(eq&&eq.amuleto&&d!==0&&ITEMS[eq.amuleto])poeAmuleto(g,eq.amuleto,m,bx,by);
+  if(arma&&d!==0)poeArma(g,arma,d,m,bx,by,sw);
+  return true;
+}
+/* retrato do personagem para as telas (o Banco): de frente, ampliado */
+export function retrato(cv,cl,eq,d=2,esc=2){
+  const g=cv.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,cv.width,cv.height);
+  const s=ART.ok&&ART.s['cls_'+cl];if(!s)return false;
+  const m=mede('cls_'+cl,d,0),bx=Math.round(cv.width/esc/2-(m.l+m.r+1)/2),by=Math.round(cv.height/esc-6-m.top-m.alt);
+  g.imageSmoothingEnabled=false;g.setTransform(esc,0,0,esc,0,0);
+  /* o boneco no meio, com o pé um pouco acima da borda de baixo */
+  return bonecoVestido(g,cl,eq,d,0,bx-T/2+s.w+s.ox,by-T/2+s.h+s.oy,false,null);
+}
+
+/* dead: caído no fim da incursão; arm: o escudo de apoio ativo; eq: o que
+   ele veste ({arma,armadura,amuleto}) */
 /* p.classe só existe nos outros jogadores da cidade; o próprio é o do save */
-function drawPlayer(p,dead,arm){
+function drawPlayer(p,dead,arm,eq){
   const x=p.x,y=p.y+(dead?0:Math.sin(p.walk)*1.2),cl=p.classe||save.classe;
   if(ART.ok){
     if(dead){if(spr('cad_'+cl,0,0,p.x,p.y))return}
     else{
-      if(p.swing>0){const a=1-p.swing/.24,sw=p.swingA-.9+a*1.8;ctx.strokeStyle=`rgba(255,236,190,${.9-a*.7})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y-2,p.swingR*.8,sw-.5,sw+.5);ctx.stroke()}
+      const sw0=p.swing>0?1-p.swing/.24:-1,sw=sw0<0?null:p.swingA-.9+sw0*1.8;
+      if(sw!==null){ctx.strokeStyle=`rgba(255,236,190,${.9-sw0*.7})`;ctx.lineWidth=4;ctx.beginPath();ctx.arc(p.x,p.y-2,p.swingR*.8,sw-.5,sw+.5);ctx.stroke()}
       if(arm){ctx.strokeStyle='rgba(255,214,138,.5)';ctx.lineWidth=2;ctx.beginPath();ctx.arc(p.x,p.y-4,19,0,TAU);ctx.stroke()}
-      if(sprCriatura('cls_'+cl,p.face,p.mv,p.walk/3,p.flash>0,p.x,p.y))return;
+      const s=ART.s['cls_'+cl];
+      if(s){const d=dir4(p.face),f=p.mv&&s.f>1?1+((p.walk/3)|0)%(s.f-1):0;
+        /* no golpe a arma gira de deitada para a frente do golpe */
+        if(bonecoVestido(ctx,cl,eq,d,f,p.x,p.y,p.flash>0,sw===null?null:(sw-p.swingA)*(d===3||d===2?-1:1)))return}
     }
   }
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(p.x,p.y+11,12,4,0,0,TAU);ctx.fill();
@@ -98,6 +212,10 @@ function drawPlayer(p,dead,arm){
   }
   ctx.fillStyle=f?'#fff':C.manto;ctx.beginPath();ctx.moveTo(x-11,y+11);ctx.lineTo(x+11,y+11);ctx.lineTo(x+7,y-5);ctx.lineTo(x-7,y-5);ctx.closePath();ctx.fill();
   ctx.fillStyle='#f2a33a';ctx.fillRect(x-11,y+9,22,2);
+  /* sem a arte, a armadura é a faixa do tronco e o amuleto, a pedra no peito */
+  const va=eq&&eq.armadura&&ITEMS[eq.armadura]&&ITEMS[eq.armadura].veste,vm=eq&&eq.amuleto&&ITEMS[eq.amuleto]&&ITEMS[eq.amuleto].veste;
+  if(va&&va.cor&&!f){ctx.fillStyle=va.cor;ctx.beginPath();ctx.moveTo(x-9,y+4);ctx.lineTo(x+9,y+4);ctx.lineTo(x+7,y-5);ctx.lineTo(x-7,y-5);ctx.closePath();ctx.fill()}
+  if(vm&&!f){ctx.fillStyle='#1a1410';ctx.fillRect(x-2,y-3,4,4);ctx.fillStyle=vm.cor||'#e8c040';ctx.fillRect(x-1,y-2,2,2)}
   ctx.fillStyle=f?'#fff':'#e4c39d';circle(ctx,x,y-9,6);
   if(K.sil==='guerreiro'){
     ctx.fillStyle=f?'#fff':C.gola;ctx.beginPath();ctx.moveTo(x-9,y-8);ctx.lineTo(x-9,y-14);ctx.quadraticCurveTo(x,y-21,x+9,y-14);ctx.lineTo(x+9,y-8);ctx.closePath();ctx.fill();
@@ -177,7 +295,7 @@ function cena(){
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(MW-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(MH-1,Math.ceil((cy+H)/T)+1);
   G.torches.length=0;
-  const A=ART.ok,pDead=!!p.fora&&p.fora!=='extraiu',pArm=bf('arm');ctx.imageSmoothingEnabled=false;
+  const A=ART.ok,pDead=!!p.fora&&p.fora!=='extraiu',pArm=bf('arm'),pEq=p.c&&p.c.equip;ctx.imageSmoothingEnabled=false;
   if(A)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     /* com os sprites: o chão aqui, as paredes depois, linha a linha junto com as criaturas */
     const h=hash(x,y),cx=x*T+T/2,cy=y*T+T/2;
@@ -245,10 +363,10 @@ function cena(){
     for(let y=y0;y<=y1;y++){
       for(let x=x0;x<=x1;x++){const q=G.par[y*MW+x];if(q)spr(PECA[q],0,0,x*T+T/2,y*T+T/2)}
       for(const t of G.torches)if((t.y/T|0)===y)spr('tocha',0,0,t.x+6,t.y+14);
-      while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m)}
+      while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm,pEq):drawMon(e.m)}
     }
-    while(k<ents.length){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m)}
-  }else for(const e of ents)e.pl?drawPlayer(p,pDead,pArm):drawMon(e.m);
+    while(k<ents.length){const e=ents[k++];e.pl?drawPlayer(p,pDead,pArm,pEq):drawMon(e.m)}
+  }else for(const e of ents)e.pl?drawPlayer(p,pDead,pArm,pEq):drawMon(e.m);
   // projéteis
   for(const q of G.proj){
     if(A){
@@ -323,7 +441,7 @@ function drawNpc(n,p){
 }
 /* os outros jogadores da cidade (src/sim/cidade.js), sem criar função por quadro */
 let linhaC=0;
-const outroNaLinha=o=>{if(o.vis&&(o.y/T|0)===linhaC)drawPlayer(o,false,false)};
+const outroNaLinha=o=>{if(o.vis&&(o.y/T|0)===linhaC)drawPlayer(o,false,false,o.eq)};
 const nomeDoOutro=o=>{if(o.vis)outText(o.nome,o.x-(ART.ok?desl('cls_'+o.classe):0),o.y-(ART.ok?36:30),'#c8e6a0')};
 export function renderCidade(){
   ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#0a0910';ctx.fillRect(0,0,W,H);
@@ -355,7 +473,7 @@ export function renderCidade(){
     }
     for(const n of C.npcs)if((n.y/T|0)===y)drawNpc(n,p);
     linhaC=y;C.outros.forEach(outroNaLinha);
-    if((p.y/T|0)===y)drawPlayer(p,false,false);
+    if((p.y/T|0)===y)drawPlayer(p,false,false,ch().equip);
   }
   /* nomes por cima de tudo, como no mapa da masmorra */
   ctx.font=FONTE_MAPA;

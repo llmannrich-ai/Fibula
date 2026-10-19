@@ -1,16 +1,17 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador e Feira (mercado entre jogadores). */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.11.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.11.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.11.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.11.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.11.0';
-import {persist,saveFalhou} from './salvar.js?v=0.11.0';
-import {desenhaConta,temConta,mercado} from './nuvem.js?v=0.11.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.11.0';
-import {icone} from './arte.js?v=0.11.0';
-import {$,app} from './dom.js?v=0.11.0';
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.12.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.12.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.12.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.12.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.12.0';
+import {persist,saveFalhou} from './salvar.js?v=0.12.0';
+import {desenhaConta,temConta,mercado} from './nuvem.js?v=0.12.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.12.0';
+import {icone} from './arte.js?v=0.12.0';
+import {$,app} from './dom.js?v=0.12.0';
+import {retrato} from './desenho.js?v=0.12.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS];
@@ -191,9 +192,13 @@ function drawGrim(){
    Uma tela, três espaços, botões grandes: nada de arrastar (pilar 3). O cofre
    embaixo é o da conta; os espaços em cima são do personagem atual. */
 const icoItem=k=>{const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');return icone(ic,'it_'+k)?ic:null};
+/* o boneco vestido, como fica no mapa; tocar gira (sul, oeste, norte, leste) */
+let eqDir=2;
+export const desenhaBoneco=()=>{const b=$('#eqBoneco');b.hidden=!retrato(b.firstElementChild,save.classe,ch().equip,eqDir,4)};
 function drawEquip(){
   const c=ch(),K=KL(),e=c.equip;
   $('#eqEye').textContent=`${K.nome} · Nível ${c.lvl}`;
+  desenhaBoneco();
   setT($('#eqGold'),String(save.cofre));
   const sl=$('#eqSlots');sl.textContent='';
   for(const s of SLOTS_EQ){
@@ -452,6 +457,8 @@ $('#mpOk').addEventListener('click',anuncia);
 $('#mpVolta').addEventListener('click',()=>{MK.peca=null;msgMk('');desenhaFeira()});
 
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack'])$(id).addEventListener('click',volta);
+for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
+$('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
 $('#toGrim').addEventListener('click',drawGrim);
 $('#cGrim').addEventListener('click',drawGrim);
 $('#toPick').addEventListener('click',showPick);

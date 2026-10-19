@@ -9,11 +9,11 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES} from './sim/dados.js?v=0.11.0';
-import {save,ch} from './sim/progresso.js?v=0.11.0';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.11.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.11.0';
-import {log} from './hud.js?v=0.11.0';
+import {CLASSES,SLOTS_EQ} from './sim/dados.js?v=0.12.0';
+import {save,ch} from './sim/progresso.js?v=0.12.0';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.12.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.12.0';
+import {log} from './hud.js?v=0.12.0';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
@@ -30,8 +30,14 @@ let ws=null,ref=0,pronto=false,quer=false,espera=0,tenta=0,batida=0,envio=0,mand
 
 const manda=(event,payload,topic=TOPICO)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic,event,payload,ref:String(++ref),join_ref:'1'}))};
 const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
-/* sem conta, o nome é o da classe: "Cavaleiro" diz mais que "Visitante" */
-const eu=()=>({nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl});
+/* sem conta, o nome é o da classe: "Cavaleiro" diz mais que "Visitante". O
+   que ele veste vai junto, para os outros verem no boneco */
+const veste=[null,null,null];
+const eu=()=>{const e=ch().equip;for(let i=0;i<3;i++)veste[i]=e[SLOTS_EQ[i]]||null;
+  return {nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl,eq:{arma:veste[0],armadura:veste[1],amuleto:veste[2]}}};
+/* o Banco se abre de dentro da cidade: trocar de peça lá manda a presença de novo */
+const mudouVeste=()=>{const e=ch().equip;for(let i=0;i<3;i++)if((e[SLOTS_EQ[i]]||null)!==veste[i])return true;return false};
+const presenca=()=>manda('presence',{type:'presence',event:'track',payload:eu()});
 function minhaPos(){
   /* o passo: o sqm para onde vou e quanto levo (0 se já estou parado nele) */
   const p=C.p;mandou.x=p.tx;mandou.y=p.ty;
@@ -73,7 +79,7 @@ function recebe(d){
   if(d.event==='phx_reply'&&d.ref==='1'){
     if(p.status!=='ok'){rede.estado='sem rede';return}
     pronto=true;rede.estado='ligado';
-    manda('presence',{type:'presence',event:'track',payload:eu()});minhaPos();
+    presenca();minhaPos();
   }else if(d.event==='presence_state'){
     for(const id in p)chegou(id,p[id].metas&&p[id].metas[0],false);
     primeiro=false;conta();
@@ -98,6 +104,7 @@ export function quadro(dt,naCidade){
   if(!ws){espera-=dt;if(espera<=0)liga();return}
   if(!pronto)return;
   batida-=dt;if(batida<=0){batida=BATIDA;manda('heartbeat',{},'phoenix')}
+  if(mudouVeste())presenca();
   envio-=dt;
   const p=C.p;
   if((p.tx!==mandou.x||p.ty!==mandou.y)&&envio<=0){envio=ENVIO;minhaPos()}

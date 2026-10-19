@@ -18,6 +18,26 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 13:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** equipamento visível no personagem (0.12.0), a pedido do Leonardo. Nova seção "equipamento no corpo" em `src/desenho.js`: `mede()` lê os pixels de cada quadro da classe uma vez (topo, altura, pescoço, mãos e quais pixels do tronco são roupa, pela cor dominante da faixa), `vestido()` guarda em cache o quadro retingido pela armadura, `poeArma()` desenha o sprite do item na mão (atrás do corpo de costas, girando no golpe) e `poeAmuleto()` a pedra no peito. `retrato()` desenha o mesmo boneco em qualquer canvas: o Banco mostra o personagem vestido e gira ao toque. Dados em `items.<k>.veste` (`cor`, `malha`), validados na carga. Rede: a presença leva `eq`, reenviada quando muda no Banco; `poeOutro()` só aceita peça que existe e é daquele espaço. Sem a arte, o desenho em código ganhou a faixa da armadura e a pedra.
+
+**Validação:** `node tools/testar.mjs` — todos os casos, com o caso novo `equipamento-no-corpo` (presença com `eq`, dado de fora conferido, retrato desenhado, giro, troca de armadura e arma mudando o boneco, presença reenviada, golpe na incursão com a arma). Fora do harness: bancada com as 4 classes × 4 combinações × 4 direções e o jogo em 390×740 (cidade e Banco), olhados um a um.
+
+**Análise:** os outfits com máscara de cor e addons existem no OTSP (16–18, 20, 21, 44, 45), mas são cidadãos genéricos; usá-los trocaria a cara das classes. A cor dominante resolve bem o manto dos magos e o aço do cavaleiro; no caçador, couro e pele têm o mesmo matiz, então a couraça pinta também os braços (fica como manga).
+
+**Roadmap:** "Equipamento no corpo" em `Concluído`, fora da fila (pedido do dono). Juntado com a Mochila e a Feira (0.11.0) que entraram em paralelo; o Leonardo autorizou deploy direto na `main` sempre.
+
+**Pendências e riscos:**
+- **Arte por código, não por sprite.** A posição da arma vem da borda do boneco na altura da mão, não de um ponto de mão desenhado; em alguns quadros ela fica um pouco solta do corpo. Se o Leonardo quiser acabamento de Tibia, o caminho é um ponto de mão por classe e direção numa tabela de arte (em `tools/sprites.mjs` ou no `atlas.json`).
+- No cavaleiro e no caçador de frente, a arma equipada aparece junto da arma que o sprite já segura.
+- A cor de cada peça nova precisa de `veste` no `content.json`; sem ela, a armadura não aparece (arma aparece sempre, pelo `it_<chave>`; amuleto usa dourado).
+- Presença com `eq` é aberta como o resto da cidade: quem tem a chave pode dizer que veste qualquer peça que existe. Não vale nada, só se vê.
+
+**Próximo passo recomendado:** o Leonardo olhar no celular (Banco e cidade com outra pessoa); depois, "Sair cedo" (`Agora`).
+
+---
+
 ## 2026-10-19 04:30 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a Feira, mercado entre jogadores (0.11.0), a pedido do Leonardo ("cada player vende para cada player, buy e sell, match"). O Corretor (`city.npcs.corretor`, letra `T`, ao lado do chafariz; sprite OTSP 45) abre a tela `#mkt`. Livro de ofertas por peça de equipamento, compra e venda com preço por peça e quantidade, match automático. Banco: `tools/supabase/003_mercado.sql` — `mercado_ordens`, `mercado_negocios`, `mercado_caixa` e as funções `mercado_livro/anunciar/cancelar/coletar`; `save_gravar` reescrito com a guarda de `mkt`. Cliente: `mercado()` e `temConta()` em `nuvem.js`, `showFeira()` em `telas.js`, `soPecas()` em `progresso.js`.
@@ -424,22 +444,3 @@ execução precisa saber e não vai descobrir lendo o código.
 **Próximo passo recomendado:** pipeline dos sprites OTSP, como estava.
 
 ---
-
-## 2026-10-19 00:20 UTC — Desenvolvedor
-
-**Item desenvolvido:** aviso de falha do save. `index.html`: variável `saveFalhou`, sonda de gravação na carga, `persist()` marca a falha, faixa `#mAviso` no menu (+7 linhas). `tools/testar.mjs`: opção `bloqueiaSave` no caso e dois casos novos.
-
-**Validação:** `node tools/testar.mjs` — 10/10 casos, sintaxe OK. O caso `save-bloqueado` falha contra o `index.html` anterior (confirmado com `FIBULA_JOGO`) e passa com a mudança. Save sem alteração de formato.
-
-**Análise:**
-- O teste da migração v1→v2 já existia (`migracao-save`, 20 asserções); não dupliquei.
-- A sonda grava e remove uma chave auxiliar (`masmorra-runas-v2-sonda`) na carga, porque `persist()` só roda depois de uma incursão e o menu abriria sem aviso para quem já nasce bloqueado.
-- Navegador que lança no `getItem` (não só no `setItem`) também cai na sonda.
-
-**Roadmap:** item em `Concluído`; pipeline de sprites OTSP promovido a `Agora`.
-
-**Pendências e riscos:**
-- O aviso só é reavaliado ao abrir o menu; falha no meio da incursão aparece na volta ao menu.
-- O branch remoto `teste-ci-quebrada` continua lá por decisão do dono (pode ficar).
-
-**Próximo passo recomendado:** pipeline dos sprites OTSP (`tools/` + `assets/` + `assets/CREDITOS.md`), sem trocar o desenho do jogo.
