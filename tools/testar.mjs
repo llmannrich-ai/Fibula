@@ -1269,6 +1269,9 @@ const CASOS = [
     ok('foram para o cofre da conta', sv().itens.espada===1&&sv().itens.cota===1, JSON.stringify(sv().itens));
     ok('o save lembra que já pegou', sv().chao['12,11']===1&&sv().chao['14,11']===1, JSON.stringify(sv().chao));
     ok('o registro avisa', /Você pegou espada enferrujada/.test(txt('#log')||''), txt('#log'));
+    clica($('#bMochila'));
+    ok('a Mochila na cidade mostra o cofre do Banco, com as duas', txt('#moTit')==='Cofre do Banco'&&txt('#moVal')==='2 peças'&&todos('#moGrade .cel:not([disabled])').length===2, txt('#moTit')+' / '+txt('#moVal')+' / '+todos('#moGrade .cel:not([disabled])').length);
+    clica($('#moX'));
     clica($('#cMenu'));await quadros(2);clica($('#play'));await quadros(2);
     ok('voltando à cidade, não aparecem de novo', Cd.C.chao.length===0, Cd.C.chao.length);
     Tl.abreNpc('banqueiro');
