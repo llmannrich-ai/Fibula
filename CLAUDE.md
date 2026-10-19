@@ -67,8 +67,8 @@ confundidas com precedente:
 
 | O quê | De onde | Se não carregar |
 |---|---|---|
-| [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot e progressão | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~250 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
+| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~340 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -133,8 +133,10 @@ principal, o markup das telas e do HUD, e a linha que carrega
   e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
   `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`; da cidade,
-  `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de `city.mapa` é) e `ABRE`
-  (o que um NPC pode abrir); da forja do Gordon, `FORJA` (`compra`, `missoes`,
+  `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de chão ou obstáculo de
+  `city.mapa` é), `OBJETOS` (as letras dos enfeites sólidos: fonte, barril,
+  árvores…) e `ABRE` (o que um NPC pode abrir); das lojas de provisões, `SUP`
+  e `BUFFS`; da forja do Gordon, `FORJA` (`compra`, `missoes`,
   `loja`). As tabelas
   são **leituras** do `content.json`, ligadas por `carrega()`: para mudar
   valor, edite o JSON
@@ -144,11 +146,14 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
   `passoDaVel()` (a fórmula do passo do Tibia) e `durPasso()` (o passo do
   personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
-  `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`)
+  `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
+  **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
+  `soProv()`)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
-  `content.json`), a física da grade da cidade e `updateCidade(dt,ent)`, que
+  `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
+  vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
   anda e devolve o NPC ao alcance (`C.perto`). É regra, não tela: na F3 é o
   estado que o servidor da cidade compartilhada roda, e **os outros jogadores**
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
@@ -217,7 +222,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   por linha** as paredes da linha e quem está nela — a parede de baixo cobre o
   pé de quem encosta nela. Sem a arte, o caminho antigo (formas em código)
   fica intacto; mexa nos dois ou teste o `sem-arte`. A **cidade** tem o
-  `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`
+  `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`,
+  `drawObj()` (os objetos, com e sem a arte) e `drawMiniCidade()` (o mapa da
+  cidade no canto, com os NPCs em amarelo)
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
@@ -226,7 +233,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
   **forja** (`showForja()`, o Gordon: encomenda, loja e depósito de
-  materiais), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
+  materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
+  com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
   cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
   cidade voltam para ela (`volta()`)
@@ -350,9 +358,9 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
-O que é da conta (cofre de ouro, peças guardadas em `itens`, materiais do
-Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
+próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento
 vestido) fica em `chars`, um por classe. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram

@@ -1,24 +1,24 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
-   caça, tela final, Mercador, Feira (mercado entre jogadores) e Forja (o
-   Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.20.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.20.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.20.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.20.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.20.0';
-import {persist,saveFalhou} from './salvar.js?v=0.20.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.20.0';
-import {rede,SALAS} from './rede.js?v=0.20.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.20.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.20.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.20.0';
-import {icone} from './arte.js?v=0.20.0';
-import {$,app} from './dom.js?v=0.20.0';
-import {retrato} from './desenho.js?v=0.20.0';
+   caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
+   jogadores) e Forja (o Gordon). */
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.21.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP} from './sim/dados.js?v=0.21.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv} from './sim/progresso.js?v=0.21.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.21.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.21.0';
+import {persist,saveFalhou} from './salvar.js?v=0.21.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.21.0';
+import {rede,SALAS} from './rede.js?v=0.21.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.21.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.21.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.21.0';
+import {icone} from './arte.js?v=0.21.0';
+import {$,app} from './dom.js?v=0.21.0';
+import {retrato} from './desenho.js?v=0.21.0';
 
-export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja');
-const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS];
+export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
+const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
 /* V.cidade: a cidade é o fundo (está nela, ou numa tela aberta a partir dela);
    senão o fundo é a masmorra. As telas de dentro voltam para onde vieram. */
 export const V={cidade:false};
@@ -56,9 +56,13 @@ const VERSAO=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'d
 export function start(prepara){
   V.cidade=false;
   if(prepara)prepara();else newRun(SEM_URL);
+  /* as provisões que este jogador levou saem do estoque agora */
+  const levou=G.p&&G.p.prov&&Object.keys(G.p.prov).length?listaProv(G.p.prov):'';
+  if(levou)gastaProv(G.p.prov);
   G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
   log(G.aberta?'Você entrou pela porta da sala. A masmorra não tem tempo: volte à porta, na sala de entrada, para sair com o saco.':'Você entrou na masmorra. O portal abre em 1:30.','info');
+  if(levou)log(`Você levou ${levou}.`,'info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
 
@@ -75,8 +79,39 @@ export function showCidade(como){
 }
 export function abreNpc(k){
   const a=CITY.npcs[k].abre;
-  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else showHunts();
+  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else if(a==='loja')showLoja(k);else showHunts();
 }
+/* ---------- lojas de provisões ----------
+   Uma tela para todas: o NPC diz o que vende (vende, no content.json). A
+   provisão fica guardada e vai inteira na próxima caçada */
+const listaProv=o=>Object.entries(o).map(([k,q])=>q>1?`${q} × ${SUP[k].nome}`:SUP[k].nome).join(', ');
+const leva=()=>Object.keys(save.prov).length?`Na próxima caçada você leva: ${listaProv(save.prov)}. Vai tudo, extraindo ou morrendo.`:'Nada guardado para a próxima caçada.';
+let lojaDe=null;
+function drawLoja(){
+  const n=CITY.npcs[lojaDe];
+  setT($('#ljCasa'),n.casa);setT($('#ljNome'),n.nome);setT($('#ljGold'),String(save.cofre));
+  setT($('#ljFala'),n.fala+' Provisão vale para uma caçada só.');setT($('#ljLeva'),leva());
+  const ul=$('#ljList');ul.textContent='';
+  for(const k of n.vende){
+    const s=SUP[k],por=podeComprar(k),tem=save.prov[k]||0;
+    const li=document.createElement('li');li.className='up';
+    const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');
+    if(icone(ic,'sup_'+k,0,0,32))li.appendChild(ic);
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=s.nome;
+    const d=document.createElement('p');d.textContent=s.desc;
+    const m=document.createElement('p');m.className='meta';
+    m.textContent=por&&por!=='ouro'&&por!=='max'?`Você já leva ${SUP[por].nome}: uma por caçada.`:s.max>1?`Guardadas: ${tem} de ${s.max}`:tem?'Guardada para a próxima caçada.':'';
+    info.append(h,d);if(m.textContent)info.appendChild(m);
+    const b=document.createElement('button');b.type='button';
+    const cheio=por==='max';b.className=cheio?'buy max':'buy';
+    b.textContent=cheio?(s.max>1?'cheio':'guardada'):s.preco+' ouro';b.disabled=!!por;
+    b.setAttribute('aria-label',cheio?`${s.nome}: já guardou o máximo para a próxima caçada`:`Comprar ${s.nome} por ${s.preco} de ouro`);
+    b.addEventListener('click',()=>{if(compra(k)){persist();drawLoja()}});
+    li.append(info,b);ul.appendChild(li);
+  }
+}
+function showLoja(k){lojaDe=k;drawLoja();soTela(lojaS)}
 /* a porta da sala: o anfitrião entra na masmorra que o aparelho dele já roda;
    o convidado pede, e a incursão começa quando a resposta chega (src/main.js) */
 const pelaPorta=()=>{if(SALA.papel==='anfitriao'){start(()=>{entraPorta()})}else if(entraPorta())showHunts()};
@@ -125,7 +160,7 @@ function desenhaSala(){
 SALA.aoMudar=rede.aoMudar=()=>{if(!huntS.hidden)showHunts()};
 function showHunts(){
   const ul=$('#huntList'),c=ch();ul.textContent='';
-  $('#hRisco').textContent=risco();desenhaSala();
+  $('#hRisco').textContent=risco();$('#hProv').textContent=leva();desenhaSala();
   for(const[k,h]of Object.entries(HUNTS)){
     const li=document.createElement('li');li.className='sp';
     const info=document.createElement('div');info.className='info';
@@ -577,7 +612,7 @@ $('#mpLadoV').addEventListener('click',()=>abrePeca(MK.peca,'venda'));
 $('#mpOk').addEventListener('click',anuncia);
 $('#mpVolta').addEventListener('click',()=>{MK.peca=null;msgMk('');desenhaFeira()});
 
-for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#fgBack'])$(id).addEventListener('click',volta);
+for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#fgBack','#ljBack'])$(id).addEventListener('click',volta);
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
 $('#toGrim').addEventListener('click',drawGrim);

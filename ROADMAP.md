@@ -141,12 +141,21 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
-- **2026-10-19 — Voz na sala (0.20.0)** *(pedido do Leonardo)*. `src/voz.js`:
+- **2026-10-19 — Voz na sala (0.21.0)** *(pedido do Leonardo)*. `src/voz.js`:
   WebRTC nativo em malha entre quem está na sala, apresentação pelo canal da
   sala, segurar para falar (botão Voz ou V), quem fala no botão, STUN do
   Cloudflare e do Google, sem TURN. Caso `voz-na-sala` no harness, com
   conexão de verdade no Chromium headless.
 
+- **2026-10-19 — A cidade cinco vezes maior, com lojas de provisões (0.20.0)**
+  *(pedido do Leonardo: "amplie o mapa da cidade para cerca de 5 vezes; insira
+  NPCs que vendem itens como mercado de alimentos, poções e magias"; pilares 2
+  e 5)*. Mapa de 54×38 (era 24×17) com praça, templo, rio e pontes, pomar,
+  horta e casas; objetos sólidos no mapa (`OBJETOS`) e chãos novos; mapa da
+  cidade no canto. Provisões (`supplies` no `content.json`): Quitandeira,
+  Boticária e Mestre de magias vendem o que vai inteiro na próxima caçada —
+  ralo novo do cofre e aposta a mais na mesa. O Gordon foi para a forja do mapa
+  novo; as peças de teste do chão, para a praça.
 - **2026-10-19 — A masmorra da sala sem tempo, com porta (0.19.0)** *(pedido
   do Leonardo; pilar 2)*. A masmorra nasce com a sala e fica aberta até o
   anfitrião fechar (na cidade) ou sair do jogo. Cada membro entra e sai por

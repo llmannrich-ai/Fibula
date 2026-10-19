@@ -18,16 +18,16 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha, e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
-import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.20.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.20.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.20.0';
-import {novaSemente} from './sim/base.js?v=0.20.0';
-import {drinkPot} from './sim/combate.js?v=0.20.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.20.0';
-import {rede,ID,anuncia} from './rede.js?v=0.20.0';
-import {persist} from './salvar.js?v=0.20.0';
-import {log} from './hud.js?v=0.20.0';
-import {recebeVoz,desligaVoz} from './voz.js?v=0.20.0';
+import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.21.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.21.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.21.0';
+import {novaSemente} from './sim/base.js?v=0.21.0';
+import {drinkPot} from './sim/combate.js?v=0.21.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.21.0';
+import {rede,ID,anuncia} from './rede.js?v=0.21.0';
+import {persist} from './salvar.js?v=0.21.0';
+import {log} from './hud.js?v=0.21.0';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.21.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -47,7 +47,7 @@ const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
 /* a apresentação da voz (src/voz.js) passa por este canal */
 export const sinal=q=>{if(pronto)bc('voz',Object.assign({de:ID},q))};
 const nomeMeu=()=>quemSou()||CLASSES[save.classe].nome;
-const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up)});
+const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up),prov:Object.assign({},save.prov)});
 const avisa=()=>{rede.sala=SALA.papel==='anfitriao'?{n:SALA.membros.length}:null;rede.naSala=SALA.papel?Math.max(1,SALA.membros.length):0;anuncia();SALA.aoMudar()};
 
 function liga(){
