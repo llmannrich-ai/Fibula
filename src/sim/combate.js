@@ -232,9 +232,7 @@ export function hurtPlayer(p,d){
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;sai(p,'morreu')}
 }
-/* venda da mochila na Feira (src/hud.js): a peça sai da mochila quando o jogador
-   anuncia e volta se o banco recusar. Quem chama é o cliente, com a resposta
-   da rede, fora do update() — como drinkPot(); na F2 vira entrada (ent) */
+/* tirar e pôr na mochila da caçada, com o valor dela (p.bagVal) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
 export function poeNoSaco(p,k,q){p.bag[k]=(p.bag[k]|0)+q;p.bagVal+=ITEMS[k].val*q}
 /* vestir na caçada, como no Tibia (decisão do Leonardo): a peça sai da
