@@ -18,6 +18,24 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 02:40 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a cidade cinco vezes maior e as lojas de provisões (0.20.0), a pedido do Leonardo ("amplie o mapa da cidade para cerca de 5 vezes; insira NPCs que vendem itens como mercado de alimentos, poções e magias"). Mapa de 54×38 (2.052 sqm, era 408): praça com fonte e canteiros, templo com estátuas, rio com duas pontes, Torre dos magos do outro lado, pomar, horta, poço, casas de moradores, Quitanda e Feira a céu aberto. Chãos novos (`:` praça, `=` ponte, `v` flores, `h` horta) e objetos sólidos (`OBJETOS` em `src/sim/dados.js`: fonte, poço, barril, caixote, estátua, arbusto, cerejeira, frutífera, forno, estante, banca, lenha), que ficam sobre o chão do vizinho como os NPCs. Mapa da cidade no canto (`drawMiniCidade()`). Três NPCs com `abre: "loja"` e uma tela só (`showLoja()`): Quitandeira (refeição: regenera vida e/ou mana a caçada toda, uma por vez), Boticária (poção a mais, até 5; elixir de pressa no primeiro minuto) e Mestre de magias (runas de pele de pedra, fúria e olho de águia nos primeiros 90 s). Provisões em `supplies` no `content.json`, guardadas em `save.prov`, levadas pela ficha (`prov`) e gastas no `start()`. O buff da provisão mora em `p.sup` e soma ao das habilidades em vez de ser trocado. 15 sprites novos do OTSP no atlas.
+
+**Validação:** `node tools/testar.mjs` — 31/31, com o caso novo `lojas` (comprar, uma refeição por vez, máximo por provisão, o Guia mostra o que vai, a caçada começa com as poções, a regeneração e a runa, e o estoque zera) e, no Node, compra, aparo do save e da ficha de fora, efeito na caçada, buff somando ao do Provocar e acabando no tempo, e o conteúdo torto recusado. Duas sabotagens barradas (o `start()` não gastar o estoque; a comida não regenerar). Telas conferidas com Chromium em 390×844 e o mapa inteiro em 1728×1216, com e sem o atlas.
+
+**Análise:** a `main` andou da 0.14 para a 0.19 durante o trabalho; a mescla trouxe a Forja do Gordon, que tornava redundante um Ferreiro que eu tinha feito (removido: o Gordon foi para a forja do mapa novo, letra `F`), e as peças de teste do chão (realocadas na praça, em volta do `@`; a conferência de `city.chao` aceita os chãos novos). Na sala sem tempo, o convidado manda a ficha a cada entrada (`entro`), então as provisões dele vão atualizadas sem mensagem nova.
+
+**Roadmap:** item novo em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **Andar pesa mais.** Do `@` ao Banco são ~30 sqm (~15 s); ao Guia, ~16 sqm. A volta da caçada é ao lado do Guia, mas as lojas ficam no caminho, não na porta. Se incomodar, a saída é encurtar a cidade em volta do portão, não teleporte.
+- **Balanceamento das provisões é chute.** Preços de 15 a 80 de ouro; a runa da fúria (+20% de dano por 90 s) e a poção (+1, até 5) são as mais fortes. Medir com o agente de Balanceamento antes de mexer na curva de ouro.
+- Na masmorra da sala, cada entrada pela porta gasta as provisões de novo (buff dos 90 s conta de cada entrada).
+- A arte do OTSP não tem pão nem lampião de rua: a cesta de frutas é uma maçã e os cantos da praça viraram arbustos floridos.
+
+**Próximo passo recomendado:** o Leonardo andar pela cidade no celular e dizer se o tamanho e as distâncias estão bons; depois, "Sair cedo" (`Agora`).
+
 ## 2026-10-19 01:55 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a masmorra da sala sem tempo, com porta (0.19.0), a pedido do Leonardo ("entrada e saída por uma porta acessível por qualquer usuário; fecha quando quem criou fecha na cidade ou sai do programa"), com as três escolhas dele: sem tempo, monstros renascem, porta na sala de entrada. Modo "masmorra aberta" em `src/sim/incursao.js` (`newRun(s,fichas,true)`, `entra()`, `repovoa()`, `progression.respawn` no `content.json`); `src/sala.js` troca o "começar com o grupo" por `entraPorta()`/`porta`; o Guia de caça mostra quem está na masmorra e o botão "Entrar pela porta"; a presença da cidade segue com `longe` enquanto o anfitrião caça, para a sala não sumir da lista.
@@ -392,25 +410,3 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-18 23:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** sorteio com semente, item `Agora` (F0 2, primeira metade), a pedido do Leonardo ("fundação e princípio da essência do jogo"). `src/sim/base.js` ganhou o gerador (mulberry32) com `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`/`rnd()`/`rr()`/`ri()` (regra) e `frr()` (efeito). Todo `Math.random` da simulação saiu: corredor do mapa, banda de monstro, loot, passeio dos monstros. Efeitos (número de dano, faíscas, fumaça, tremor da câmera, direção e passo inicial do desenho do monstro) passaram para o sorteio de efeito. `newRun(s)` aceita a semente e a guarda em `G.semente`; a tela final mostra "Masmorra nº 12.345", e `?semente=` no endereço (número ou texto) repete a masmorra em toda incursão da aba.
-
-**Validação:** `node tools/testar.mjs` — 20/20 (simulação no Node + 18 casos de navegador + os 2 novos). O passo da simulação no Node agora prova: sequência do gerador presa (confere com a implementação de referência do mulberry32), `Math.random` sabotado durante a incursão, mesma semente → mesmo mapa, mesmos monstros e mesmo resultado, sementes 7 e 8 → mapas diferentes, efeitos extras não mudam a regra, efeitos não gastam sorteio da regra (sonda direta + checagem de toda linha `G.fx.push`), sem semente → sementes diferentes. No navegador, `semente-na-url` compara a imagem do canvas de duas incursões com a mesma semente (iguais) e `semente-variada` sem semente (diferentes). Cinco sabotagens via `FIBULA_JOGO` — `Math.random` no mapa, número de dano pelo sorteio da regra, constante do gerador trocada, semente fixa em 1, fumaça pelo sorteio da regra — todas saíram com código 1. A segunda não era pega pela primeira versão do teste; daí a sonda direta.
-
-**Análise:**
-- **Regra × efeito** é a decisão de desenho que importa: com um sorteio só, uma tela que desenha mais faíscas mudaria o loot do próximo monstro, e cliente e servidor divergiriam. Critério escrito no `CLAUDE.md`: "se isto mudar, o jogador ganha ou perde algo?"
-- A semente de cada incursão ainda vem de `Math.random` (`novaSemente()`), a única exceção permitida e checada pelo teste.
-- O mapa e a sala inicial se repetem sempre; a incursão **inteira** só se repete com o mesmo `dt` por quadro (no Node, 0,05 fixo). No celular, o `dt` varia: falta o passo fixo.
-- A sequência de sorteios mudou, então as masmorras dos casos antigos mudaram; os 18 casos continuaram passando sem ajuste.
-
-**Roadmap:** sorteio com semente em `Concluído`. `Agora` passa a ser a morte custar XP; o passo fixo é o item 3 do `Próximo`.
-
-**Pendências e riscos:**
-- **Passo fixo** (item 3) completa a F0 2; até lá, multiplayer e replay da incursão inteira não fecham.
-- Trocar o algoritmo do gerador, a ordem dos sorteios em `genMap()`/`newRun()` ou o critério de `sementeDe()` muda a masmorra de todas as sementes já mostradas a jogadores. Hoje não há nada guardado que dependa disso; quando houver "desafio da semana" ou replay, essas mudanças viram decisão do dono.
-- Uma sessão manual publicou o equipamento (`31b5a00`) em paralelo; esta mudança foi feita por cima dele, sem conflito.
-
-**Próximo passo recomendado:** a morte custar XP (`Agora`), depois a curva de nível medida com a simulação no Node, agora com semente de verdade.
-
----

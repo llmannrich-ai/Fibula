@@ -2,17 +2,17 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.19.1';
-import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.19.1';
-import {save,KL,ch} from './sim/progresso.js?v=0.19.1';
-import {G,solid} from './sim/incursao.js?v=0.19.1';
-import {C} from './sim/cidade.js?v=0.19.1';
-import {bf} from './sim/combate.js?v=0.19.1';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.19.1';
-import {$,app,RM} from './dom.js?v=0.19.1';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.20.1';
+import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.20.1';
+import {save,KL,ch} from './sim/progresso.js?v=0.20.1';
+import {G,solid} from './sim/incursao.js?v=0.20.1';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.20.1';
+import {bf} from './sim/combate.js?v=0.20.1';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.20.1';
+import {$,app,RM} from './dom.js?v=0.20.1';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
-const mini=$('#mini'),mctx=mini.getContext('2d');
+const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
 const dark=document.createElement('canvas'),dctx=dark.getContext('2d');
 export let W=0,H=0,DPR=1,MS=96;
 export function resize(){
@@ -437,8 +437,20 @@ function cena(){
    Dia claro, sem escuridão nem minimapa: a cidade é o lugar seguro. Mesma
    ordem de desenho da masmorra (chão, depois linha a linha as paredes, as
    árvores e quem está na linha). Sem a arte, cores chapadas. */
-const CHAO_C=['grama','','rua','assoalho','grama','agua','rua'],COR_C=['#3e6b2b','#5a5650','#6d675d','#6b4a2a','#3e6b2b','#2b5f93','#6d675d'];
-const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c',gordon:'#3a3632'};
+const CHAO_C=['grama','','rua','assoalho','grama','agua','rua','praca','ponte','grama','terra'],
+  COR_C=['#3e6b2b','#5a5650','#6d675d','#6b4a2a','#3e6b2b','#2b5f93','#6d675d','#7d7a70','#8a6a3a','#3e6b2b','#5b3d22'];
+const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c',gordon:'#3a3632',quitandeira:'#e0dccf',boticaria:'#3c3a44',mago:'#2f4f9a'};
+/* o que cresce no chão (flores, horta) e os objetos, sem a arte: cor e forma */
+const FLOR=['flor1','flor2','flor3','flor4'],COR_FLOR=['#7f8cff','#f2d24b','#e0483a','#f6e9a0'];
+const COR_OBJ={fonte:'#8fb4d8',poco:'#6e6a62',barril:'#7a4a22',caixote:'#a87c45',estatua:'#a9a59b',arbusto:'#2f6a2a',cerejeira:'#e7a0b8',frutifera:'#3b6e2b',forno:'#3a3633',estante:'#6b4a2a',banca:'#9a6a35',lenha:'#8a6a3a'};
+function drawObj(n,x,y,hh){
+  if(ART.ok&&spr('obj_'+n+(n==='arbusto'&&hh&1?'2':''),0,0,x,y))return;
+  ctx.fillStyle='rgba(0,0,0,.35)';ctx.beginPath();ctx.ellipse(x,y+10,12,4,0,0,TAU);ctx.fill();
+  ctx.fillStyle=COR_OBJ[n]||'#77726a';
+  if(n==='cerejeira'||n==='frutifera'||n==='arbusto'){ctx.fillStyle='#4a3420';ctx.fillRect(x-3,y-4,6,14);ctx.fillStyle=COR_OBJ[n];circle(ctx,x,y-12,n==='arbusto'?10:14)}
+  else if(n==='fonte'||n==='poco'){circle(ctx,x,y,13);ctx.fillStyle=n==='fonte'?'#2b5f93':'#111';circle(ctx,x,y,8)}
+  else ctx.fillRect(x-11,y-12,22,22);
+}
 function drawNpc(n,p){
   /* o NPC vira para quem chega perto, como no Tibia */
   const perto=hyp(p.x-n.x,p.y-n.y)<T*3,face=perto?Math.atan2(p.y-n.y,p.x-n.x):Math.PI/2;
@@ -464,9 +476,13 @@ export function renderCidade(){
   const A=ART.ok;ctx.imageSmoothingEnabled=false;
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     const k=C.t[y*w+x],hh=hash(x,y),mx=x*T+T/2,my=y*T+T/2;
-    if(A&&k!==1&&spr(CHAO_C[k]==='grama'&&hh%5===0?'grama2':CHAO_C[k],0,0,mx,my))continue;
+    if(A&&k!==1&&spr(CHAO_C[k]==='grama'&&hh%5===0?'grama2':CHAO_C[k],0,0,mx,my)){
+      if(k===9)spr(FLOR[(hh>>3)&3],0,0,mx,my);else if(k===10&&!(x&1))spr(hh&1?'horta':'horta2',0,0,mx,my);
+      continue}
     ctx.fillStyle=COR_C[k];ctx.fillRect(x*T,y*T,T,T);
-    if(k===0||k===4){ctx.fillStyle='#355f25';if(hh%3===0)ctx.fillRect(x*T+4+(hh>>5)%20,y*T+6+(hh>>9)%18,3,2)}
+    if(k===9){ctx.fillStyle=COR_FLOR[(hh>>3)&3];for(let j=0;j<3;j++)circle(ctx,x*T+6+((hh>>(5+j*3))%20),y*T+6+((hh>>(9+j*3))%20),2.5)}
+    else if(k===10&&!(x&1)){ctx.fillStyle='#4f8a34';circle(ctx,mx,my,7)}
+    else if(k===0||k===4){ctx.fillStyle='#355f25';if(hh%3===0)ctx.fillRect(x*T+4+(hh>>5)%20,y*T+6+(hh>>9)%18,3,2)}
     else if(k===2||k===6){ctx.fillStyle='#5d574e';ctx.fillRect(x*T,y*T+T-2,T,2);ctx.fillRect(x*T+T-2,y*T,2,T)}
     else if(k===3){ctx.fillStyle='#5a3d22';ctx.fillRect(x*T,y*T+15,T,1)}
   }
@@ -480,6 +496,7 @@ export function renderCidade(){
         ctx.fillStyle='#4a3420';ctx.fillRect(mx-3,my-4,6,14);ctx.fillStyle='#2f5a22';circle(ctx,mx,my-12,14);ctx.fillStyle='#3b6e2b';circle(ctx,mx-4,my-16,8)}
       else if(k===6){if(A&&spr('portal',0,0,mx,my))continue;
         ctx.strokeStyle='#ffd68a';ctx.lineWidth=2.5;ctx.beginPath();ctx.ellipse(mx,my,13,9,0,0,TAU);ctx.stroke()}
+      else if(C.obj[i])drawObj(LISTA_OBJ[C.obj[i]-1],mx,my,hash(x,y));
     }
     for(const c of C.chao)if(c.y===y&&(!A||!spr('it_'+c.k,0,0,(c.x+.5)*T,(c.y+.5)*T))){ctx.fillStyle='#d9c7a0';ctx.fillRect(c.x*T+11,c.y*T+11,10,10)}
     for(const n of C.npcs)if((n.y/T|0)===y)drawNpc(n,p);
@@ -491,6 +508,26 @@ export function renderCidade(){
   for(const n of C.npcs)outText(CITY.npcs[n.k].nome,n.x-(A?desl('npc_'+n.k):0),n.y-(A?36:30),'#8fd0ff');
   C.outros.forEach(nomeDoOutro);
   outText('Você',p.x-(A?desl('cls_'+save.classe):0),p.y-(A?36:30),'#00c000');
+}
+/* o mapa da cidade no canto: o desenho fixo sai uma vez por cidade (fundo),
+   e por cima, a cada chamada, os NPCs, quem mais está nela e você */
+const COR_MC=['#2e5a22','#a6a29a','#8a8478','#6b4a2a','#1d3d15','#2b5f93','#e8c25a','#9a968c','#8a6a3a','#3f6b2a','#5b3d22'];
+let fundoMC=null,deMC=null;
+const pontoOutro=o=>{if(o.vis){cmctx.fillStyle='#c8e6a0';cmctx.fillRect(o.x/T*sMC-1,o.y/T*sMC-1,2.5,2.5)}};
+let sMC=1;
+export function drawMiniCidade(){
+  if(!C)return;
+  const w=cmini.clientWidth||108,h=Math.round(w*C.h/C.w);sMC=w/C.w;
+  if(deMC!==C||cmini.width!==Math.round(w*DPR)){
+    deMC=C;cmini.style.height=h+'px';cmini.width=Math.round(w*DPR);cmini.height=Math.round(h*DPR);
+    fundoMC=document.createElement('canvas');fundoMC.width=C.w;fundoMC.height=C.h;
+    const f=fundoMC.getContext('2d');
+    for(let i=0;i<C.w*C.h;i++){f.fillStyle=C.obj[i]?'#55524b':COR_MC[C.t[i]];f.fillRect(i%C.w,i/C.w|0,1,1)}
+  }
+  cmctx.setTransform(DPR,0,0,DPR,0,0);cmctx.imageSmoothingEnabled=false;cmctx.drawImage(fundoMC,0,0,w,h);
+  cmctx.fillStyle='#e8c25a';for(const n of C.npcs)cmctx.fillRect(n.x/T*sMC-1.5,n.y/T*sMC-1.5,3,3);
+  C.outros.forEach(pontoOutro);
+  cmctx.fillStyle='#fff';cmctx.fillRect(C.p.x/T*sMC-1.5,C.p.y/T*sMC-1.5,3,3);
 }
 export function drawMini(){
   const s=MS/MW;mctx.setTransform(DPR,0,0,DPR,0,0);mctx.clearRect(0,0,MS,MS);

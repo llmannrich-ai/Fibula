@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.19.1';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.19.1';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.19.1';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.19.1';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.20.1';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.20.1';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.20.1';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.20.1';
 
 function target(p,range){
   let best=null,bd=range;
@@ -12,7 +12,7 @@ function target(p,range){
   return best;
 }
 /* sem p, o jogador deste aparelho: é o que a tela pergunta */
-export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k];return b?b.v:0};
+export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k],s=p.sup&&p.sup[k];return (b?b.v:0)+(s?s.v:0)};
 const poderDe=(s,p)=>s.esc==='per'?p.c.per:p.c.mag;
 function rolaDano(s,p){
   const l=p.c.lvl,P=poderDe(s,p),mn=l/2+P*s.a1+s.b1,mx=l/2+P*s.a2+s.b2;

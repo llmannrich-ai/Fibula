@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.19.1';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.19.1';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha} from './progresso.js?v=0.19.1';
-import {genMap,pecas} from './mapa.js?v=0.19.1';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.19.1';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.20.1';
+import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.20.1';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv} from './progresso.js?v=0.20.1';
+import {genMap,pecas} from './mapa.js?v=0.20.1';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.20.1';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -30,21 +30,24 @@ function spawn0(k,r,d,boss){
 /* ---------- jogadores ----------
    Solo é um grupo de um: a incursão sempre tem uma lista de jogadores, G.ps,
    e a regra não lê o save para saber quem joga. Cada jogador nasce de uma
-   ficha {cl, c, up, local}: a classe, o personagem (lvl, xp, mag, per,
-   slots, equip), as melhorias da conta e se ele é o dono do save deste
-   aparelho. No solo a ficha aponta para o próprio personagem do save, então
+   ficha {cl, c, up, prov, local}: a classe, o personagem (lvl, xp, mag, per,
+   slots, equip), as melhorias da conta, as provisões que ele leva e se ele é
+   o dono do save deste aparelho. No solo a ficha aponta para o próprio personagem do save, então
    nível, Magia e Perícia que sobem na incursão já ficam nele, como antes; o
    servidor da F2 monta as fichas do banco. O que é da conta (cofre, peças,
    estatísticas) só muda para a ficha local, em sai(). */
-export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,local:true});
+export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,prov:save.prov,local:true});
 /* onde cada jogador aparece na sala de entrada, em sqm a partir do centro;
    jogadores não se bloqueiam (só monstros ocupam sqm) */
 const LADO=[[0,0],[1,0],[-1,0],[0,1]];
+/* as provisões (p.prov, o que sai do estoque quando a caçada começa) dão
+   poções, regeneração a mais (rgh, rgm) e buffs do começo (p.sup), que
+   somam aos das habilidades em vez de serem trocados por eles */
 function novoJogador(f,i,s){
-  const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0];
-  const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',
+  const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0],e=efeitoProv(f.prov);
+  const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',prov:Object.assign({},f.prov),
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
-    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+f.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
+    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,rgh:e.rhp,rgm:e.rmp,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
   poeNoSqm(p,s.cx+o[0],s.cy+o[1]);return p;
 }
@@ -217,11 +220,12 @@ function anda(p,dt,ent){
     p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
   }else movimenta(p,dt,ent);
   const K=CLASSES[p.cl];
-  p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
+  p.mp=Math.min(p.mmp,p.mp+(K.rmp+p.rgm)*dt);p.hp=Math.min(p.mhp,p.hp+(K.rhp+p.rgh)*dt);
   p.cdC-=dt;p.flash-=dt;p.swing-=dt;
   for(const k in p.cds)if(p.cds[k]>0)p.cds[k]-=dt;
   for(const k in p.gcd)if(p.gcd[k]>0)p.gcd[k]-=dt;
   for(const k in p.buffs){p.buffs[k].left-=dt;if(p.buffs[k].left<=0)delete p.buffs[k]}
+  for(const k in p.sup){p.sup[k].left-=dt;if(p.sup[k].left<=0)delete p.sup[k]}
 }
 /* fora da incursão (menu por cima do mapa, tela final) só os efeitos andam */
 export function parado(dt){G.t+=dt;G.alfa=1;efeitos(dt)}
@@ -438,6 +442,8 @@ export function aplicaRetrato(r,eu){
    G.alfa diz quanto do caminho até o próximo retrato (0,1 s) já passou */
 export function assiste(dt,eu,ent){
   const p=G.ps[eu];
+  /* o elixir de pressa anda no aparelho do convidado: o relógio dele também corre aqui */
+  for(const k in p.sup){p.sup[k].left-=dt;if(p.sup[k].left<=0)delete p.sup[k]}
   if(!p.fora){movimenta(p,dt,ent);p.x0=p.x;p.y0=p.y;p.w0=p.walk;reveal(p)}
   G.rT=(G.rT||0)+dt;G.alfa=Math.min(1,G.rT/.1);efeitos(dt);
 }
