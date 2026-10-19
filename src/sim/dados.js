@@ -65,6 +65,11 @@ export function validaConteudo(c){
   if(chegada!==1)throw new Error(`city.mapa precisa de exatamente um @ (tem ${chegada})`);
   for(const[k,n]of Object.entries(ci.npcs))if(letras[n.letra]!==1)throw new Error(`o NPC ${k} (${n.letra}) aparece ${letras[n.letra]} vezes no mapa, e não uma`);
   for(const a of ABRE)if(!Object.values(ci.npcs).some(n=>n.abre===a))throw new Error(`nenhum NPC da cidade abre ${a}`);
+  for(const q of ci.chao||[]){
+    const l=M[q&&q.y],t=l&&typeof q.x==='number'?l[q.x]:undefined;
+    if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
+    if(!t||!',._@'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
+  }
   if(!Object.keys(c.hunts).length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
   for(const[k,h]of Object.entries(c.hunts))if(typeof h.nome!=='string'||typeof h.nivel!=='number')throw new Error(`mapa de caça ${k} sem nome ou nível`);
 }

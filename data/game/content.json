@@ -1034,6 +1034,16 @@
   "city": {
     "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) cacadas (mapas de caca) ou mercado (a feira entre jogadores, no banco da nuvem). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
     "nome": "Cidade",
+    "_chao": "Pecas de teste no chao da cidade (pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao). Nao tem origem no banco, entao nao entra na Feira. Para tirar, apague a lista.",
+    "chao": [
+      {"x": 9, "y": 11, "item": "espada"},
+      {"x": 13, "y": 11, "item": "machado"},
+      {"x": 8, "y": 12, "item": "couraca"},
+      {"x": 14, "y": 12, "item": "cota"},
+      {"x": 9, "y": 13, "item": "amuleto"},
+      {"x": 13, "y": 13, "item": "espada"},
+      {"x": 11, "y": 13, "item": "cota"}
+    ],
     "mapa": [
       "AAAAAAAAAAAAAAAAAAAAAAAA",
       "A,,,,,,,,,,,,,,,,,,,,,,A",
