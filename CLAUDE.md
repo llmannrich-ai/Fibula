@@ -286,7 +286,7 @@ na mão.
   que o Banqueiro guarda no cofre está seguro.
 - **Cidade:** gastar, guardar, trocar, ver outros jogadores, formar a sala.
 
-### O que existe hoje (0.35.0)
+### O que existe hoje (0.36.0)
 
 | Área | Estado |
 |---|---|
@@ -630,7 +630,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   falar e a frase do NPC no registro)
 - `telas.js` — **telas** (`showMenu()`, a tela inicial: o personagem, o preço
   da morte em uma linha (`riscoCurto()`), Jogar, a conta e o rodapé Regras ·
-  Personagens · Grimório; sem personagem, Jogar vira Criar personagem;
+  Personagens (o único lugar de trocar de personagem; o Grimório fica só na
+  cidade, no botão `#cGrim`); sem personagem, Jogar vira Criar personagem;
   `showRegras()`, cujos números saem do `content.json`; `start()`,
   `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),

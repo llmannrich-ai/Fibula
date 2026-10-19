@@ -20,7 +20,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 10:51 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** a comida virou item (0.35.0), a pedido do Leonardo ("animais também devem ter loot de comidas para guardar na mochila ou no cofre"). `items` ganhou seis comidas com `comida` (segundos): frutas, queijo, presunto, ensopado, carne e presunto de dragão (720 s). Loot: rato → queijo; leão → carne e presunto; orc e troll → carne; dragão → presunto de dragão. As provisões de comida da Quitanda viraram `efeito.item`: a compra vai direto para a mochila do personagem (recusa com a mochila cheia). `comer()` tira da mochila (`p.bag`); saíram `p.com` e `devolveComida()`, porque a mochila já volta extraindo e cai morrendo. No Banco, a comida guardada fica como item no cofre (`save.mats`, como os tesouros da 0.32.0), com "levar" a pilha inteira e sem "vender"; `normaliza()` move a comida da 0.29.0 (em `prov`) para lá. Sprites `it_*` das comidas no atlas (`tools/sprites.mjs`; o presunto de dragão é o pernil do pacote com o matiz girado).
+**Item desenvolvido:** a comida virou item (0.36.0), a pedido do Leonardo ("animais também devem ter loot de comidas para guardar na mochila ou no cofre"). `items` ganhou seis comidas com `comida` (segundos): frutas, queijo, presunto, ensopado, carne e presunto de dragão (720 s). Loot: rato → queijo; leão → carne e presunto; orc e troll → carne; dragão → presunto de dragão. As provisões de comida da Quitanda viraram `efeito.item`: a compra vai direto para a mochila do personagem (recusa com a mochila cheia). `comer()` tira da mochila (`p.bag`); saíram `p.com` e `devolveComida()`, porque a mochila já volta extraindo e cai morrendo. No Banco, a comida guardada fica como item no cofre (`save.mats`, como os tesouros da 0.32.0), com "levar" a pilha inteira e sem "vender"; `normaliza()` move a comida da 0.29.0 (em `prov`) para lá. Sprites `it_*` das comidas no atlas (`tools/sprites.mjs`; o presunto de dragão é o pernil do pacote com o matiz girado).
 
 **Validação:** `node tools/testar.mjs` — 35/35 (simulação no Node refeita para comida-item: compra na mochila, mochila cheia, migração da 0.29.0, loot dos animais, comer da mochila, extrair/morrer, Banco guardar e levar; casos `lojas`, `sala-anfitriao` e `sala-convidado` ajustados). Capturas do Banco em 375×740.
 
@@ -38,6 +38,21 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 10:52 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** Grimório só na cidade e troca de personagem só na tela inicial (0.35.0), a pedido do Leonardo. Saíram o `#toGrim` do rodapé da tela inicial e o `#cPick` da cidade. O Grimório continua no botão `#cGrim` da cidade, e Personagens, no rodapé e na linha do personagem da tela inicial.
+
+**Validação:** `node tools/testar.mjs` — 36/36. Asserções novas: sem Grimório na tela inicial e sem Personagens na cidade. Os casos `equipamento` (trocar para o Cavaleiro passa pelo Menu), `classes` e `grimorio` (o Grimório abre na cidade e volta a ela) foram ajustados.
+
+**Análise:** trocar de personagem tirava da sala (`escolher()` chama `saiDaSala()`); agora isso só acontece fora do jogo, na tela inicial.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Mapas de caça fixos".
+
+**Pendências e riscos:** nenhuma nova.
+
+**Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).
+
+---
 ## 2026-10-19 21:00 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** mira manual das habilidades (0.34.0), teste pedido pelo Leonardo, fora da fila. O botão da habilidade virou joystick (`src/controles.js`: apertar mostra a mira, arrastar escolhe direção e, na bomba, distância; soltar lança; voltar ao botão cancela; tocar lança para onde se olha). Em `src/sim/combate.js` saíram `target()` e `miraEm()`: o tiro vai reto até o alcance e para no primeiro monstro ou na parede, mostrando o efeito onde se desfaz; o golpe sai sem alvo; a bomba cai no ponto escolhido (cortada pela parede); o feixe para na parede. `formaMira()` diz à tela o que desenhar (`desenhaMira()` em `src/desenho.js`). Na sala, o convidado manda `ma`/`md` com a entrada.
@@ -342,23 +357,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - As quantidades das encomendas (dente 3+3, seda 4+10, osso 12+8, erva 6) foram estimadas pela simulação, não jogadas. O dente é o gargalo (só ~2 por masmorra inteira).
 
 **Próximo passo recomendado:** o Leonardo jogar umas incursões e dizer se o ritmo das encomendas e o preço do Gordon estão bons; decidir se a Forja entra na origem da Feira.
-
----
-
-## 2026-10-19 13:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** peças de teste no chão da cidade (0.17.0), a pedido do Leonardo, para testar o equipamento sem caçar. `city.chao` no `content.json` (7 peças perto do `@`, validadas: item existe e o sqm é chão); `C.chao` em `entraCidade()`, pegar ao pisar em `updateCidade()`, `pegaDoChao()` em `progresso.js` e `save.chao` (o que a conta já pegou, completado por `normaliza()`); desenhadas com o sprite do item em `renderCidade()`.
-
-**Validação:** `node tools/testar.mjs` — 29/29, com o caso novo `chao-da-cidade` (pega andando, vai ao cofre, o save lembra, não reaparece, o Banco lista). Cidade conferida em 390×740.
-
-**Análise:** as peças não têm origem no banco (`004_origem.sql`), então não se anunciam na Feira nem viram lastro pela venda ao Banco; só dão ouro local ao serem vendidas ao Banco.
-
-**Roadmap:** sem mudança (ferramenta de teste).
-
-**Pendências e riscos:**
-- **É coisa de teste.** Para tirar, apagar `city.chao` do `content.json`. Cada conta pega uma vez: 7 peças, ~360 de ouro no Banco no máximo.
-- Quem já pegou e quer testar de novo precisa de save novo (ou apagar `chao` do save).
-
-**Próximo passo recomendado:** o Leonardo testar o equipamento no corpo com as peças; depois tirar `city.chao`.
 
 ---

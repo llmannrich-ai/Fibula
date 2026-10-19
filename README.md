@@ -48,7 +48,7 @@ Cada classe aprende **seis habilidades**, mas você não leva todas:
 | 3 | 8 |
 | 4 | 18 |
 
-Monte a mão no **Grimório**, no menu. Subir de nível não é só um número maior: é
+Monte a mão no **Grimório**, na cidade. Subir de nível não é só um número maior: é
 uma decisão sobre o que trocar. Cada grupo (ataque, cura, apoio) tem uma recarga
 compartilhada, então encadear três ataques exige ordem, não botão rápido.
 
@@ -93,7 +93,8 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
-| 0.35.0 (19/10/2026) | A comida virou item, como no Tibia: os animais derrubam comida (queijo do rato, carne e presunto do leão, carne do orc e do troll, presunto de dragão do dragão, 12 min de alimentação). A comida comprada na Quitanda vai direto para a mochila; ela entra na caçada com a mochila, volta com ela e cai se você morrer. O Banco guarda a comida no cofre como item, e "levar" põe a pilha de volta na mochila |
+| 0.36.0 (19/10/2026) | A comida virou item, como no Tibia: os animais derrubam comida (queijo do rato, carne e presunto do leão, carne do orc e do troll, presunto de dragão do dragão, 12 min de alimentação). A comida comprada na Quitanda vai direto para a mochila; ela entra na caçada com a mochila, volta com ela e cai se você morrer. O Banco guarda a comida no cofre como item, e "levar" põe a pilha de volta na mochila |
+| 0.35.0 (19/10/2026) | O Grimório saiu da tela inicial e fica na cidade, no botão de sempre. Trocar de personagem só pela tela inicial: o botão Personagens saiu da cidade |
 | 0.34.0 (19/10/2026) | Teste: as habilidades são miradas. O botão da habilidade virou um joystick: aperte para ver a mira, arraste para escolher a direção (na bomba, também a distância) e solte para lançar; volte o dedo ao botão para cancelar. Tocar sem arrastar lança para onde você olha. Nada procura o monstro sozinho: o tiro vai reto e para no primeiro monstro ou na parede, o golpe sai mesmo sem ninguém na frente, e errar gasta a mana como acertar |
 | 0.33.0 (19/10/2026) | Armas de quem começa: numa casa vazia ao norte da praça, uma faca e uma espada de madeira ficam no chão. Pise para pegar: vão para a mochila, e outra aparece no mesmo lugar dois minutos depois. Não valem ouro no Banco nem entram na Feira |
 | 0.32.0 (19/10/2026) | O cofre do Banco guarda tudo como item: guardar a mochila não transforma mais gema e coroa em ouro nem manda material para um depósito escondido. O Banqueiro lista o cofre inteiro (peças, tesouros e materiais) e cada item pode voltar à mochila; tesouro se vende no Banco, material continua com o Gordon, que vê o que está no cofre |
