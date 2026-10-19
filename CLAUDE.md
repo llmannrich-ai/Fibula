@@ -435,7 +435,10 @@ Limites conhecidos de acesso:
   por isso que o login saiu do e-mail; antes de voltar a ele, configure SMTP
   próprio.
 - **O `execute_sql` do conector expira em comandos que apagam dados** (o
-  `select` funciona). Apagar dado de jogador fica com o Leonardo no painel.
+  `select` funciona). O `apply_migration` também: qualquer migração com
+  `delete`, mesmo dentro do corpo de uma função, expira em 60 s e é
+  desfeita inteira (19/10/2026, na 003). Escreva a função sem `delete` ou
+  aplique pelo `psql`. Apagar dado de jogador fica com o Leonardo no painel.
 - Os testes (`tools/testar.mjs`) nunca falam com o Supabase de verdade: o
   prelúdio bloqueia `supabase.co` e o caso que precisa de nuvem usa `P.nuvem`,
   um Supabase falso em memória que imita as cinco funções do login simples.

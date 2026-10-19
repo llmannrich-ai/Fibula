@@ -129,9 +129,12 @@ begin
   if jsonb_typeof(d -> 'itens') is distinct from 'object' then d := jsonb_set(d, '{itens}', '{}'::jsonb); end if;
   if jsonb_typeof(d -> 'cofre') is distinct from 'number' then d := jsonb_set(d, '{cofre}', '0'::jsonb); end if;
   d := jsonb_set(d, '{cofre}', to_jsonb(greatest(floor((d ->> 'cofre')::numeric), 0)::bigint));
-  delete from public.mercado_caixa c where c.jogador = j returning * into cx;
+  -- zera a caixa em vez de apagar a linha: o conector do Supabase não aplica
+  -- migração que contenha comando de apagar (ver CLAUDE.md)
+  select * into cx from public.mercado_caixa c where c.jogador = j for update;
   recebido := jsonb_build_object('ouro', coalesce(cx.ouro, 0), 'itens', coalesce(cx.itens, '{}'::jsonb));
-  if cx.jogador is not null then
+  if cx.jogador is not null and (cx.ouro > 0 or cx.itens <> '{}'::jsonb) then
+    update public.mercado_caixa c set ouro = 0, itens = '{}'::jsonb where c.jogador = j;
     d := jsonb_set(d, '{cofre}', to_jsonb((d ->> 'cofre')::bigint + cx.ouro));
     for k, v in select * from jsonb_each(cx.itens) loop
       d := jsonb_set(d, '{itens}', public._mercado_soma(d -> 'itens', k, (v #>> '{}')::integer));
