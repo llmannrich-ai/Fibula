@@ -1,0 +1,17 @@
+{
+  "versao": "0.29.0",
+  "o_que": "equipamento no cofre de peças e vestido, provisões guardadas, e a comida ainda em prov (desde a 0.30 é item no cofre)",
+  "save": {
+    "cofre": 640, "runs": 70, "ext": 52, "deaths": 18, "best": 905,
+    "itens": {"espada": 1, "cota": 2, "amuleto": 1},
+    "prov": {"pocao": 3, "pressa": 1, "frutas": 4, "queijo": 2},
+    "forja": 1,
+    "up": {"vigor": 4, "foco": 1, "poder": 3, "bolsa": 2, "seguro": 2},
+    "classe": "cavaleiro",
+    "chars": {
+      "cavaleiro": {"lvl": 14, "xp": 3020, "mag": 3, "manaG": 310, "per": 29, "golpes": 15800, "slots": [null, null, null, null],
+        "sabe": [], "equip": {"arma": "machado", "armadura": "couraca", "amuleto": null}},
+      "druida": {"lvl": 4, "xp": 90, "mag": 6, "manaG": 900, "per": 10, "golpes": 40, "slots": [null, null, null, null]}
+    }
+  }
+}

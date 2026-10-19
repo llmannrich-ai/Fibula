@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 15:55 UTC — sessão manual (nuvem): o ciclo autônomo, Etapa 0
+
+**Item desenvolvido:** a base do ciclo autônomo, pedido do Leonardo. A Parte 5 do `CLAUDE.md` trocou os quatro papéis por dois: o **Auditor** (1×/dia, analisa o jogo por uma lente por dia e decide a fila, sem código de jogo) e o **Ciclo** (4×/dia, entrega um item com revisor independente antes do push e confere o site no ar). Entraram o freio automático (`docs/agentes/freio`, o agente cria, só o Leonardo apaga) e os níveis A, B e C do que o agente decide sozinho. Os princípios (Parte 1) ficaram imutáveis para agentes e assinados em `docs/agentes/principios.sha256` (`tools/principios.mjs`; as linhas "Estado hoje" ficam fora da assinatura). Novos portões: saves de referência em `tools/saves/` (três formatos: 0.20, 0.29 e 0.46) e `tools/no-ar.mjs`, que compara byte a byte o Pages com o checkout. Decisões na Parte 6; o D5 saiu (Opus nas duas).
+
+**Validação:** `node tools/testar.mjs`, 40/40, com `PRINCIPIOS_OK`. Prova negativa: uma cópia com `normaliza()` jogando a mochila fora reprova na simulação ("cacador tinha 140 ouro na mochila"); a assinatura muda quando um princípio muda e não muda com o "Estado hoje" nem com outra parte.
+
+**Análise:** o `tools/no-ar.mjs` achou, na primeira execução, o Pages ainda na 0.45.0 com a `main` na 0.46.0: o deploy estava havia 11 min na fila do GitHub Actions. Por isso o Ciclo espera até 20 min.
+
+**Roadmap:** sem mudança na fila.
+
+**Pendências e riscos:** C1 e C2 da Parte 2: criar as tarefas Auditor e Ciclo e desligar as antigas (Produto, Desenvolvedor e Balanceamento ainda estão ligadas, seguras só pelo `modo.txt` em `pausado`). Os redirecionamentos de `docs/agentes/` saem quando elas forem desligadas. A trava dos princípios pega erro, não má-fé: um agente desobediente poderia reassinar. Sem telemetria, o Auditor decide por leitura e simulação.
+
+**Próximo passo recomendado:** Etapa 1, com as tarefas novas criadas e disparadas à mão 3 a 5 vezes antes de trocar o `modo.txt` para `direto`.
+
 ## 2026-10-19 16:30 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** o mundo em volta da cidade (0.46.0, sobre a 0.45.0 dos portais), pedido do Leonardo: a cidade de hoje cercada por muralha, com portões abertos ("porta, não portal mágico"), e fora dela estradas, vilas e matas para explorar e, mais tarde, achar os próximos lugares de caça; sem monstros por enquanto. `tools/mundo.mjs` gera `city.mapa` (240×180, antes 54×38), `city.regioes` (15 nomes anunciados ao entrar) e `city.mundo` (semente e retângulo da cidade, que o script não toca). O portão `P` virou chão; a muralha mostra a face de fora; o mapa do canto mostra uma janela de 64 sqm; `city.chao` foi deslocado para as coordenadas do mundo.

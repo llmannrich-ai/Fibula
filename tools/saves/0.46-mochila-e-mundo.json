@@ -1,0 +1,20 @@
+{
+  "versao": "0.46.0",
+  "o_que": "o formato atual: mochila por personagem, mats no cofre, chao da cidade, contador da Feira",
+  "save": {
+    "cofre": 5210, "runs": 132, "ext": 101, "deaths": 31, "best": 1640,
+    "itens": {"faca": 1, "maca": 1},
+    "prov": {"pocao": 5, "runa_pedra": 1},
+    "mats": {"dente": 12, "seda": 3, "frutas": 6, "presunto": 1},
+    "forja": 2, "mkt": 7, "chao": {"faca-casa": 1},
+    "up": {"vigor": 5, "foco": 4, "poder": 4, "bolsa": 3, "seguro": 3},
+    "classe": "cacador",
+    "chars": {
+      "cacador": {"lvl": 19, "xp": 4410, "mag": 9, "manaG": 2900, "per": 41, "golpes": 61000, "slots": [null, null, null, null],
+        "sabe": [], "equip": {"arma": "espada", "armadura": "cota", "amuleto": "amuleto"},
+        "mochila": {"ouro": 140, "osso": 4, "carne": 2, "espadamadeira": 1}},
+      "feiticeiro": {"lvl": 2, "xp": 30, "mag": 1, "manaG": 60, "per": 10, "golpes": 3, "slots": [null, null, null, null],
+        "sabe": [], "equip": {"arma": null, "armadura": null, "amuleto": null}, "mochila": {}}
+    }
+  }
+}

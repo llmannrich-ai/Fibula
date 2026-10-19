@@ -1,0 +1,12 @@
+{
+  "versao": "0.20.0",
+  "o_que": "antes do Mestre de magias (sem sabe), do equipamento (sem itens nem equip), da mochila e da comida",
+  "save": {
+    "cofre": 1830, "runs": 41, "ext": 33, "deaths": 8, "best": 412,
+    "up": {"vigor": 3, "foco": 2, "poder": 2, "bolsa": 1, "seguro": 1},
+    "classe": "feiticeiro",
+    "chars": {
+      "feiticeiro": {"lvl": 9, "xp": 1210, "mag": 14, "manaG": 5400, "per": 11, "golpes": 120, "slots": ["faisca", null, null, null]}
+    }
+  }
+}

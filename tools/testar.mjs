@@ -1220,6 +1220,39 @@ async function testaSimulacao() {
     if (!ruim2((c) => { c.spells.faisca.preco = 10; })) falhas.push('classe sem habilidade grátis no nível 1 foi aceita');
     if (!ruim2((c) => { delete c.city.npcs.mago.ensina; })) falhas.push('habilidade com preço sem ninguém que ensine foi aceita');
   } catch (e) { falhas.push('as provisões quebraram no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  /* saves de referência (tools/saves/): um por formato que já existiu. Nada
+     se perde ao carregar, normaliza() é estável, e o personagem caça e sai */
+  const dirSaves = join(RAIZ, 'tools', 'saves');
+  for (const arq of existsSync(dirSaves) ? readdirSync(dirSaves).filter((n) => n.endsWith('.json')) : []) {
+    try {
+      const cru = JSON.parse(readFileSync(join(dirSaves, arq), 'utf8')).save;
+      const n = P.normaliza(JSON.parse(JSON.stringify(cru)));
+      const perdeu = [];
+      if (n.cofre !== (cru.cofre | 0)) perdeu.push(`cofre ${cru.cofre} → ${n.cofre}`);
+      for (const [cl, c] of Object.entries(cru.chars || {})) {
+        const d = n.chars[cl];
+        if (!d || d.lvl !== c.lvl || d.xp !== (c.xp | 0)) perdeu.push(`${cl} nível ${c.lvl}/${c.xp} XP → ${d && d.lvl}/${d && d.xp}`);
+        for (const [sl, id] of Object.entries(c.equip || {})) if (id && d && d.equip[sl] !== id) perdeu.push(`${cl} vestia ${id}`);
+        for (const [k, q] of Object.entries(c.mochila || {})) if (d && (d.mochila[k] | 0) !== q) perdeu.push(`${cl} tinha ${q} ${k} na mochila`);
+      }
+      for (const [k, q] of Object.entries(cru.itens || {})) if ((n.itens[k] | 0) !== q) perdeu.push(`${q} ${k} no cofre de peças`);
+      if (perdeu.length) falhas.push(`tools/saves/${arq} perdeu ao carregar: ${perdeu.join('; ')}`);
+      if (JSON.stringify(P.normaliza(JSON.parse(JSON.stringify(n)))) !== JSON.stringify(n)) falhas.push(`tools/saves/${arq}: normaliza() duas vezes dá outro save`);
+      P.setSave(n);
+      if (n.classe) {
+        const st = P.stats();
+        if (!Object.values(st).every((v) => typeof v !== 'number' || Number.isFinite(v))) falhas.push(`tools/saves/${arq}: stats() com número inválido ${JSON.stringify(st)}`);
+        const moch = JSON.stringify(P.ch().mochila);
+        I.newRun(3); I.G.active = true;
+        const ent = {x: 0, y: 0, held: [false, false, false, false], mira: [NaN, NaN, NaN, NaN], alc: [1, 1, 1, 1]};
+        for (let q = 0; q < 200 && !I.G.over; q++) I.passo(0.05, ent);
+        I.finish('extraiu');
+        const depois = P.ch().mochila;
+        for (const [k, q] of Object.entries(JSON.parse(moch))) if ((depois[k] | 0) < q) falhas.push(`tools/saves/${arq}: extrair perdeu ${k} da mochila`);
+      }
+    } catch (e) { falhas.push(`tools/saves/${arq} quebrou: ` + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+    finally { for (const k of Object.keys(saida)) saida[k] = () => {}; }
+  }
   return {falhas, a: a && a.r};
 }
 
@@ -3059,6 +3092,13 @@ async function main() {
     return 1;
   }
   console.log(`VERSAO_OK   (v${VERSAO} no index.html e em todos os imports)`);
+  /* a Parte 1 do CLAUDE.md é do Leonardo: mudança sem assinatura reprova */
+  const princ = (await import(pathToFileURL(join(RAIZ, 'tools', 'principios.mjs')).href)).confere();
+  if (princ) {
+    console.error(`PRINCIPIOS_FALHOU: ${princ}. Só o Leonardo assina (node tools/principios.mjs --assina); agente nenhum muda a Parte 1.`);
+    return 1;
+  }
+  console.log('PRINCIPIOS_OK (Parte 1 do CLAUDE.md igual à assinatura do dono)');
   const orcOk = orcamento(fontes);
 
   const sim = await testaSimulacao();
