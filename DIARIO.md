@@ -20,7 +20,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 12:20 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** correção 0.37.1, a partir da pergunta do Leonardo "por que os alimentos não aparecem na mochila?". Reproduzido no navegador: sozinho (o anfitrião), a comida comprada e a que cai do rato aparecem na janela da Mochila. O defeito era do **convidado da sala**: o retrato do anfitrião mandava só o valor da mochila (`bv`), nunca o conteúdo, e a janela do convidado ficava parada no que ele levou ao entrar — nenhum loot aparecia, comida ou não. O retrato agora leva `bag` de cada jogador e o convidado aplica a dele (`soMochila`).
+**Item desenvolvido:** correção 0.38.1, a partir da pergunta do Leonardo "por que os alimentos não aparecem na mochila?". Reproduzido no navegador: sozinho (o anfitrião), a comida comprada e a que cai do rato aparecem na janela da Mochila. O defeito era do **convidado da sala**: o retrato do anfitrião mandava só o valor da mochila (`bv`), nunca o conteúdo, e a janela do convidado ficava parada no que ele levou ao entrar — nenhum loot aparecia, comida ou não. O retrato agora leva `bag` de cada jogador e o convidado aplica a dele (`soMochila`).
 
 **Validação:** `node tools/testar.mjs` — 36/36, com asserção nova no `sala-convidado` (a mochila vem no retrato, item inexistente fora, a do anfitrião não muda).
 
@@ -31,6 +31,24 @@ execução precisa saber e não vai descobrir lendo o código.
 **Pendências e riscos:** o retrato cresce ~100 bytes por jogador (a mochila de cada um a 10/s); com 4 na sala continua muito abaixo do limite do Realtime.
 
 **Próximo passo recomendado:** o Leonardo confirmar, como convidado numa sala, que o loot aparece na Mochila.
+
+## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala, com a masmorra
+
+**Item desenvolvido:** a pedido do Leonardo ("caso o anfitrião feche o servidor, o usuário mais antigo dentro do servidor passa a ser o servidor" e, depois, "o novo anfitrião recebe todos os dados do mapa e mantém o servidor com ele"), 0.38.0. `src/sala.js` separa o canal da sala (`SALA.id`, id de quem criou + contador) do anfitrião de agora (`SALA.anf`) e conta as trocas em `SALA.gen`. O anfitrião manda a **herança** a cada segundo (com alguém dentro; 5 s sem ninguém) e no `passa`: `heranca()`/`adota()` em `src/sim/incursao.js`, o estado inteiro da regra (monstros, jogadores com ficha e saco, projéteis, sacos no chão, salas, sorteio, fonte do campo de fluxo, sqm ocupados), ~20 KB. Quem assume adota a última herança e segue rodando; quem estava dentro continua (`G.convidado` cai e o laço passa a rodar `passo()` aqui). Sem `passa` (fechou o jogo, caiu a rede), a saída é vista pela presença do canal da sala ou por 12 s sem notícia (`sucede()`). Dois anfitriões: `gen` maior, empate pelo id menor (`cede()`). `src/sim/base.js` ganhou `sorteAgora()`/`poeSorte()` (mesma sequência do mulberry32); `buildFlow()` guarda a origem em `G.fsrc`. O lugar do anfitrião em `G.ps` deixou de ser sempre 0 (`meuI()`), e a poção do anfitrião é a de `G.p` (`src/controles.js`).
+
+**Validação:** `node tools/testar.mjs` inteiro verde, depois de mesclar a `main` 0.37.0 (mapas de caça, comida como item, voz, mapas vestidos): a herança leva `G.caca` e as comidas já vistas. Na simulação no Node: com 3 jogadores em combate, quem adota a herança e recebe as mesmas entradas fica **idêntico** ao anfitrião por 400 passos (monstros, abates, sacos, vida, XP); herança com classe inexistente é recusada; tamanho abaixo de 60 KB. Sabotagem (adotar sem o sorteio) barrada. Nos casos `sala-*`: `passa` com a herança, convidado que continua na masmorra quando outro assume, convidado que vira anfitrião sem sair dela (mesma semente, abates e monstros da herança, mesmo sqm) e passa a rodar a regra, recebe gente nova pela porta e manda a própria herança, lista do anfitrião velho ignorada, geração maior leva a sala. Não testado com dois Chromium no Realtime de verdade.
+
+**Análise:** a herança custa uma mensagem por segundo por sala (a cota mensal conta cada entrega: com 4 na sala, +3 por segundo sobre os ~40 do retrato), ~20 KB cada, bem abaixo do limite de tamanho do broadcast.
+
+**Roadmap:** sem mudança de seção (pedido do dono fora da fila).
+
+**Pendências e riscos:**
+- A volta de até 1 s na troca: o que aconteceu nesse segundo no aparelho do anfitrião velho (um abate, um saco pego) se desfaz, e acontece de novo ou não. Não duplica nada, porque o resultado de cada um só sai do anfitrião de agora.
+- Uma queda curta de rede do anfitrião já dispara a troca; ao voltar ele vê a geração maior e vira convidado. A masmorra dele (que seguiu rodando sozinha) é descartada; quem estava dentro dela, nele, volta à cidade.
+- Nenhuma mensagem do canal tem remetente conferido: um terceiro com a chave pode mandar `passa`/`membros` com geração alta, ou uma herança falsa, e tomar a sala. É o mesmo nível de confiança do anfitrião (que já calcula tudo), agora ao alcance de quem conhece o canal.
+- `G.pend` não vai na herança (perde-se no máximo o segundo golpe de um ataque múltiplo).
+
+**Próximo passo recomendado:** testar com dois ou três aparelhos de verdade: anfitrião fecha a aba com convidados na masmorra e eles continuam caçando; anfitrião sai pelo Guia.
 
 ---
 
@@ -322,22 +340,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - O Gordon pede materiais pensando na Masmorra; a Ilha dá muita seda e a Cripta muita erva, o que barateia as encomendas.
 
 **Próximo passo recomendado:** o Leonardo jogar o Esgoto com um personagem novo e a Ilha com um de nível 8 e dizer se o perigo está certo; depois, Balanceamento dos mapas novos.
-
-## 2026-10-19 02:45 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** habilidades se aprendem com o Mestre de magias (0.21.0), decisão do Leonardo com três escolhas: quem já jogava mantém o que o nível liberou, a de nível 1 continua grátis e as runas continuam à venda. `preco` em cada habilidade do `content.json` (0 no nível 1; 100 a 3.500 até o nível 32); `ch().sabe` no save; `podeAprender()` e `aprende()` em `src/sim/progresso.js` (a aprendida vai para o espaço livre); subir de nível não ensina mais a habilidade com preço, o registro diz quem ensina e quanto custa; o Mestre ganhou a seção "Habilidades da sua classe" (`ensina: true` em `city.npcs`), e o Grimório mostra "no Mestre" e o preço. `confereFicha()` e o resultado da sala só aceitam habilidade sabida.
-
-**Validação:** `node tools/testar.mjs` — 31/31. No Node: personagem novo só sabe a de nível 1, aprender pede nível e ouro, vai para o espaço livre, save antigo (sem `sabe`) fica com tudo do nível, ficha de fora não usa habilidade que não sabe, e o conteúdo sem habilidade grátis no nível 1 ou sem quem ensine é recusado. Navegador: `lojas` compra a Golpe Brutal no Mestre; `nivel-na-incursao` reescrito (o nível 9 não traz mais a Onda de Fogo sozinha). Telas do Mestre e do Grimório conferidas em 390×844.
-
-**Análise:** a decisão muda o ritmo de quem começa agora: o personagem novo chega ao nível 4 sem a segunda habilidade até juntar 150 de ouro. Quem já tinha save não sente nada.
-
-**Roadmap:** item novo em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **Preços são chute** (tabela por nível: 3→100, 4→150, 9→500, 15→1.100, 22→2.000, 32→3.500). Concorrem com as melhorias do Mercador, a Forja e as provisões pelo mesmo cofre; medir com o agente de Balanceamento quanto ouro uma caçada típica traz em cada faixa de nível.
-- A morte não leva habilidade; perder o nível não existe, então o que se aprende nunca volta atrás.
-- O convidado da sala que aprende no meio da sala manda a ficha nova só na próxima entrada pela porta (é o fluxo da 0.19).
-
-**Próximo passo recomendado:** o Leonardo criar um personagem novo e jogar até o nível 4–5 para sentir se o ouro chega a tempo da segunda habilidade.
 
 ---

@@ -795,6 +795,37 @@ async function testaSimulacao() {
     if (mons(I.G) !== esperado) falhas.push('o convidado não vê os mesmos monstros que o anfitrião depois do retrato');
     if ([Math.round(I.G.ps[0].x), Math.round(I.G.ps[0].y), Math.ceil(I.G.ps[0].hp)].join() !== pAnf) falhas.push('o convidado não vê o anfitrião onde ele está');
     if (I.G.drops.length !== nDr) falhas.push(`sacos no chão: ${nDr} no anfitrião, ${I.G.drops.length} no convidado`);
+    /* a herança da sala: quem assume refaz a masmorra pela semente, adota a
+       herança e, com as mesmas entradas, segue exatamente como o anfitrião
+       seguiria (mesmos monstros, sacos, vida e XP) — inclusive o sorteio */
+    {
+      const fh = fichas(3); I.newRun(51, fh, true); I.G.active = true;
+      for (const p of I.G.ps) { p.mhp = p.hp = 1e6; }
+      /* o grupo começa numa sala com monstros, em sqm livres */
+      const sl = I.G.rooms.find((r) => r.base > 0 && !r.chefe), livres = [];
+      for (let y = sl.y + 1; y < sl.y + sl.h - 1 && livres.length < 3; y++) for (let x = sl.x + 1; x < sl.x + sl.w - 1 && livres.length < 3; x++) if (!I.solid(x, y) && !I.G.ocu[y * 64 + x]) livres.push([x, y]);
+      I.G.ps.forEach((p, i) => B.poeNoSqm(p, livres[i][0], livres[i][1]));
+      let q = 0;
+      /* a herança sai no meio do combate: depois do primeiro abate */
+      for (; (q < 400 || !I.G.kills || I.G.pend.length) && q < 4000; q++) I.update(0.05, entradas(3, q));
+      const vida = () => I.G.mons.reduce((a, m) => a + m.hp, 0), vida0 = vida();
+      const her = JSON.parse(JSON.stringify(I.heranca())), q0h = q;
+      const foto = () => [I.G.t.toFixed(2), I.G.kills, I.G.nid, I.G.drops.length, mons(I.G), I.G.ps.map((p) => [p.tx, p.ty, Math.round(p.hp), Math.round(p.mp), p.bagVal, p.kills, p.c.lvl, p.c.xp, p.c.mag, p.c.per].join(':')).join(' ')].join('|');
+      for (; q < q0h + 800; q++) I.update(0.05, entradas(3, q));
+      const orig = foto(), kOrig = I.G.kills;
+      if (!(I.G.kills > her.kills || vida() !== vida0)) falhas.push(`a herança não foi testada em combate: ${her.kills} → ${I.G.kills} abates, vida dos monstros sem mudar`);
+      const ok1 = I.adota(her, 0, I.fichaLocal());
+      if (!ok1) falhas.push('adota() recusou uma herança válida');
+      else {
+        if (I.G.kills !== her.kills || I.G.mons.length !== her.mons.length || !I.G.ps[0].local || I.G.ps[1].local) falhas.push('adota() não pôs a herança por cima da masmorra');
+        for (q = q0h; q < q0h + 800; q++) I.update(0.05, entradas(3, q));
+        const herd = foto();
+        if (herd !== orig) falhas.push(`quem adota a herança não segue como o anfitrião seguiria (${kOrig} abates no original, ${I.G.kills} na herança): ${orig.slice(0, 160)} / ${herd.slice(0, 160)}`);
+      }
+      if (I.adota({v: 1, semente: 1, ps: [{cl: 'dragao', c: {}}], mons: []}, -1, I.fichaLocal())) falhas.push('adota() aceitou herança com classe que não existe');
+      const tam = JSON.stringify(her).length;
+      if (tam > 60000) falhas.push(`a herança tem ${tam} bytes: grande demais para mandar a cada segundo`);
+    }
     /* o sqm contado pelo convidado: o anfitrião anda até lá um sqm por passo,
        na velocidade do nível, sem teleporte */
     I.newRun(32, fichas(2)); I.G.active = true; I.G.mons.length = 0; I.G.ocu.fill(0);
@@ -1275,7 +1306,7 @@ const CASOS = [
   },
   {
     nome: 'sala-anfitriao',
-    o_que: 'caçar junto, lado do anfitrião: a sala nasce com a masmorra dela, sem tempo; o convidado entra e sai pela porta quando quer e volta a entrar; o anfitrião também; a sala some da cidade só quando ele fecha',
+    o_que: 'caçar junto, lado do anfitrião: a sala nasce com a masmorra dela, sem tempo; o convidado entra e sai pela porta quando quer e volta a entrar; o anfitrião também; a sala some da cidade só quando ele fecha sozinho, e com gente ela passa ao convidado mais antigo',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1367,11 +1398,26 @@ const CASOS = [
     var fecha=todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0];clica(fecha);await quadros(3);
     ok('fechar a sala acaba com a masmorra e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&I.G.over&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
     ok('o Guia volta a oferecer criar sala em cada lugar', todos('#huntList button').every(function(b){return b.textContent==='criar sala'&&!b.disabled}), txt('#huntList'));
+    var id1=join.topic.split('-').pop();
+    Sa.criaSala();await ate(function(){return Sa.SALA.estado==='ligado'},40);
+    ok('a sala nova tem canal novo: quem passou a velha adiante não cai nela', Sa.SALA.id&&Sa.SALA.id!==id1, id1+' / '+Sa.SALA.id);
+    var sem2=I.G.semente,anf2=Sa.SALA.anf;
+    RT.sala('quero',{id:'conv2',ficha:BIA});await quadros(2);RT.sala('quero',{id:'conv3',ficha:Object.assign({},BIA,{nome:'Caio'})});
+    await ate(function(){return Sa.SALA.membros.length===3},20);
+    RT.sala('membros',{anf:'zz',gen:0,lista:[{id:'zz',nome:'Zé',cl:'druida',lvl:1}]});await quadros(3);
+    ok('outro que se diz anfitrião, na mesma geração e de id maior, não leva a sala', Sa.SALA.papel==='anfitriao'&&Sa.SALA.anf===Sa.SALA.membros[0].id, Sa.SALA.papel);
+    Tl.abreNpc('guia');var sair=todos('#hSala button').filter(function(b){return b.textContent==='Sair da sala'})[0];
+    ok('com gente na sala, o anfitrião sai em vez de fechar', sair&&!todos('#hSala button').some(function(b){return b.textContent==='Fechar sala'})&&/Bia vira o anfitrião/.test(txt('#hSala')||''), txt('#hSala'));
+    clica(sair);await quadros(3);
+    var ps=RT.salaMandadas('passa')[0];
+    ok('sair passa a sala ao convidado mais antigo, com a geração seguinte', ps&&ps.anf==='conv2'&&ps.gen===1&&ps.lista.length===2&&ps.lista[0].id==='conv2'&&ps.lista[1].id==='conv3', ps&&JSON.stringify(ps).slice(0,120));
+    ok('e leva a herança da masmorra, para ela continuar no aparelho dele', ps&&ps.her&&ps.her.anf===anf2&&ps.her.h&&ps.her.h.semente===sem2&&ps.her.ids[0]&&Array.isArray(ps.her.h.mons), ps&&ps.her&&JSON.stringify(ps.her.ids));
+    ok('e quem saiu fica fora da sala, com a masmorra dele acabada', Sa.SALA.papel===null&&I.G.over&&RT.salaMandadas('fecha').length===1, Sa.SALA.papel);
     `,
   },
   {
     nome: 'sala-convidado',
-    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra nela, entra pela porta quando quer, desenha o retrato, anda no próprio aparelho, grava o resultado, entra de novo, e volta à cidade se o anfitrião some',
+    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra nela, entra pela porta quando quer, desenha o retrato, anda no próprio aparelho, grava o resultado, entra de novo, e, se o anfitrião sai ou some, a sala e a masmorra passam ao mais antigo pela herança, sem ninguém sair dela',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1435,10 +1481,39 @@ const CASOS = [
     ok('depois de sair, continua na sala, com a porta aberta', Sa.SALA.papel==='convidado'&&todos('#hSala button').some(function(b){return b.textContent==='Entrar pela porta'&&!b.disabled}), txt('#hSala'));
     clica(todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0]);await quadros(2);
     ok('pode entrar de novo pela porta', RT.salaMandadas('entro').length===2, RT.salaMandadas('entro').length);
+    var CAIO={id:'caio',nome:'Caio',cl:'feiticeiro',lvl:4,d:0},MIM={id:EU,nome:'Druida',cl:'druida',lvl:3,d:1};
+    RT.sala('membros',{anf:'anf1',gen:0,s:77,lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5,d:1},CAIO,MIM]});
     RT.sala('porta',{id:EU,i:1,semente:77,ps:[ANA,{nome:'Druida',cl:'druida',c:{lvl:3,equip:{}},up:{}}]});
-    await ate(function(){return I.G&&I.G.active&&!I.G.over&&I.G.convidado},20);
-    var voltou=await ate(function(){return $('#app').classList.contains('cidade')},400);
-    ok('se o anfitrião some no meio, volta à cidade sem resultado', voltou&&/acabou sem resultado/.test(txt('#log')||'')&&Sa.SALA.papel===null&&sv().ext===1, txt('#log'));
+    await ate(function(){return I.G&&I.G.active&&!I.G.over&&I.G.convidado},20);await quadros(3);
+    /* a herança que o anfitrião mandaria: o estado da masmorra, com marcas
+       para conferir que foi ela que o novo anfitrião adotou */
+    var HER=I.heranca();HER.kills=42;HER.mons[0].hp=7;HER.ps[0].fora='fora';
+    RT.sala('heranca',{anf:'anf1',ids:['anf1',EU],pot:[0,0],h:HER});await quadros(1);
+    RT.sala('passa',{anf:'caio',gen:1,lista:[CAIO,MIM],her:{anf:'anf1',ids:['anf1',EU],pot:[0,0],h:HER}});await quadros(4);
+    ok('o anfitrião sai e o mais antigo assume, e quem está na masmorra continua nela', $('#app').classList.contains('playing')&&I.G.convidado&&!I.G.over&&/Caio agora é o anfitrião/.test(txt('#log')||'')&&Sa.SALA.papel==='convidado'&&Sa.SALA.anf==='caio'&&Sa.SALA.gen===1&&Sa.SALA.id==='anf1', txt('#log'));
+    RT.sala('membros',{anf:'anf1',gen:0,s:77,lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},MIM]});await quadros(3);
+    ok('a lista do anfitrião velho não vale mais', Sa.SALA.anf==='caio'&&Sa.SALA.membros[0].id==='caio', Sa.SALA.anf);
+    RT.sala('heranca',{anf:'caio',ids:['anf1',EU,'caio'],pot:[0,1,0],h:HER});await quadros(1);
+    var tx=I.G.p.tx,ty=I.G.p.ty,eAntes=RT.salaMandadas('estado').length;
+    RT.salaSai('caio');await quadros(3);
+    ok('se o novo anfitrião some da rede, quem sobrou assume a mesma masmorra, sem sair dela', Sa.SALA.papel==='anfitriao'&&Sa.SALA.anf===EU&&Sa.SALA.gen===2&&Sa.SALA.id==='anf1'&&$('#app').classList.contains('playing')&&!I.G.convidado&&I.G.active&&!I.G.over&&I.G.semente===77, JSON.stringify({p:Sa.SALA.papel,a:Sa.SALA.anf,g:Sa.SALA.gen,s:I.G.semente,c:I.G.convidado}));
+    ok('a masmorra é a da herança: abates, monstros, e ele no mesmo lugar e no sqm em que estava', I.G.kills===42&&I.G.mons[0].hp===7&&I.G.p===I.G.ps[1]&&I.G.p.local&&I.G.p.tx===tx&&I.G.p.ty===ty&&/a masmorra continua/.test(txt('#log')||''), JSON.stringify({k:I.G.kills,hp:I.G.mons[0].hp,tx:I.G.p.tx,ty:I.G.p.ty}));
+    var t2=I.G.t;await quadros(6);
+    ok('e a regra passa a rodar neste aparelho', I.G.t>t2+.2, t2+' → '+I.G.t);
+    var mb=RT.salaMandadas('membros').pop();
+    ok('avisa a sala com a geração nova e a mesma semente', mb&&mb.anf===EU&&mb.gen===2&&mb.s===77, mb&&JSON.stringify(mb).slice(0,80));
+    var an=await ate(function(){var a=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0&&d.payload.payload.sala}).pop();return a&&a.payload.payload.sala.id==='anf1'},60);
+    ok('a sala segue anunciada na cidade, no canal de sempre', an, RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0}).map(function(d){return JSON.stringify(d.payload.payload.sala)}).join(' '));
+    RT.sala('quero',{id:'novo',ficha:{nome:'Duda',cl:'cacador',c:{lvl:2},up:{}}});await quadros(2);
+    RT.sala('entro',{id:'novo',ficha:{nome:'Duda',cl:'cacador',c:{lvl:2},up:{}}});await quadros(3);
+    var pt=RT.salaMandadas('porta').pop();
+    ok('quem chega depois entra pela porta na masmorra herdada', pt&&pt.id==='novo'&&pt.semente===77&&pt.i===2&&I.G.ps[2]&&!I.G.ps[2].fora, pt&&JSON.stringify({i:pt.i,s:pt.semente}));
+    await ate(function(){var h=RT.salaMandadas('heranca').pop();return h&&h.ids[2]==='novo'},60);
+    var hr=RT.salaMandadas('heranca').pop();
+    ok('e o novo anfitrião passa a mandar a herança, com quem é quem', hr&&hr.anf===EU&&hr.ids[1]===EU&&hr.ids[2]==='novo'&&hr.h.semente===77&&hr.h.mons.length===I.G.mons.length, hr&&JSON.stringify(hr.ids));
+    var nq=RT.salaMandadas('quero').length;
+    RT.sala('membros',{anf:'aaa',gen:3,s:5,lista:[{id:'aaa',nome:'Duda',cl:'cacador',lvl:9}]});await quadros(3);
+    ok('outro anfitrião de geração maior leva a sala, e este vira convidado dele', Sa.SALA.papel==='convidado'&&Sa.SALA.anf==='aaa'&&Sa.SALA.gen===3&&I.G.over&&RT.salaMandadas('quero').length===nq+1, JSON.stringify({p:Sa.SALA.papel,a:Sa.SALA.anf}));
     `,
   },
   {
@@ -1577,7 +1652,7 @@ const CASOS = [
     ok('tchau fecha a voz com quem saiu', Vz.VOZ.n===0, Vz.VOZ.n);
     Tl.abreNpc('guia');
     ok('o Guia oferece desligar a voz', todos('#hSala button').some(function(b){return b.textContent==='Desligar voz'}), txt('#hSala'));
-    clica(todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0]);
+    clica(todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'||b.textContent==='Sair da sala'})[0]);
     await ate(function(){return !Vz.VOZ.ligada},20);clica($('#huntBack'));await quadros(3);
     ok('fechar a sala desliga a voz e o botão some', !Vz.VOZ.ligada&&$('#bVoz').hidden&&RT.salaMandadas('voz').some(function(v){return v.t==='tchau'}), Vz.VOZ.ligada);
     pc.close();osc.stop();ac.close();

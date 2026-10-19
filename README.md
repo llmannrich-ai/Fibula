@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.38.0 (19/10/2026) | A sala não acaba quando o anfitrião sai: o convidado mais antigo vira o anfitrião e herda a caçada como estava, com monstros, mochilas e cada um no seu lugar; quem está lá dentro continua caçando. Com gente na sala, o anfitrião tem "Sair da sala" em vez de "Fechar sala" |
 | 0.37.0 (19/10/2026) | Os lugares de caça ganharam cara própria: pilares, barris e rochas na Masmorra de Runas; teias, grades e lodo no Esgoto; a Ilha virou clareira cercada de mata, com palmeiras e pedras; sarcófagos, gárgulas e ossadas na Cripta. Os objetos ocupam o sqm, como no Tibia: servem de cobertura e de gargalo |
 | 0.36.0 (19/10/2026) | A comida virou item, como no Tibia: os animais derrubam comida (queijo do rato, carne e presunto do leão, carne do orc e do troll, presunto de dragão do dragão, 12 min de alimentação). A comida comprada na Quitanda vai direto para a mochila; ela entra na caçada com a mochila, volta com ela e cai se você morrer. O Banco guarda a comida no cofre como item, e "levar" põe a pilha de volta na mochila |
 | 0.35.0 (19/10/2026) | O Grimório saiu da tela inicial e fica na cidade, no botão de sempre. Trocar de personagem só pela tela inicial: o botão Personagens saiu da cidade |

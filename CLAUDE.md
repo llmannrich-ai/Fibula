@@ -605,7 +605,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   regra nenhuma. Anuncia na presença a sala aberta deste aparelho
   (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
 - `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
-  `realtime:sala-<x.y>-<id do anfitrião>` por sala. O anfitrião roda a
+  `realtime:sala-<x.y>-<id da sala>` por sala (o id de quem a criou; não muda quando o anfitrião muda). O anfitrião roda a
   incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
   por segundo; o convidado manda a entrada (o sqm em que está, espaços
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
@@ -987,14 +987,38 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
   sala" na linha do lugar). Vai no anúncio da cidade (`rede.sala.h`), na lista
   de membros e na porta; a porta só abre no NPC que leva a esse mapa.
 - **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
-  nasce com a sala, no aparelho do anfitrião, e fica aberta até ele fechar a
-  sala (só na cidade) ou sair do jogo. Ninguém é soterrado. É o modo
+  nasce com a sala, no aparelho do anfitrião, e fica aberta enquanto ele
+  estiver nela. Ninguém é soterrado. É o modo
   "masmorra aberta" de `src/sim/incursao.js` (`newRun(s, fichas, true)`).
 - **A porta** é o portal, na sala de entrada: qualquer membro entra por ela
   quando quiser (Guia de caça → Entrar pela porta), com a caçada já em
   andamento, e sai por ela com o saco, parado 2,5 s (só depois de se afastar
   dela, `p.longe`). Quem sai ou morre pode entrar de novo, com ficha nova
   (`entra()`). Fechar a sala tira quem está dentro, sem resultado.
+- **Sucessão do anfitrião** (decisão do Leonardo em 19/10/2026): se o
+  anfitrião sai da sala, fecha o jogo ou some da rede, o convidado **mais
+  antigo** vira o anfitrião e a sala continua. Com gente na sala o botão do
+  anfitrião é "Sair da sala" (manda `passa`); sozinho, "Fechar sala". Sem
+  `passa`, os convidados percebem pela presença do canal da sala ou por 12 s
+  sem notícia, e cada um elege o primeiro da lista depois do anfitrião. A
+  sala é o **canal** (`SALA.id`, o id de quem a criou mais um contador),
+  separado do **anfitrião** (`SALA.anf`); a presença da cidade anuncia o
+  canal em `sala.id`. **A masmorra passa junto**: o anfitrião manda a
+  **herança** (`heranca()` em `src/sim/incursao.js`, o estado inteiro da
+  regra, ~20 KB) a cada segundo com alguém lá dentro e no `passa`; quem
+  assume refaz a masmorra pela semente, aplica `adota()` e segue rodando,
+  com cada um no mesmo lugar de `G.ps`. Ninguém sai dela; no pior caso a
+  caçada volta um segundo. A herança leva o sorteio (`sorteAgora()` e
+  `poeSorte()` em `base.js`), de onde partiu o campo de fluxo (`G.fsrc`) e
+  os sqm ocupados, e a simulação no Node confere que quem adota segue
+  **exatamente** como o anfitrião seguiria. Não leva `G.pend` (funções): no
+  máximo se perde o segundo golpe de um ataque múltiplo. Sem herança (o novo
+  anfitrião acabou de entrar), ele abre outra masmorra, anuncia a semente
+  nova em `membros.s`, e quem estava dentro volta à cidade sem resultado.
+  Cada troca sobe `SALA.gen`; se dois aparelhos se acharem anfitrião (a rede
+  voltou no meio da troca), fica o de geração maior e, empatados, o de id
+  menor. O lugar do anfitrião em `G.ps` não é mais sempre 0 (`meuI()` em
+  `src/sala.js`).
 - **Os monstros renascem** como no Tibia (`progression.respawn`): sala da
   masmorra com menos que o normal repovoa depois de 60 s, se ninguém estiver
   a menos de 10 sqm dela. O normal é o mesmo com qualquer número de
@@ -1024,7 +1048,8 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
   dezenas de horas de caçada a dois por mês.
 - **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
   laço, a incursão congela para todos, e depois de 12 s sem notícia os
-  convidados voltam à cidade sem resultado.
+  convidados elegem o mais antigo, que assume a sala e a masmorra pela
+  última herança.
 
 ### Voz — falar na sala
 

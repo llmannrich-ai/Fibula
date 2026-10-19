@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.37.1';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.37.1';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.37.1';
-import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.37.1';
-import {C,entraCidade} from './sim/cidade.js?v=0.37.1';
-import {persist,saveFalhou} from './salvar.js?v=0.37.1';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.37.1';
-import {rede,SALAS} from './rede.js?v=0.37.1';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.37.1';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.37.1';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.37.1';
-import {icone} from './arte.js?v=0.37.1';
-import {$,app} from './dom.js?v=0.37.1';
-import {retrato} from './desenho.js?v=0.37.1';
+import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.38.1';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.38.1';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.38.1';
+import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.38.1';
+import {C,entraCidade} from './sim/cidade.js?v=0.38.1';
+import {persist,saveFalhou} from './salvar.js?v=0.38.1';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.38.1';
+import {rede,SALAS} from './rede.js?v=0.38.1';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.38.1';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.38.1';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.38.1';
+import {icone} from './arte.js?v=0.38.1';
+import {$,app} from './dom.js?v=0.38.1';
+import {retrato} from './desenho.js?v=0.38.1';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -168,7 +168,8 @@ const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='
    Ver as salas abertas de quem está na cidade e entrar, ou, dentro de uma,
    quem está nela. Cada NPC que abre cacadas (o Guia, a Grade do esgoto, o
    Capitão) mostra só as salas dos mapas de caça dele; criar sala é na linha
-   do mapa. A sala fica aberta até o anfitrião fechar ou sair */
+   do mapa. A sala fica aberta enquanto houver gente: se o anfitrião sai, o
+   convidado mais antigo fica no lugar dele, com a caçada como estava */
 let huntDe=null;
 const nomeCaca=k=>HUNTS[k]?HUNTS[k].nome:'';
 const meus=()=>Object.keys(HUNTS).filter(k=>!huntDe||HUNTS[k].npc===huntDe);
@@ -184,10 +185,10 @@ function desenhaSala(){
   const porta=()=>botao('Entrar pela porta',`Entrar em ${nomeCaca(SALA.caca)} pela porta da sala`,pelaPorta,!aqui||semPorta());
   const rede_=SALA.estado==='ligado'?'':SALA.estado==='sem rede'?' Sem conexão com a sala agora: tentando de novo.':' Conectando à sala…';
   if(SALA.papel==='anfitriao'){
-    const n=SALA.membros.filter(m=>m.id!==SALA.id&&dentro(m.id)).length;
+    const n=SALA.membros.filter(m=>m.id!==SALA.anf&&dentro(m.id)).length,prox=SALA.membros.find(m=>m.id!==SALA.anf);
     h.textContent=`Sua sala · ${nomeCaca(SALA.caca)} · ${SALA.membros.length}/${MAX}`;
-    p.textContent=`Na sala: ${nomes()}. Não há tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+longe+(n?` Fechar a sala tira quem está lá dentro, sem resultado.`:'')+(rede_?rede_+' Você já pode entrar; os outros só a veem quando ligar.':'');
-    ac.append(porta(),botao('Fechar sala','Fechar a sala e a caçada dela',()=>{saiDaSala();showHunts()}));
+    p.textContent=`Na sala: ${nomes()}. Não há tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+longe+(prox?` Se você sair, ${prox.nome} vira o anfitrião`+(n?' e a caçada continua com quem está lá dentro.':'.'):'')+(rede_?rede_+' Você já pode entrar; os outros só a veem quando ligar.':'');
+    ac.append(porta(),prox?botao('Sair da sala',`Sair da sala e passá-la para ${prox.nome}`,()=>{saiDaSala();showHunts()}):botao('Fechar sala','Fechar a sala e a caçada dela',()=>{saiDaSala();showHunts()}));
   }else if(SALA.papel==='convidado'){
     const a=SALA.membros[0];
     h.textContent=a?`Sala de ${a.nome} · ${nomeCaca(SALA.caca)} · ${SALA.membros.length}/${MAX}`:'Entrando na sala…';
