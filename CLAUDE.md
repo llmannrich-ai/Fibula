@@ -341,11 +341,17 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
-O que é da conta (cofre de ouro, peças guardadas em `itens`, materiais do
-Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
-fica na raiz; o que é do personagem (inclusive o equipamento
-vestido) fica em `chars`, um por classe. As operações do cofre de peças
+`{cofre,itens:{<item>:qtd},mats:{<item>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
+O que é da conta (cofre de ouro, o **baú** do Banqueiro — peças de vestir em
+`itens`, o resto, materiais do Gordon e tesouros, em `mats` —, encomendas
+entregues em `forja`, melhorias, estatísticas) fica na raiz; o que é do
+personagem (o equipamento vestido e a **mochila**) fica em `chars`, um por
+classe. A mochila (decisão do Leonardo, 19/10/2026) vai para a caçada: o saco
+começa com ela (`p.bag`, com `p.bag0` guardando o que ela trouxe), o loot entra
+nela até `progression.mochila.slots` pilhas (moeda não ocupa espaço; o que não
+cabe fica no chão), a extração devolve o saco à mochila menos a moeda, que vai
+ao cofre, e a morte a esvazia. Guardar e pegar entre mochila e baú
+(`guardar()`, `guardarTudo()`, `pegar()`) é no Banco. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
 em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save
 antigo e descarta peça que saiu do `content.json`.

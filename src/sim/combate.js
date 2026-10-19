@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.19.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.19.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.19.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.19.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.20.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.20.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas,cabe} from './progresso.js?v=0.20.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.20.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -212,10 +212,16 @@ export function hurtPlayer(p,d){
    da rede, fora do update() — como drinkPot(); na F2 vira entrada (ent) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
 export function poeNoSaco(p,k,q){p.bag[k]=(p.bag[k]|0)+q;p.bagVal+=ITEMS[k].val*q}
+/* o saco no chão vai para a mochila; o que não cabe nela (pilha nova com os
+   espaços cheios) fica no chão, e o aviso sai uma vez por saco */
 export function pickup(d,i,p){
-  let v=0;
-  for(const[k,q]of d.items){p.bag[k]=(p.bag[k]||0)+q;v+=ITEMS[k].val*q}
-  p.bagVal+=v;G.drops.splice(i,1);
+  let n=0;for(const[k]of d.items)if(cabe(p.bag,k))n++;
+  if(!n){if(!d.cheio){d.cheio=1;saida.log(`Mochila cheia (${PROG.mochila.slots} espaços). O loot ficou no chão.`,'info',p)}return}
+  let v=0;const fica=[],raro=[];
+  for(const it of d.items){const[k,q]=it;if(!cabe(p.bag,k)){fica.push(it);continue}
+    p.bag[k]=(p.bag[k]||0)+q;v+=ITEMS[k].val*q;if(ITEMS[k].rar>=1)raro.push(it)}
+  p.bagVal+=v;
+  if(fica.length){d.items=fica;d.cheio=1;saida.log(`Mochila cheia: ${fica.map(fmtItem).join(', ')} ficou no chão.`,'info',p)}else G.drops.splice(i,1);
   num(p.x,p.y-30,'+'+v+' ouro','#f2c14e');
-  if(d.rar>=1)saida.log(`Você guardou: ${d.items.filter(([k])=>ITEMS[k].rar>=1).map(fmtItem).join(', ')}.`,['loot','rare','epic'][d.rar],p);
+  if(raro.length)saida.log(`Você guardou: ${raro.map(fmtItem).join(', ')}.`,['loot','rare','epic'][d.rar],p);
 }

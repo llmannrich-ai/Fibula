@@ -5,10 +5,10 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.19.0';
-import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.19.0';
-import {CITY,LEGENDA,CLASSES,PROG,ITEMS,SLOTS_EQ} from './dados.js?v=0.19.0';
-import {pecas} from './mapa.js?v=0.19.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.20.0';
+import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.20.0';
+import {CITY,LEGENDA,CLASSES,PROG,ITEMS,SLOTS_EQ} from './dados.js?v=0.20.0';
+import {pecas} from './mapa.js?v=0.20.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
@@ -55,10 +55,10 @@ export function updateCidade(dt,ent){
     else if(i>=0)p.face=Math.atan2(DIR8[i][1],DIR8[i][0]);
   }
   p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
-  /* pisou numa peça do chão: ela vai para o cofre do Banco */
+  /* pisou numa peça do chão: ela vai para a mochila (cheia, para o baú) */
   for(let i=C.chao.length-1;i>=0;i--){const c=C.chao[i];if(c.x!==p.tx||c.y!==p.ty)continue;
-    C.chao.splice(i,1);
-    if(pegaDoChao(c.x+','+c.y,c.k)){saida.log(`Você pegou ${ITEMS[c.k].nome}. Está no cofre do Banco.`,'info');saida.persist()}}
+    C.chao.splice(i,1);const onde=pegaDoChao(c.x+','+c.y,c.k);
+    if(onde){saida.log(`Você pegou ${ITEMS[c.k].nome}. `+(onde==='mochila'?'Está na mochila.':'A mochila está cheia: foi para o baú do Banqueiro.'),'info');saida.persist()}}
   let melhor=null,md=T*1.75;
   for(const n of C.npcs){const d=hyp(n.x-p.x,n.y-p.y);if(d<md){md=d;melhor=n.k}}
   C.perto=melhor;

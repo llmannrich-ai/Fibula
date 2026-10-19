@@ -42,6 +42,7 @@ export function validaConteudo(c){
   if(!w||!['speedBase','speedPerLevel','speedMax','ground','diagonal','stepMs','wander'].every(k=>typeof w[k]==='number'&&w[k]>=0)||!(w.speedBase>0&&w.speedMax>=w.speedBase&&w.ground>0&&w.diagonal>=1&&w.stepMs>0&&w.wander>=1))throw new Error('progression.walk precisa de speedBase e speedMax (>= speedBase), speedPerLevel, ground, diagonal >= 1, stepMs e wander >= 1');
   for(const[k,e]of Object.entries(c.enemies))if(!(e.spd>0))throw new Error(`inimigo ${k} precisa de spd (velocidade do Tibia) positivo`);
   if(!p.respawn||!(p.respawn.seconds>0)||!(p.respawn.clearTiles>=0))throw new Error('progression.respawn precisa de seconds positivo e clearTiles');
+  if(!p.mochila||!Number.isInteger(p.mochila.slots)||p.mochila.slots<1)throw new Error('progression.mochila.slots precisa ser um inteiro positivo');
   const pt=p.party;
   if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
   for(const b of p.bands){

@@ -11,11 +11,12 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave} from './sim/progresso.js?v=0.19.0';
-import {G} from './sim/incursao.js?v=0.19.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.19.0';
-import {menu,showMenu} from './telas.js?v=0.19.0';
-import {$} from './dom.js?v=0.19.0';
+import {normaliza,soPecas,ehMat,save,setSave} from './sim/progresso.js?v=0.20.0';
+import {ITEMS} from './sim/dados.js?v=0.20.0';
+import {G} from './sim/incursao.js?v=0.20.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.20.0';
+import {menu,showMenu} from './telas.js?v=0.20.0';
+import {$} from './dom.js?v=0.20.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
@@ -121,10 +122,13 @@ export async function cacaComeca(){
   caca.id=null;if(!sessao||!nuvem.pronto)return;
   try{const r=await rpc('caca_comecar',{p_token:sessao.tk});if(r.ok)caca.id=await r.json()}catch(e){}
 }
+/* o que a caçada rendeu além do que a mochila trouxe (p.bag0): peças e
+   tesouros, que o Banco compra e a origem acompanha; material não tem origem */
+function ganho(p){const r={};for(const k in p.bag){const q=(p.bag[k]|0)-((p.bag0&&p.bag0[k])|0);if(k!=='ouro'&&q>0&&ITEMS[k]&&!ehMat(k))r[k]=q}return r}
 /* kind: extraiu, morreu ou desabou; p: o jogador deste aparelho */
 export function cacaFim(kind,p){
   if(!caca.id)return;
-  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?soPecas(p.bag):{},p_ouro:kind==='extraiu'?p.ouroExt|0:p.sealed|0});
+  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?ganho(p):{},p_ouro:kind==='extraiu'?p.ouroExt|0:p.sealed|0});
   caca.id=null;
 }
 export const lastroBanco=(k,val)=>enfila('lastro_banco',{p_item:k,p_val:val});

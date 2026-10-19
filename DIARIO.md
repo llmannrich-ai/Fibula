@@ -18,6 +18,26 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 18:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a mochila do personagem e o baú do Banqueiro (0.20.0), a pedido do Leonardo ("tenho itens dos animais mas não aparece na mochila"; "o Banqueiro deve ter a lista completa do baú"; "pega pela mochila no loot e descarrega no baú se precisar de espaço"). Escolhas dele: a mochila persiste entre caçadas e a morte leva o que está nela; 20 espaços. `c.mochila` por personagem; `progression.mochila.slots` no `content.json`; `pickup()` respeita os espaços (pilha que já existe e moeda sempre entram, pilha nova com a mochila cheia fica no chão); `guardaSaco()` devolve o saco à mochila e só a moeda vai ao cofre; `guardar()`, `guardarTudo()`, `pegar()` em `src/sim/progresso.js`; o Banco virou mochila + baú inteiro; peça do chão da cidade vai para a mochila.
+
+**Validação:** `node tools/testar.mjs` — 30/30. Na simulação no Node: saco começa com a mochila (cópia), mochila cheia deixa pilha nova no chão e aceita moeda e pilha existente, a morte esvazia, a ficha do convidado leva a mochila limpa, guardar/pegar/vender. Casos `mochila`, `chao-da-cidade`, `forja` e `incursao-extracao` reescritos para o modelo novo (guardar, guardar tudo, pegar no Banco; aviso do Gordon). Tela conferida em 360×740 (cidade, Mochila, Banco).
+
+**Análise:** o bug era de modelo, não de tela: `guardaSaco()` mandava material para `save.mats`, que só a Forja lia, e tesouro virava ouro. `save.mats` agora é o baú de tudo que não se veste (materiais e tesouros); `save.itens` continua só com peças, porque a Feira (custódia no banco) mexe nele. Na origem (`caca_fim`) vai só o que a caçada rendeu além do que a mochila trouxe (`p.bag0`), e tesouro passa a ter origem como peça; vendido ao Banco, vira ouro de origem pelo `lastro_banco`. Nenhuma mudança no SQL.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **A morte ficou mais cara** (pilar 1): quem não guarda no baú arrisca loot de várias caçadas. O Guia de caça e a Mochila mostram o valor em risco; medir no playtest se jogadores perdem muito por esquecer de guardar.
+- **Fechar a aba no meio da caçada salva a mochila**: ela só muda no save ao extrair ou morrer. É um jeito de fugir da morte com a mochila cheia (perde o loot da caçada, mas não o que trouxe). Esvaziar a mochila no começo e devolver na extração fecha o furo, mas faz o convidado da sala perder a mochila quando o anfitrião fecha a sala ou some — por isso ficou como está.
+- Gema e coroa não viram mais ouro na extração: é preciso vender no Banco (um toque a mais). O recorde (`best`) passa a contar a mochila que entrou na caçada.
+- O material continua sem origem no banco (era assim antes): só se vende ao Gordon.
+- Vestir uma peça da mochila exige guardar antes (dois toques). Se incomodar, `equipar()` pode aceitar da mochila.
+- A venda do saco na Feira, na caçada, só aceita o que a caçada rendeu (`p.bag0`), para não dar origem a peça trazida de antes.
+
+**Próximo passo recomendado:** o Leonardo jogar duas caçadas sem guardar, morrer na terceira e dizer se o peso ficou certo; depois, "Sair cedo" (`Agora`).
+
 ## 2026-10-19 01:55 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a masmorra da sala sem tempo, com porta (0.19.0), a pedido do Leonardo ("entrada e saída por uma porta acessível por qualquer usuário; fecha quando quem criou fecha na cidade ou sai do programa"), com as três escolhas dele: sem tempo, monstros renascem, porta na sala de entrada. Modo "masmorra aberta" em `src/sim/incursao.js` (`newRun(s,fichas,true)`, `entra()`, `repovoa()`, `progression.respawn` no `content.json`); `src/sala.js` troca o "começar com o grupo" por `entraPorta()`/`porta`; o Guia de caça mostra quem está na masmorra e o botão "Entrar pela porta"; a presença da cidade segue com `longe` enquanto o anfitrião caça, para a sala não sumir da lista.
@@ -389,28 +409,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - O PWA (item 5) vai trazer service worker; ele passa a controlar o cache e precisa respeitar a mesma versão.
 
 **Próximo passo recomendado:** a morte custar XP (`Agora`), em 0.6.0.
-
----
-
-## 2026-10-18 23:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** sorteio com semente, item `Agora` (F0 2, primeira metade), a pedido do Leonardo ("fundação e princípio da essência do jogo"). `src/sim/base.js` ganhou o gerador (mulberry32) com `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`/`rnd()`/`rr()`/`ri()` (regra) e `frr()` (efeito). Todo `Math.random` da simulação saiu: corredor do mapa, banda de monstro, loot, passeio dos monstros. Efeitos (número de dano, faíscas, fumaça, tremor da câmera, direção e passo inicial do desenho do monstro) passaram para o sorteio de efeito. `newRun(s)` aceita a semente e a guarda em `G.semente`; a tela final mostra "Masmorra nº 12.345", e `?semente=` no endereço (número ou texto) repete a masmorra em toda incursão da aba.
-
-**Validação:** `node tools/testar.mjs` — 20/20 (simulação no Node + 18 casos de navegador + os 2 novos). O passo da simulação no Node agora prova: sequência do gerador presa (confere com a implementação de referência do mulberry32), `Math.random` sabotado durante a incursão, mesma semente → mesmo mapa, mesmos monstros e mesmo resultado, sementes 7 e 8 → mapas diferentes, efeitos extras não mudam a regra, efeitos não gastam sorteio da regra (sonda direta + checagem de toda linha `G.fx.push`), sem semente → sementes diferentes. No navegador, `semente-na-url` compara a imagem do canvas de duas incursões com a mesma semente (iguais) e `semente-variada` sem semente (diferentes). Cinco sabotagens via `FIBULA_JOGO` — `Math.random` no mapa, número de dano pelo sorteio da regra, constante do gerador trocada, semente fixa em 1, fumaça pelo sorteio da regra — todas saíram com código 1. A segunda não era pega pela primeira versão do teste; daí a sonda direta.
-
-**Análise:**
-- **Regra × efeito** é a decisão de desenho que importa: com um sorteio só, uma tela que desenha mais faíscas mudaria o loot do próximo monstro, e cliente e servidor divergiriam. Critério escrito no `CLAUDE.md`: "se isto mudar, o jogador ganha ou perde algo?"
-- A semente de cada incursão ainda vem de `Math.random` (`novaSemente()`), a única exceção permitida e checada pelo teste.
-- O mapa e a sala inicial se repetem sempre; a incursão **inteira** só se repete com o mesmo `dt` por quadro (no Node, 0,05 fixo). No celular, o `dt` varia: falta o passo fixo.
-- A sequência de sorteios mudou, então as masmorras dos casos antigos mudaram; os 18 casos continuaram passando sem ajuste.
-
-**Roadmap:** sorteio com semente em `Concluído`. `Agora` passa a ser a morte custar XP; o passo fixo é o item 3 do `Próximo`.
-
-**Pendências e riscos:**
-- **Passo fixo** (item 3) completa a F0 2; até lá, multiplayer e replay da incursão inteira não fecham.
-- Trocar o algoritmo do gerador, a ordem dos sorteios em `genMap()`/`newRun()` ou o critério de `sementeDe()` muda a masmorra de todas as sementes já mostradas a jogadores. Hoje não há nada guardado que dependa disso; quando houver "desafio da semana" ou replay, essas mudanças viram decisão do dono.
-- Uma sessão manual publicou o equipamento (`31b5a00`) em paralelo; esta mudança foi feita por cima dele, sem conflito.
-
-**Próximo passo recomendado:** a morte custar XP (`Agora`), depois a curva de nível medida com a simulação no Node, agora com semente de verdade.
 
 ---

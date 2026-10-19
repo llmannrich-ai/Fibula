@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.19.0';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.19.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha} from './progresso.js?v=0.19.0';
-import {genMap,pecas} from './mapa.js?v=0.19.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.19.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.20.0';
+import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.20.0';
+import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha,soMochila,valorDe} from './progresso.js?v=0.20.0';
+import {genMap,pecas} from './mapa.js?v=0.20.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.20.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -40,12 +40,14 @@ export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,local:true});
 /* onde cada jogador aparece na sala de entrada, em sqm a partir do centro;
    jogadores não se bloqueiam (só monstros ocupam sqm) */
 const LADO=[[0,0],[1,0],[-1,0],[0,1]];
+/* o saco começa com a mochila do personagem: o que ele trouxe também está em
+   risco. bag0 é o que ele trouxe, para a origem do loot (src/nuvem.js) */
 function novoJogador(f,i,s){
-  const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0];
+  const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0],m=soMochila(f.c.mochila);
   const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},cdC:0,pot:3+f.up.bolsa,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
-    pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
+    pch:0,bag:m,bag0:Object.assign({},m),bagVal:valorDe(m),kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,itens:0,xpPerdido:0};
   poeNoSqm(p,s.cx+o[0],s.cy+o[1]);return p;
 }
 /* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
@@ -308,8 +310,9 @@ function updateProj(dt){
    não volta, e a sala acaba quando não sobra ninguém dentro */
 export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
-  if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag);p.ouroExt=r.ouro;p.pecas=r.pecas;p.mats=r.mats;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
-  else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;
+  if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag,p.c);p.ouroExt=r.ouro;p.itens=r.itens;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
+  /* a morte leva o saco, e com ele a mochila */
+  else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   if(p.local)saida.persist();
   saida.sai(p);

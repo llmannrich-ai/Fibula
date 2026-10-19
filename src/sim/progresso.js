@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,listaDaClasse,slotsIniciais} from './dados.js?v=0.19.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,listaDaClasse,slotsIniciais} from './dados.js?v=0.20.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -16,12 +16,15 @@ export function confereFicha(f){
   const slots=[0,1,2,3].map(i=>{const k=Array.isArray(c.slots)&&c.slots[i];return SPELLS[k]&&SPELLS[k].c===f.cl&&SPELLS[k].lvl<=lvl?k:null});
   const equip=EQ0();for(const sl of SLOTS_EQ){const k=c.equip&&c.equip[sl];if(ITEMS[k]&&ITEMS[k].slot===sl)equip[sl]=k}
   const up={};for(const k in UP0)up[k]=n(f.up&&f.up[k],0,UP[k]?UP[k].max:0);
+  /* a mochila entra na caçada da sala: só itens que existem, até os espaços dela */
+  const mochila={};for(const[k,q]of Object.entries(soMochila(c.mochila)))if(espacos(mochila)<PROG.mochila.slots)mochila[k]=n(q,1,1e6);
   return{cl:f.cl,nome:String(f.nome||CLASSES[f.cl].nome).replace(/[\u0000-\u001f]/g,'').slice(0,20),
-    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,equip},up};
+    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,equip,mochila},up};
 }
-export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),equip:EQ0()});
-/* cofre (ouro), itens (equipamento guardado), mats (materiais para o Gordon)
-   e forja (encomendas entregues) são da conta; equip é de cada personagem */
+export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),equip:EQ0(),mochila:{}});
+/* cofre (ouro), o baú do Banqueiro — itens (peças de vestir) e mats (o resto:
+   materiais para o Gordon e tesouros) — e forja (encomendas entregues) são da
+   conta; equip e mochila são de cada personagem */
 /* chao: as peças do chão da cidade (city.chao) que esta conta já pegou, por id */
 export const SAVE0=()=>({cofre:0,itens:{},mats:{},forja:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{},chao:{}});
 /* só as peças que existem no content.json, com quantidade inteira positiva:
@@ -39,7 +42,7 @@ export const normaliza=s=>{const n=Object.assign(SAVE0(),s);n.up=Object.assign({
   n.chao=s.chao&&typeof s.chao==='object'&&!Array.isArray(s.chao)?s.chao:{};
   for(const c of Object.values(n.chars)){const e=EQ0();
     for(const sl of SLOTS_EQ){const id=c.equip&&c.equip[sl];if(id&&ITEMS[id]&&ITEMS[id].slot===sl)e[sl]=id}
-    c.equip=e}
+    c.equip=e;c.mochila=soMochila(c.mochila)}
   return n};
 export let save=SAVE0();
 export const setSave=s=>{save=s};
@@ -84,29 +87,48 @@ export const stats=(c=ch(),cl=save.classe,u=save.up)=>{const K=CLASSES[cl],l=c.l
 export const eqBonus=(b,c=ch())=>{const e=c.equip;let v=0;if(!e)return v;
   for(const sl of SLOTS_EQ){const id=e[sl],bo=id&&ITEMS[id]&&ITEMS[id].bonus;if(bo&&bo[b])v+=bo[b]}
   return v};
-const tiraDoCofre=k=>{if(!(save.itens[k]>0))return false;if(--save.itens[k]<=0)delete save.itens[k];return true};
+/* o baú guarda peça de vestir em save.itens e o resto em save.mats */
+const bauDe=k=>ITEMS[k].slot?save.itens:save.mats;
+const tiraDoCofre=k=>{const b=bauDe(k);if(!(b[k]>0))return false;if(--b[k]<=0)delete b[k];return true};
 const poeNoCofre=k=>{save.itens[k]=(save.itens[k]||0)+1};
 /* veste a peça do cofre; a que estava no espaço volta para o cofre */
 export function equipar(k){
   const it=ITEMS[k],e=ch().equip;if(!it||!it.slot||!tiraDoCofre(k))return false;
   if(e[it.slot])poeNoCofre(e[it.slot]);e[it.slot]=k;return true}
 export function desequipar(sl){const e=ch().equip,k=e[sl];if(!k)return false;poeNoCofre(k);e[sl]=null;return true}
-/* peça do chão da cidade: vai para o cofre, uma vez por conta */
-export function pegaDoChao(id,k){if(!ITEMS[k]||save.chao[id])return false;save.chao[id]=1;poeNoCofre(k);return true}
-export function vender(k){if(!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
-/* extração: equipamento vai para o cofre como peça, material que o Gordon
-   compra vai para o depósito de materiais, o resto vira ouro */
-export function guardaSaco(bag){let ouro=0,pecas=0,mats=0;
-  for(const[k,q]of Object.entries(bag)){if(ITEMS[k].slot){save.itens[k]=(save.itens[k]||0)+q;pecas+=q}
-    else if(ehMat(k)){save.mats[k]=(save.mats[k]||0)+q;mats+=q}else ouro+=ITEMS[k].val*q}
-  save.cofre+=ouro;return{ouro,pecas,mats}}
+/* peça do chão da cidade, uma vez por conta: vai para a mochila; se ela
+   estiver cheia, para o baú. Devolve onde ficou */
+export function pegaDoChao(id,k){if(!ITEMS[k]||k==='ouro'||save.chao[id])return null;save.chao[id]=1;
+  const m=ch().mochila;if(cabe(m,k)){m[k]=(m[k]|0)+1;return 'mochila'}const b=bauDe(k);b[k]=(b[k]|0)+1;return 'bau'}
+/* o Banco compra peça e tesouro pelo valor; material é com o Gordon */
+export function vender(k){if(!ITEMS[k]||ehMat(k)||!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
+
+/* ---------- mochila e baú ----------
+   A mochila é do personagem (c.mochila) e vai com ele para a caçada: o loot
+   entra nela, fica nela depois da extração, e a morte leva tudo o que estiver
+   nela. Tem progression.mochila.slots espaços, uma pilha do mesmo item por
+   espaço; moeda de ouro não ocupa espaço e, ao extrair, vai para o cofre. O
+   baú do Banqueiro é da conta e não cai na morte: o jogador guarda nele o que
+   não quer arriscar, e pega de volta se quiser. */
+export const espacos=b=>{let n=0;for(const k in b)if(k!=='ouro')n++;return n};
+export const cabe=(b,k)=>k==='ouro'||b[k]>0||espacos(b)<PROG.mochila.slots;
+export const soMochila=o=>{const r={};for(const[k,q]of Object.entries(o||{}))if(ITEMS[k]&&k!=='ouro'&&q>0)r[k]=q|0;return r};
+export const valorDe=b=>{let v=0;for(const k in b)v+=ITEMS[k].val*b[k];return v};
+/* a pilha inteira, da mochila para o baú e de volta (se couber) */
+export function guardar(k,c=ch()){const q=c.mochila[k]|0;if(!q)return 0;const b=bauDe(k);b[k]=(b[k]|0)+q;delete c.mochila[k];return q}
+export function guardarTudo(c=ch()){let n=0;for(const k of Object.keys(c.mochila))n+=guardar(k,c);return n}
+export function pegar(k,c=ch()){const b=ITEMS[k]&&bauDe(k),q=b?b[k]|0:0;if(!q||!cabe(c.mochila,k))return 0;c.mochila[k]=(c.mochila[k]|0)+q;delete b[k];return q}
+/* extração: o ouro do saco vai para o cofre, o resto fica na mochila (o saco
+   começou com ela, então ela passa a ser o saco sem o ouro) */
+export function guardaSaco(bag,c=ch()){const ouro=bag.ouro|0;c.mochila=soMochila(bag);save.cofre+=ouro;return{ouro,itens:espacos(c.mochila)}}
 
 /* ---------- forja do Gordon ----------
    Ralo dos materiais (pilar 5): ou viram ouro barato na mão dele, ou viram
    encomenda, e cada encomenda entregue libera peças melhores na loja dele,
    compradas com o ouro do cofre. Tudo da conta, como o cofre. */
 export const ehMat=k=>Object.prototype.hasOwnProperty.call(FORJA.compra,k);
-export const soMats=o=>{const r={};for(const[k,q]of Object.entries(o||{}))if(ITEMS[k]&&ehMat(k)&&q>0)r[k]=q|0;return r};
+/* save.mats é o baú do que não se veste: materiais e tesouros */
+export const soMats=o=>{const r={};for(const[k,q]of Object.entries(o||{}))if(ITEMS[k]&&!ITEMS[k].slot&&k!=='ouro'&&q>0)r[k]=q|0;return r};
 export const missao=()=>FORJA.missoes[save.forja]||null;
 /* quanto do material a encomenda atual ainda segura (para não vender sem querer) */
 export const reservado=k=>{const m=missao();return m&&m.pede[k]||0};

@@ -18,15 +18,15 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha. */
-import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.19.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.19.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.19.0';
-import {novaSemente} from './sim/base.js?v=0.19.0';
-import {drinkPot} from './sim/combate.js?v=0.19.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.19.0';
-import {rede,ID,anuncia} from './rede.js?v=0.19.0';
-import {persist} from './salvar.js?v=0.19.0';
-import {log} from './hud.js?v=0.19.0';
+import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.20.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.20.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.20.0';
+import {novaSemente} from './sim/base.js?v=0.20.0';
+import {drinkPot} from './sim/combate.js?v=0.20.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.20.0';
+import {rede,ID,anuncia} from './rede.js?v=0.20.0';
+import {persist} from './salvar.js?v=0.20.0';
+import {log} from './hud.js?v=0.20.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -195,9 +195,10 @@ function aplicaFim(r){
   }
   const bag={};if(r.bag&&typeof r.bag==='object')for(const[k,q]of Object.entries(r.bag))if(ITEMS[k]&&n(q))bag[k]=n(q);
   p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);
-  p.ouroExt=0;p.pecas=0;p.fora=kind;p.c=c;
-  if(kind==='extraiu'){const g=guardaSaco(bag);p.ouroExt=g.ouro;p.pecas=g.pecas;save.ext++;save.best=Math.max(save.best,p.bagVal)}
-  else{save.deaths++;save.cofre+=p.sealed}
+  p.ouroExt=0;p.itens=0;p.fora=kind;p.c=c;
+  /* o saco do anfitrião começou com a mochila que este aparelho mandou na ficha */
+  if(kind==='extraiu'){const g=guardaSaco(bag,c);p.ouroExt=g.ouro;p.itens=g.itens;save.ext++;save.best=Math.max(save.best,p.bagVal)}
+  else{save.deaths++;save.cofre+=p.sealed;c.mochila={}}
   persist();
   G.over=true;G.end=kind;G.dur=G.t;
   ganchos.fim(kind);

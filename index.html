@@ -219,11 +219,14 @@ h2.lost{color:var(--hp)}
 .slots.eqs em{font:normal 9px/1.2 var(--f-body);color:var(--loot)}
 .eqtot{margin:0;font:11px/1.4 var(--f-body);color:var(--muted);text-align:center}
 .sub{margin:4px 0 0;font:700 12px var(--f-body);color:var(--bone)}
-#eqList{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
-#eqList .sp{border-left-color:var(--torch)}
-#eqList .sp.r1{border-left-color:var(--rare)} #eqList .sp.r2{border-left-color:var(--epic)}
-#eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
-#eqList .btns{display:grid;gap:5px;flex:0 0 auto}
+ul.bau{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
+ul.bau .sp{border-left-color:var(--torch)}
+ul.bau .sp.r1{border-left-color:var(--rare)} ul.bau .sp.r2{border-left-color:var(--epic)}
+ul.bau .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+ul.bau .btns{display:grid;gap:5px;flex:0 0 auto}
+#eqMoch{max-height:28vh}
+#equip .mtit{display:flex;align-items:center;justify-content:space-between;gap:8px}
+#eqGuarda{padding:6px 10px;font-size:11px;min-height:44px}
 #endItems small{color:var(--muted);font-size:10px}
 .fg{list-style:none;margin:0;padding:0;display:grid;gap:7px}
 .fg .sp{border-left-color:var(--torch)}
@@ -456,13 +459,15 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
       <h2>Banco</h2>
-      <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
+      <p class="lede">A mochila vai com o personagem para a caçada, e a morte leva tudo o que estiver nela. O baú é da conta e não cai na morte: guarde nele o que não quer arriscar. O que o personagem veste é só dele e também fica. Toque num espaço para devolver a peça ao baú.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
       <button type="button" class="boneco" id="eqBoneco" aria-label="Girar o personagem para ver o que ele veste" hidden><canvas width="256" height="256"></canvas></button>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
-      <h3 class="sub">Peças no cofre</h3>
-      <ul id="eqList"></ul>
+      <div class="mtit"><h3 class="sub" id="eqMochT">Mochila</h3><button class="ghost" type="button" id="eqGuarda">Guardar tudo no baú</button></div>
+      <ul class="bau" id="eqMoch"></ul>
+      <h3 class="sub" id="eqBauT">Baú</h3>
+      <ul class="bau" id="eqList"></ul>
       <button class="ghost voltar" id="eqBack">Voltar ao acampamento</button>
     </div>
   </div>
@@ -471,14 +476,14 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Forja</p>
       <h2>Gordon</h2>
-      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais extraídos ficam aqui no depósito, que é da conta; morrer com eles no saco perde, como o resto.</p>
+      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Os materiais que você guarda no baú do Banqueiro aparecem aqui; na mochila, eles vão junto na caçada e a morte leva, como o resto.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="fgGold">0</b></div>
       <p class="mmsg" id="fgMsg" role="status"></p>
       <h3 class="sub">Encomenda</h3>
       <ul class="fg" id="fgMissao"></ul>
       <h3 class="sub">À venda</h3>
       <ul class="fg" id="fgLoja"></ul>
-      <h3 class="sub">Materiais no depósito</h3>
+      <h3 class="sub">Materiais no baú</h3>
       <ul class="fg" id="fgMats"></ul>
       <button class="ghost voltar" id="fgBack">Voltar ao acampamento</button>
     </div>
@@ -549,7 +554,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.19.0"></script>
+<script type="module" src="src/main.js?v=0.20.0"></script>
 
 </body>
 </html>

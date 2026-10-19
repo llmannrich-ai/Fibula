@@ -1043,6 +1043,10 @@
         "orc"
       ]
     },
+    "mochila": {
+      "_note": "A mochila do personagem (decisao do Leonardo, 19/10/2026): o loot entra nela e fica nela depois da extracao; o jogador guarda no bau do Banqueiro o que nao quer arriscar. Cada espaco guarda uma pilha do mesmo item; moeda de ouro nao ocupa espaco e vai para o cofre. A morte leva tudo o que esta nela.",
+      "slots": 20
+    },
     "walk": {
       "_note": "Andar por sqm com a velocidade do Tibia (decisoes do Leonardo, 19/10/2026). Velocidade em unidades do Tibia: jogador = speedBase + speedPerLevel*(nivel-1), ate speedMax, vezes (1 + buff de velocidade); monstro = spd do inimigo (mesma unidade), vezes a lentidao. O passo vem da formula do Forgotten Server (creature.cpp): passo = 1000*ground / (857,36*ln(vel/2 + 261,29) - 4795,01), arredondado para cima em multiplos de stepMs. O chao padrao do Tibia e 150; aqui 130, uns 15% mais rapido (pedido do Leonardo, 19/10/2026). Com ground 130: nivel 1 (220) = 500 ms, 2 sqm/s; nivel 50 (318) = 350 ms; nivel 100 (418) = 300 ms; nivel 200 (618) = 250 ms. Monstro com spd 150 = 700 ms. Diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). wander: quantas vezes mais devagar o monstro anda a toa.",
       "speedBase": 220,

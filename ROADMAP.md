@@ -141,6 +141,15 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — A mochila do personagem e o baú do Banqueiro (0.20.0)**
+  *(pedido do Leonardo; pilares 1 e 5)*. Os itens dos animais (dente, seda,
+  osso, erva) iam para o depósito do Gordon e não apareciam em lugar nenhum
+  fora da Forja; gema e coroa viravam ouro. Agora o loot entra na mochila
+  (20 espaços, por personagem), fica nela depois da extração e a morte leva
+  tudo o que estiver nela. O Banqueiro lista a mochila e o baú inteiro
+  (peças, tesouros, materiais): guardar, guardar tudo, pegar, vestir e vender.
+  O Guia de caça avisa quanto a mochila arrisca antes de entrar.
+
 - **2026-10-19 — A masmorra da sala sem tempo, com porta (0.19.0)** *(pedido
   do Leonardo; pilar 2)*. A masmorra nasce com a sala e fica aberta até o
   anfitrião fechar (na cidade) ou sair do jogo. Cada membro entra e sai por
