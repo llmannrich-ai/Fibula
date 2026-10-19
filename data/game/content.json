@@ -990,6 +990,15 @@
         "orc"
       ]
     },
+    "walk": {
+      "_note": "Andar por sqm, como no Tibia (decisao do Leonardo, 19/10/2026): todo mundo esta sempre num sqm e vai a um vizinho por vez. Velocidade do jogador em sqm por segundo: base + perLevel*(nivel-1), ate max; o buff de velocidade multiplica. A duracao do passo e arredondada para multiplos de stepMs (50 ms, como no Tibia, e o passo da simulacao). Passo na diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). Monstros: spd em pixels por segundo (32 = 1 sqm/s); wander e quantas vezes mais devagar andam a toa. Com 3,3 sqm/s o passo do nivel 1 e 300 ms; o antigo movimento livre era 4 sqm/s.",
+      "base": 3.3,
+      "perLevel": 0.02,
+      "max": 4.5,
+      "diagonal": 1.4,
+      "stepMs": 50,
+      "wander": 2.5
+    },
     "xp": {
       "_note": "Experiencia para passar do nivel L ao L+1: base * L^exp. Medido em 18/10/2026 com a simulacao no Node: a masmorra inteira vale ~1.680 de XP, e uma incursao tipica (metade dela) ~840. Com 520 e 0,9 o nivel 8 (terceiro espaco) chega depois de ~15 incursoes. deathLoss e a fatia do XP acumulado no nivel atual que a morte (ou o desabamento) leva, sem nunca descer de nivel; com esta curva, perder 25% custa no maximo 2 incursoes ate o nivel 17.",
       "base": 520,

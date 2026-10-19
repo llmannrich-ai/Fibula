@@ -18,6 +18,50 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 04:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** caçar junto (0.10.0), opção C do plano do multiplayer, a pedido do Leonardo ("criada na opção de entrar na masmorra na cidade; cada usuário pode criar uma sala; ela fica aberta até ele sair do jogo ou fechar"). Módulo novo `src/sala.js` (canal do Realtime por sala); seção "Caçar em grupo" no Guia de caça (criar, ver as abertas, entrar, sair, fechar); `retrato()`, `aplicaRetrato()` e `assiste()` em `src/sim/incursao.js`; `confereFicha()` em `src/sim/progresso.js`; `saida.sai(p)` para a tela final ser de cada jogador; o desenho mostra todos da sala com nome. Mesclada com o andar por sqm (`78b2abf`, sessão paralela) por commit de merge: a posição do convidado passou a ser o sqm, e o anfitrião o leva até lá pela regra (um sqm por passo, na velocidade do nível).
+
+**Validação:** `node tools/testar.mjs` — 24/24, com dois casos novos (`sala-anfitriao`, `sala-convidado`, Realtime falso) e, no Node, o retrato (o convidado vê os mesmos monstros, jogadores e sacos), a `confereFicha()` e o limite de um sqm por passo. Sete sabotagens barradas (teleporte, ficha sem conferir, poção ignorada, retrato puxando quem anda, item falso no save, e duas do retrato). Fora do harness: dois Chromium com saves próprios no **Realtime de verdade**, servindo esta cópia: criar, listar, entrar, caçar juntos (66–71 monstros iguais nos dois), andar e ser visto no sqm exato, habilidade do convidado lançada no anfitrião, extração dos dois com cofre de cada um, sala aberta depois, fechar — quatro rodadas verdes seguidas. Telas conferidas em 360×640.
+
+**Análise:** o teste ao vivo achou um problema que o harness não pegava: com mais de ~100 ms de atraso, o retrato podia mostrar o anfitrião um passo atrás com os dois parados, e o convidado era puxado de volta. Agora só volta quando a diferença dura (3 retratos se longe, 8 se é um sqm com os dois parados). O primeiro retrato de cada caçada atrasava até 5 s (temporizador do "estou vivo" da sala); corrigido.
+
+**Roadmap:** "Caçar junto" em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **O anfitrião não pode minimizar o jogo**: o navegador para o laço e a caçada congela para todos; 12 s depois os convidados voltam à cidade sem resultado. No celular, atender uma ligação derruba a sala.
+- **Só o anfitrião pode trapacear** (é ele quem calcula). Aceito para amigos; não abrir a desconhecidos sem a M2.
+- O convidado que fecha o jogo no meio fica parado na masmorra do anfitrião até morrer ou a masmorra desabar; o save dele não muda.
+- Entrar numa sala no meio de uma caçada dela deixa o convidado para a próxima.
+- Cota do Realtime: com 2 jogadores, ~40 mensagens/s contando entregas; a cota de 2 milhões/mês dá algumas dezenas de horas. Olhar o painel (Usage → Realtime Messages) depois dos testes com amigos.
+- Os efeitos que o convidado vê são os principais (dano, magias de área, cadáveres); faíscas e fumaça não vão pela rede.
+
+**Próximo passo recomendado:** o Leonardo testar com um amigo, cada um no seu celular, e dizer se o atraso do convidado incomoda; depois, "Sair cedo" (`Agora`).
+
+---
+
+## 2026-10-19 03:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** andar por sqm em tudo (0.9.0), a pedido do Leonardo depois do estudo do movimento do Tibia. `base.js` ganhou o passo de sqm (`poeNoSqm`, `comeca`, `avanca`, `dir8`, `passoPara`, `DIR8`, `centro`), usado pelo jogador e pelos monstros da incursão, pelo jogador da cidade e pelos outros jogadores da cidade. `progresso.js` tem `durPasso()`; `progression.walk` no `content.json` (validado em `dados.js`). Na incursão: `G.ocu` (bloqueio de corpo), `passoM()`, monstros que descem o fluxo sqm a sqm, contornam por sqm de mesma distância quando perto, atacam do vizinho e o xamã recua um sqm; `move()`, `blocked()` e o empurrão entre monstros saíram; o fluxo parte do sqm do jogador. Rede: `pos` agora é `{id,x,y,d}` em sqm e ms, um por passo.
+
+**Validação:** `node tools/testar.mjs` — 22/22. Na simulação no Node, casos novos: passo do nível 1 = 0,3 s e no teto 0,2 s, buff encurta, nasce no centro do sqm, 1,5 s para leste = 5 sqm e para no centro, quina escorrega, e nenhum par de monstros no mesmo sqm nem no sqm do jogador em 2.400 passos com o jogador andando e lutando; sabotagem (`livreM` sem ocupação) reprovou com "dois monstros no sqm 28,49". Caso `cidade-compartilhada` reescrito para passos (uma mensagem por passo e nada parado, passo animado inteiro, salto quando falta mensagem). Os roteiros `cidade` e a cidade no Node agora andam até o sqm da porta (antes "x < 180", que não existe mais parado). Fora do harness: dois Chromium no Realtime de verdade (B viu A em 15,11, x=496, igual ao A) e uma caçada em 360×640 com rato e aranha cercando o Cavaleiro em sqm vizinhos; nenhum erro de página.
+
+**Análise:**
+- Velocidade: 3,3 sqm/s no nível 1 (passo de 300 ms) contra 4 sqm/s do movimento livre — a caminhada até o portal ficou ~20% mais longa. Medir o pilar 4 (arco de 5 a 7 minutos) no próximo playtest.
+- O Tibia usa diagonal 3× mais lenta; aqui 1,4×, porque o joystick puxa para a diagonal.
+- Os nomes dos monstros são desenhados acima do sqm; com monstros em sqm vizinhos na vertical, o nome de um cai perto do sprite do outro (o sprite do OTSP é desenhado para cima e para a esquerda do sqm, como no Tibia).
+
+**Roadmap:** "Andar por sqm" em `Concluído`, fora da fila (decisão do dono).
+
+**Pendências e riscos:**
+- **Balanceamento mexeu sem medida fina.** Kiting, chegada ao portal e dano recebido mudaram (monstro cerca e bloqueia). O agente de Balanceamento deve medir XP por incursão e mortes de novo com a simulação no Node.
+- No celular, falta sentir: o joystick só escolhe direção no fim de cada passo (até 300 ms de atraso para virar), como no Tibia. Se incomodar, a saída é aceitar a mudança de direção no primeiro terço do passo.
+- O desenho só interpola o jogador deste aparelho na incursão (`G.p`); com o servidor da F2, os outros jogadores vão precisar entrar em `guarda()`/`render()`.
+
+**Próximo passo recomendado:** o Leonardo jogar no celular e dizer se o passo de sqm agrada; depois, "Sair cedo" (`Agora`).
+
+---
+
 ## 2026-10-19 03:30 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** decisões D-M1 e D-M2 do Leonardo registradas (PRD 15.1, plano do multiplayer, `209a079`) e a etapa **M1 do multiplayer** (0.8.2): a simulação com N jogadores. `G.p` virou `G.ps`; cada jogador nasce de uma ficha `{cl, c, up, local}` e carrega entrada, saco, recargas, ganhos e saída (`p.fora`); `newRun(semente, fichas)` e `update(dt, ents)` aceitam vários; tudo em `combate.js` recebe o jogador que age; `stats()`, `eqBonus()`, `manaPraMag()` e afins ganharam parâmetros opcionais (sem eles, o save, como a tela usa). Regras de grupo em `progression.party` (validado na carga). `saida.log/banner/nivel` levam o jogador, e o `main.js` só mostra os do aparelho. Tela final, HUD e desenho leem o jogador (`G.p`), não a sala.
@@ -529,50 +573,5 @@ hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
 roadmap.
 
 
-
----
-
-## 2026-10-18 23:50 UTC — Desenvolvedor
-
-**Item desenvolvido:** CI no GitHub Actions — `.github/workflows/ci.yml`, commits `fea2e5e` e `9b92a55`.
-
-**Validação:** run `39162120905` verde na `main`. Branch descartável `teste-ci-quebrada` com erro de sintaxe proposital: CI falhou (sem PR, o push do branch já dispara).
-
-**Análise:**
-- A primeira versão da CI chamava `tools/teste.js`, que o dono removera ao consolidar tudo em `tools/testar.mjs` ("um harness só"). Falhou com MODULE_NOT_FOUND. Lição: `git pull` e ler `tools/` antes de apontar a CI para um script.
-- `tools/testar.mjs` já inclui a checagem de sintaxe, então a CI tem um passo só.
-- O C4 foi concedido pelo dono (app Claude com acesso de escrita a workflows em todos os repositórios); o push do workflow passou direto na `main`.
-- `gh api .../logs` falha (proxy); os logs saem pela ferramenta `get_job_logs` do GitHub MCP.
-
-**Roadmap:** CI em `Concluído`; aviso de falha do save + teste da migração promovido a `Agora`. O teste da migração v1→v2 já existe em `testar.mjs` (caso de migração): conferir antes de duplicar.
-
-**Pendências e riscos:**
-- O branch remoto `teste-ci-quebrada` ficou: a exclusão deu 403. Apagar à mão (GitHub → Branches).
-- Node 20 nas actions `checkout@v4`/`setup-node@v4` gera aviso de depreciação; subir versão quando houver.
-- C3 (proteger a `main` exigindo CI) segue com o dono, e `modo.txt` continua `direto`. Proteger a `main` obrigaria PR; o dono decidiu direto na `main`, então não sugerir.
-
-**Próximo passo recomendado:** aviso de falha do `persist()` no menu; o teste da migração já existe.
-
----
-
-## 2026-10-18 23:30 UTC — Desenvolvedor
-
-**Item desenvolvido:** ferramenta de teste headless — `tools/teste.js`, mais a seção 2 do `CLAUDE.md` reescrita para usá-la. Nenhuma linha do `index.html` alterada.
-
-**Validação:** `node tools/teste.js` imprime `TESTE_OK` e sai com 0 nos dois cenários (menu e Mercador com compra e save; incursão ativa de 12 s até a tela final e "Nova incursão"). Cópia com `throw` injetado em `update()` falha com exit 1 e mensagem do erro. Não rodei a checagem de sintaxe separada porque o código de jogo não mudou.
-
-**Análise:**
-- O jogo é uma IIFE: o teste não alcança `G` nem `save` por fora, então os cenários dirigem a interface por cliques e leem o DOM e o `localStorage`.
-- O save semeado precisa trazer o personagem em `chars`; sem isso o menu quebra (`ch()` indefinido). Qualquer teste futuro de save deve semear assim.
-- A incursão de teste termina por "desabou" (o jogador não se move), o que exercita `update()`, `hud()` e `finish()`, mas não a extração nem a morte em combate.
-
-**Roadmap:** item movido para `Concluído`; a CI foi promovida a `Agora`; `Próximo` renumerado.
-
-**Pendências e riscos:**
-- Não testei no Windows/Edge; o `CLAUDE.md` manda definir `CHROME` com o `msedge.exe`. Não confirmado.
-- Não há cenário de extração nem de morte. Cobrir isso exige mover o jogador até o portal, o que o IIFE dificulta; avaliar quando a divisão do `index.html` expuser a simulação.
-- A CI continua dependendo da permissão C4 (issue #2). Sem ela o push de `.github/workflows` pode ser recusado.
-
-**Próximo passo recomendado:** tentar a CI (`.github/workflows/ci.yml`: sintaxe + `node tools/teste.js`) direto na `main`; se o push for recusado, deixar o arquivo em `docs/` e seguir para o aviso de falha do save.
 
 ---

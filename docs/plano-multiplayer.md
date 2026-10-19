@@ -44,6 +44,37 @@ onde dano, loot e XP precisam de servidor autoritativo (M2 a M4 abaixo). O que
 o teste ensina sobre a rede de celular (queda, aba no fundo, reconexão) vale
 para a M2.
 
+## 1.2 Andar por sqm (19/10/2026, versão 0.9.0)
+
+Decisão do Leonardo, depois do estudo do movimento do Tibia (Forgotten
+Server, `creature.cpp`): todo mundo anda por sqm, um passo de cada vez. Para o
+multiplayer isso muda três coisas:
+
+- **Rede:** um passo é uma mensagem com o sqm de destino e a duração; quem
+  recebe anima igual, sem adivinhar caminho, e parado não manda nada. Na
+  cidade, ~3 mensagens por segundo de quem anda (eram 5).
+- **Servidor autoritativo (M2):** conferir o movimento de um cliente vira
+  checar se o sqm é vizinho, livre e se a duração do passo passou — sem
+  refazer física contínua. Monstros mandam um evento por passo, não 20
+  posições por segundo.
+- **Jogo em grupo:** bloqueio de corpo (monstros ocupam sqm) dá papel ao
+  cavaleiro, que segura o corredor.
+
+## 1.3 Caçar junto com o anfitrião calculando (19/10/2026, versão 0.10.0)
+
+Opção C, decidida pelo Leonardo depois de testar a cidade compartilhada com
+dois celulares: co-op na masmorra **antes da M2 e sem gasto**, com o aparelho
+de quem cria a sala no papel do servidor. Usa a M1 (fichas, `G.ps`) e o
+andar por sqm: o convidado anda no próprio aparelho e conta o sqm; o
+anfitrião leva o boneco até lá pela regra, então não há teleporte. O
+`CLAUDE.md` (Realtime → Sala) descreve o funcionamento.
+
+O que isso adianta da M2: o protocolo (entrada por passo, retrato a 10/s,
+resultado por jogador) e o convidado desenhando um estado que não calcula.
+O que **não** resolve, e continua sendo da M2/M3: trapaça do anfitrião,
+partida que congela se o anfitrião minimiza o jogo, e o limite de ~100
+envios por segundo por canal do Realtime.
+
 ## 2. Onde o código está hoje (o que impede o multiplayer)
 
 O que já ajuda muito:

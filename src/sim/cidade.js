@@ -5,9 +5,10 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp} from './base.js?v=0.9.0';
-import {CITY,LEGENDA,CLASSES} from './dados.js?v=0.9.0';
-import {pecas} from './mapa.js?v=0.9.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.10.0';
+import {ch,durPasso} from './progresso.js?v=0.10.0';
+import {CITY,LEGENDA,CLASSES,PROG} from './dados.js?v=0.10.0';
+import {pecas} from './mapa.js?v=0.10.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se
@@ -32,25 +33,26 @@ export function entraCidade(dePortao){
      fazendo o papel do chão: o que não é assoalho conta como rocha */
   for(let i=0;i<w*h;i++)fora[i]=t[i]===3?0:1;
   if(dePortao){const g=npcs.find(n=>CITY.npcs[n.k].abre==='cacadas');if(g){sx=g.x/T|0;sy=(g.y/T|0)-1}}
-  C={w,h,t,sol,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:(sx+.5)*T,y:(sy+.5)*T,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
+  C={w,h,t,sol,par:pecas(fora,w,h),npcs,outros:OUTROS,p:{x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:Math.PI/2,walk:0,mv:false},perto:null,t0:0};
+  poeNoSqm(C.p,sx,sy);
   return C;
 }
 export const npcDaLetra=c=>{for(const k in CITY.npcs)if(CITY.npcs[k].letra===c)return k;return null};
 /* física da cidade: a mesma da incursão (src/sim/incursao.js), na grade da cidade */
-const solidoC=(x,y)=>x<0||y<0||x>=C.w||y>=C.h||C.sol[y*C.w+x]===1;
-function bloqC(x,y,r){
-  const a=Math.floor((x-r)/T),b=Math.floor((x+r)/T),c=Math.floor((y-r)/T),d=Math.floor((y+r)/T);
-  for(let j=c;j<=d;j++)for(let i=a;i<=b;i++)if(solidoC(i,j))return true;
-  return false;
-}
-function andaC(e,dx,dy){const r=e.r*.85;if(dx&&!bloqC(e.x+dx,e.y,r))e.x+=dx;if(dy&&!bloqC(e.x,e.y+dy,r))e.y+=dy}
+/* física da cidade: o mesmo andar por sqm da incursão (base.js), na grade da
+   cidade; jogadores não se bloqueiam */
+const livreC=(x,y)=>x>=0&&y>=0&&x<C.w&&y<C.h&&C.sol[y*C.w+x]!==1;
 /* ent é a mesma entrada da incursão ({x,y} do movimento); devolve a chave do
    NPC ao alcance de uma conversa, ou null */
 export function updateCidade(dt,ent){
   const p=C.p;C.t0+=dt;
-  let mx=ent.x,my=ent.y;const ml=hyp(mx,my);if(ml>1){mx/=ml;my/=ml}
-  p.mv=ml>.08;
-  if(p.mv){andaC(p,mx*128*dt,my*128*dt);p.face=Math.atan2(my,mx);p.walk+=dt*Math.min(1,ml)*12}
+  const sobra=avanca(p,dt);
+  if(sobra>=0){
+    const i=dir8(ent.x,ent.y),j=i<0?-1:passoPara(p,i,livreC,ent.x,ent.y);
+    if(j>=0){const d=DIR8[j],sd=durPasso(ch());comeca(p,d[0],d[1],d[0]&&d[1]?sd*PROG.walk.diagonal:sd,sobra)}
+    else if(i>=0)p.face=Math.atan2(DIR8[i][1],DIR8[i][0]);
+  }
+  p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
   let melhor=null,md=T*1.75;
   for(const n of C.npcs){const d=hyp(n.x-p.x,n.y-p.y);if(d<md){md=d;melhor=n.k}}
   C.perto=melhor;
@@ -62,9 +64,9 @@ export function updateCidade(dt,ent){
    Quem mais está na cidade chega pela rede (src/rede.js), que só escreve aqui,
    por poeOutro() e tiraOutro(). É dado de fora, então tudo é conferido: número
    preso ao mapa, classe que existe, nome curto e sem caractere de controle.
-   Cada outro guarda o alvo (ax, ay), a última posição recebida, e a posição
-   desenhada (x, y), que corre atrás dele: as mensagens chegam a no máximo 5
-   por segundo e a tela anda a 60. Nada daqui é regra de jogo: na cidade não se
+   Cada mensagem é um passo ("fui para o sqm tal, levo d ms"), e o boneco do
+   outro anda aquele passo com a mesma duração: o que se vê é o que ele fez,
+   um passo atrás, sem adivinhar caminho. Nada daqui é regra de jogo: na cidade não se
    ganha nem se perde nada, e é por isso que ela pode ser o primeiro teste do
    multiplayer sem servidor próprio. */
 export const OUTROS=new Map(),MAX_OUTROS=40;
@@ -73,28 +75,20 @@ export function poeOutro(id,d){
   if(typeof id!=='string'||!id||id.length>40)return null;
   let o=OUTROS.get(id);
   if(!o){if(OUTROS.size>=MAX_OUTROS)return null;
-    o={id,nome:'…',classe:'feiticeiro',lvl:1,x:0,y:0,ax:0,ay:0,vis:false,r:11,face:Math.PI/2,walk:0,mv:false,flash:0,swing:0};OUTROS.set(id,o)}
+    o={id,nome:'…',classe:'feiticeiro',lvl:1,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,vis:false,r:11,face:Math.PI/2,walk:0,mv:false,flash:0,swing:0};OUTROS.set(id,o)}
   if(typeof d.nome==='string'){const n=d.nome.replace(/[\u0000-\u001f\u007f]/g,'').trim().slice(0,16);if(n)o.nome=n}
   if(typeof d.classe==='string'&&CLASSES[d.classe])o.classe=d.classe;
   o.lvl=Math.round(num(d.lvl,1,999,o.lvl));
+  /* x, y: o sqm para onde foi; d: quanto o passo dura, em ms (0: chegou lá
+     sem andar, como ao entrar na cidade). Longe demais do último sqm
+     (mensagem perdida, aba que voltou do fundo), salta direto */
   if(d.x!==undefined&&d.y!==undefined&&C){
-    const LW=C.w*T,LH=C.h*T;o.ax=num(d.x,0,LW,o.ax);o.ay=num(d.y,0,LH,o.ay);
-    if(!o.vis){o.x=o.ax;o.y=o.ay;o.vis=true}
-    o.face=num(d.f,-4,4,o.face);
+    const tx=Math.round(num(d.x,0,C.w-1,o.tx)),ty=Math.round(num(d.y,0,C.h-1,o.ty)),sd=num(d.d,0,2000,0)/1000;
+    if(!o.vis||!sd||Math.max(Math.abs(tx-o.tx),Math.abs(ty-o.ty))>3){poeNoSqm(o,tx,ty);o.vis=true}
+    else if(tx!==o.tx||ty!==o.ty)comeca(o,tx-o.tx,ty-o.ty,sd);
   }
   return o;
 }
 export const tiraOutro=id=>OUTROS.delete(id);
 let dtS=0;const segue1=o=>segue(o,dtS);
-/* corre atrás do alvo na velocidade de quem anda (128), um pouco mais se
-   ficou para trás, e salta se ficou longe demais (mensagem perdida, aba que
-   voltou do fundo). Mais rápido que isso, o boneco anda e para a cada mensagem */
-function segue(o,dt){
-  if(!o.vis)return;
-  const dx=o.ax-o.x,dy=o.ay-o.y,d=hyp(dx,dy);
-  if(d>T*4){o.x=o.ax;o.y=o.ay;o.mv=false;return}
-  o.mv=d>1.5;
-  if(!o.mv)return;
-  const s=Math.min(d,Math.max(132,d*5)*dt);o.x+=dx/d*s;o.y+=dy/d*s;
-  o.face=Math.atan2(dy,dx);o.walk+=dt*12;
-}
+function segue(o,dt){if(!o.vis)return;avanca(o,dt);o.mv=o.sd>0;if(o.mv)o.walk+=dt*12}

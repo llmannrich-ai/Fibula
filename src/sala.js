@@ -13,14 +13,14 @@
    Mensagens (broadcast): quero (convidado pede para entrar, com a ficha),
    membros (a lista), comeca (semente e fichas), ent (entrada do convidado),
    estado (o retrato), fim (o resultado de um convidado), log, fecha. */
-import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.9.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.9.0';
-import {G,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.9.0';
-import {drinkPot} from './sim/combate.js?v=0.9.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.9.0';
-import {rede,ID,anuncia} from './rede.js?v=0.9.0';
-import {persist} from './salvar.js?v=0.9.0';
-import {log} from './hud.js?v=0.9.0';
+import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.10.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.10.0';
+import {G,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.10.0';
+import {drinkPot} from './sim/combate.js?v=0.10.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.10.0';
+import {rede,ID,anuncia} from './rede.js?v=0.10.0';
+import {persist} from './salvar.js?v=0.10.0';
+import {log} from './hud.js?v=0.10.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -121,7 +121,8 @@ function recebeAnf(ev,q,de){
     const i=IDX.get(q.id);if(!i)return;
     const e=ENTS[i]||(ENTS[i]={x:0,y:0,held:[false,false,false,false],pos:{x:0,y:0},f:0});
     const h=q.h|0;for(let k=0;k<4;k++)e.held[k]=!!(h&(1<<k));
-    if(Number.isFinite(q.x)&&Number.isFinite(q.y)){e.pos=e.pos||{x:0,y:0};e.pos.x=q.x;e.pos.y=q.y}
+    /* o sqm em que o convidado diz estar; o anfitrião só anda até lá pela regra */
+    if(Number.isInteger(q.x)&&Number.isInteger(q.y)){e.pos=e.pos||{x:0,y:0};e.pos.x=Math.max(0,Math.min(63,q.x));e.pos.y=Math.max(0,Math.min(63,q.y))}
     e.f=Number.isFinite(q.f)?q.f/100:e.f;
     /* a poção é um contador: cada aumento é um gole, mesmo que uma mensagem se perca */
     const n=q.pot|0;if(n>(potesViu[i]||0)){potesViu[i]=n;drinkPot(G.ps[i])}
@@ -177,12 +178,12 @@ function aplicaFim(r){
   G.over=true;G.end=kind;G.dur=G.t;
   ganchos.fim(kind);
 }
-/* a entrada do convidado: posição (ele anda no próprio aparelho), direção,
+/* a entrada do convidado: o sqm em que está (ele anda no próprio aparelho), direção,
    espaços segurados e quantas poções pediu */
 export const pocao=()=>{potes++};
 function mandaEnt(ent){
   const p=G.p;let h=0;for(let k=0;k<4;k++)if(ent.held[k])h|=1<<k;
-  bc('ent',{id:ID,x:Math.round(p.x),y:Math.round(p.y),f:Math.round(p.face*100),h,pot:potes});
+  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,pot:potes});
 }
 
 /* ---------- canal ---------- */

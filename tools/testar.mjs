@@ -289,7 +289,8 @@ function prelude(caso) {
   RT.todos=function(m){RT.vivos.forEach(function(w){if(w.readyState===1)w.diz(JSON.parse(JSON.stringify(m)))})};
   RT.entra=function(id,meta){RT.outros[id]=meta;var j={};j[id]={metas:[meta]};RT.todos({event:'presence_diff',payload:{joins:j,leaves:{}}})};
   RT.sai=function(id){var m=RT.outros[id];delete RT.outros[id];var l={};l[id]={metas:[m]};RT.todos({event:'presence_diff',payload:{joins:{},leaves:l}})};
-  RT.pos=function(id,x,y){RT.todos({event:'broadcast',payload:{type:'broadcast',event:'pos',payload:{id:id,x:x,y:y,f:0}}})};
+  /* x, y em sqm; d é a duração do passo em ms (0: aparece parado lá) */
+  RT.pos=function(id,x,y,d){RT.todos({event:'broadcast',payload:{type:'broadcast',event:'pos',payload:{id:id,x:x,y:y,d:d||0}}})};
   /* a sala (src/sala.js): o roteiro faz o outro lado com RT.sala(evento,
      dados) e lê o que o jogo mandou no canal da sala com RT.salaMandadas() */
   var naSala=function(w){return w.readyState===1&&String(w.topico||'').indexOf('realtime:sala-')===0};
@@ -679,20 +680,67 @@ async function testaSimulacao() {
     const mons = (G) => G.mons.map((m) => `${m.k}@${Math.round(m.x)},${Math.round(m.y)}:${Math.ceil(m.hp)}`).join(';');
     const esperado = mons(host), pAnf = [Math.round(host.ps[0].x), Math.round(host.ps[0].y), Math.ceil(host.ps[0].hp)].join(), nDr = host.drops.length;
     I.newRun(31, fr.map((f) => P.confereFicha({...f, c: JSON.parse(JSON.stringify(f.c))})));
-    const meuX = I.G.ps[1].x; I.aplicaRetrato(ret, 1);
+    I.aplicaRetrato(ret, 1);
     if (mons(I.G) !== esperado) falhas.push('o convidado não vê os mesmos monstros que o anfitrião depois do retrato');
     if ([Math.round(I.G.ps[0].x), Math.round(I.G.ps[0].y), Math.ceil(I.G.ps[0].hp)].join() !== pAnf) falhas.push('o convidado não vê o anfitrião onde ele está');
     if (I.G.drops.length !== nDr) falhas.push(`sacos no chão: ${nDr} no anfitrião, ${I.G.drops.length} no convidado`);
-    if (I.G.ps[1].x !== meuX && Math.abs(ret.ps[1].x - meuX) <= 96) falhas.push('o retrato moveu o convidado, que anda no próprio aparelho');
-    /* posição contada pelo convidado: no máximo 1,5× a velocidade por passo */
-    I.newRun(32, fichas(2)); I.G.active = true; I.G.mons.length = 0;
-    const cv = I.G.ps[1]; cv.x = I.G.portal.x; cv.y = I.G.portal.y; const cx0 = cv.x;
-    I.update(0.05, [{x: 0, y: 0, held: [false, false, false, false]}, {x: 0, y: 0, held: [false, false, false, false], pos: {x: cx0 + 60, y: cv.y}, f: 0}]);
-    if (!(cv.x > cx0 && cv.x - cx0 <= 128 * 1.5 * 0.05 + 0.01)) falhas.push(`a posição do convidado andou ${(cv.x - cx0).toFixed(1)} px num passo (máximo ${128 * 1.5 * 0.05})`);
+    /* o sqm contado pelo convidado: o anfitrião anda até lá um sqm por passo,
+       na velocidade do nível, sem teleporte */
+    I.newRun(32, fichas(2)); I.G.active = true; I.G.mons.length = 0; I.G.ocu.fill(0);
+    const cv = I.G.ps[1], B0 = await import(url('base.js')); B0.poeNoSqm(cv, Math.floor(I.G.portal.x / 32), Math.floor(I.G.portal.y / 32));
+    const ctx0 = cv.tx, alvo = {x: 0, y: 0, held: [false, false, false, false]}, rem = {x: 0, y: 0, held: [false, false, false, false], pos: {x: ctx0 + 30, y: cv.ty}, f: 0};
+    I.update(0.05, [alvo, rem]);
+    if (Math.abs(cv.tx - ctx0) > 1) falhas.push(`o convidado pulou ${cv.tx - ctx0} sqm num passo`);
+    for (let k = 0; k < 20; k++) I.update(0.05, [alvo, rem]);
+    if (cv.tx - ctx0 > Math.ceil(1.05 / P.durPasso(cv.c)) + 1) falhas.push(`o convidado andou ${cv.tx - ctx0} sqm em 1 s, mais que a velocidade do nível ${cv.c.lvl}`);
     if (P.confereFicha({cl: 'dragao', c: {}}) || P.confereFicha({cl: 'druida', c: {lvl: 1e9, slots: ['golpe', 'gelo']}}).c.lvl !== 200 || P.confereFicha({cl: 'druida', c: {lvl: 2, slots: ['golpe', 'gelo']}}).c.slots[0] !== null)
       falhas.push('confereFicha() deixou passar classe inexistente, nível absurdo ou habilidade de outra classe');
   } catch (e) { falhas.push('o grupo quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
+  /* andar por sqm, como no Tibia: passo pela velocidade do nível, diagonal
+     mais lenta, sem cortar quina, um monstro por sqm e bloqueio de corpo */
+  try {
+    novoSave();
+    const W = JSON.parse(CONTEUDO).progression.walk, c = P.ch();
+    c.lvl = 1; const d1 = P.durPasso(c); c.lvl = 200; const dmax = P.durPasso(c); c.lvl = 1;
+    if (d1 !== 0.3 || dmax !== 0.2) falhas.push(`passo do nível 1 = ${d1} s e no teto = ${dmax} s (esperado 0,3 e 0,2 com base ${W.base} e max ${W.max})`);
+    if (Math.abs(P.durPasso(c, 0.5) - 0.2) > 1e-9) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)}`);
+    I.newRun(7); I.G.active = true;
+    const p = I.G.ps[0], cx = (t) => (t + 0.5) * 32;
+    if (p.x !== cx(p.tx) || p.y !== cx(p.ty)) falhas.push(`o jogador não nasce no centro de um sqm (${p.x},${p.y})`);
+    /* leste por 1,5 s: 5 passos de 0,3 s, e para no centro do sqm */
+    const leste = {x: 1, y: 0, held: [false, false, false, false]}, nada = {x: 0, y: 0, held: [false, false, false, false]};
+    let livres = 0; while (!I.solid(p.tx + livres + 1, p.ty) && livres < 8) livres++;
+    const x0 = p.tx, alvo = Math.min(5, livres);
+    for (let i = 0; i < 30; i++) I.passo(0.05, leste);
+    for (let i = 0; i < 10; i++) I.passo(0.05, nada);
+    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 1,5 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
+    /* um monstro por sqm, nenhum no sqm de um jogador, em toda uma incursão com o jogador andando */
+    I.newRun(11); I.G.active = true;
+    const roteiro = [{x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 1, y: 1}];
+    let choque = null;
+    for (let q = 0; q < 2400 && !I.G.over && !choque; q++) {
+      const r = roteiro[(q / 40 | 0) % roteiro.length];
+      I.passo(0.05, {x: r.x, y: r.y, held: [true, false, false, false]});
+      const vistos = new Set();
+      for (const m of I.G.mons) { if (m.hp <= 0) continue; const k = m.ty * 64 + m.tx;
+        if (vistos.has(k)) choque = `dois monstros no sqm ${m.tx},${m.ty}`; vistos.add(k);
+        for (const j of I.G.ps) if (!j.fora && j.tx === m.tx && j.ty === m.ty) choque = `monstro no sqm do jogador (${m.tx},${m.ty})`;
+        if (!m.mv && (m.x !== cx(m.tx) || m.y !== cx(m.ty))) choque = `monstro parado fora do centro do sqm (${m.x},${m.y})`; }
+    }
+    if (choque) falhas.push('ocupação de sqm: ' + choque);
+    /* quina: na diagonal com um lado de parede, escorrega pelo eixo livre */
+    I.newRun(7); I.G.active = true;
+    const q = I.G.ps[0], B8 = B.DIR8;
+    let canto = null;
+    for (let y = 1; y < 63 && !canto; y++) for (let x = 1; x < 63 && !canto; x++)
+      if (!I.solid(x, y) && I.solid(x + 1, y) && !I.solid(x, y + 1) && !I.solid(x + 1, y + 1)) canto = [x, y];
+    if (canto) {
+      B.poeNoSqm(q, canto[0], canto[1]);
+      const j = B.passoPara(q, 1, (x, y) => !I.solid(x, y), 0.7, 0.7);
+      if (j !== 2) falhas.push(`diagonal com parede a leste devia escorregar para o sul (índice 2), deu ${j}`);
+    }
+  } catch (e) { falhas.push('o andar por sqm quebrou: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* a cidade: mapa do conteúdo, paredes, NPCs sólidos, quem está perto e a
      chegada pelo portão; e o conteúdo com mapa torto é recusado */
   try {
@@ -703,7 +751,8 @@ async function testaSimulacao() {
     if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
-    for (let i = 0; i < 30; i++) Cd.updateCidade(0.05, oeste);
+    /* anda por sqm: oeste até a coluna da porta (5), parando no centro dela */
+    for (let i = 0; i < 200 && (C.p.tx > 5 || C.p.mv); i++) Cd.updateCidade(0.05, C.p.tx > 5 ? oeste : parado);
     for (let i = 0; i < 40; i++) Cd.updateCidade(0.05, norte);
     if (C.perto !== 'mercador') falhas.push(`andar até a casa do Mercador não o deixou ao alcance (${C.perto} em ${C.p.x},${C.p.y})`);
     const m = C.npcs.find((n) => n.k === 'mercador');
@@ -791,8 +840,9 @@ const CASOS = [
     /* do @ da praça até o Mercador: oeste pela rua, norte pela porta da casa */
     var x0=Cd.C.p.x;
     tecla('keydown','KeyA');
-    var oeste=await ate(function(){return Cd.C.p.x<180},200);
-    tecla('keyup','KeyA');
+    /* por sqm: o passo para a coluna da porta (5) começa, solta a tecla e ele termina lá */
+    var oeste=await ate(function(){return Cd.C.p.tx<=5},200);
+    tecla('keyup','KeyA');await ate(function(){return !Cd.C.p.mv},30);
     ok('anda para oeste pela rua', oeste&&Cd.C.p.x<x0, x0+' → '+Cd.C.p.x);
     tecla('keydown','KeyW');
     var chegou=await ate(function(){return !$('#bFalar').hidden},200);
@@ -865,17 +915,20 @@ const CASOS = [
     ok('o grupo entra na masmorra: dois jogadores, o convidado com a ficha dele', I.G&&I.G.ps.length===2&&I.G.sala&&I.G.ps[1].cl==='druida'&&I.G.ps[1].c.lvl===2&&!I.G.ps[1].local, I.G&&I.G.ps.length);
     var com=RT.salaMandadas('comeca')[0];
     ok('a sala recebe a semente e as fichas', com&&com.semente===I.G.semente&&com.ids[1]==='conv1'&&com.fichas.length===2, com&&JSON.stringify(com.ids));
-    var q=I.G.ps[1],x0=q.x,e0=RT.salaMandadas('estado').length,t0=I.G.t;
-    for(var k=1;k<=8;k++){RT.sala('ent',{id:'conv1',x:Math.round(x0+k*6),y:Math.round(q.y),f:0,h:0,pot:0});await quadros(2)}
-    await quadros(4);
-    ok('o anfitrião leva o convidado até a posição que ele conta', Math.abs(q.x-(x0+48))<4, x0+' → '+q.x);
+    var q=I.G.ps[1],tx0=q.tx,e0=RT.salaMandadas('estado').length,t0=I.G.t;
+    var lado=!I.solid(q.tx+1,q.ty)&&!I.solid(q.tx+2,q.ty)?1:-1;
+    RT.sala('ent',{id:'conv1',x:tx0+lado,y:q.ty,f:0,h:0,pot:0});await quadros(4);
+    RT.sala('ent',{id:'conv1',x:tx0+2*lado,y:q.ty,f:0,h:0,pot:0});
+    var chegou=await ate(function(){return q.tx===tx0+2*lado&&!q.sd},60);
+    ok('o anfitrião leva o convidado até o sqm que ele conta', chegou, tx0+' → '+q.tx);
     var ne=RT.salaMandadas('estado').length-e0,dtj=I.G.t-t0;
     ok('o retrato vai a uns 10 por segundo', ne>=Math.floor(dtj/0.1)-1&&ne<=Math.ceil(dtj/0.1)+1, ne+' em '+dtj.toFixed(2)+' s');
     var r=RT.salaMandadas('estado').pop();
-    ok('o retrato tem os monstros e os dois jogadores', r&&r.m.length===I.G.mons.length*8&&r.ps.length===2, r&&(r.m.length/8)+' / '+I.G.mons.length);
-    var xa=q.x;RT.sala('ent',{id:'conv1',x:Math.round(q.x+3000),y:Math.round(q.y),f:0,h:0,pot:0});await quadros(1);
-    ok('posição de fora não teletransporta', q.x-xa<=128*1.5*0.05*2+1, xa+' → '+q.x);
-    q.hp=10;var pots=q.pot;RT.sala('ent',{id:'conv1',x:Math.round(q.x),y:Math.round(q.y),f:0,h:0,pot:1});await quadros(2);
+    ok('o retrato tem os monstros e os dois jogadores', r&&r.m.length===I.G.mons.length*10&&r.ps.length===2, r&&(r.m.length/10)+' / '+I.G.mons.length);
+    var xa=q.tx;RT.sala('ent',{id:'conv1',x:q.tx+40,y:q.ty,f:0,h:0,pot:0});await quadros(2);
+    ok('posição de fora não teletransporta: um sqm por passo', Math.abs(q.tx-xa)<=1, xa+' → '+q.tx);
+    RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:0});await ate(function(){return !q.sd},40);
+    q.hp=10;var pots=q.pot;RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:1});await quadros(2);
     ok('a poção do convidado é bebida pelo anfitrião', q.pot===pots-1&&q.hp>10, pots+' → '+q.pot+', vida '+q.hp);
     q.bag={ouro:12};q.bagVal=12;I.sai(q,'morreu');await quadros(1);
     var fim=RT.salaMandadas('fim')[0];
@@ -921,17 +974,18 @@ const CASOS = [
     RT.sala('comeca',{semente:77,ids:['anf1',EU],fichas:[ANA,{nome:'Druida',cl:'druida',c:qr.ficha.c,up:{}}]});
     var foi=await ate(function(){return I.G&&I.G.convidado&&$('#app').classList.contains('playing')},20);
     ok('o anfitrião começa e o convidado entra junto, na mesma masmorra', foi&&I.G.semente===77&&I.G.p===I.G.ps[1]&&I.G.ps.length===2, I.G&&I.G.semente);
-    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=Math.round(I.G.portal.x);r.ps[1].y=Math.round(I.G.portal.y);r.t=12.5;var m0=I.G.mons[0],xa=I.G.ps[0].x;
-    RT.sala('estado',r);await quadros(3);
+    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=Math.round(I.G.portal.x);r.ps[1].y=Math.round(I.G.portal.y);r.ps[1].tx=Math.floor(I.G.portal.x/32);r.ps[1].ty=Math.floor(I.G.portal.y/32);r.t=12.5;var m0=I.G.mons[0],xa=I.G.ps[0].x;
+    for(var k=0;k<3;k++){RT.sala('estado',r);await quadros(2)}
     ok('o retrato do anfitrião move os monstros e o anfitrião', I.G.mons[0].id===m0.id&&Math.abs(I.G.mons[0].x-(Math.round(m0.x)+40))<1&&Math.abs(I.G.ps[0].x-(Math.round(xa)+20))<1&&I.G.t>=12.5, I.G.mons[0].x+' / '+I.G.ps[0].x);
     ok('longe demais, o convidado volta para onde o anfitrião o vê', Math.abs(I.G.p.x-Math.round(I.G.portal.x))<1, I.G.p.x);
     var n0=RT.salaMandadas('ent').length,x0=I.G.p.x,rt0=I.G.rT;
-    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await quadros(2);
+    tecla('keydown','KeyD');await quadros(6);
+    var antes=I.G.p.tx,xA=I.G.p.x,rtA=I.G.rT,r2=I.retrato();r2.ps[1].tx=antes-1;r2.ps[1].x=antes*32-16;r2.ps[1].mv=1;RT.sala('estado',r2);await quadros(1);
+    ok('o retrato não puxa de volta quem está andando no próprio aparelho', I.G.p.x>=xA-.5, xA+' → '+I.G.p.x);
+    await quadros(4);tecla('keyup','KeyD');await quadros(8);
     var ents=RT.salaMandadas('ent').slice(n0),ult=ents[ents.length-1];
-    ok('o convidado anda no próprio aparelho e conta a posição', I.G.p.x>x0+20&&ult&&Math.abs(ult.x-I.G.p.x)<16&&ult.id===EU, x0+' → '+I.G.p.x+' / '+(ult&&ult.x));
-    var dtj=I.G.rT-rt0;
-    var r2=I.retrato(),meu=I.G.p.x;r2.ps[1].x=Math.round(meu)-30;RT.sala('estado',r2);await quadros(2);
-    ok('o retrato não puxa o convidado de volta: ele anda no próprio aparelho', Math.abs(I.G.p.x-meu)<1, meu+' → '+I.G.p.x);
+    ok('o convidado anda no próprio aparelho e conta o sqm', I.G.p.x>x0+20&&ult&&ult.x===I.G.p.tx&&ult.y===I.G.p.ty&&ult.id===EU, x0+' → '+I.G.p.x+' / sqm '+(ult&&ult.x)+' de '+I.G.p.tx);
+    var dtj=(rtA-rt0)+I.G.rT;
     ok('manda a entrada a uns 10 por segundo', ents.length>=Math.floor(dtj/0.1)-1&&ents.length<=Math.ceil(dtj/0.1)+1, ents.length+' em '+dtj.toFixed(2)+' s');
     tecla('keydown','KeyP');tecla('keyup','KeyP');await quadros(4);
     ok('a poção vira pedido ao anfitrião', RT.salaMandadas('ent').pop().pot===1, RT.salaMandadas('ent').pop().pot);
@@ -970,44 +1024,45 @@ const CASOS = [
     var tr=RT.enviadas.filter(function(d){return d.event==='presence'})[0];
     ok('anuncia nome, classe e nível (sem conta, o nome da classe)', tr&&tr.payload.payload.nome==='Feiticeiro'&&tr.payload.payload.classe==='feiticeiro'&&tr.payload.payload.lvl===3, tr&&JSON.stringify(tr.payload.payload));
     ok('conta onde está ao chegar', RT.posMandadas().length===1, RT.posMandadas().length);
-    RT.entra('ana1',{nome:'Ana',classe:'cavaleiro',lvl:7});RT.pos('ana1',300,300);
+    RT.entra('ana1',{nome:'Ana',classe:'cavaleiro',lvl:7});RT.pos('ana1',9,9);
     await quadros(4);
     var a=Cd.OUTROS.get('ana1');
-    ok('quem chega aparece, com o nome e a classe dela', a&&a.vis&&a.nome==='Ana'&&a.classe==='cavaleiro'&&a.x===300, a&&JSON.stringify({n:a.nome,c:a.classe,x:a.x,v:a.vis}));
+    ok('quem chega aparece, com o nome e a classe dela', a&&a.vis&&a.nome==='Ana'&&a.classe==='cavaleiro'&&a.tx===9&&a.x===9.5*32, a&&JSON.stringify({n:a.nome,c:a.classe,x:a.x,v:a.vis}));
     ok('o HUD conta duas pessoas', txt('#cRede')==='2 na cidade', txt('#cRede'));
     ok('o registro avisa a chegada', /Ana chegou à cidade/.test(txt('#log')||''), txt('#log'));
     ok('quem chega fica sabendo onde estou', RT.posMandadas().length===2, RT.posMandadas().length);
-    RT.pos('ana1',360,300);await ate(function(){return a.ax===360},10);await quadros(1);
+    RT.pos('ana1',10,9,400);await ate(function(){return a.tx===10},10);await quadros(2);
     var meio=a.x;await quadros(16);
-    ok('o boneco dela anda até a posição nova, sem saltar', meio>300&&meio<360&&Math.abs(a.x-360)<1, meio+' → '+a.x);
+    ok('o boneco dela anda o passo inteiro, um sqm, sem saltar', meio>9.5*32&&meio<10.5*32&&a.x===10.5*32&&!a.mv, meio+' → '+a.x);
+    RT.pos('ana1',30,9,400);await quadros(2);
+    ok('passo de mais de 3 sqm (mensagem perdida) salta direto', a.tx===Cd.C.w-1&&a.x===(Cd.C.w-.5)*32, a.tx+' / '+a.x);
     /* dado de fora: posição fora do mapa, classe que não existe, nome comprido com controle */
-    RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50);
+    RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50,1e9);
     await quadros(3);
     var m=Cd.OUTROS.get('mal');
-    ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.x===Cd.C.w*32&&m.y===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
+    ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.tx===Cd.C.w-1&&m.ty===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
     RT.sai('mal');
-    var n0=RT.posMandadas().length,t0=Cd.C.t0;
-    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await quadros(2);
-    /* o laço do roteiro e o do jogo dividem o relógio sintético: o tempo de
-       jogo que passou é o da cidade (C.t0), não o número de quadros */
-    var n1=RT.posMandadas().length-n0,dtj=Cd.C.t0-t0;
-    ok('andando, manda a posição no máximo 5 vezes por segundo', n1>=2&&n1<=Math.floor(dtj/0.2)+1, n1+' em '+dtj.toFixed(2)+' s');
+    var n0=RT.posMandadas().length,x0=Cd.C.p.tx;
+    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await ate(function(){return !Cd.C.p.mv},30);await quadros(2);
+    var n1=RT.posMandadas().length-n0,andou=Cd.C.p.tx-x0;
+    ok('andando, manda uma mensagem por passo e nada parado', andou>=2&&n1===andou, n1+' mensagens, '+andou+' sqm');
     var ult=RT.posMandadas()[RT.posMandadas().length-1].payload.payload;
-    ok('a última posição mandada é onde parei', Math.abs(ult.x-Math.round(Cd.C.p.x))<=1, ult.x+' / '+Cd.C.p.x);
+    ok('a última posição mandada é o sqm onde parei', ult.x===Cd.C.p.tx&&ult.y===Cd.C.p.ty&&!Cd.C.p.mv, JSON.stringify(ult)+' / '+Cd.C.p.tx+','+Cd.C.p.ty);
+    ok('cada mensagem é um passo de um sqm, com a duração dele', RT.posMandadas().slice(n0).every(function(q){return q.payload.payload.d>=150&&q.payload.payload.d<=700}), JSON.stringify(RT.posMandadas().slice(n0).map(function(q){return q.payload.payload})));
     RT.sai('ana1');await quadros(3);
     ok('quem sai some, e o registro avisa', !Cd.OUTROS.has('ana1')&&/Ana saiu da cidade/.test(txt('#log')||''), Cd.OUTROS.size);
     ok('sem ninguém, o HUD volta a só você', txt('#cRede')==='Só você na cidade', txt('#cRede'));
     Tl.abreNpc('mercador');await quadros(3);
     ok('numa loja da cidade continua conectado', RT.fechados===0, RT.fechados);
     clica($('#shopBack'));
-    RT.entra('bia',{nome:'Bia',classe:'druida',lvl:2});RT.pos('bia',200,200);await quadros(3);
+    RT.entra('bia',{nome:'Bia',classe:'druida',lvl:2});RT.pos('bia',6,6);await quadros(3);
     Tl.abreNpc('guia');clica($('#huntList button'));await quadros(4);
     ok('ir caçar sai da cidade: desliga e esquece os outros', RT.fechados===1&&Cd.OUTROS.size===0, RT.fechados+' / '+Cd.OUTROS.size);
     ok('a caçada é sozinha: nada de rede na masmorra', RT.vivos.length===0, RT.vivos.length);
     clica($('#toMenu'));
     var religou=await ate(function(){return RT.abertos===2&&Cd.OUTROS.has('bia')},40);
     ok('voltar à cidade religa e recebe quem já estava lá', religou, RT.abertos+' / '+Cd.OUTROS.size);
-    RT.pos('bia',210,200);await quadros(2);
+    RT.pos('bia',7,6,300);await quadros(2);
     RT.vivos[0].close();await quadros(2);
     ok('se a conexão cai, avisa e esquece os outros', txt('#cRede')==='Sem rede: só você'&&Cd.OUTROS.size===0, txt('#cRede'));
     var voltou=await ate(function(){return RT.abertos===3&&txt('#cRede')==='2 na cidade'},60);

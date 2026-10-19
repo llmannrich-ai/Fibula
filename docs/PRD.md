@@ -382,6 +382,8 @@ a partir de issue `decisao-do-dono` respondida).
 | 2026-10-18 | Uma tarefa agendada por papel; as duplicadas foram apagadas | Seção 13.4 |
 | 2026-10-18 | Cidade andável antecipada da F3, ainda sem rede: casas do Mercador, Banco e Guia de caça; o mapa e os NPCs ficam em `city` e `hunts` do `content.json` | Seção 7.4, `CLAUDE.md` |
 | 2026-10-19 | Primeiro teste do multiplayer **só na cidade**, pelo Realtime do Supabase (sem servidor próprio, sem gasto): ver quem está lá e andar junto. As caçadas continuam sozinhas; o co-op da incursão segue na F2 com servidor autoritativo | `CLAUDE.md` (Realtime), `docs/plano-multiplayer.md` |
+| 2026-10-19 | Andar por sqm, como no Tibia, em tudo (cidade, incursão, monstros, rede): um passo por vez, velocidade que cresce com o nível, bloqueio de corpo. Base 3,3 sqm/s no nível 1 (era 4 livre), teto 4,5 | `CLAUDE.md` ("Anda-se por sqm"), `progression.walk` |
+| 2026-10-19 | Caçar junto já, sem servidor próprio (opção C): salas criadas no Guia de caça, abertas até o anfitrião fechar ou sair do jogo; o aparelho do anfitrião calcula a incursão do grupo pelo Realtime do Supabase. Só para jogar com amigos (o anfitrião pode trapacear); para desconhecidos, a M2 | `CLAUDE.md` (Sala), `src/sala.js`, `docs/plano-multiplayer.md` |
 | 2026-10-19 | D-M1: antecipar da F2 só a M1 (a simulação com N jogadores, sem rede nem gasto). D-M2: regras de grupo do plano, com o loot **único**: um drop por monstro, só um jogador pega; a troca entre jogadores fica para o Mercado, mais tarde | `docs/plano-multiplayer.md` (seções 3 e 7), `ROADMAP.md` |
 
 ### 15.2 Pendentes (com padrão)
