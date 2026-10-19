@@ -290,6 +290,11 @@ h2.lost{color:var(--hp)}
 #app[data-arte] #bMochila .nm{position:absolute;bottom:2px;left:0;right:0}
 #bMochila[aria-expanded="true"]{--el:var(--torch)}
 #app.cidade .hud #bMochila{display:grid}
+/* Voz da sala: acima de Comer, na cidade e na incursão. Apertado, fala */
+#bVoz{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:212px;--el:var(--muted)}
+#bVoz .nm{font-size:10px} #bVoz .ct{font-size:8px;max-width:48px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#bVoz.on{--el:var(--mana)} #bVoz.no-ar{--el:var(--torch)} #bVoz.no-ar .nm{color:var(--torch)}
+#app.cidade .hud #bVoz{display:grid}
 .mochila{position:absolute;z-index:4;top:150px;bottom:196px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
 .mwin{pointer-events:auto;width:min(100%,340px);max-height:100%;overflow:auto;display:grid;gap:8px;padding:0 10px 10px;box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.65);animation:sobe .16s ease-out}
 @keyframes sobe{from{opacity:0;transform:translateY(10px)}}
@@ -400,6 +405,7 @@ h2.lost{color:var(--hp)}
     <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl main" id="s0"><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
+    <button class="act" id="bVoz" hidden aria-label="Ligar a voz da sala"><span class="nm out">Voz</span><span class="ct" id="vozT">ligar</span></button>
     <button class="act" id="bMochila" aria-controls="mochila" aria-expanded="false" aria-label="Abrir a mochila (B)"><span class="nm out">Mochila</span></button>
   </div>
 
@@ -476,10 +482,10 @@ h2.lost{color:var(--hp)}
         <p>O <b>nível</b> sobe matando, e libera vida, mana, espaços de habilidade e o que o Mestre de magias pode ensinar. A <b>magia</b> sobe gastando mana. A <b>perícia</b> sobe acertando golpes. Cada classe cresce em velocidades diferentes: nenhuma ganha poder de graça.</p>
       </details>
       <details><summary>Cidade e outros jogadores</summary>
-        <p>Na cidade você vê quem mais está nela. Em quem leva à caçada, crie uma sala ou entre na de alguém. Na Feira, com conta, compra e vende peças de outros jogadores. Com conta (usuário e senha, na tela inicial), o progresso fica na nuvem e continua em outro aparelho.</p>
+        <p>Na cidade você vê quem mais está nela. Em quem leva à caçada, crie uma sala ou entre na de alguém; na sala, segure Voz para falar com os outros. Na Feira, com conta, compra e vende peças de outros jogadores. Com conta (usuário e senha, na tela inicial), o progresso fica na nuvem e continua em outro aparelho.</p>
       </details>
       <details><summary>Controles</summary>
-        <p>Arraste o lado esquerdo da tela para andar. O jogo escolhe o alvo. Segure um botão de habilidade para repeti-la. No teclado: <b>WASD</b> anda, <b>Enter</b> fala com quem está ao lado, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção, <b>C</b> come.</p>
+        <p>Arraste o lado esquerdo da tela para andar. O jogo escolhe o alvo. Segure um botão de habilidade para repeti-la. No teclado: <b>WASD</b> anda, <b>Enter</b> fala com quem está ao lado, <b>J K L I</b> são os quatro espaços, <b>P</b> bebe poção, <b>C</b> come, <b>V</b> fala na sala.</p>
       </details>
       <details><summary>Créditos</summary>
         <p>A arte vem do <a href="https://github.com/peonso/opentibia_sprite_pack" target="_blank" rel="noopener">OpenTibia Sprite Pack</a>, da comunidade OpenTibia (<a href="assets/otsp/AUTHORS.md" target="_blank" rel="noopener">autores</a>), sob a licença <a href="https://creativecommons.org/licenses/by/4.0/deed.pt-br" target="_blank" rel="noopener">Creative Commons Atribuição 4.0</a>. Os sprites foram recortados e reunidos num atlas; alguns efeitos tiveram a cor trocada.</p>
@@ -653,7 +659,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.30.0"></script>
+<script type="module" src="src/main.js?v=0.31.0"></script>
 
 </body>
 </html>
