@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.21.0 (19/10/2026) | Toda caçada é numa sala: no Guia de caça, o lugar abre uma sala sua e já entra pela porta, e quem estiver na cidade pode entrar junto. A sala abre mesmo sem conexão. Corrige o "Entrar pela porta" que não respondia quando o canal da sala não tinha ligado, e o botão desabilitado agora parece desabilitado |
 | 0.20.0 (19/10/2026) | A cidade cresceu cinco vezes (54×38): praça com fonte, templo, rio com duas pontes, pomar e horta, e um mapa no canto. Três lojas novas de provisões para a próxima caçada, pagas com o cofre: a Quitandeira (uma refeição que regenera vida ou mana), a Boticária (poções a mais e elixir de pressa) e o Mestre de magias, do outro lado do rio (runas de pele de pedra, fúria e olho de águia). O que se leva vai inteiro, extraindo ou morrendo |
 | 0.19.0 (19/10/2026) | A masmorra da sala não tem tempo: nasce com a sala e fica aberta até quem criou fechar (na cidade) ou sair do jogo. Cada um entra e sai por uma porta na sala de entrada quando quiser, e pode voltar; os monstros renascem como no Tibia |
 | 0.18.0 (19/10/2026) | Gordon, o ferreiro, abre a Forja na cidade: compra dente, seda, osso e erva por pouco, dá quatro encomendas de materiais e, a cada uma entregue, põe à venda armas e armaduras melhores (maça cravejada, gibão acolchoado, machado de guerra, couraça de placas). Esses materiais não viram mais ouro na extração: vão para o depósito dele |

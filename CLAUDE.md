@@ -511,6 +511,11 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
 co-op na masmorra **sem servidor próprio**. No Guia de caça, qualquer um cria
 uma sala; quem está na cidade a vê e entra (até 4).
+**Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): o lugar de
+caça do Guia cria uma sala e entra pela porta, e sozinho é uma sala de um. A
+incursão solo com relógio (`start()` sem `prepara`) continua no código só para
+os testes e a simulação; o jogador não a alcança. O anfitrião entra pela porta
+mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
 
 - **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
   nasce com a sala, no aparelho do anfitrião, e fica aberta até ele fechar a

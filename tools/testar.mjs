@@ -374,7 +374,7 @@ import * as Pg from './src/sim/progresso.js?v=${VERSAO}';
   /* do acampamento (ou da tela final) até a masmorra: entra na cidade, fala
      com o Guia de caça sem andar até ele e escolhe o primeiro mapa. Quem quer
      provar a caminhada na cidade é o caso cidade */
-  var cacar=function(){if(visivel('#menu'))clica($('#play'));else if(visivel('#end'))clica($('#toMenu'));Tl.abreNpc('guia');clica($('#huntList button'))};
+  var cacar=function(){if(visivel('#menu'))clica($('#play'));else if(visivel('#end'))clica($('#toMenu'));Tl.abreNpc('guia');Tl.start()};
   try{
 ${caso.roteiro}
   }catch(e){ok('roteiro sem excecao',false,(e&&e.stack)||e)}
@@ -1003,9 +1003,10 @@ const CASOS = [
     Tl.abreNpc('guia');
     ok('o Guia mostra os mapas de caça', visivel('#hunts')&&todos('#huntList li').length>=1, todos('#huntList li').length);
     ok('o mapa de caça diz o nível recomendado', /nível recomendado 1/.test(txt('#huntList .meta')||''), txt('#huntList .meta'));
+    ok('o lugar de caça abre uma sala sua', txt('#huntList button')==='criar sala', txt('#huntList button'));
     clica($('#huntList button'));
     await quadros(3);
-    ok('o Guia leva à masmorra', $('#app').classList.contains('playing')&&!$('#app').classList.contains('cidade'));
+    ok('o Guia leva à masmorra, numa sala sem tempo', $('#app').classList.contains('playing')&&!$('#app').classList.contains('cidade')&&I.G.sala&&I.G.aberta&&Sa.SALA.papel==='anfitriao', Sa.SALA.papel);
     ok('a incursão contou no save', sv()&&sv().runs===1, sv()&&sv().runs);
     ok('na masmorra o botão de falar some', getComputedStyle($('#bFalar')).display==='none'||$('#bFalar').offsetParent===null);
     clica($('#toMenu'));
@@ -1041,7 +1042,7 @@ const CASOS = [
     ok('a masmorra da sala nasce com ela, sem tempo e vazia', I.G&&I.G.sala&&I.G.aberta&&I.G.active&&I.G.ps[0].fora==='fora'&&I.G.portal.open, I.G&&JSON.stringify({ab:I.G.aberta,f:I.G.ps[0].fora}));
     var anunc=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0&&d.payload.payload.sala}).pop();
     ok('a sala é anunciada na cidade, para os outros verem no Guia', anunc&&anunc.payload.payload.sala.n===1, anunc&&JSON.stringify(anunc.payload.payload));
-    ok('os lugares do Guia ficam para quem não está numa sala', $('#huntList button').disabled, txt('#huntList button'));
+    ok('dentro da sala, o lugar do Guia leva pela porta dela', txt('#huntList button')==='pela porta', txt('#huntList button'));
     RT.sala('quero',{id:'conv1',ficha:BIA});
     var entrou=await ate(function(){return Sa.SALA.membros.length===2},20);
     ok('o convidado fica na sala, e o Guia mostra quem está nela', entrou&&/Bia/.test(txt('#hSala')||''), txt('#hSala'));
@@ -1078,6 +1079,10 @@ const CASOS = [
     ok('quem saiu volta a entrar pela porta, com o saco vazio e no mesmo lugar da lista', RT.salaMandadas('porta').length===2&&I.G.ps.length===2&&!I.G.ps[1].fora&&I.G.ps[1].bagVal===0, I.G.ps.length+' / '+I.G.ps[1].fora);
     var porta=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
     ok('o Guia oferece entrar pela porta', porta&&!porta.disabled, txt('#hSala'));
+    var est0=Sa.SALA.estado;Sa.SALA.estado='sem rede';Tl.abreNpc('guia');
+    var semCanal=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
+    ok('sem o canal da sala, o anfitrião ainda entra: a masmorra roda no aparelho dele', semCanal&&!semCanal.disabled&&/Sem conexão com a sala/.test(txt('#hSala')||''), txt('#hSala'));
+    Sa.SALA.estado=est0;Tl.abreNpc('guia');porta=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
     clica(porta);await quadros(3);
     ok('o anfitrião entra na masmorra que o aparelho dele já roda', $('#app').classList.contains('playing')&&I.G.p===I.G.ps[0]&&!I.G.ps[0].fora&&I.G.ps.length===2, I.G.ps[0].fora);
     ok('o HUD diz que não há tempo', txt('#timeT')==='sem tempo'&&/Porta/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
@@ -1096,7 +1101,7 @@ const CASOS = [
     Tl.abreNpc('guia');
     var fecha=todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0];clica(fecha);await quadros(3);
     ok('fechar a sala acaba com a masmorra e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&I.G.over&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
-    ok('o Guia volta a oferecer criar sala e os lugares sozinho', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'})&&!$('#huntList button').disabled, txt('#hSala'));
+    ok('o Guia volta a oferecer criar sala, também pelo lugar de caça', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'})&&txt('#huntList button')==='criar sala', txt('#hSala'));
     `,
   },
   {
@@ -1263,7 +1268,8 @@ const CASOS = [
     ok('numa loja da cidade continua conectado', RT.fechados===0, RT.fechados);
     clica($('#shopBack'));
     RT.entra('bia',{nome:'Bia',classe:'druida',lvl:2});RT.pos('bia',6,6);await quadros(3);
-    Tl.abreNpc('guia');clica($('#huntList button'));await quadros(4);
+    /* fora de sala (a incursão direta, que o Guia não oferece mais) */
+    Tl.abreNpc('guia');Tl.start();await quadros(4);
     ok('ir caçar sai da cidade: desliga e esquece os outros', RT.fechados===1&&Cd.OUTROS.size===0, RT.fechados+' / '+Cd.OUTROS.size);
     ok('a caçada é sozinha: nada de rede na masmorra', RT.vivos.length===0, RT.vivos.length);
     clica($('#toMenu'));
