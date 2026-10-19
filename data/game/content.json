@@ -8,7 +8,7 @@
     "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per). preco: ouro do cofre para aprender com o NPC que ensina (ensina: true em city.npcs); 0 = vem de graca ao chegar no nivel. Cada classe precisa de uma de nivel 1 e preco 0, senao o personagem novo nao ataca. Quem ja jogava antes da 0.21.0 ficou com tudo que o nivel tinha liberado",
     "equipFormat": "item com slot (arma, armadura ou amuleto) fica como peca na mochila e, guardado no Banco, vai para o cofre da conta em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
     "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)",
-    "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Cada uma e uma provisao: fica guardada (ate max por cacada) e vai inteira na proxima cacada que comecar, extraindo ou morrendo. efeito: pot (pocoes a mais), rhp e rmp (vida e mana por segundo a mais durante a cacada), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada (uma refeicao). Icone: sup_<chave> no atlas."
+    "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Cada uma e uma provisao: fica guardada (ate max) e vai inteira na proxima cacada que comecar. efeito: pot (pocoes a mais), comida (segundos de alimentacao: vai na mochila, se come pelo botao Comer e so alimentado se regenera vida e mana, ver progression.comida; o que sobra volta ao extrair), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada. Icone: sup_<chave> no atlas."
   },
   "classes": {
     "feiticeiro": {
@@ -1538,48 +1538,47 @@
     "mochila": {
       "_note": "A mochila do personagem, como no Tibia (decisao do Leonardo, 19/10/2026): o loot fica nela entre as cacadas, ela entra inteira na proxima e a morte leva tudo o que esta dentro (menos o Selo de resguardo). So o cofre do Banco e seguro: guardar e com o Banqueiro. espacos: quantas casas ela tem; cada peca de equipamento ocupa uma casa, o resto (ouro, gemas, materiais) empilha uma casa por tipo. Cheia, o loot que nao cabe fica no chao.",
       "espacos": 20
+    },
+    "comida": {
+      "_note": "Alimentacao como no Tibia (decisao do Leonardo, 19/10/2026): sem comida o personagem nao regenera vida nem mana. Cada comida (supplies com efeito.comida) soma os segundos dela ao tempo de alimentacao; enquanto ele dura, a regeneracao e a da classe (rhp e rmp em classes), fixa. O jogador come pelo botao Comer na cacada, a menor comida que levou primeiro; se o tempo passaria de max, nada e comido (Voce esta satisfeito). max e o do Tibia: 1200 s. A comida que sobra volta ao estoque se ele extrair e se perde se morrer.",
+      "max": 1200
     }
   },
   "supplies": {
     "frutas": {
       "nome": "Cesta de frutas",
-      "desc": "+1,5 de vida por segundo na próxima caçada.",
+      "desc": "1 min 30 s de alimentação.",
       "preco": 15,
-      "max": 1,
-      "grupo": "refeição",
+      "max": 10,
       "efeito": {
-        "rhp": 1.5
+        "comida": 90
       }
     },
     "queijo": {
       "nome": "Queijo curado",
-      "desc": "+3 de mana por segundo na próxima caçada.",
-      "preco": 20,
-      "max": 1,
-      "grupo": "refeição",
+      "desc": "3 min de alimentação.",
+      "preco": 25,
+      "max": 10,
       "efeito": {
-        "rmp": 3
+        "comida": 180
       }
     },
     "presunto": {
       "nome": "Presunto defumado",
-      "desc": "+3 de vida por segundo na próxima caçada.",
-      "preco": 35,
-      "max": 1,
-      "grupo": "refeição",
+      "desc": "5 min de alimentação.",
+      "preco": 40,
+      "max": 10,
       "efeito": {
-        "rhp": 3
+        "comida": 300
       }
     },
     "ensopado": {
       "nome": "Ensopado do caçador",
-      "desc": "+2 de vida e +3 de mana por segundo na próxima caçada.",
-      "preco": 50,
-      "max": 1,
-      "grupo": "refeição",
+      "desc": "9 min de alimentação.",
+      "preco": 60,
+      "max": 10,
       "efeito": {
-        "rhp": 2,
-        "rmp": 3
+        "comida": 540
       }
     },
     "pocao": {
@@ -1762,7 +1761,7 @@
         "nome": "Quitandeira",
         "casa": "Quitanda",
         "abre": "loja",
-        "fala": "Barriga cheia regenera mais rápido. Uma refeição por caçada, e ela vale até o portal.",
+        "fala": "Barriga vazia não sara ferida. Leve comida: quanto mais farta, mais tempo ela sustenta.",
         "vende": [
           "frutas",
           "queijo",

@@ -69,21 +69,12 @@ números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
 entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
-(equipamento perdido, nível que desce): migração testada.
+(equipamento perdido, nível que desce): migração testada. A seção "A morte" da tela de Regras muda junto.
 
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 5. Tela de créditos no jogo
-
-**Pilar 2.** A licença CC BY 4.0 do OTSP exige atribuição; hoje ela está só em
-`assets/CREDITOS.md` e no README. Botão discreto abrindo uma tela com origem,
-licença e autores.
-
-**Fase:** F0. **Pronto quando:** a tela existe, lista o OTSP com licença e link
-para os autores, e há caso no `tools/testar.mjs`.
-
-### 6. PWA instalável
+### 5. PWA instalável
 
 **Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
@@ -92,7 +83,7 @@ sem rede com o último conteúdo baixado. Sem biblioteca.
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 7. Escada de lugares de caça
+### 6. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -119,6 +110,22 @@ recomendado acima de 15, e o caso da cidade entra nele.
 ---
 
 ## Concluído
+
+- **2026-10-19 — Tela inicial curta, com Regras e créditos (0.31.0)**
+  *(pedido do Leonardo: minimalista, botão de regras, login fácil; pilares 4
+  e 5; fecha o item "Tela de créditos" da F0)*. A tela inicial tem o
+  personagem, o preço da morte em uma linha, Jogar, a conta (os mesmos campos
+  e botões) e o rodapé Regras · Personagens · Grimório, sem rolar em 360×640.
+  A tela de Regras tem seções que abrem e fecham, os números lidos do
+  `content.json`, a versão e os créditos do OTSP. Os números da conta foram
+  para Personagens. Sem personagem, a tela inicial pede Criar personagem e
+  mostra o login antes.
+
+- **2026-10-19 — Voz na sala (0.30.0)** *(pedido do Leonardo)*. `src/voz.js`:
+  WebRTC nativo em malha entre quem está na sala, apresentação pelo canal da
+  sala, segurar para falar (botão Voz ou V), quem fala no botão, STUN do
+  Cloudflare e do Google, sem TURN. Caso `voz-na-sala` no harness, com
+  conexão de verdade no Chromium headless.
 
 - **2026-10-19 — Um guia só e o mundo igual para todos (0.28.0)**
   *(decisão do Leonardo: "a realidade como ela é"; pilar 1)*. O `VISAO.md`, o
