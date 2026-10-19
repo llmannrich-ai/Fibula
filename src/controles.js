@@ -2,16 +2,17 @@
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
    nada daqui direto: o laço pede leEntrada() e passa o resultado a update(),
    ou a updateCidade() quando se anda na cidade. */
-import {hyp} from './sim/base.js?v=0.30.0';
-import {G} from './sim/incursao.js?v=0.30.0';
-import {drinkPot,comer} from './sim/combate.js?v=0.30.0';
-import {pocao,comida} from './sala.js?v=0.30.0';
+import {hyp} from './sim/base.js?v=0.33.0';
+import {G} from './sim/incursao.js?v=0.33.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.33.0';
+import {pocao,comida} from './sala.js?v=0.33.0';
+import {VOZ,ligaVoz,fala} from './voz.js?v=0.33.0';
 /* na sala, o convidado pede a poção ao anfitrião, que é quem a bebe */
 const bebe=()=>{if(G&&G.convidado)pocao();else drinkPot()};
 const come=()=>{if(G&&G.convidado)comida();else comer()};
-import {W,H} from './desenho.js?v=0.30.0';
-import {E} from './hud.js?v=0.30.0';
-import {$,app} from './dom.js?v=0.30.0';
+import {W,H} from './desenho.js?v=0.33.0';
+import {E} from './hud.js?v=0.33.0';
+import {$,app} from './dom.js?v=0.33.0';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};
@@ -60,9 +61,13 @@ function bindHold(el,down,up){
 /* segurar qualquer espaço repete a habilidade quando ela sai do cooldown */
 for(let i=0;i<4;i++)bindHold(E.slots[i],()=>{held[i]=true},()=>{held[i]=false});
 bindHold(E.bPot,bebe);bindHold(E.bCom,come);
+/* voz da sala: o primeiro toque liga (pede o microfone), depois segurar fala */
+bindHold($('#bVoz'),()=>{if(VOZ.ligada)fala(true);else ligaVoz()},()=>fala(false));
 const TECLAS=['KeyJ','KeyK','KeyL','KeyI'];
+const digitando=e=>e.target&&e.target.closest&&e.target.closest('input,textarea,select');
 addEventListener('keydown',e=>{
   keys[e.code]=true;
+  if(e.code==='KeyV'&&!e.repeat&&VOZ.ligada&&!digitando(e))fala(true);
   if(G&&G.active&&!G.over){
     if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code))e.preventDefault();
     const i=TECLAS.indexOf(e.code);
@@ -74,5 +79,6 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false;
   const i=TECLAS.indexOf(e.code);if(i>=0)held[i]=false;
   if(e.code==='Space')held[0]=false;
+  if(e.code==='KeyV')fala(false);
 });
-addEventListener('blur',()=>{for(const k in keys)keys[k]=false;soltaTudo()});
+addEventListener('blur',()=>{for(const k in keys)keys[k]=false;soltaTudo();fala(false)});

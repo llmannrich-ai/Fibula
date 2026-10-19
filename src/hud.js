@@ -1,18 +1,19 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.30.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.30.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.30.0';
-import {G} from './sim/incursao.js?v=0.30.0';
-import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.30.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.30.0';
-import {erroFeira} from './telas.js?v=0.30.0';
-import {persist} from './salvar.js?v=0.30.0';
-import {C} from './sim/cidade.js?v=0.30.0';
-import {ART,icone} from './arte.js?v=0.30.0';
-import {retrato} from './desenho.js?v=0.30.0';
-import {rede} from './rede.js?v=0.30.0';
-import {$,app} from './dom.js?v=0.30.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.33.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.33.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.33.0';
+import {G} from './sim/incursao.js?v=0.33.0';
+import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.33.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.33.0';
+import {erroFeira} from './telas.js?v=0.33.0';
+import {persist} from './salvar.js?v=0.33.0';
+import {C} from './sim/cidade.js?v=0.33.0';
+import {ART,icone} from './arte.js?v=0.33.0';
+import {retrato} from './desenho.js?v=0.33.0';
+import {rede} from './rede.js?v=0.33.0';
+import {VOZ} from './voz.js?v=0.33.0';
+import {$,app} from './dom.js?v=0.33.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -76,6 +77,22 @@ export function hud(){
     b.style.setProperty('--cd',clamp(esp/Math.max(s.cd,s.gcd||.4),0,1));
     b.classList.toggle('dim',p.mp<s.mana);
   }
+  hudVoz();
+}
+/* ---------- voz da sala ----------
+   O botão aparece só com sala ligada. Desligado, o toque liga (pede o
+   microfone); ligado, segurar fala e o rótulo diz quem fala agora */
+const EV={b:$('#bVoz'),nm:$('#bVoz .nm'),ct:$('#vozT')};
+let vozAntes='';
+export function hudVoz(){
+  const est=!VOZ.pode&&!VOZ.ligada?'':VOZ.pedindo?'pede':!VOZ.ligada?'off':VOZ.falando?'ar':'on';
+  if(est!==vozAntes){
+    vozAntes=est;EV.b.hidden=!est;EV.b.classList.toggle('on',est==='on');EV.b.classList.toggle('no-ar',est==='ar');
+    EV.b.setAttribute('aria-label',est==='off'||est==='pede'?'Ligar a voz da sala':'Segurar para falar com a sala (V)');
+  }
+  if(!est)return;
+  setT(EV.nm,est==='off'||est==='pede'?'Voz':'Falar');
+  setT(EV.ct,est==='off'?'ligar':est==='pede'?'…':est==='ar'?'no ar':VOZ.quem?VOZ.quem:VOZ.n?`${VOZ.n+1} na voz`:'só você');
 }
 /* ---------- HUD da cidade ----------
    Quem você é, o cofre, e o botão de falar quando há um NPC ao alcance. Ao
@@ -85,6 +102,7 @@ let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
   setT(EC.cls,KL().nome);setT(EC.lvl,'Nv '+c.lvl);setT(EC.cofre,String(save.cofre));
+  hudVoz();
   setT(EC.rede,(rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…')+(rede.naSala?` · sala ${rede.naSala}/4`:''));
   if(C.perto===pertoAntes)return;
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
@@ -130,7 +148,7 @@ function info(k,q,vestida){
   const it=ITEMS[k],b=document.createElement('b');b.className='r'+it.rar;b.textContent=fmtItem([k,q]);
   const bo=it.slot?` · ${SLOT_NOME[it.slot]}, ${fmtBonus(it)}`:'';
   el.append(b,vestida?`${bo}. Vestida: não cai na morte; tirada, vai para a mochila.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+' Na mochila, cai na morte. '+
-    (it.slot?'Guardada no Banco, vai para o cofre.':ehMat(k)?'Guardado no Banco, vai para o depósito do Gordon, na Forja.':k==='ouro'?'Guardado no Banco, vai para o cofre.':'Guardado no Banco, vira ouro no cofre.'));
+    (it.slot?'Guardada no Banco, vai para o cofre.':ehMat(k)?'Guardado no Banco, fica no cofre e o Gordon vê na Forja.':k==='ouro'?'Guardado no Banco, vai para o cofre.':'Guardado no Banco, fica no cofre; o Banco compra.'));
 }
 export function desenhaMochila(){
   const c=ch(),K=KL(),caca=naCaca(),p=caca?G.p:null,bag=p?p.bag:c.mochila,val=p?p.bagVal:valMochila(bag);
