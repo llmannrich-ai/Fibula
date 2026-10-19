@@ -94,6 +94,7 @@ A versão aparece no alto do menu do jogo.
 | Versão | O que trouxe |
 |---|---|
 | 0.6.0 (18/10/2026) | Morrer custa 25% da experiência do nível (nunca o nível), com aviso no menu e linha própria na tela final; curva de nível mais lenta, ajustável no `content.json` |
+| 0.11.0 (19/10/2026) | Velocidade do Tibia: o personagem anda 1,8 sqm/s no nível 1 e acelera a cada nível (220 + 2 por nível, a fórmula do Tibia); monstros mais lentos que o jogador, a aranha mais rápida e o esqueleto e o orc a 1,25 sqm/s |
 | 0.9.0 (19/10/2026) | Anda-se por sqm, como no Tibia: um passo de cada vez, mais rápido a cada nível; monstros ocupam o sqm deles e cercam o jogador, e o cavaleiro pode segurar um corredor. Na cidade, os outros jogadores andam exatamente os passos que deram |
 | 0.10.0 (19/10/2026) | Botão Mochila, na masmorra e na cidade: abre sobre o jogo, sem pausar, o corpo (amuleto, arma, armadura) e o saco em grade, com o que se perde se morrer; tocar numa peça diz o que ela é |
 | 0.8.0 (19/10/2026) | A cidade é compartilhada: quem está nela vê os outros jogadores andando, com nome e classe, e o HUD conta quantos são. As caçadas continuam sozinhas |

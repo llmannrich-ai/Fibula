@@ -36,7 +36,8 @@ export function validaConteudo(c){
   if(!p.scaling||!p.boss||!p.perRoom||!p.xp)throw new Error('progression incompleta');
   if(!(p.xp.base>0&&p.xp.exp>0&&p.xp.deathLoss>=0&&p.xp.deathLoss<1))throw new Error('progression.xp precisa de base e exp positivos e deathLoss entre 0 e 1');
   const w=p.walk;
-  if(!w||!['base','perLevel','max','diagonal','stepMs','wander'].every(k=>typeof w[k]==='number'&&w[k]>=0)||!(w.base>0&&w.max>=w.base&&w.diagonal>=1&&w.stepMs>0))throw new Error('progression.walk precisa de base e max positivos (max >= base), perLevel, diagonal >= 1, stepMs e wander');
+  if(!w||!['speedBase','speedPerLevel','speedMax','ground','diagonal','stepMs','wander'].every(k=>typeof w[k]==='number'&&w[k]>=0)||!(w.speedBase>0&&w.speedMax>=w.speedBase&&w.ground>0&&w.diagonal>=1&&w.stepMs>0&&w.wander>=1))throw new Error('progression.walk precisa de speedBase e speedMax (>= speedBase), speedPerLevel, ground, diagonal >= 1, stepMs e wander >= 1');
+  for(const[k,e]of Object.entries(c.enemies))if(!(e.spd>0))throw new Error(`inimigo ${k} precisa de spd (velocidade do Tibia) positivo`);
   const pt=p.party;
   if(!pt||!['monsters','bossHp','lootProtection','shareTiles'].every(k=>typeof pt[k]==='number'&&pt[k]>=0))throw new Error('progression.party precisa de monsters, bossHp, lootProtection e shareTiles numéricos e não negativos');
   for(const b of p.bands){

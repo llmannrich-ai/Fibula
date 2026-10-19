@@ -185,7 +185,7 @@ function ajusta(c, caminho, esperado, novo, nome) {
 const A = {
   /* rato letal: mata o jogador num golpe, para exercitar finish("morreu") */
   ratoLetal: (c) => {
-    ajusta(c, 'enemies.rato.spd', 72, 150, 'rato letal');
+    ajusta(c, 'enemies.rato.spd', 134, 400, 'rato letal');
     ajusta(c, 'enemies.rato.dmg', 4, 200, 'rato letal');
     ajusta(c, 'enemies.rato.atk', 0.9, 0.3, 'rato letal');
   },
@@ -671,18 +671,19 @@ async function testaSimulacao() {
     novoSave();
     const W = JSON.parse(CONTEUDO).progression.walk, c = P.ch();
     c.lvl = 1; const d1 = P.durPasso(c); c.lvl = 200; const dmax = P.durPasso(c); c.lvl = 1;
-    if (d1 !== 0.3 || dmax !== 0.2) falhas.push(`passo do nível 1 = ${d1} s e no teto = ${dmax} s (esperado 0,3 e 0,2 com base ${W.base} e max ${W.max})`);
-    if (Math.abs(P.durPasso(c, 0.5) - 0.2) > 1e-9) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)}`);
+    /* a fórmula do Tibia: nível 1 (220) = 550 ms; nível 200 (618) = 250 ms; 150 (orc) = 800 ms */
+    if (d1 !== 0.55 || dmax !== 0.25 || P.passoDaVel(150) !== 0.8) falhas.push(`passo do nível 1 = ${d1} s, nível 200 = ${dmax} s, velocidade 150 = ${P.passoDaVel(150)} s (esperado 0,55, 0,25 e 0,8 como no Tibia)`);
+    if (P.durPasso(c, 0.5) !== 0.4) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)} (esperado 0,4)`);
     I.newRun(7); I.G.active = true;
     const p = I.G.ps[0], cx = (t) => (t + 0.5) * 32;
     if (p.x !== cx(p.tx) || p.y !== cx(p.ty)) falhas.push(`o jogador não nasce no centro de um sqm (${p.x},${p.y})`);
-    /* leste por 1,5 s: 5 passos de 0,3 s, e para no centro do sqm */
+    /* leste por 2,2 s: 4 passos de 0,55 s, e para no centro do sqm */
     const leste = {x: 1, y: 0, held: [false, false, false, false]}, nada = {x: 0, y: 0, held: [false, false, false, false]};
     let livres = 0; while (!I.solid(p.tx + livres + 1, p.ty) && livres < 8) livres++;
-    const x0 = p.tx, alvo = Math.min(5, livres);
-    for (let i = 0; i < 30; i++) I.passo(0.05, leste);
-    for (let i = 0; i < 10; i++) I.passo(0.05, nada);
-    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 1,5 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
+    const x0 = p.tx, alvo = Math.min(4, livres);
+    for (let i = 0; i < 44; i++) I.passo(0.05, leste);
+    for (let i = 0; i < 12; i++) I.passo(0.05, nada);
+    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 2,2 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
     /* um monstro por sqm, nenhum no sqm de um jogador, em toda uma incursão com o jogador andando */
     I.newRun(11); I.G.active = true;
     const roteiro = [{x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 1, y: 1}];
@@ -721,7 +722,8 @@ async function testaSimulacao() {
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
     /* anda por sqm: oeste até a coluna da porta (5), parando no centro dela */
     for (let i = 0; i < 200 && (C.p.tx > 5 || C.p.mv); i++) Cd.updateCidade(0.05, C.p.tx > 5 ? oeste : parado);
-    for (let i = 0; i < 40; i++) Cd.updateCidade(0.05, norte);
+    /* norte pela porta até o Mercador ficar ao alcance (no ritmo do Tibia, ~0,55 s por sqm) */
+    for (let i = 0; i < 200 && C.perto !== 'mercador'; i++) Cd.updateCidade(0.05, norte);
     if (C.perto !== 'mercador') falhas.push(`andar até a casa do Mercador não o deixou ao alcance (${C.perto} em ${C.p.x},${C.p.y})`);
     const m = C.npcs.find((n) => n.k === 'mercador');
     if (!(C.p.y > m.y + 10)) falhas.push('o jogador atravessou o Mercador');
@@ -888,12 +890,12 @@ const CASOS = [
     ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.tx===Cd.C.w-1&&m.ty===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
     RT.sai('mal');
     var n0=RT.posMandadas().length,x0=Cd.C.p.tx;
-    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await ate(function(){return !Cd.C.p.mv},30);await quadros(2);
+    tecla('keydown','KeyD');await quadros(24);tecla('keyup','KeyD');await ate(function(){return !Cd.C.p.mv},40);await quadros(2);
     var n1=RT.posMandadas().length-n0,andou=Cd.C.p.tx-x0;
     ok('andando, manda uma mensagem por passo e nada parado', andou>=2&&n1===andou, n1+' mensagens, '+andou+' sqm');
     var ult=RT.posMandadas()[RT.posMandadas().length-1].payload.payload;
     ok('a última posição mandada é o sqm onde parei', ult.x===Cd.C.p.tx&&ult.y===Cd.C.p.ty&&!Cd.C.p.mv, JSON.stringify(ult)+' / '+Cd.C.p.tx+','+Cd.C.p.ty);
-    ok('cada mensagem é um passo de um sqm, com a duração dele', RT.posMandadas().slice(n0).every(function(q){return q.payload.payload.d>=150&&q.payload.payload.d<=700}), JSON.stringify(RT.posMandadas().slice(n0).map(function(q){return q.payload.payload})));
+    ok('cada mensagem é um passo de um sqm, com a duração dele', RT.posMandadas().slice(n0).every(function(q){return q.payload.payload.d>=250&&q.payload.payload.d<=800}), JSON.stringify(RT.posMandadas().slice(n0).map(function(q){return q.payload.payload})));
     RT.sai('ana1');await quadros(3);
     ok('quem sai some, e o registro avisa', !Cd.OUTROS.has('ana1')&&/Ana saiu da cidade/.test(txt('#log')||''), Cd.OUTROS.size);
     ok('sem ninguém, o HUD volta a só você', txt('#cRede')==='Só você na cidade', txt('#cRede'));

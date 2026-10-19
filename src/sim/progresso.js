@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.10.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.11.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -27,13 +27,16 @@ export const ch=()=>save.chars[save.classe];
 export const KL=()=>CLASSES[save.classe];
 
 /* curva e perda na morte vêm de progression.xp no content.json */
-/* duração de um passo do personagem, em segundos, pela velocidade em sqm/s
-   (progression.walk): cresce com o nível, como no Tibia, e é arredondada para
-   múltiplos de stepMs. velo é o buff de velocidade (0 sem buff) */
-export function durPasso(c,velo=0){
-  const w=PROG.walk,v=Math.min(w.max,w.base+w.perLevel*(c.lvl-1))*(1+velo);
-  return Math.max(w.stepMs,Math.round(1000/v/w.stepMs)*w.stepMs)/1000;
+/* duração de um passo, em segundos, para uma velocidade em unidades do Tibia:
+   a fórmula do Forgotten Server (Creature::getStepDuration), com o chão de
+   progression.walk.ground e arredondada para cima em múltiplos de stepMs */
+export function passoDaVel(vel){
+  const w=PROG.walk,c=Math.max(1,Math.floor(857.36*Math.log(Math.max(1,vel)/2+261.29)-4795.01+.5));
+  return Math.max(w.stepMs,Math.ceil(Math.floor(1000*w.ground/c)/w.stepMs)*w.stepMs)/1000;
 }
+/* o passo do personagem: velocidade 220 + 2 por nível, como no Tibia, até
+   speedMax; velo é o buff de velocidade (0 sem buff) */
+export const durPasso=(c,velo=0)=>{const w=PROG.walk;return passoDaVel(Math.min(w.speedMax,w.speedBase+w.speedPerLevel*(c.lvl-1))*(1+velo))};
 export const xpNeed=l=>Math.round(PROG.xp.base*Math.pow(l,PROG.xp.exp));
 /* a morte leva uma fatia do XP do nível atual, nunca o nível */
 export const pctPerdaXp=()=>Math.round(PROG.xp.deathLoss*100);

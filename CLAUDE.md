@@ -136,7 +136,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`setSave()` para trocar o objeto inteiro), `SAVE0()`, `normaliza()`,
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
-  `durPasso()` (duração do passo pela velocidade do nível)
+  `passoDaVel()` (a fórmula do passo do Tibia) e `durPasso()` (o passo do
+  personagem pelo nível)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
@@ -217,7 +218,8 @@ Constantes de `src/sim/base.js`: `T=32` (lado do tile), `MW=MH=64` (mapa),
 `RUN=360` (duração da incursão em segundos), `PORTAL_AT=90` (quando o portal
 abre), `EXT=2.5` (segundos parado no portal para extrair), `TICK=0.05` (o
 passo da regra: 20 por segundo). A velocidade de andar mora em
-`progression.walk` do `content.json` (sqm por segundo, por nível).
+`progression.walk` do `content.json` (unidades do Tibia: 220 + 2 por nível) e
+no `spd` de cada monstro.
 
 Balanceamento vive nas tabelas `CLASSES`, `SPELLS`, `MT`, `LOOT`, `ITEMS` e
 `UP`, não espalhado pelo código. Ajuste de dificuldade é edição de tabela. Se
@@ -293,11 +295,12 @@ partida ao centro do sqm novo durante o passo e só servem ao desenho e ao
 alcance do combate, que continua em pixels. O sqm é de quem anda **desde o
 começo do passo**. Regras:
 
-- **Velocidade** do jogador em `progression.walk`: `base + perLevel·(nível−1)`
-  sqm/s até `max`, vezes o buff `velo`; o passo é arredondado para múltiplos
-  de 50 ms (`durPasso()`). Diagonal dura `diagonal` vezes mais e não corta
-  quina (`passoPara()` escorrega pelo eixo livre). Monstro: `spd` em px/s, o
-  passo dura `T/spd`.
+- **Velocidade do Tibia** (`progression.walk`): jogador `220 + 2·(nível−1)`,
+  vezes o buff `velo`; monstro, o `spd` dele na mesma unidade, vezes a
+  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`
+  (nível 1 = 550 ms, 1,8 sqm/s; nível 100 = 350 ms; `spd` 150 = 800 ms),
+  arredondado para múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
+  não corta quina (`passoPara()` escorrega pelo eixo livre).
 - **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
   passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
   não entra em sqm de monstro. Jogadores não se bloqueiam entre si.
