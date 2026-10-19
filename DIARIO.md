@@ -18,6 +18,25 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala
+
+**Item desenvolvido:** a pedido do Leonardo ("caso o anfitrião feche o servidor, o usuário mais antigo dentro do servidor passa a ser o servidor"), 0.20.0. `src/sala.js` separa o canal da sala (`SALA.id`, id de quem criou + contador) do anfitrião de agora (`SALA.anf`) e conta as trocas em `SALA.gen`. O anfitrião que sai com gente na sala manda `passa` com o próximo; sem `passa` (fechou o jogo, caiu a rede), o convidado vê a saída pela presença do canal da sala ou por 12 s sem notícia (`sucede()`), e o primeiro da lista depois do anfitrião assume (`assume()`, masmorra nova). Dois anfitriões ao mesmo tempo: fica o de `gen` maior, empate pelo id menor (`cede()`). `src/rede.js` anuncia e lê `sala.id` na presença da cidade; o Guia troca "Fechar sala" por "Sair da sala" quando há gente.
+
+**Validação:** `node tools/testar.mjs` inteiro verde; `sala-anfitriao` e `sala-convidado` ganharam os casos: canal novo para sala nova, `passa` para o mais antigo com `gen` 1, convidado que vira convidado do novo anfitrião e volta à cidade sem resultado, lista do anfitrião velho ignorada, novo anfitrião some e o último vira anfitrião no mesmo canal, anúncio na cidade com o canal de sempre, anfitrião de geração maior leva a sala e de mesma geração e id maior não leva. Não testado com dois Chromium no Realtime de verdade.
+
+**Análise:** a masmorra em andamento não migra: a regra (sorteio, monstros, campo de fluxo) só existe no aparelho de quem calculava, e o convidado só tem o retrato. Migrar exigiria o anfitrião mandar o estado inteiro periodicamente, o que custa banda e só vale perto da F2.
+
+**Roadmap:** sem mudança de seção (pedido do dono fora da fila).
+
+**Pendências e riscos:**
+- Quem estava na masmorra quando o anfitrião saiu perde o saco daquela entrada (volta sem resultado), como antes; só a sala sobrevive.
+- Uma queda curta de rede do anfitrião (sai e volta à presença) já dispara a sucessão; ao voltar, ele vê a geração maior e vira convidado, e quem estava na masmorra dele volta à cidade.
+- Nenhuma mensagem do canal tem remetente conferido: um terceiro com a chave pode mandar `passa` ou `membros` com geração alta e tomar a sala. Mesmo risco de antes (`fecha` falso), agora com mais um jeito.
+
+**Próximo passo recomendado:** testar com dois ou três aparelhos de verdade: anfitrião fecha a aba com convidado na masmorra, e anfitrião sai pelo Guia.
+
+---
+
 ## 2026-10-19 01:55 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a masmorra da sala sem tempo, com porta (0.19.0), a pedido do Leonardo ("entrada e saída por uma porta acessível por qualquer usuário; fecha quando quem criou fecha na cidade ou sai do programa"), com as três escolhas dele: sem tempo, monstros renascem, porta na sala de entrada. Modo "masmorra aberta" em `src/sim/incursao.js` (`newRun(s,fichas,true)`, `entra()`, `repovoa()`, `progression.respawn` no `content.json`); `src/sala.js` troca o "começar com o grupo" por `entraPorta()`/`porta`; o Guia de caça mostra quem está na masmorra e o botão "Entrar pela porta"; a presença da cidade segue com `longe` enquanto o anfitrião caça, para a sala não sumir da lista.
@@ -389,28 +408,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - O PWA (item 5) vai trazer service worker; ele passa a controlar o cache e precisa respeitar a mesma versão.
 
 **Próximo passo recomendado:** a morte custar XP (`Agora`), em 0.6.0.
-
----
-
-## 2026-10-18 23:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** sorteio com semente, item `Agora` (F0 2, primeira metade), a pedido do Leonardo ("fundação e princípio da essência do jogo"). `src/sim/base.js` ganhou o gerador (mulberry32) com `semeia()`, `novaSemente()`, `sementeDe()`, `sorte()`/`rnd()`/`rr()`/`ri()` (regra) e `frr()` (efeito). Todo `Math.random` da simulação saiu: corredor do mapa, banda de monstro, loot, passeio dos monstros. Efeitos (número de dano, faíscas, fumaça, tremor da câmera, direção e passo inicial do desenho do monstro) passaram para o sorteio de efeito. `newRun(s)` aceita a semente e a guarda em `G.semente`; a tela final mostra "Masmorra nº 12.345", e `?semente=` no endereço (número ou texto) repete a masmorra em toda incursão da aba.
-
-**Validação:** `node tools/testar.mjs` — 20/20 (simulação no Node + 18 casos de navegador + os 2 novos). O passo da simulação no Node agora prova: sequência do gerador presa (confere com a implementação de referência do mulberry32), `Math.random` sabotado durante a incursão, mesma semente → mesmo mapa, mesmos monstros e mesmo resultado, sementes 7 e 8 → mapas diferentes, efeitos extras não mudam a regra, efeitos não gastam sorteio da regra (sonda direta + checagem de toda linha `G.fx.push`), sem semente → sementes diferentes. No navegador, `semente-na-url` compara a imagem do canvas de duas incursões com a mesma semente (iguais) e `semente-variada` sem semente (diferentes). Cinco sabotagens via `FIBULA_JOGO` — `Math.random` no mapa, número de dano pelo sorteio da regra, constante do gerador trocada, semente fixa em 1, fumaça pelo sorteio da regra — todas saíram com código 1. A segunda não era pega pela primeira versão do teste; daí a sonda direta.
-
-**Análise:**
-- **Regra × efeito** é a decisão de desenho que importa: com um sorteio só, uma tela que desenha mais faíscas mudaria o loot do próximo monstro, e cliente e servidor divergiriam. Critério escrito no `CLAUDE.md`: "se isto mudar, o jogador ganha ou perde algo?"
-- A semente de cada incursão ainda vem de `Math.random` (`novaSemente()`), a única exceção permitida e checada pelo teste.
-- O mapa e a sala inicial se repetem sempre; a incursão **inteira** só se repete com o mesmo `dt` por quadro (no Node, 0,05 fixo). No celular, o `dt` varia: falta o passo fixo.
-- A sequência de sorteios mudou, então as masmorras dos casos antigos mudaram; os 18 casos continuaram passando sem ajuste.
-
-**Roadmap:** sorteio com semente em `Concluído`. `Agora` passa a ser a morte custar XP; o passo fixo é o item 3 do `Próximo`.
-
-**Pendências e riscos:**
-- **Passo fixo** (item 3) completa a F0 2; até lá, multiplayer e replay da incursão inteira não fecham.
-- Trocar o algoritmo do gerador, a ordem dos sorteios em `genMap()`/`newRun()` ou o critério de `sementeDe()` muda a masmorra de todas as sementes já mostradas a jogadores. Hoje não há nada guardado que dependa disso; quando houver "desafio da semana" ou replay, essas mudanças viram decisão do dono.
-- Uma sessão manual publicou o equipamento (`31b5a00`) em paralelo; esta mudança foi feita por cima dele, sem conflito.
-
-**Próximo passo recomendado:** a morte custar XP (`Agora`), depois a curva de nível medida com a simulação no Node, agora com semente de verdade.
 
 ---

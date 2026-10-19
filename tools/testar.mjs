@@ -975,7 +975,7 @@ const CASOS = [
   },
   {
     nome: 'sala-anfitriao',
-    o_que: 'caçar junto, lado do anfitrião: a sala nasce com a masmorra dela, sem tempo; o convidado entra e sai pela porta quando quer e volta a entrar; o anfitrião também; a sala some da cidade só quando ele fecha',
+    o_que: 'caçar junto, lado do anfitrião: a sala nasce com a masmorra dela, sem tempo; o convidado entra e sai pela porta quando quer e volta a entrar; o anfitrião também; a sala some da cidade só quando ele fecha sozinho, e com gente ela passa ao convidado mais antigo',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1054,11 +1054,24 @@ const CASOS = [
     var fecha=todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0];clica(fecha);await quadros(3);
     ok('fechar a sala acaba com a masmorra e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&I.G.over&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
     ok('o Guia volta a oferecer criar sala e os lugares sozinho', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'})&&!$('#huntList button').disabled, txt('#hSala'));
+    var id1=join.topic.split('-').pop();
+    clica(todos('#hSala button').filter(function(b){return b.textContent==='Criar sala'})[0]);await ate(function(){return Sa.SALA.estado==='ligado'},40);
+    ok('a sala nova tem canal novo: quem passou a velha adiante não cai nela', Sa.SALA.id&&Sa.SALA.id!==id1, id1+' / '+Sa.SALA.id);
+    RT.sala('quero',{id:'conv2',ficha:BIA});await quadros(2);RT.sala('quero',{id:'conv3',ficha:Object.assign({},BIA,{nome:'Caio'})});
+    await ate(function(){return Sa.SALA.membros.length===3},20);
+    RT.sala('membros',{anf:'zz',gen:0,lista:[{id:'zz',nome:'Zé',cl:'druida',lvl:1}]});await quadros(3);
+    ok('outro que se diz anfitrião, na mesma geração e de id maior, não leva a sala', Sa.SALA.papel==='anfitriao'&&Sa.SALA.anf===Sa.SALA.membros[0].id, Sa.SALA.papel);
+    var sair=todos('#hSala button').filter(function(b){return b.textContent==='Sair da sala'})[0];
+    ok('com gente na sala, o anfitrião sai em vez de fechar', sair&&!todos('#hSala button').some(function(b){return b.textContent==='Fechar sala'})&&/Bia vira o anfitrião/.test(txt('#hSala')||''), txt('#hSala'));
+    clica(sair);await quadros(3);
+    var ps=RT.salaMandadas('passa')[0];
+    ok('sair passa a sala ao convidado mais antigo, com a geração seguinte', ps&&ps.anf==='conv2'&&ps.gen===1&&ps.lista.length===2&&ps.lista[0].id==='conv2'&&ps.lista[1].id==='conv3', ps&&JSON.stringify(ps).slice(0,120));
+    ok('e quem saiu fica fora da sala, com a masmorra dele acabada', Sa.SALA.papel===null&&I.G.over&&RT.salaMandadas('fecha').length===1, Sa.SALA.papel);
     `,
   },
   {
     nome: 'sala-convidado',
-    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra nela, entra pela porta quando quer, desenha o retrato, anda no próprio aparelho, grava o resultado, entra de novo, e volta à cidade se o anfitrião some',
+    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra nela, entra pela porta quando quer, desenha o retrato, anda no próprio aparelho, grava o resultado, entra de novo, e, se o anfitrião sai ou some, a sala passa ao mais antigo (ele mesmo, se sobrou só ele)',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1118,10 +1131,24 @@ const CASOS = [
     ok('depois de sair, continua na sala, com a porta aberta', Sa.SALA.papel==='convidado'&&todos('#hSala button').some(function(b){return b.textContent==='Entrar pela porta'&&!b.disabled}), txt('#hSala'));
     clica(todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0]);await quadros(2);
     ok('pode entrar de novo pela porta', RT.salaMandadas('entro').length===2, RT.salaMandadas('entro').length);
+    var CAIO={id:'caio',nome:'Caio',cl:'feiticeiro',lvl:4,d:0},MIM={id:EU,nome:'Druida',cl:'druida',lvl:3,d:1};
+    RT.sala('membros',{anf:'anf1',gen:0,lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5,d:1},CAIO,MIM]});
     RT.sala('porta',{id:EU,i:1,semente:77,ps:[ANA,{nome:'Druida',cl:'druida',c:{lvl:3,equip:{}},up:{}}]});
     await ate(function(){return I.G&&I.G.active&&!I.G.over&&I.G.convidado},20);
-    var voltou=await ate(function(){return $('#app').classList.contains('cidade')},400);
-    ok('se o anfitrião some no meio, volta à cidade sem resultado', voltou&&/acabou sem resultado/.test(txt('#log')||'')&&Sa.SALA.papel===null&&sv().ext===1, txt('#log'));
+    RT.sala('passa',{anf:'caio',gen:1,lista:[CAIO,MIM]});
+    var voltou=await ate(function(){return $('#app').classList.contains('cidade')},40);
+    ok('o anfitrião sai: o mais antigo fica no lugar, e quem estava na masmorra volta à cidade sem resultado', voltou&&/acabou sem resultado/.test(txt('#log')||'')&&/Caio agora é o anfitrião/.test(txt('#log')||'')&&Sa.SALA.papel==='convidado'&&Sa.SALA.anf==='caio'&&Sa.SALA.gen===1&&Sa.SALA.id==='anf1'&&sv().ext===1, txt('#log'));
+    RT.sala('membros',{anf:'anf1',gen:0,lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},MIM]});await quadros(3);
+    ok('a lista do anfitrião velho não vale mais', Sa.SALA.anf==='caio'&&Sa.SALA.membros[0].id==='caio', Sa.SALA.anf);
+    RT.salaSai('caio');await quadros(3);
+    ok('se o novo anfitrião some da rede, quem sobrou vira o anfitrião, com masmorra nova no mesmo canal', Sa.SALA.papel==='anfitriao'&&Sa.SALA.anf===EU&&Sa.SALA.gen===2&&Sa.SALA.id==='anf1'&&Sa.SALA.membros.length===1&&I.G.sala&&!I.G.convidado&&I.G.active&&!I.G.over, JSON.stringify({p:Sa.SALA.papel,a:Sa.SALA.anf,g:Sa.SALA.gen,n:Sa.SALA.membros.length}));
+    var mb=RT.salaMandadas('membros').pop();
+    ok('e avisa a sala, com a geração nova', mb&&mb.anf===EU&&mb.gen===2, mb&&JSON.stringify(mb).slice(0,80));
+    var an=await ate(function(){var a=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0&&d.payload.payload.sala}).pop();return a&&a.payload.payload.sala.id==='anf1'},60);
+    ok('a sala segue anunciada na cidade, no canal de sempre', an, RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0}).map(function(d){return JSON.stringify(d.payload.payload.sala)}).join(' '));
+    var nq=RT.salaMandadas('quero').length;
+    RT.sala('membros',{anf:'aaa',gen:3,lista:[{id:'aaa',nome:'Duda',cl:'cacador',lvl:9}]});await quadros(3);
+    ok('outro anfitrião de geração maior leva a sala, e este vira convidado dele', Sa.SALA.papel==='convidado'&&Sa.SALA.anf==='aaa'&&Sa.SALA.gen===3&&I.G.over&&RT.salaMandadas('quero').length===nq+1, JSON.stringify({p:Sa.SALA.papel,a:Sa.SALA.anf}));
     `,
   },
   {

@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, Feira (mercado entre jogadores) e Forja (o
    Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.19.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.19.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.19.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.19.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.19.0';
-import {persist,saveFalhou} from './salvar.js?v=0.19.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.19.0';
-import {rede,SALAS} from './rede.js?v=0.19.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.19.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.19.0';
-import {icone} from './arte.js?v=0.19.0';
-import {$,app} from './dom.js?v=0.19.0';
-import {retrato} from './desenho.js?v=0.19.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.20.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.20.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.20.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.20.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.20.0';
+import {persist,saveFalhou} from './salvar.js?v=0.20.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.20.0';
+import {rede,SALAS} from './rede.js?v=0.20.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.20.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.20.0';
+import {icone} from './arte.js?v=0.20.0';
+import {$,app} from './dom.js?v=0.20.0';
+import {retrato} from './desenho.js?v=0.20.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS];
@@ -82,17 +82,18 @@ const pelaPorta=()=>{if(SALA.papel==='anfitriao'){start(()=>{entraPorta()})}else
 const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent=txt;b.setAttribute('aria-label',rot);b.disabled=!!off;b.addEventListener('click',fn);return b};
 /* ---------- sala no Guia de caça ----------
    Criar sala, ver as abertas de quem está na cidade e entrar, ou, dentro de
-   uma, quem está nela. A sala fica aberta até o anfitrião fechar ou sair */
+   uma, quem está nela. A sala fica aberta enquanto houver gente: se o
+   anfitrião sai, o convidado mais antigo fica no lugar dele */
 function desenhaSala(){
   const box=$('#hSala');box.textContent='';
   const h=document.createElement('h3'),p=document.createElement('p'),ul=document.createElement('ul'),ac=document.createElement('div');ac.className='acoes';
   const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})${dentro(m.id)?' na masmorra':''}`).join(', ');
   const porta=()=>botao('Entrar pela porta','Entrar na masmorra da sala pela porta',pelaPorta,SALA.estado!=='ligado'||(SALA.papel==='convidado'&&!SALA.membros.length));
   if(SALA.papel==='anfitriao'){
-    const n=SALA.membros.filter(m=>m.id!==SALA.id&&dentro(m.id)).length;
+    const n=SALA.membros.filter(m=>m.id!==SALA.anf&&dentro(m.id)).length,prox=SALA.membros.find(m=>m.id!==SALA.anf);
     h.textContent=`Sua sala · ${SALA.membros.length}/${MAX}`;
-    p.textContent=`Na sala: ${nomes()}. A masmorra dela não tem tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+(n?` Fechar a sala tira quem está lá dentro, sem resultado.`:'');
-    ac.append(porta(),botao('Fechar sala','Fechar a sala e a masmorra dela',()=>{saiDaSala();showHunts()}));
+    p.textContent=`Na sala: ${nomes()}. A masmorra dela não tem tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+(prox?` Se você sair, ${prox.nome} vira o anfitrião`+(n?' e quem está na masmorra volta à cidade, sem resultado.':'.'):'');
+    ac.append(porta(),prox?botao('Sair da sala',`Sair da sala e passá-la para ${prox.nome}`,()=>{saiDaSala();showHunts()}):botao('Fechar sala','Fechar a sala e a masmorra dela',()=>{saiDaSala();showHunts()}));
   }else if(SALA.papel==='convidado'){
     const a=SALA.membros[0];
     h.textContent=a?`Sala de ${a.nome} · ${SALA.membros.length}/${MAX}`:'Entrando na sala…';

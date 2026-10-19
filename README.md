@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.20.0 (19/10/2026) | A sala não acaba quando o anfitrião sai: o convidado mais antigo vira o anfitrião e a sala segue, com uma masmorra nova (quem estava na velha volta à cidade sem resultado). Com gente na sala, o anfitrião tem "Sair da sala" em vez de "Fechar sala" |
 | 0.19.0 (19/10/2026) | A masmorra da sala não tem tempo: nasce com a sala e fica aberta até quem criou fechar (na cidade) ou sair do jogo. Cada um entra e sai por uma porta na sala de entrada quando quiser, e pode voltar; os monstros renascem como no Tibia |
 | 0.18.0 (19/10/2026) | Gordon, o ferreiro, abre a Forja na cidade: compra dente, seda, osso e erva por pouco, dá quatro encomendas de materiais e, a cada uma entregue, põe à venda armas e armaduras melhores (maça cravejada, gibão acolchoado, machado de guerra, couraça de placas). Esses materiais não viram mais ouro na extração: vão para o depósito dele |
 | 0.17.0 (19/10/2026) | Peças de teste no chão da cidade, perto de onde se chega: pisou, vai para o cofre do Banco, uma vez por conta. Não entram na Feira (não têm origem no banco) |
