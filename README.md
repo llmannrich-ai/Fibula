@@ -93,7 +93,16 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
-| 0.21.0 (19/10/2026) | Voz na sala de caçar junto: quem está na sala liga a voz (botão Voz, acima da Mochila, ou no Guia de caça) e segura Falar, ou V, para os outros ouvirem, na cidade e na masmorra. O som vai direto entre os aparelhos; o botão mostra quem está falando |
+| 0.30.0 (19/10/2026) | Voz na sala de caçar junto: quem está na sala liga a voz (botão Voz, acima de Comer, ou no Guia de caça) e segura Falar, ou V, para os outros ouvirem, na cidade e na masmorra. O som vai direto entre os aparelhos; o botão mostra quem está falando |
+| 0.29.0 (19/10/2026) | Alimentação como no Tibia: sem comer, o personagem não regenera vida nem mana. Cada comida dá um tempo de alimentação (de 1 min 30 s da cesta de frutas a 9 min do ensopado), comida pelo botão Comer na caçada, até 20 min acumulados; a regeneração é a da classe, fixa. A comida empilha na loja (até 10 de cada), vai na mochila e o que sobrar volta se você sair pela porta; morrendo, fica na masmorra |
+| 0.28.0 (19/10/2026) | O mundo é igual para todos: os monstros e os chefes têm a mesma força para qualquer nível e qualquer tamanho de grupo. A dificuldade vem do lugar que você escolhe; cada lugar mostra o nível recomendado |
+| 0.27.0 (19/10/2026) | Inventário como no Tibia: o saco saiu e ficaram a mochila e o cofre. O loot fica na mochila do personagem depois da caçada, vai junto na próxima e cai inteiro se ele morrer. Só o cofre do Banco é seguro: o Banqueiro guarda uma coisa ou tudo e devolve peças e ouro à mochila. Vestir e tirar pela Mochila, na cidade, agora troca com a mochila. A mochila tem 20 espaços; cheia, o loot fica no chão |
+| 0.26.0 (19/10/2026) | Vestir e tirar pela Mochila, sem ir ao Banco: toque numa peça e no botão. Na cidade, a troca é com o cofre do Banco; na caçada, como no Tibia, com o saco: a peça que você acabou de pegar vale na hora e passa a não cair na morte, e a que sai do corpo vai para o saco e corre o risco dele |
+| 0.25.0 (19/10/2026) | Toda caçada é numa sala: no Guia de caça, o lugar abre uma sala sua e já entra pela porta, e quem estiver na cidade pode entrar junto. A sala abre mesmo sem conexão. Corrige o "Entrar pela porta" que não respondia quando o canal da sala não tinha ligado, e o botão desabilitado agora parece desabilitado |
+| 0.24.0 (19/10/2026) | A entrada do Esgoto deixou de ser um vigia: agora é uma grade de ferro no chão da rua, perto do mercado. Pise nela (ou chegue perto) e toque em Descer; quem volta do Esgoto sai em cima dela |
+| 0.23.0 (19/10/2026) | A Mochila ganhou o corpo da janela de inventário do Tibia: três colunas com cada peça no lugar em que se usa (amuleto no pescoço, arma na mão, armadura no peito, o saco onde o Tibia põe a mochila), a silhueta do que vai em cada casa vazia e, ao lado, o boneco vestido, que gira ao toque |
+| 0.22.0 (19/10/2026) | Três lugares novos para caçar, cada um com monstros, chefe, chão e paredes próprios. O Vigia, na grade do esgoto perto do mercado, leva ao Esgoto (nível 1: morcegos, baratas, lesmas e a Centopeia-rainha). O Capitão, no porto, leva de navio à Ilha da Enseada (nível 8: vespas, lagartas que cospem, leões, trolls e um dragão). O Guia, além da Masmorra de Runas, leva à Cripta Antiga (nível 15: fantasmas, múmias, necromantes e a Senhora das Sombras). Dá para criar sala em qualquer um deles e chamar quem está na cidade |
+| 0.21.0 (19/10/2026) | Habilidades se aprendem com o Mestre de magias, como no Tibia: ao chegar no nível, pague o preço em ouro na Torre dos magos (150 ouro a Golpe Flamejante, 500 a Onda de Fogo, até 3.500 as de nível 32). A de nível 1 continua grátis, e quem já jogava fica com tudo que o nível dele liberava |
 | 0.20.0 (19/10/2026) | A cidade cresceu cinco vezes (54×38): praça com fonte, templo, rio com duas pontes, pomar e horta, e um mapa no canto. Três lojas novas de provisões para a próxima caçada, pagas com o cofre: a Quitandeira (uma refeição que regenera vida ou mana), a Boticária (poções a mais e elixir de pressa) e o Mestre de magias, do outro lado do rio (runas de pele de pedra, fúria e olho de águia). O que se leva vai inteiro, extraindo ou morrendo |
 | 0.19.0 (19/10/2026) | A masmorra da sala não tem tempo: nasce com a sala e fica aberta até quem criou fechar (na cidade) ou sair do jogo. Cada um entra e sai por uma porta na sala de entrada quando quiser, e pode voltar; os monstros renascem como no Tibia |
 | 0.18.0 (19/10/2026) | Gordon, o ferreiro, abre a Forja na cidade: compra dente, seda, osso e erva por pouco, dá quatro encomendas de materiais e, a cada uma entregue, põe à venda armas e armaduras melhores (maça cravejada, gibão acolchoado, machado de guerra, couraça de placas). Esses materiais não viram mais ouro na extração: vão para o depósito dele |
@@ -122,9 +131,11 @@ biblioteca, servidos crus pelo GitHub Pages. A regra do jogo fica em `src/sim/`,
 sem nada de navegador, para poder rodar também num servidor. O conteúdo fica
 fora do código, num arquivo de dados.
 
-A documentação do projeto está em [CLAUDE.md](CLAUDE.md) (arquitetura,
-convenções e como testar), [VISAO.md](VISAO.md) (os pilares de design e os
-não-objetivos), [ROADMAP.md](ROADMAP.md) e [DIARIO.md](DIARIO.md).
+Toda a documentação de quem desenvolve está num arquivo só,
+[CLAUDE.md](CLAUDE.md): os princípios do jogo, o produto, o código, os testes,
+os agentes e as decisões do dono. A fila de trabalho é o
+[ROADMAP.md](ROADMAP.md), e o registro de cada execução, o
+[DIARIO.md](DIARIO.md).
 
 O conteúdo do jogo não fica no motor. Classes, habilidades, melhorias do
 Mercador, inimigos, itens, loot e progressão moram em

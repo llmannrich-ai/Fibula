@@ -95,6 +95,11 @@ canvas{image-rendering:pixelated}
 #bPot{width:54px;height:54px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:28px;--el:var(--hp)}
 #bPot .nm{font-size:9px;align-self:end}
 #app[data-arte] #bPot .nm{position:absolute;bottom:3px;left:0;right:0}
+#bCom{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:154px;--el:var(--torch-deep)}
+#bCom .nm{font-size:9px;align-self:end;font-variant-numeric:tabular-nums}
+#bCom.fome{--el:var(--hp)}
+#bCom.fome .nm{color:var(--warn)}
+#app[data-arte] #bCom .nm{position:absolute;bottom:2px;left:0;right:0}
 #app[data-arte] .act .ct{position:absolute;top:3px;right:5px;z-index:2;text-shadow:1px 1px 0 #000}
 #app[data-arte] .act.sl .nm{position:absolute;bottom:4px;left:0;right:0}
 #app[data-arte] .act.sl .ico{transform:translate(-50%,-64%) scale(var(--esc,1))}
@@ -134,6 +139,7 @@ h2.lost{color:var(--hp)}
 .cta{font:700 15px var(--f-body);color:var(--torch);padding:13px 14px;text-shadow:1px 1px 0 #000}
 .cta:focus-visible,.ghost:focus-visible{outline:2px solid var(--bone);outline-offset:3px}
 .ghost{font:700 13px var(--f-body);color:var(--bone);padding:11px 12px;text-shadow:1px 1px 0 #000}
+.ghost:disabled{color:#7d786d;cursor:default;background:#34322d}
 .keys{margin:0;color:var(--muted);font-size:11px;line-height:1.5}
 .keys b{color:var(--bone);font-weight:600}
 .ledger{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:0;font-size:13px;font-variant-numeric:tabular-nums}
@@ -151,7 +157,9 @@ h2.lost{color:var(--hp)}
 .vault{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
 .vault span{font:12px var(--f-body);color:var(--muted)}
 .vault b{font:700 22px/1 var(--f-body);color:var(--torch);font-variant-numeric:tabular-nums}
-#shopList,#ljList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
+#shopList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
+#ljCorpo{display:grid;gap:8px;max-height:52vh;overflow:auto}
+#ljHab,#ljList{list-style:none;margin:0;padding:0;display:grid;gap:8px}
 .up{display:flex;align-items:center;gap:12px;background:#1c1b18;border:1px solid #000;box-shadow:inset 1px 1px 0 #2e2c28;padding:10px 12px}
 .up.maxed{border-color:rgba(138,216,114,.38)}
 .up .info{flex:1;min-width:0;display:grid;gap:3px}
@@ -221,11 +229,15 @@ h2.lost{color:var(--hp)}
 .slots.eqs em{font:normal 9px/1.2 var(--f-body);color:var(--loot)}
 .eqtot{margin:0;font:11px/1.4 var(--f-body);color:var(--muted);text-align:center}
 .sub{margin:4px 0 0;font:700 12px var(--f-body);color:var(--bone)}
-#eqList{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
-#eqList .sp{border-left-color:var(--torch)}
-#eqList .sp.r1{border-left-color:var(--rare)} #eqList .sp.r2{border-left-color:var(--epic)}
-#eqList .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
-#eqList .btns{display:grid;gap:5px;flex:0 0 auto}
+/* as duas listas do Banco: a mochila e as peças do cofre */
+.eql{list-style:none;margin:0;padding:0;display:grid;gap:7px;max-height:36vh;overflow:auto}
+.eql .sp{border-left-color:var(--torch)}
+.eql .sp.r1{border-left-color:var(--rare)} .eql .sp.r2{border-left-color:var(--epic)}
+.eql .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+.eql .btns{display:grid;gap:5px;flex:0 0 auto}
+.retira{display:grid;grid-template-columns:1fr auto;gap:6px}.retira .ghost{padding:0 14px}
+#eqGuarda:disabled{opacity:.45;cursor:default}
+#eqMsg:empty{display:none}
 #endItems small{color:var(--muted);font-size:10px}
 .fg{list-style:none;margin:0;padding:0;display:grid;gap:7px}
 .fg .sp{border-left-color:var(--torch)}
@@ -249,6 +261,7 @@ h2.lost{color:var(--hp)}
 #bFalar .ct{font-size:10px;color:var(--bone);text-wrap:balance;padding:0 4px}
 #huntList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
 #huntList .sp{border-left-color:var(--torch)}
+#huntList .bts{display:grid;gap:6px;flex:0 0 auto}
 #mktItens,#mktMinhas,.livro ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
 #mktItens .sp{border-left-color:var(--torch)} #mktItens .sp.r1{border-left-color:var(--rare)} #mktItens .sp.r2{border-left-color:var(--epic)}
 #mktMinhas .sp{border-left-color:var(--muted)} #mktMinhas .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
@@ -282,8 +295,8 @@ h2.lost{color:var(--hp)}
 #app[data-arte] #bMochila .nm{position:absolute;bottom:2px;left:0;right:0}
 #bMochila[aria-expanded="true"]{--el:var(--torch)}
 #app.cidade .hud #bMochila{display:grid}
-/* Voz da sala: acima da Mochila, na cidade e na incursão. Apertado, fala */
-#bVoz{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:152px;--el:var(--muted)}
+/* Voz da sala: acima de Comer, na cidade e na incursão. Apertado, fala */
+#bVoz{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:212px;--el:var(--muted)}
 #bVoz .nm{font-size:10px} #bVoz .ct{font-size:8px;max-width:48px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #bVoz.on{--el:var(--mana)} #bVoz.no-ar{--el:var(--torch)} #bVoz.no-ar .nm{color:var(--torch)}
 #app.cidade .hud #bVoz{display:grid}
@@ -297,11 +310,30 @@ h2.lost{color:var(--hp)}
 .mtit{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font:700 12px var(--f-body);color:var(--bone)}
 .mtit span{font-weight:400;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
 .mtit span b{color:var(--torch);font-weight:700}
-/* o boneco: amuleto e arma à esquerda, armadura e saco à direita, como a janela de inventário do Tibia */
-.doll{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;gap:4px 10px;align-items:center;justify-items:center;padding:6px 10px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
-.doll .fig{grid-row:1/3;grid-column:2;width:84px;height:76px;display:grid;place-items:center;background:radial-gradient(circle at 50% 70%,rgba(232,194,90,.16),transparent 62%)}
-.doll .fig .ico{transform:scale(1.3)}
-.doll .fig b{font:700 30px var(--f-display);color:var(--torch)}
+/* o corpo: a janela de inventário do Tibia, cada peça no lugar em que se usa. Casa vazia mostra a silhueta
+   do que vai nela; as que o jogo ainda não tem (.trava) ficam apagadas, só para o corpo ter o desenho de sempre */
+.doll{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 10px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+.tib{display:flex;gap:4px;align-items:flex-start}
+.tib>div{display:grid;gap:4px}
+.tib>div:not(:nth-child(2)){margin-top:14px}
+.trava{position:relative;display:block;width:48px;height:48px;background:#121110;border:2px solid;border-color:var(--lo) #3a3732 #3a3732 var(--lo);opacity:.55}
+.tib .cel:empty::before,.trava::before{content:"";position:absolute;inset:7px;background:#3d3a34;-webkit-mask:var(--sil) center/contain no-repeat;mask:var(--sil) center/contain no-repeat}
+.tib .cel:disabled{cursor:default}
+.s-amuleto{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 2l6 8 6-8' fill='none' stroke='black' stroke-width='1.8'/><circle cx='12' cy='15.5' r='5.5'/></svg>")}
+.s-elmo{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 16a9 9 0 0 1 18 0v6h-5v-5H8v5H3z'/></svg>")}
+.s-saco{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 2h6v4h1a4 4 0 0 1 4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10a4 4 0 0 1 4-4h1z'/></svg>")}
+.s-arma{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M22 2v3L11 16l-3-3L19 2zM4 13l7 7-1.5 1.5-2-2-3 3L3 21l3-3-2-2z'/></svg>")}
+.s-armadura{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M7 2l3 2h4l3-2 6 5-4 4-2-1v12H7V10l-2 1-4-4z'/></svg>")}
+.s-escudo{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M12 1l9 3v7c0 6-4 10-9 12-5-2-9-6-9-12V4z'/></svg>")}
+.s-anel{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path fill-rule='evenodd' d='M12 7a7.5 7.5 0 1 1 0 15 7.5 7.5 0 0 1 0-15zm0 3a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9z'/><path d='M9 2h6l2 4H7z'/></svg>")}
+.s-calca{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 2h14l1 20h-6l-2-12-2 12H4z'/></svg>")}
+.s-municao{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M22 2l-1 8-3-3L4 21l-1-1L17 6l-3-3z'/></svg>")}
+.s-botas{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 2h8v12l6 3c1 .5 2 1.5 2 3v2H4V2z'/></svg>")}
+.doll .fig{position:relative;display:grid;place-items:center;width:132px;height:132px;padding:0;background:radial-gradient(ellipse 34% 9% at 50% 88%,rgba(0,0,0,.45),transparent),radial-gradient(circle at 50% 60%,rgba(232,194,90,.12),transparent 62%),#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);cursor:pointer}
+.doll .fig canvas{display:block;width:128px;height:128px;image-rendering:pixelated}
+.doll .fig canvas[hidden]{display:none}
+.doll .fig b{font:700 40px var(--f-display);color:var(--torch)}
+.doll .fig:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
 .cel{position:relative;width:48px;height:48px;display:grid;place-items:center;padding:0;background:#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);color:var(--muted);font:9px var(--f-body);cursor:pointer}
 .cel:focus-visible{outline:2px solid var(--bone);outline-offset:1px}
 .cel.on{outline:2px solid var(--torch);outline-offset:1px}
@@ -309,18 +341,18 @@ h2.lost{color:var(--hp)}
 .cel.cheia{box-shadow:inset 0 0 0 2px var(--torch-deep)}
 .cel q{position:absolute;right:2px;bottom:1px;quotes:none;font:700 10px var(--f-body);color:var(--bone);font-variant-numeric:tabular-nums;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
 .cel i{font-style:normal;font-weight:700;color:var(--bone)}
-.doll .eq{display:grid;gap:2px;justify-items:center}
-.doll .eq small{font:9px var(--f-body);color:var(--muted)}
 .grade{display:grid;grid-template-columns:repeat(auto-fill,44px);justify-content:center;gap:4px;padding:6px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
 .grade .cel{width:44px;height:44px}
 .grade .cel:disabled{cursor:default;opacity:.55}
 .minfo{margin:0;min-height:2.8em;font:11px/1.4 var(--f-body);color:var(--muted)}
 .minfo b{color:var(--bone)} .minfo b.r1{color:var(--rare)} .minfo b.r2{color:var(--epic)}
 .mochila .risco{font-size:11px}
+.macoes{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px} .macoes[hidden]{display:none} .macoes .cta{padding:10px;font-size:13px}
 .mvenda{display:grid;gap:6px} .mvenda[hidden]{display:none} .mvenda .cta{padding:10px;font-size:13px} .mvenda .passo{grid-template-columns:44px 1fr 44px} .mvenda .passo input{padding:6px}
 .mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
-/* tela baixa: a janela sobe por cima do minimapa e o boneco encolhe, para o saco caber sem rolar */
-@media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{grid-template-columns:repeat(5,auto);grid-template-rows:auto;justify-content:space-between}.doll .fig{grid-row:auto;grid-column:auto;order:2;width:52px;height:52px}.doll .fig .ico{transform:scale(.8)}.s-arma{order:1}.s-armadura{order:3}.s-saco{order:4}.minfo{min-height:0}}
+/* tela baixa: a janela sobe por cima do minimapa, o boneco encolhe e o corpo fica só com as duas linhas de cima
+   (as de baixo são todas casas que o jogo ainda não tem), para a mochila caber sem rolar */
+@media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{padding:6px 8px}.trava{width:42px;height:42px}.tib .s-anel,.tib .s-calca,.tib .s-botas,.tib .s-municao{display:none}.tib>div:not(:nth-child(2)){margin-top:10px}.doll .fig{width:100px;height:100px}.doll .fig canvas{width:96px;height:96px}.minfo{min-height:0}}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}.mwin{animation:none}}
 </style>
 
@@ -337,7 +369,7 @@ h2.lost{color:var(--hp)}
         <div class="bar mp"><i id="mpI"></i><span id="mpT">60/60</span></div>
         <div class="bar xp"><i id="xpI"></i></div>
         <div class="skl out"><span id="magT">Magia 0</span><span id="perT">Perícia 10</span></div>
-        <div class="bag out">Saco: <span id="bagT">0</span> <small>ouro</small></div>
+        <div class="bag out">Mochila: <span id="bagT">0</span> <small>ouro</small></div>
       </div>
       <div class="map">
         <div class="clock out" id="clock"><strong id="timeT">6:00</strong></div>
@@ -350,6 +382,7 @@ h2.lost{color:var(--hp)}
     <div id="banner" class="out"></div>
     <div id="joy" class="idle"><div id="knob"></div></div>
     <button class="act pot" id="bPot" aria-label="Beber poção (P)"><span class="cd"></span><span class="nm out">Poção</span><span class="ct" id="potN">×3</span></button>
+    <button class="act fome" id="bCom" aria-label="Comer (C)"><span class="cd"></span><span class="nm out" id="comT">Fome</span><span class="ct" id="comN">×0</span></button>
     <button class="act sl" id="s3" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
@@ -361,17 +394,18 @@ h2.lost{color:var(--hp)}
   <section class="mochila" id="mochila" role="dialog" aria-label="Mochila" hidden>
     <div class="mwin stone">
       <div class="mbar"><span id="moEye">Mochila</span><button class="mx" id="moX" type="button" aria-label="Fechar a mochila">✕</button></div>
-      <div class="doll" id="moDoll"></div>
+      <div class="doll"><div class="tib" id="moDoll"></div><button class="fig" id="moFig" type="button" aria-label="Girar o personagem para ver o que ele veste"><canvas width="256" height="256"></canvas><b></b></button></div>
       <p class="eqtot" id="moTot"></p>
-      <div class="mtit"><span id="moTit">Saco</span> <span id="moVal"></span></div>
-      <p class="risco" id="moRisco"></p>
-      <div class="grade" id="moGrade"></div>
       <p class="minfo" id="moInfo" role="status"></p>
+      <div class="macoes" id="moAcoes" hidden></div>
       <div class="mvenda" id="moVenda" hidden>
         <div class="passo"><button class="ghost" type="button" id="mvMenos" aria-label="Baixar o preço">−</button><input id="mvPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1" aria-label="Preço na Feira, por peça"><button class="ghost" type="button" id="mvMais" aria-label="Subir o preço">+</button></div>
         <button class="cta" type="button" id="mvOk">Vender 1 na Feira</button>
         <p class="minfo" id="mvMsg" role="status"></p>
       </div>
+      <div class="mtit"><span id="moTit">Saco</span> <span id="moVal"></span></div>
+      <p class="risco" id="moRisco"></p>
+      <div class="grade" id="moGrade"></div>
     </div>
   </section>
 
@@ -394,7 +428,7 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow" id="mEye">Protótipo</p>
       <h1>Masmorra de Runas</h1>
-      <p class="lede">Entre, cace, encha o saco de loot e saia vivo pelo portal. Se morrer, o loot que você carrega fica para trás.</p>
+      <p class="lede">Entre, cace, encha a mochila de loot e saia vivo pelo portal. Se morrer, a mochila fica para trás com tudo dentro.</p>
       <p class="risco" id="mRisco"></p>
       <p class="aviso" id="mAviso" role="status" hidden>Seu progresso não está sendo salvo neste navegador (aba anônima ou armazenamento bloqueado). Ao fechar a aba, ele se perde.</p>
       <div class="conta" id="mConta" hidden>
@@ -417,11 +451,11 @@ h2.lost{color:var(--hp)}
         <div><dt>Mortes</dt><dd id="sDead">0</dd></div>
       </dl>
       <ol class="how">
-        <li>Cace monstros. Cada um deixa um saco de loot no chão.</li>
+        <li>Cace monstros. Encoste no loot que eles deixam para pôr na mochila, que tem 20 espaços.</li>
         <li>Aos 1:30 abre o portal de saída na sala mais distante, guardada pelo Guardião.</li>
-        <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde o saco e parte da experiência do nível.</li>
-        <li>O ouro extraído vai para o cofre. Gaste com o <b>Mercador</b>, na cidade, em melhorias permanentes.</li>
-        <li>Armas, armaduras e amuletos extraídos também vão para o cofre. Vista ou venda no <b>Banco</b>.</li>
+        <li>Fique 2,5 segundos no portal para extrair. Se morrer ou o tempo acabar, perde a mochila e parte da experiência do nível.</li>
+        <li>A mochila volta com você e vai junto na próxima caçada. Só o cofre do <b>Banco</b> é seguro: guarde lá o ouro e as peças. Lá também se veste e se vende.</li>
+        <li>Gaste o ouro do cofre com o <b>Mercador</b>, na cidade, em melhorias permanentes.</li>
         <li>Na cidade, ande até uma casa e fale com quem está lá. O <b>Guia de caça</b>, no portão sul, leva às masmorras.</li>
       </ol>
       <button class="cta" id="play">Entrar na cidade</button>
@@ -469,8 +503,13 @@ h2.lost{color:var(--hp)}
       <h2 id="ljNome">Quitandeira</h2>
       <p class="lede" id="ljFala"></p>
       <div class="vault"><span>No cofre</span><b id="ljGold">0</b></div>
-      <p class="risco" id="ljLeva"></p>
-      <ul id="ljList"></ul>
+      <div id="ljCorpo">
+        <h3 class="sub" id="ljHabT" hidden>Habilidades da sua classe</h3>
+        <ul id="ljHab" hidden></ul>
+        <h3 class="sub" id="ljProvT" hidden>Runas para a próxima caçada</h3>
+        <p class="risco" id="ljLeva"></p>
+        <ul id="ljList"></ul>
+      </div>
       <button class="ghost voltar" id="ljBack">Voltar à cidade</button>
     </div>
   </div>
@@ -479,13 +518,21 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
       <h2>Banco</h2>
-      <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
+      <p class="lede">O que está na mochila vai com você para a caçada e cai se você morrer. O que está no cofre fica guardado e serve a qualquer personagem da conta. O que este personagem veste é só dele e não cai na morte.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
+      <h3 class="sub">Levar ouro do cofre na mochila</h3>
+      <div class="retira"><div class="passo"><button class="ghost" type="button" id="eqMenos" aria-label="Menos ouro">−</button><input id="eqQtd" type="number" inputmode="numeric" min="1" step="1" value="100" aria-label="Quanto ouro levar na mochila"><button class="ghost" type="button" id="eqMais" aria-label="Mais ouro">+</button></div><button class="ghost" type="button" id="eqRetira">Retirar</button></div>
+      <h3 class="sub">Na mochila · <span id="eqMoVal">0 ouro</span></h3>
+      <p class="eqtot" id="eqMoRisco"></p>
+      <button class="cta" type="button" id="eqGuarda">Guardar tudo no cofre</button>
+      <p class="eqtot" id="eqMsg" role="status"></p>
+      <ul id="eqMo" class="eql"></ul>
+      <h3 class="sub">O que este personagem veste</h3>
       <button type="button" class="boneco" id="eqBoneco" aria-label="Girar o personagem para ver o que ele veste" hidden><canvas width="256" height="256"></canvas></button>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
       <h3 class="sub">Peças no cofre</h3>
-      <ul id="eqList"></ul>
+      <ul id="eqList" class="eql"></ul>
       <button class="ghost voltar" id="eqBack">Voltar ao acampamento</button>
     </div>
   </div>
@@ -494,7 +541,7 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Forja</p>
       <h2>Gordon</h2>
-      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais extraídos ficam aqui no depósito, que é da conta; morrer com eles no saco perde, como o resto.</p>
+      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais guardados no Banco ficam aqui no depósito, que é da conta; morrer com eles na mochila perde, como o resto.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="fgGold">0</b></div>
       <p class="mmsg" id="fgMsg" role="status"></p>
       <h3 class="sub">Encomenda</h3>
@@ -556,7 +603,7 @@ h2.lost{color:var(--hp)}
       <h2 id="endTitle">Extraído!</h2>
       <p class="lede" id="endText"></p>
       <dl class="ledger">
-        <dt>Loot no saco</dt><dd id="eLoot"></dd>
+        <dt>Loot na mochila</dt><dd id="eLoot"></dd>
         <dt id="eSealDt" hidden>Resguardado pelo selo</dt><dd id="eSeal" hidden></dd>
         <dt id="eXpPerdaDt" hidden>Experiência perdida</dt><dd id="eXpPerda" hidden></dd>
         <dt>Monstros abatidos</dt><dd id="eKills"></dd>
@@ -573,7 +620,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.21.0"></script>
+<script type="module" src="src/main.js?v=0.30.0"></script>
 
 </body>
 </html>

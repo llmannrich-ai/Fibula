@@ -1,10 +1,15 @@
 # Plano do multiplayer (F2 · Co-op)
 
+> **Referência, não instrução.** O guia único é o [CLAUDE.md](../CLAUDE.md);
+> quando este documento discordar dele, vale o guia. Onde aqui se lê "PRD",
+> leia a Parte 2 (produto) ou a Parte 6 (decisões) do guia. Mudou desde a
+> análise: **o grupo não muda o mundo** (pilar 1, 19/10/2026) — a tabela de
+> regras de grupo da seção 3 não vale mais nas linhas de monstros e de vida do
+> Guardião, e o `progression.party` só tem `lootProtection` e `shareTiles`.
+>
 > Análise de 2026-10-18, sobre a `main` em `d018606` (versão 0.5.0). Detalha
-> **como** chegar ao que a F2 do [PRD](PRD.md) pede: servidor autoritativo,
-> salas de 1 a 4, convite por link, reconexão. **Escopo e fase continuam
-> mandados pelo PRD**; este documento não abre a F2 para os agentes. As
-> decisões que só o Leonardo pode tomar estão na seção 7.
+> **como** chegar à F2: servidor autoritativo, salas de 1 a 4, convite por
+> link, reconexão. As decisões que eram só do Leonardo estão na seção 7.
 
 ## 1. Resumo
 

@@ -1,8 +1,8 @@
 # Créditos da arte
 
 Toda imagem que o jogo mostra vem daqui. Cada arquivo novo em `assets/` entra
-nesta lista com origem, licença e o que foi alterado (seção 9 do
-[PRD](../docs/PRD.md)).
+nesta lista com origem, licença e o que foi alterado (seção "Arte e
+licenças" do [CLAUDE.md](../CLAUDE.md)).
 
 ## OpenTibia Sprite Pack (OTSP)
 

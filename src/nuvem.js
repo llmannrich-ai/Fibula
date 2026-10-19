@@ -11,11 +11,13 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave} from './sim/progresso.js?v=0.21.0';
-import {G} from './sim/incursao.js?v=0.21.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.21.0';
-import {menu,showMenu} from './telas.js?v=0.21.0';
-import {$} from './dom.js?v=0.21.0';
+import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.30.0';
+import {ITEMS} from './sim/dados.js?v=0.30.0';
+import {G} from './sim/incursao.js?v=0.30.0';
+import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.30.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.30.0';
+import {menu,showMenu} from './telas.js?v=0.30.0';
+import {$} from './dom.js?v=0.30.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
@@ -91,8 +93,9 @@ export async function mercado(fn,args){
 /* ---------- origem do loot ----------
    O banco só deixa anunciar o que tem origem registrada
    (tools/supabase/004_origem.sql): a caçada abre no banco ao começar
-   (caca_comecar) e fecha ao acabar (caca_fim), com o saco que sobrou na
-   extração ou o ouro do Selo na morte; a venda ao Banco também avisa
+   (caca_comecar) e fecha ao acabar (caca_fim), com o que a caçada rendeu na
+   extração (só o que a mochila tem a mais do que tinha ao entrar: o resto já
+   foi contado na caçada em que veio) ou o ouro do Selo na morte; a venda ao Banco também avisa
    (lastro_banco). O que não chegou por falta de rede espera numa fila no
    aparelho e vai antes da próxima operação da Feira. */
 const KEYF=KEY+'-fila';
@@ -124,7 +127,11 @@ export async function cacaComeca(){
 /* kind: extraiu, morreu ou desabou; p: o jogador deste aparelho */
 export function cacaFim(kind,p){
   if(!caca.id)return;
-  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?soPecas(p.bag):{},p_ouro:kind==='extraiu'?p.ouroExt|0:p.sealed|0});
+  /* peças: as que a caçada rendeu (pecasDaCaca); ouro e gemas viram ouro no
+     Banco; material vai para o Gordon, sem origem */
+  const b0=p.bag0||{};let ouro=0;
+  for(const[k,q]of Object.entries(p.bag)){const n=q-(b0[k]|0);if(n>0&&!ITEMS[k].slot&&!ehMat(k))ouro+=ITEMS[k].val*n}
+  enfila('caca_fim',{p_id:caca.id,p_desfecho:kind,p_saco:kind==='extraiu'?pecasDaCaca(p):vestidasDaCaca(p),p_ouro:kind==='extraiu'?ouro:p.sealed|0});
   caca.id=null;
 }
 export const lastroBanco=(k,val)=>enfila('lastro_banco',{p_item:k,p_val:val});
