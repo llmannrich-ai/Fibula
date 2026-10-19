@@ -983,6 +983,54 @@ const CASOS = [
 `,
   },
   {
+    nome: 'mochila',
+    o_que: 'botão Mochila na cidade e na masmorra: corpo vestido, saco em grade com o risco da morte, sem pausar o jogo',
+    semente: 7,
+    patches: [P.tempo(8, 3), P.sacoEquip],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 1},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], equip: {arma: 'machado', armadura: null, amuleto: null}}},
+    }},
+    roteiro: `
+    var bt=$('#bMochila'),aberta=function(){return visivel('#mochila')};
+    var cheias=function(){return todos('#moGrade .cel:not(:disabled)')};
+    clica($('#play'));
+    ok('o botão Mochila aparece na cidade', getComputedStyle(bt).display!=='none');
+    clica(bt);
+    ok('a mochila abre na cidade', aberta()&&bt.getAttribute('aria-expanded')==='true');
+    var arma=todos('#moDoll .cel')[2];
+    ok('o corpo mostra a arma vestida', (arma.getAttribute('aria-label')||'').indexOf('Arma: machado rachado')===0, arma.getAttribute('aria-label'));
+    ok('o corpo mostra os espaços vazios', todos('#moDoll .cel').filter(function(b){return / vazio$/.test(b.getAttribute('aria-label')||'')}).length===2, todos('#moDoll .cel').map(function(b){return b.getAttribute('aria-label')}).join(' | '));
+    ok('o total vestido aparece', txt('#moTot')==='Vestido: +10% de dano. Vida 85 · Mana 95', txt('#moTot'));
+    ok('na cidade o saco está vazio, em grade', cheias().length===0&&todos('#moGrade .cel').length===12, todos('#moGrade .cel').length);
+    tecla('keydown','KeyB');tecla('keyup','KeyB');
+    ok('B fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
+    clica(bt);
+    cacar();
+    ok('entrar na masmorra fecha a mochila', !aberta());
+    await quadros(2);
+    clica(bt);
+    ok('a mochila abre na masmorra', aberta());
+    ok('o saco mostra o valor', txt('#moVal')==='220 ouro', txt('#moVal'));
+    ok('o saco tem as duas peças, a mais valiosa primeiro', cheias().length===2&&/^200 de ouro/.test(cheias()[0].getAttribute('aria-label')||''), cheias().map(function(b){return b.getAttribute('aria-label')}).join(' | '));
+    ok('o risco da morte aparece, com o selo', txt('#moRisco')==='Se morrer, perde 176 de ouro (o selo guarda 44). Extraia para guardar.', txt('#moRisco'));
+    clica(cheias()[1]);
+    ok('tocar numa peça diz o que ela é', txt('#moInfo')==='espada enferrujada · vale 20 de ouro · Arma, +6% de dano. Ao extrair, vai para o Banco.', txt('#moInfo'));
+    ok('a peça tocada fica marcada', $('#moGrade .cel.on')&&$('#moGrade .cel.on').dataset.k==='espada');
+    var t0=txt('#timeT');
+    await quadros(40);
+    ok('o jogo não pausa com a mochila aberta', txt('#timeT')!==t0&&aberta(), t0+' → '+txt('#timeT'));
+    tecla('keydown','Escape');
+    ok('Esc fecha a mochila', !aberta());
+    clica(bt);
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    ok('a incursão acabou', acabou);
+    ok('a tela final fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
+`,
+  },
+  {
     nome: 'incursao-extracao',
     o_que: 'incursão de ponta a ponta: combate, portal, extração, cofre creditado e equipamento guardado como peça',
     semente: 11,

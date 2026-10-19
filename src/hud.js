@@ -1,13 +1,13 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.9.0';
-import {SPELLS,CITY} from './sim/dados.js?v=0.9.0';
-import {save,ch,KL,xpNeed,nSlots} from './sim/progresso.js?v=0.9.0';
-import {G} from './sim/incursao.js?v=0.9.0';
-import {C} from './sim/cidade.js?v=0.9.0';
-import {ART,icone} from './arte.js?v=0.9.0';
-import {rede} from './rede.js?v=0.9.0';
-import {$} from './dom.js?v=0.9.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.10.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus} from './sim/dados.js?v=0.10.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct} from './sim/progresso.js?v=0.10.0';
+import {G} from './sim/incursao.js?v=0.10.0';
+import {C} from './sim/cidade.js?v=0.10.0';
+import {ART,icone} from './arte.js?v=0.10.0';
+import {rede} from './rede.js?v=0.10.0';
+import {$,app} from './dom.js?v=0.10.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -28,6 +28,9 @@ export function montaIcones(){
   if(E.bPot.querySelector('.ico'))return;
   const i=document.createElement('span');i.className='ico';i.setAttribute('aria-hidden','true');
   if(icone(i,'pocao'))E.bPot.insertBefore(i,E.bPot.querySelector('.nm'));
+  const m=document.createElement('span');m.className='ico';m.setAttribute('aria-hidden','true');
+  if(icone(m,'saco2'))MO.bt.insertBefore(m,MO.bt.querySelector('.nm'));
+  if(!MO.el.hidden)desenhaMochila();
 }
 export function montaBotoes(){ // chamado ao entrar na incursão: os espaços mudam com o nível
   const c=ch(),n=nSlots();
@@ -50,7 +53,7 @@ export function hud(){
   E.mpI.style.width=(p.mp/p.mmp*100)+'%';setT(E.mpT,`${Math.floor(p.mp)}/${p.mmp}`);
   E.xpI.style.width=(c.xp/xpNeed(c.lvl)*100)+'%';setT(E.lvlT,'Nv '+c.lvl);
   setT(E.clsT,KL().nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
-  setT(E.bagT,String(p.bagVal));setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
+  setT(E.bagT,String(p.bagVal));if(p.bagVal!==MO.val&&!MO.el.hidden)desenhaMochila();setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
   const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
   if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
@@ -81,3 +84,79 @@ export function hudCidade(){
 }
 /* ao entrar na cidade o botão recomeça escondido */
 export const zeraCidade=()=>{pertoAntes=null;EC.falar.hidden=true};
+
+/* ---------- mochila ----------
+   O corpo (o que o personagem veste) e o saco (o que ele carrega e perde se
+   morrer), numa janela sobre o jogo: a incursão não pausa, e o toque fora
+   dela continua sendo joystick. Só mostra — vestir e vender é no Banco, na
+   cidade. Nada de arrastar nem de passar o mouse (pilar 3): tocar numa peça
+   diz o que ela é. */
+const MO={el:$('#mochila'),bt:$('#bMochila'),val:-1,sel:null};
+/* o bônus somado do que está vestido, em texto; o Banco usa o mesmo */
+export function vestido(c=ch()){
+  const st=stats(c),tot=[eqBonus('dano',c)&&`+${Math.round(eqBonus('dano',c)*100)}% de dano`,eqBonus('red',c)&&`−${Math.round(eqBonus('red',c)*100)}% de dano sofrido`,
+    eqBonus('vida',c)&&`+${eqBonus('vida',c)} de vida`,eqBonus('mana',c)&&`+${eqBonus('mana',c)} de mana`].filter(Boolean);
+  return (tot.length?'Vestido: '+tot.join(', ')+'. ':'Nada vestido. ')+`Vida ${st.mhp} · Mana ${st.mmp}`;
+}
+const naCaca=()=>!!(G&&G.active&&G.p&&!app.classList.contains('cidade'));
+function cel(k,q,rot){
+  const b=document.createElement('button');b.type='button';b.className='cel';
+  if(!k){b.disabled=true;b.setAttribute('aria-label',rot||'vazio');return b}
+  const it=ITEMS[k];b.classList.add('r'+it.rar);
+  const ic=document.createElement('span');ic.className='ico';ic.setAttribute('aria-hidden','true');
+  if(icone(ic,'it_'+k))b.appendChild(ic);
+  else{const i=document.createElement('i');i.textContent=it.nome.slice(0,2);b.appendChild(i)}
+  if(q>1){const n=document.createElement('q');n.textContent=q;b.appendChild(n)}
+  b.setAttribute('aria-label',(rot?rot+': ':'')+fmtItem([k,q])+(it.slot?', '+fmtBonus(it):''));
+  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila()});
+  return b;
+}
+function info(k,q,vestida){
+  const el=$('#moInfo');el.textContent='';
+  if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é. O jogo continua correndo.':'Toque numa peça para ver o que é. Vestir, trocar e vender é no Banco.';return}
+  const it=ITEMS[k],b=document.createElement('b');b.className='r'+it.rar;b.textContent=fmtItem([k,q]);
+  const bo=it.slot?` · ${SLOT_NOME[it.slot]}, ${fmtBonus(it)}`:'';
+  el.append(b,vestida?`${bo}. Vestida: não cai na morte.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+(it.slot?' Ao extrair, vai para o Banco.':''));
+}
+export function desenhaMochila(){
+  const c=ch(),K=KL(),caca=naCaca(),p=caca?G.p:null,bag=p?p.bag:{},val=p?p.bagVal:0;
+  MO.val=caca?val:-1;
+  setT($('#moEye'),`Mochila · ${K.nome} · Nv ${c.lvl}`);
+  /* corpo: amuleto e arma, o boneco, armadura e o próprio saco */
+  const d=$('#moDoll');d.textContent='';let selInfo=null;
+  const eq=sl=>{const k=c.equip[sl],w=document.createElement('div');w.className='eq s-'+sl;
+    const b=cel(k,1,SLOT_NOME[sl]);if(!k)b.setAttribute('aria-label',SLOT_NOME[sl]+' vazio');
+    b.dataset.k='eq:'+sl;if(MO.sel==='eq:'+sl){b.classList.add('on');selInfo=[k,1,true]}
+    const s=document.createElement('small');s.textContent=SLOT_NOME[sl];w.append(b,s);return w};
+  const fig=document.createElement('div');fig.className='fig';fig.setAttribute('aria-hidden','true');
+  const ic=document.createElement('span');ic.className='ico';
+  if(icone(ic,'cls_'+save.classe,2,0,64))fig.appendChild(ic);else{const l=document.createElement('b');l.textContent=K.nome[0];fig.appendChild(l)}
+  const sw=document.createElement('div');sw.className='eq s-saco';
+  const sc=document.createElement('button');sc.type='button';sc.className='cel'+(val?' cheia':'');sc.disabled=true;
+  const si=document.createElement('span');si.className='ico';si.setAttribute('aria-hidden','true');if(icone(si,'saco2'))sc.appendChild(si);
+  sc.setAttribute('aria-label',`Saco: ${val} de ouro`);
+  const ss=document.createElement('small');ss.textContent='Saco';sw.append(sc,ss);
+  d.append(eq('amuleto'),fig,eq('armadura'),eq('arma'),sw);
+  setT($('#moTot'),vestido(c));
+  /* saco: o mais valioso primeiro; casas vazias completam a grade, como um container do Tibia */
+  const sela=p?Math.round(val*sealPct(p.up)):0;
+  const mv=$('#moVal');mv.textContent='';const vb=document.createElement('b');vb.textContent=val;mv.append(vb,' ouro');
+  setT($('#moRisco'),!caca?'O saco enche na masmorra e só é seu depois do portal.'
+    :val?`Se morrer, perde ${val-sela} de ouro`+(sela?` (o selo guarda ${sela}).`:'.')+' Extraia para guardar.':'Vazio. Cada monstro deixa um saco no chão: encoste nele para pegar.');
+  const g=$('#moGrade');g.textContent='';
+  const rows=Object.entries(bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
+  for(const[k,q]of rows){const b=cel(k,q);b.dataset.k=k;if(MO.sel===k){b.classList.add('on');selInfo=[k,q,false]}g.appendChild(b)}
+  for(let i=rows.length;i<Math.max(12,Math.ceil(rows.length/6)*6);i++)g.appendChild(cel(null));
+  if(!selInfo)MO.sel=null;
+  info(...(selInfo||[]));
+}
+export function abreMochila(){MO.sel=null;MO.el.hidden=false;MO.bt.setAttribute('aria-expanded','true');MO.bt.setAttribute('aria-label','Fechar a mochila (B)');desenhaMochila()}
+export function fechaMochila(){if(MO.el.hidden)return;MO.el.hidden=true;MO.bt.setAttribute('aria-expanded','false');MO.bt.setAttribute('aria-label','Abrir a mochila (B)')}
+const alterna=()=>MO.el.hidden?abreMochila():fechaMochila();
+MO.bt.addEventListener('click',alterna);
+$('#moX').addEventListener('click',fechaMochila);
+addEventListener('keydown',e=>{
+  const pode=app.classList.contains('cidade')||(G&&G.active&&!G.over&&app.classList.contains('playing'));
+  if(e.code==='KeyB'&&!e.repeat&&pode)alterna();
+  else if(e.code==='Escape')fechaMochila();
+});

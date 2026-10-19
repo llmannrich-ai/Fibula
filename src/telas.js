@@ -1,16 +1,16 @@
 /* ---------- telas ----------
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final e Mercador. */
-import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.9.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.9.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,stats,eqBonus,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.9.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.9.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.9.0';
-import {persist,saveFalhou} from './salvar.js?v=0.9.0';
-import {desenhaConta} from './nuvem.js?v=0.9.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade} from './hud.js?v=0.9.0';
-import {icone} from './arte.js?v=0.9.0';
-import {$,app} from './dom.js?v=0.9.0';
+import {clamp,fmtEl,sementeDe} from './sim/base.js?v=0.10.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS} from './sim/dados.js?v=0.10.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp} from './sim/progresso.js?v=0.10.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.10.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.10.0';
+import {persist,saveFalhou} from './salvar.js?v=0.10.0';
+import {desenhaConta} from './nuvem.js?v=0.10.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.10.0';
+import {icone} from './arte.js?v=0.10.0';
+import {$,app} from './dom.js?v=0.10.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS];
@@ -18,7 +18,7 @@ const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS];
    senão o fundo é a masmorra. As telas de dentro voltam para onde vieram. */
 export const V={cidade:false};
 const soTela=el=>{
-  for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing','cidade');
+  for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing','cidade');fechaMochila();
   for(const b of document.querySelectorAll('.voltar'))b.textContent=V.cidade?'Voltar à cidade':'Voltar ao acampamento';
 };
 const volta=()=>V.cidade?showCidade():showMenu();
@@ -49,7 +49,7 @@ const VERSAO=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'d
 function start(){
   V.cidade=false;
   newRun(SEM_URL);G.active=true;save.runs++;persist();montaBotoes();
-  for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';
+  for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
   log('Você entrou na masmorra. O portal abre em 1:30.','info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
@@ -209,9 +209,7 @@ function drawEquip(){
     sl.appendChild(b);
   }
   /* o total vestido, para o jogador ver o efeito sem fazer conta */
-  const st=stats(),tot=[eqBonus('dano')&&`+${Math.round(eqBonus('dano')*100)}% de dano`,eqBonus('red')&&`−${Math.round(eqBonus('red')*100)}% de dano sofrido`,
-    eqBonus('vida')&&`+${eqBonus('vida')} de vida`,eqBonus('mana')&&`+${eqBonus('mana')} de mana`].filter(Boolean);
-  $('#eqTot').textContent=(tot.length?'Vestido: '+tot.join(', ')+'. ':'Nada vestido. ')+`Vida ${st.mhp} · Mana ${st.mmp}`;
+  $('#eqTot').textContent=vestido();
   const ul=$('#eqList');ul.textContent='';
   const rows=Object.entries(save.itens).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a[0]].slot)-SLOTS_EQ.indexOf(ITEMS[b[0]].slot)||ITEMS[b[0]].val-ITEMS[a[0]].val);
   if(!rows.length){const li=document.createElement('li');li.className='vazio';
