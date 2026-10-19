@@ -69,6 +69,13 @@ andar por sqm: o convidado anda no próprio aparelho e conta o sqm; o
 anfitrião leva o boneco até lá pela regra, então não há teleporte. O
 `CLAUDE.md` (Realtime → Sala) descreve o funcionamento.
 
+Ainda em 19/10, o Leonardo trocou o tempo da masmorra da sala por uma
+**porta**: a masmorra nasce com a sala, não tem tempo, cada um entra e sai
+quando quer e os monstros renascem. O solo continua com 6 minutos. Para o
+servidor da F2, isso é uma instância persistente por sala, não uma partida
+com começo e fim; o protocolo (entrada por passo, retrato, resultado por
+jogador ao sair) é o mesmo.
+
 O que isso adianta da M2: o protocolo (entrada por passo, retrato a 10/s,
 resultado por jogador) e o convidado desenhando um estado que não calcula.
 O que **não** resolve, e continua sendo da M2/M3: trapaça do anfitrião,

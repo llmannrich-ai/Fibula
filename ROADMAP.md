@@ -141,6 +141,13 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — A masmorra da sala sem tempo, com porta (0.15.0)** *(pedido
+  do Leonardo; pilar 2)*. A masmorra nasce com a sala e fica aberta até o
+  anfitrião fechar (na cidade) ou sair do jogo. Cada membro entra e sai por
+  uma porta na sala de entrada quando quiser, e volta; os monstros renascem
+  (`progression.respawn`). Casos `sala-anfitriao` e `sala-convidado`
+  reescritos, regras da masmorra aberta no Node, quatro sabotagens barradas,
+  e duas rodadas com dois navegadores no Realtime de verdade.
 - **2026-10-19 — Caçar junto (0.14.0)** *(opção C do plano do multiplayer,
   a pedido do Leonardo; pilar 2)*. No Guia de caça, qualquer um cria uma sala
   e quem está na cidade a vê e entra (até 4); a sala fica aberta até o

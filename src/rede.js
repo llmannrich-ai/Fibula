@@ -9,11 +9,11 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES,SLOTS_EQ} from './sim/dados.js?v=0.14.0';
-import {save,ch} from './sim/progresso.js?v=0.14.0';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.14.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.14.0';
-import {log} from './hud.js?v=0.14.0';
+import {CLASSES,SLOTS_EQ} from './sim/dados.js?v=0.15.0';
+import {save,ch} from './sim/progresso.js?v=0.15.0';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.15.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.15.0';
+import {log} from './hud.js?v=0.15.0';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
@@ -30,6 +30,9 @@ const ENVIO=.1,BATIDA=25;
    para o Guia de caça listar */
 export const rede={estado:'fora',n:0,sala:null,naSala:0,aoMudar(){}};
 export const SALAS=new Map();
+/* longe: este aparelho tem sala aberta mas não está na cidade (está na
+   masmorra dela). Continua no canal, sem boneco, para a sala seguir na lista */
+let longe=false;
 let ws=null,ref=0,pronto=false,quer=false,espera=0,tenta=0,batida=0,envio=0,mandou={x:-1,y:-1},primeiro=true;
 
 const manda=(event,payload,topic=TOPICO)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic,event,payload,ref:String(++ref),join_ref:'1'}))};
@@ -38,7 +41,7 @@ const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
    que ele veste vai junto, para os outros verem no boneco */
 const veste=[null,null,null];
 const eu=()=>{const e=ch().equip;for(let i=0;i<3;i++)veste[i]=e[SLOTS_EQ[i]]||null;
-  return {nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl,eq:{arma:veste[0],armadura:veste[1],amuleto:veste[2]},sala:rede.sala}};
+  return {nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl,eq:{arma:veste[0],armadura:veste[1],amuleto:veste[2]},sala:rede.sala,longe}};
 /* o Banco se abre de dentro da cidade: trocar de peça lá manda a presença de novo */
 const mudouVeste=()=>{const e=ch().equip;for(let i=0;i<3;i++)if((e[SLOTS_EQ[i]]||null)!==veste[i])return true;return false};
 const presenca=()=>manda('presence',{type:'presence',event:'track',payload:eu()});
@@ -73,10 +76,12 @@ function conta(){rede.n=OUTROS.size;rede.aoMudar()}
 function chegou(id,meta,avisa){
   if(id===ID||!meta)return;
   const o=poeOutro(id,meta);
-  if(o&&avisa)log(`${o.nome} chegou à cidade.`,'info');
   /* a sala anunciada: só o número de gente, o resto é o nome já conferido */
   const n=meta.sala&&meta.sala.n|0;
   if(o&&n>=1&&n<=4)SALAS.set(id,{id,nome:o.nome,classe:o.classe,n});else SALAS.delete(id);
+  /* quem está na masmorra da sala dele não aparece andando na cidade */
+  if(meta.longe){tiraOutro(id);return}
+  if(o&&avisa&&!longe)log(`${o.nome} chegou à cidade.`,'info');
 }
 /* o servidor pode tirar o cliente do canal (excesso de mensagens, canal
    reiniciado) sem fechar o socket: aí o jogo ficaria "ligado" e invisível.
@@ -88,14 +93,14 @@ function recebe(d){
   if(d.event==='phx_reply'&&d.ref==='1'){
     if(p.status!=='ok'){rede.estado='sem rede';return}
     pronto=true;rede.estado='ligado';
-    presenca();minhaPos();
+    presenca();if(!longe)minhaPos();
   }else if(d.event==='presence_state'){
     for(const id in p)chegou(id,p[id].metas&&p[id].metas[0],false);
     primeiro=false;conta();
   }else if(d.event==='presence_diff'){
     let novo=false;
     for(const id in p.joins||{}){if(id===ID)continue;const ja=OUTROS.has(id);chegou(id,p.joins[id].metas&&p.joins[id].metas[0],!primeiro&&!ja);novo=true}
-    for(const id in p.leaves||{}){if(id===ID||(p.joins&&p.joins[id]))continue;SALAS.delete(id);const o=OUTROS.get(id);if(o&&o.vis)log(`${o.nome} saiu da cidade.`,'info');tiraOutro(id)}
+    for(const id in p.leaves||{}){if(id===ID||(p.joins&&p.joins[id]))continue;SALAS.delete(id);const o=OUTROS.get(id);if(o&&o.vis&&!longe)log(`${o.nome} saiu da cidade.`,'info');tiraOutro(id)}
     /* quem chegou ainda não sabe onde estou */
     if(novo&&pronto){const p=C.p,sd=p.sd;p.sd=0;minhaPos();p.sd=sd}
     conta();
@@ -107,12 +112,14 @@ function recebe(d){
 /* naCidade: o jogador está na cidade (ou numa tela aberta a partir dela) */
 export function quadro(dt,naCidade){
   const fundo=typeof document!=='undefined'&&document.hidden;
-  const deve=naCidade&&!fundo&&!!C&&!!CLASSES[save.classe]&&typeof WebSocket!=='undefined';
+  const deve=(naCidade||!!rede.sala)&&!fundo&&!!C&&!!CLASSES[save.classe]&&typeof WebSocket!=='undefined';
   if(!deve){if(quer||ws)desliga();return}
   quer=true;
+  if(longe!==!naCidade){longe=!naCidade;if(pronto){presenca();if(!longe)minhaPos()}}
   if(!ws){espera-=dt;if(espera<=0)liga();return}
   if(!pronto)return;
   batida-=dt;if(batida<=0){batida=BATIDA;manda('heartbeat',{},'phoenix')}
+  if(longe)return;
   if(mudouVeste())presenca();
   envio-=dt;
   const p=C.p;

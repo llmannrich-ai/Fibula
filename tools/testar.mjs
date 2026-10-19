@@ -143,8 +143,8 @@ const P = {
   sacoEquip: (h) => patch(h, 'pch:0,bag:{},bagVal:0,', 'pch:0,bag:{ouro:200,espada:1},bagVal:220,', 'saco semeado com espada'),
   /* portal na sala de entrada: no headless não há quem arraste o joystick até
      a sala do Guardião, e o que está sob teste é a extração, não a caminhada */
-  portalNaEntrada: (h) => patch(h, 'portal:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false}',
-    'portal:{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false}', 'portal na entrada'),
+  portalNaEntrada: (h) => patch(h, ':{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false}',
+    ':{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false}', 'portal na entrada'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   spawnNaEntrada: (h) => patch(h, 'if(r===s)continue;', 'if(false)continue;', 'spawn na entrada'),
   /* põe um Supabase de mentira na frente do fetch do jogo (a chave real fica,
@@ -717,6 +717,36 @@ async function testaSimulacao() {
     if (Math.abs(cv.tx - ctx0) > 1) falhas.push(`o convidado pulou ${cv.tx - ctx0} sqm num passo`);
     for (let k = 0; k < 20; k++) I.update(0.05, [alvo, rem]);
     if (cv.tx - ctx0 > Math.ceil(1.05 / P.durPasso(cv.c)) + 1) falhas.push(`o convidado andou ${cv.tx - ctx0} sqm em 1 s, mais que a velocidade do nível ${cv.c.lvl}`);
+    /* a masmorra aberta da sala: sem tempo, porta na entrada, monstros que
+       renascem como no Tibia (progression.respawn) e entrada de novo */
+    {
+      novoSave(); I.newRun(41, [I.fichaLocal()], true); I.G.active = true;
+      const RS = JSON.parse(CONTEUDO).progression.respawn, G = I.G, pl = G.ps[0], parado = {x: 0, y: 0, held: [false, false, false, false]};
+      pl.mhp = pl.hp = 1e7;
+      for (let k = 0; k < 80; k++) I.update(0.05, [parado]);
+      if (pl.fora) falhas.push('na porta da sala, quem acabou de entrar saiu sem querer');
+      G.t = 1000; for (let k = 0; k < 10; k++) I.update(0.05, [parado]);
+      if (G.over || pl.fora) falhas.push(`a masmorra da sala desabou ou tirou o jogador depois do tempo da solo (${pl.fora})`);
+      const sala = G.rooms.find((r) => r.base > 0 && !r.chefe && Math.hypot(r.cx - pl.tx, r.cy - pl.ty) > RS.clearTiles + 4);
+      const conta = () => G.mons.filter((m) => m.sala === sala.i).length;
+      if (!sala || !(conta() > 0)) falhas.push('não achei sala com monstros longe da porta para testar o respawn');
+      else {
+        G.mons = G.mons.filter((m) => m.sala !== sala.i);
+        for (let k = 0; k < Math.round((RS.seconds - 2) / 0.05); k++) I.update(0.05, [parado]);
+        if (conta() !== 0) falhas.push(`a sala repovoou antes de ${RS.seconds} s`);
+        for (let k = 0; k < Math.round(4 / 0.05); k++) I.update(0.05, [parado]);
+        if (conta() < sala.base) falhas.push(`a sala não repovoou depois de ${RS.seconds} s: ${conta()} de ${sala.base}`);
+        G.mons = G.mons.filter((m) => m.sala !== sala.i);
+        const B1 = await import(url('base.js')); B1.poeNoSqm(pl, sala.cx, sala.cy);
+        for (let k = 0; k < Math.round((RS.seconds + 4) / 0.05); k++) I.update(0.05, [parado]);
+        if (conta() !== 0) falhas.push('a sala repovoou com o jogador dentro dela');
+        B1.poeNoSqm(pl, Math.floor(G.portal.x / 32), Math.floor(G.portal.y / 32)); pl.longe = true; pl.bag = {ouro: 9}; pl.bagVal = 9; const cofre0 = P.save.cofre;
+        for (let k = 0; k < 80 && !pl.fora; k++) I.update(0.05, [parado]);
+        if (pl.fora !== 'extraiu' || P.save.cofre !== cofre0 + 9 || G.over) falhas.push(`sair pela porta: ${pl.fora}, cofre ${cofre0} → ${P.save.cofre}, sala acabou: ${G.over}`);
+        const de = I.entra(0, I.fichaLocal());
+        if (de.fora || de.bagVal || G.ps.length !== 1 || de.longe) falhas.push('entrar de novo pela porta não deu um jogador novo, na porta e com o saco vazio');
+      }
+    }
     if (P.confereFicha({cl: 'dragao', c: {}}) || P.confereFicha({cl: 'druida', c: {lvl: 1e9, slots: ['golpe', 'gelo']}}).c.lvl !== 200 || P.confereFicha({cl: 'druida', c: {lvl: 2, slots: ['golpe', 'gelo']}}).c.slots[0] !== null)
       falhas.push('confereFicha() deixou passar classe inexistente, nível absurdo ou habilidade de outra classe');
   } catch (e) { falhas.push('o grupo quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
@@ -912,7 +942,7 @@ const CASOS = [
   },
   {
     nome: 'sala-anfitriao',
-    o_que: 'caçar junto, lado do anfitrião: cria a sala no Guia, recebe um convidado, leva o grupo à masmorra, roda a regra com a entrada dele, manda o retrato e o resultado, e fecha a sala',
+    o_que: 'caçar junto, lado do anfitrião: a sala nasce com a masmorra dela, sem tempo; o convidado entra e sai pela porta quando quer e volta a entrar; o anfitrião também; a sala some da cidade só quando ele fecha',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -922,6 +952,7 @@ const CASOS = [
     }},
     roteiro: `
     var RT=window.__rt,BIA={nome:'Bia',cl:'druida',c:{lvl:2,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:['gelo',null,null,null],equip:{}},up:{}};
+    var parado=function(){return {x:0,y:0,held:[false,false,false,false]}};
     clica($('#play'));
     await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
     Tl.abreNpc('guia');
@@ -931,53 +962,70 @@ const CASOS = [
     var ligou=await ate(function(){return Sa.SALA.estado==='ligado'},40);
     var join=RT.enviadas.filter(function(d){return d.event==='phx_join'&&d.topic.indexOf('realtime:sala-')===0})[0];
     ok('criar sala abre o canal da sala, com o id deste aparelho', ligou&&join&&join.topic.split('-').pop()===Sa.SALA.id, join&&join.topic);
+    ok('a masmorra da sala nasce com ela, sem tempo e vazia', I.G&&I.G.sala&&I.G.aberta&&I.G.active&&I.G.ps[0].fora==='fora'&&I.G.portal.open, I.G&&JSON.stringify({ab:I.G.aberta,f:I.G.ps[0].fora}));
     var anunc=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0&&d.payload.payload.sala}).pop();
     ok('a sala é anunciada na cidade, para os outros verem no Guia', anunc&&anunc.payload.payload.sala.n===1, anunc&&JSON.stringify(anunc.payload.payload));
+    ok('os lugares do Guia ficam para quem não está numa sala', $('#huntList button').disabled, txt('#huntList button'));
     RT.sala('quero',{id:'conv1',ficha:BIA});
     var entrou=await ate(function(){return Sa.SALA.membros.length===2},20);
-    ok('o convidado entra, e o Guia mostra quem está na sala', entrou&&/Bia/.test(txt('#hSala')||''), txt('#hSala'));
-    ok('a lista vai para a sala', RT.salaMandadas('membros').some(function(m){return m.lista.length===2}), RT.salaMandadas('membros').length);
+    ok('o convidado fica na sala, e o Guia mostra quem está nela', entrou&&/Bia/.test(txt('#hSala')||''), txt('#hSala'));
     RT.sala('quero',{id:'mal',ficha:{nome:'Mal',cl:'dragao',c:{lvl:99}}});await quadros(3);
     ok('ficha de classe que não existe é recusada', Sa.SALA.membros.length===2, Sa.SALA.membros.length);
-    var b=$('#huntList button');
-    ok('o botão do lugar vira entrar com o grupo', b&&b.textContent==='entrar com o grupo', b&&b.textContent);
-    clica(b);await quadros(3);
-    ok('o grupo entra na masmorra: dois jogadores, o convidado com a ficha dele', I.G&&I.G.ps.length===2&&I.G.sala&&I.G.ps[1].cl==='druida'&&I.G.ps[1].c.lvl===2&&!I.G.ps[1].local, I.G&&I.G.ps.length);
-    var com=RT.salaMandadas('comeca')[0];
-    ok('a sala recebe a semente e as fichas', com&&com.semente===I.G.semente&&com.ids[1]==='conv1'&&com.fichas.length===2, com&&JSON.stringify(com.ids));
-    var q=I.G.ps[1],tx0=q.tx,e0=RT.salaMandadas('estado').length,t0=I.G.t;
-    var lado=!I.solid(q.tx+1,q.ty)&&!I.solid(q.tx+2,q.ty)?1:-1;
-    RT.sala('ent',{id:'conv1',x:tx0+lado,y:q.ty,f:0,h:0,pot:0});await quadros(4);
-    RT.sala('ent',{id:'conv1',x:tx0+2*lado,y:q.ty,f:0,h:0,pot:0});
-    var chegou=await ate(function(){return q.tx===tx0+2*lado&&!q.sd},60);
-    ok('o anfitrião leva o convidado até o sqm que ele conta', chegou, tx0+' → '+q.tx);
+    RT.sala('entro',{id:'conv1',ficha:BIA});await quadros(3);
+    var pt=RT.salaMandadas('porta')[0],q=I.G.ps[1];
+    ok('o convidado entra pela porta: a sala responde com a semente e o lugar dele', pt&&pt.id==='conv1'&&pt.i===1&&pt.semente===I.G.semente&&q&&!q.fora&&q.cl==='druida'&&!q.local, pt&&JSON.stringify({i:pt.i,s:pt.semente}));
+    RT.sala('entro',{id:'estranho',ficha:BIA});await quadros(2);
+    ok('quem não está na sala não entra pela porta', RT.salaMandadas('porta').length===1&&I.G.ps.length===2, RT.salaMandadas('porta').length);
+    var tx0=q.tx,e0=RT.salaMandadas('estado').length,t0=I.G.t;
+    var lado=!I.solid(q.tx,q.ty+1)&&!I.solid(q.tx,q.ty+2)?1:-1;
+    RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty+lado,f:0,h:0,pot:0});await quadros(4);
+    RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty+2*lado,f:0,h:0,pot:0});
+    var ty0=q.ty,chegou=await ate(function(){return q.ty===ty0+lado&&!q.sd},60);
+    ok('o anfitrião leva o convidado até o sqm que ele conta', chegou, ty0+' → '+q.ty);
     var ne=RT.salaMandadas('estado').length-e0,dtj=I.G.t-t0;
-    ok('o retrato vai a uns 10 por segundo', ne>=Math.floor(dtj/0.1)-1&&ne<=Math.ceil(dtj/0.1)+1, ne+' em '+dtj.toFixed(2)+' s');
+    ok('com convidado dentro, o retrato vai a uns 10 por segundo', ne>=Math.floor(dtj/0.1)-1&&ne<=Math.ceil(dtj/0.1)+1, ne+' em '+dtj.toFixed(2)+' s');
     var r=RT.salaMandadas('estado').pop();
-    ok('o retrato tem os monstros e os dois jogadores', r&&r.m.length===I.G.mons.length*10&&r.ps.length===2, r&&(r.m.length/10)+' / '+I.G.mons.length);
+    ok('o retrato tem os monstros e quem está na sala, com classe e nome', r&&r.m.length===I.G.mons.length*10&&r.ps.length===2&&r.ps[1].cl==='druida'&&r.ps[1].nome==='Bia', r&&(r.m.length/10)+' / '+I.G.mons.length);
     var xa=q.tx;RT.sala('ent',{id:'conv1',x:q.tx+40,y:q.ty,f:0,h:0,pot:0});await quadros(2);
     ok('posição de fora não teletransporta: um sqm por passo', Math.abs(q.tx-xa)<=1, xa+' → '+q.tx);
     RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:0});await ate(function(){return !q.sd},40);
     q.hp=10;var pots=q.pot;RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:1});await quadros(2);
     ok('a poção do convidado é bebida pelo anfitrião', q.pot===pots-1&&q.hp>10, pots+' → '+q.pot+', vida '+q.hp);
+    I.G.t=400;await quadros(3);
+    ok('a masmorra da sala não desaba: passou do tempo da solo e segue aberta', !I.G.over&&!q.fora&&I.G.active, I.G.t.toFixed(0)+' / '+q.fora);
     q.bag={ouro:12};q.bagVal=12;I.sai(q,'morreu');await quadros(1);
     var fim=RT.salaMandadas('fim')[0];
-    ok('o convidado que sai recebe o resultado dele', fim&&fim.id==='conv1'&&fim.r.fora==='morreu'&&fim.r.bagVal===12&&fim.r.c.lvl===2, fim&&JSON.stringify(fim.r).slice(0,90));
-    ok('a incursão segue para o anfitrião, e a conta dele não mudou', !I.G.over&&!I.G.ps[0].fora&&Pg.save.deaths===0, I.G.over+' / '+Pg.save.deaths);
-    I.finish('extraiu');await ate(function(){return visivel('#end')},400);
-    ok('o anfitrião tem a tela final dele', visivel('#end')&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    ok('quem sai recebe o resultado dele, e a masmorra continua', fim&&fim.id==='conv1'&&fim.r.fora==='morreu'&&fim.r.bagVal===12&&!I.G.over, fim&&JSON.stringify(fim.r).slice(0,80));
+    ok('a conta deste aparelho não mudou com a morte do convidado', Pg.save.deaths===0, Pg.save.deaths);
+    RT.sala('entro',{id:'conv1',ficha:BIA});await quadros(3);
+    I.G.ps[1].mhp=I.G.ps[1].hp=1e6;
+    ok('quem saiu volta a entrar pela porta, com o saco vazio e no mesmo lugar da lista', RT.salaMandadas('porta').length===2&&I.G.ps.length===2&&!I.G.ps[1].fora&&I.G.ps[1].bagVal===0, I.G.ps.length+' / '+I.G.ps[1].fora);
+    var porta=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
+    ok('o Guia oferece entrar pela porta', porta&&!porta.disabled, txt('#hSala'));
+    clica(porta);await quadros(3);
+    ok('o anfitrião entra na masmorra que o aparelho dele já roda', $('#app').classList.contains('playing')&&I.G.p===I.G.ps[0]&&!I.G.ps[0].fora&&I.G.ps.length===2, I.G.ps[0].fora);
+    ok('o HUD diz que não há tempo', txt('#timeT')==='sem tempo'&&/Porta/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
+    var longe=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0}).pop();
+    ok('na masmorra, a sala continua anunciada na cidade, sem boneco', RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:cidade-')===0})&&longe&&longe.payload.payload.longe&&longe.payload.payload.sala, longe&&JSON.stringify(longe.payload.payload));
+    var a=I.G.ps[0],sai0=RT.salaMandadas('fim').length;
+    ok('quem acabou de entrar não sai sem querer: está na porta', (await quadros(70),!a.fora), a.pch);
+    a.longe=true;a.bag={ouro:30};a.bagVal=30;
+    await ate(function(){return a.fora==='extraiu'},120);await ate(function(){return visivel('#end')},400);
+    ok('o anfitrião sai pela porta com o saco: tela final e cofre', a.fora==='extraiu'&&visivel('#end')&&Pg.save.cofre===30, txt('#endTitle')+' / '+Pg.save.cofre);
+    ok('sair não fecha a masmorra para quem ficou', !I.G.over&&!I.G.ps[1].fora, I.G.over);
+    clica($('#toMenu'));var t1=I.G.t;await quadros(6);
+    ok('na cidade, o aparelho do anfitrião continua rodando a masmorra', I.G.t>t1&&$('#app').classList.contains('cidade'), t1+' → '+I.G.t);
     RT.salaSai('conv1');await quadros(3);
-    ok('quem fecha o jogo sai da sala', Sa.SALA.membros.length===1, Sa.SALA.membros.length);
-    clica($('#toMenu'));Tl.abreNpc('guia');
-    ok('a sala segue aberta depois da incursão', Sa.SALA.papel==='anfitriao'&&/Sua sala/.test(txt('#hSala')||''), txt('#hSala'));
+    ok('quem fecha o jogo lá dentro some da masmorra e da sala', Sa.SALA.membros.length===1&&I.G.ps[1].fora==='fora', Sa.SALA.membros.length+' / '+I.G.ps[1].fora);
+    Tl.abreNpc('guia');
     var fecha=todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0];clica(fecha);await quadros(3);
-    ok('fechar a sala avisa e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
-    ok('o Guia volta a oferecer criar sala', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'}), txt('#hSala'));
+    ok('fechar a sala acaba com a masmorra e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&I.G.over&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
+    ok('o Guia volta a oferecer criar sala e os lugares sozinho', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'})&&!$('#huntList button').disabled, txt('#hSala'));
     `,
   },
   {
     nome: 'sala-convidado',
-    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra, começa quando o anfitrião manda, desenha o retrato, anda no próprio aparelho, manda a entrada, grava o resultado e volta à cidade se o anfitrião some',
+    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra nela, entra pela porta quando quer, desenha o retrato, anda no próprio aparelho, grava o resultado, entra de novo, e volta à cidade se o anfitrião some',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -986,35 +1034,43 @@ const CASOS = [
       chars: {druida: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['gelo', null, null, null]}},
     }},
     roteiro: `
-    var RT=window.__rt,ANA={nome:'Ana',cl:'cavaleiro',c:{lvl:5,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:['golpe',null,null,null],equip:{}},up:{}};
+    var RT=window.__rt,ANA={nome:'Ana',cl:'cavaleiro',c:{lvl:5,equip:{}},up:{}};
     clica($('#play'));
     await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
-    RT.entra('anf1',{nome:'Ana',classe:'cavaleiro',lvl:5,sala:{n:1}});await quadros(3);
+    RT.entra('anf1',{nome:'Ana',classe:'cavaleiro',lvl:5,sala:{n:1},longe:true});await quadros(3);
+    ok('a sala de quem está na masmorra dela aparece no Guia, sem boneco na cidade', Cd.OUTROS.size===0, Cd.OUTROS.size);
     Tl.abreNpc('guia');
     var entrar=todos('#hSala li button')[0];
-    ok('o Guia lista a sala aberta de quem está na cidade', entrar&&/Sala de Ana/.test(txt('#hSala')||''), txt('#hSala'));
+    ok('o Guia lista a sala aberta', entrar&&/Sala de Ana/.test(txt('#hSala')||''), txt('#hSala'));
     clica(entrar);
     await ate(function(){return RT.salaMandadas('quero').length>0},40);
     var qr=RT.salaMandadas('quero')[0],EU=qr&&qr.id;
-    ok('entrar abre o canal da sala dela e manda a ficha', qr&&qr.ficha.cl==='druida'&&qr.ficha.c.lvl===2&&RT.enviadas.some(function(d){return d.topic==='realtime:sala-'+d.topic.split('-')[1]+'-anf1'}), qr&&JSON.stringify(qr.ficha).slice(0,80));
-    RT.sala('membros',{lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},{id:EU,nome:'Druida',cl:'druida',lvl:2}]});await quadros(3);
-    ok('o convidado vê quem está na sala', /Sala de Ana · 2\\/4/.test(txt('#hSala')||''), txt('#hSala'));
-    var hb=$('#huntList button');
-    ok('quem escolhe o lugar é o anfitrião', hb&&hb.disabled&&hb.textContent==='o anfitrião escolhe', hb&&hb.textContent);
-    RT.sala('comeca',{semente:77,ids:['anf1',EU],fichas:[ANA,{nome:'Druida',cl:'druida',c:qr.ficha.c,up:{}}]});
-    var foi=await ate(function(){return I.G&&I.G.convidado&&$('#app').classList.contains('playing')},20);
-    ok('o anfitrião começa e o convidado entra junto, na mesma masmorra', foi&&I.G.semente===77&&I.G.p===I.G.ps[1]&&I.G.ps.length===2, I.G&&I.G.semente);
-    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=Math.round(I.G.portal.x);r.ps[1].y=Math.round(I.G.portal.y);r.ps[1].tx=Math.floor(I.G.portal.x/32);r.ps[1].ty=Math.floor(I.G.portal.y/32);r.t=12.5;var m0=I.G.mons[0],xa=I.G.ps[0].x;
+    ok('entrar na sala manda a ficha', qr&&qr.ficha.cl==='druida'&&qr.ficha.c.lvl===2, qr&&JSON.stringify(qr.ficha).slice(0,80));
+    RT.sala('membros',{lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5,d:1},{id:EU,nome:'Druida',cl:'druida',lvl:2,d:0}]});await quadros(3);
+    ok('o convidado vê quem está na sala e quem está na masmorra', /Sala de Ana · 2\\/4/.test(txt('#hSala')||'')&&/Ana .*na masmorra/.test(txt('#hSala')||''), txt('#hSala'));
+    var porta=todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0];
+    ok('a porta está aberta para ele', porta&&!porta.disabled, txt('#hSala'));
+    clica(porta);await quadros(3);
+    var en=RT.salaMandadas('entro')[0];
+    ok('entrar pela porta pede ao anfitrião, com a ficha', en&&en.id===EU&&en.ficha.cl==='druida', en&&JSON.stringify(en).slice(0,60));
+    RT.sala('porta',{id:EU,i:1,semente:77,ps:[ANA,{nome:'Druida',cl:'druida',c:{lvl:2,equip:{}},up:{}}]});
+    var foi=await ate(function(){return I.G&&I.G.convidado&&$('#app').classList.contains('playing')},20);await quadros(2);
+    ok('a porta abre e ele entra na masmorra da sala, sem tempo', foi&&I.G.semente===77&&I.G.aberta&&I.G.p===I.G.ps[1]&&txt('#timeT')==='sem tempo', I.G&&I.G.semente);
+    var lon=I.G.rooms.reduce(function(a,b){return Math.hypot(b.cx-I.G.p.tx,b.cy-I.G.p.ty)>Math.hypot(a.cx-I.G.p.tx,a.cy-I.G.p.ty)?b:a});
+    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=lon.cx*32+16;r.ps[1].y=lon.cy*32+16;r.ps[1].tx=lon.cx;r.ps[1].ty=lon.cy;r.t=12.5;var m0=I.G.mons[0],xa=I.G.ps[0].x;
+    r.ps.push({cl:'feiticeiro',nome:'Caio',eq:{},x:r.ps[0].x,y:r.ps[0].y,tx:r.ps[0].tx,ty:r.ps[0].ty,hp:50,mhp:50,mp:10,mmp:10,f:0,mv:0,fl:0,sw:0,fora:null,pch:0,bv:0,pot:3,cdC:0,cds:{},gcd:{},arm:0,c:[1,0,0,10]});
     for(var k=0;k<3;k++){RT.sala('estado',r);await quadros(2)}
-    ok('o retrato do anfitrião move os monstros e o anfitrião', I.G.mons[0].id===m0.id&&Math.abs(I.G.mons[0].x-(Math.round(m0.x)+40))<1&&Math.abs(I.G.ps[0].x-(Math.round(xa)+20))<1&&I.G.t>=12.5, I.G.mons[0].x+' / '+I.G.ps[0].x);
-    ok('longe demais, o convidado volta para onde o anfitrião o vê', Math.abs(I.G.p.x-Math.round(I.G.portal.x))<1, I.G.p.x);
+    ok('o retrato do anfitrião move os monstros e o anfitrião', I.G.mons[0].id===m0.id&&Math.abs(I.G.mons[0].x-(Math.round(m0.x)+40))<1&&Math.abs(I.G.ps[0].x-(Math.round(xa)+20))<1, I.G.mons[0].x+' / '+I.G.ps[0].x);
+    ok('quem entrou depois aparece, com nome e classe', I.G.ps.length===3&&I.G.ps[2].nome==='Caio'&&I.G.ps[2].cl==='feiticeiro'&&!I.G.ps[2].fora, I.G.ps.length);
+    ok('longe demais, o convidado volta para onde o anfitrião o vê', I.G.p.tx===lon.cx&&I.G.p.ty===lon.cy, I.G.p.tx+','+I.G.p.ty+' / '+lon.cx+','+lon.cy);
     var n0=RT.salaMandadas('ent').length,x0=I.G.p.x,rt0=I.G.rT;
-    tecla('keydown','KeyD');await quadros(6);
-    var antes=I.G.p.tx,xA=I.G.p.x,rtA=I.G.rT,r2=I.retrato();r2.ps[1].tx=antes-1;r2.ps[1].x=antes*32-16;r2.ps[1].mv=1;RT.sala('estado',r2);await quadros(1);
-    ok('o retrato não puxa de volta quem está andando no próprio aparelho', I.G.p.x>=xA-.5, xA+' → '+I.G.p.x);
-    await quadros(4);tecla('keyup','KeyD');await quadros(8);
+    var tec=I.solid(I.G.p.tx+1,I.G.p.ty)||I.solid(I.G.p.tx+2,I.G.p.ty)?'KeyA':'KeyD';
+    tecla('keydown',tec);await quadros(6);
+    var antes=I.G.p.tx,xA=I.G.p.x,rtA=I.G.rT,r2=I.retrato();r2.ps[1].tx=antes+(tec==='KeyD'?-1:1);r2.ps[1].x=r2.ps[1].tx*32+16;r2.ps[1].mv=1;RT.sala('estado',r2);await quadros(1);
+    ok('o retrato não puxa de volta quem está andando no próprio aparelho', tec==='KeyD'?I.G.p.x>=xA-.5:I.G.p.x<=xA+.5, xA+' → '+I.G.p.x);
+    await quadros(4);tecla('keyup',tec);await quadros(8);
     var ents=RT.salaMandadas('ent').slice(n0),ult=ents[ents.length-1];
-    ok('o convidado anda no próprio aparelho e conta o sqm', I.G.p.x>x0+20&&ult&&ult.x===I.G.p.tx&&ult.y===I.G.p.ty&&ult.id===EU, x0+' → '+I.G.p.x+' / sqm '+(ult&&ult.x)+' de '+I.G.p.tx);
+    ok('o convidado anda no próprio aparelho e conta o sqm', Math.abs(I.G.p.x-x0)>20&&ult&&ult.x===I.G.p.tx&&ult.y===I.G.p.ty&&ult.id===EU, x0+' → '+I.G.p.x+' / sqm '+(ult&&ult.x)+' de '+I.G.p.tx);
     var dtj=(rtA-rt0)+I.G.rT;
     ok('manda a entrada a uns 10 por segundo', ents.length>=Math.floor(dtj/0.1)-1&&ents.length<=Math.ceil(dtj/0.1)+1, ents.length+' em '+dtj.toFixed(2)+' s');
     tecla('keydown','KeyP');tecla('keyup','KeyP');await quadros(4);
@@ -1025,10 +1081,12 @@ const CASOS = [
     var s=sv(),c=s&&s.chars.druida;
     ok('e vai para o save deste aparelho: cofre, extração e o personagem', s&&s.cofre===40&&s.ext===1&&c.lvl===3&&c.xp===15&&c.mag===1, s&&JSON.stringify({cofre:s.cofre,ext:s.ext,lvl:c.lvl,xp:c.xp}));
     ok('item que não existe e habilidade de outra classe não entram', !(s.itens&&s.itens.inexistente)&&c.slots[1]===null, JSON.stringify(c.slots));
-    clica($('#toMenu'));
-    ok('depois da incursão, continua na sala', Sa.SALA.papel==='convidado', Sa.SALA.papel);
-    RT.sala('comeca',{semente:78,ids:['anf1',EU],fichas:[ANA,{nome:'Druida',cl:'druida',c:qr.ficha.c,up:{}}]});
-    await ate(function(){return I.G&&I.G.semente===78&&I.G.active},20);
+    clica($('#toMenu'));Tl.abreNpc('guia');
+    ok('depois de sair, continua na sala, com a porta aberta', Sa.SALA.papel==='convidado'&&todos('#hSala button').some(function(b){return b.textContent==='Entrar pela porta'&&!b.disabled}), txt('#hSala'));
+    clica(todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0]);await quadros(2);
+    ok('pode entrar de novo pela porta', RT.salaMandadas('entro').length===2, RT.salaMandadas('entro').length);
+    RT.sala('porta',{id:EU,i:1,semente:77,ps:[ANA,{nome:'Druida',cl:'druida',c:{lvl:3,equip:{}},up:{}}]});
+    await ate(function(){return I.G&&I.G.active&&!I.G.over&&I.G.convidado},20);
     var voltou=await ate(function(){return $('#app').classList.contains('cidade')},400);
     ok('se o anfitrião some no meio, volta à cidade sem resultado', voltou&&/acabou sem resultado/.test(txt('#log')||'')&&Sa.SALA.papel===null&&sv().ext===1, txt('#log'));
     `,

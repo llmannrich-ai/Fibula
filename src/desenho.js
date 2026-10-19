@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.14.0';
-import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.14.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.14.0';
-import {G,solid} from './sim/incursao.js?v=0.14.0';
-import {C} from './sim/cidade.js?v=0.14.0';
-import {bf} from './sim/combate.js?v=0.14.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.14.0';
-import {$,app,RM} from './dom.js?v=0.14.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.15.0';
+import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.15.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.15.0';
+import {G,solid} from './sim/incursao.js?v=0.15.0';
+import {C} from './sim/cidade.js?v=0.15.0';
+import {bf} from './sim/combate.js?v=0.15.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.15.0';
+import {$,app,RM} from './dom.js?v=0.15.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -358,7 +358,7 @@ function cena(){
   const vis=G.mons.filter(m=>m.x>cx-40&&m.x<cx+W+40&&m.y>cy-40&&m.y<cy+H+40);
   const ents=vis.map(m=>({y:m.y,m}));
   /* os jogadores da sala também; quem saiu pelo portal some */
-  for(const q of G.ps)if(q.fora!=='extraiu')ents.push({y:q.y,pl:q});
+  for(const q of G.ps)if(q.fora!=='extraiu'&&q.fora!=='fora')ents.push({y:q.y,pl:q});
   ents.sort((a,b)=>a.y-b.y);
   if(A){
     /* ordem do cliente do Tibia: linha por linha, as paredes da linha e depois
@@ -411,7 +411,7 @@ function cena(){
   }
   ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(dark,0,0);
   ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(G.active&&RUN-G.t<=60&&!G.over){const a=.18+.1*Math.sin(G.t*4);const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(216,72,63,0)');g.addColorStop(1,`rgba(216,72,63,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
+  if(G.active&&!G.aberta&&RUN-G.t<=60&&!G.over){const a=.18+.1*Math.sin(G.t*4);const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(216,72,63,0)');g.addColorStop(1,`rgba(216,72,63,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
   // nomes, vida e números (por cima da escuridão)
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
   ctx.textAlign='center';ctx.textBaseline='alphabetic';

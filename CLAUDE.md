@@ -485,8 +485,22 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
 co-op na masmorra **sem servidor próprio**. No Guia de caça, qualquer um cria
-uma sala; quem está na cidade a vê e entra (até 4). A sala fica aberta até o
-anfitrião fechar ou sair do jogo, e serve para várias caçadas seguidas.
+uma sala; quem está na cidade a vê e entra (até 4).
+
+- **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
+  nasce com a sala, no aparelho do anfitrião, e fica aberta até ele fechar a
+  sala (só na cidade) ou sair do jogo. Ninguém é soterrado. É o modo
+  "masmorra aberta" de `src/sim/incursao.js` (`newRun(s, fichas, true)`).
+- **A porta** é o portal, na sala de entrada: qualquer membro entra por ela
+  quando quiser (Guia de caça → Entrar pela porta), com a caçada já em
+  andamento, e sai por ela com o saco, parado 2,5 s (só depois de se afastar
+  dela, `p.longe`). Quem sai ou morre pode entrar de novo, com ficha nova
+  (`entra()`). Fechar a sala tira quem está dentro, sem resultado.
+- **Os monstros renascem** como no Tibia (`progression.respawn`): sala da
+  masmorra com menos que o normal repovoa depois de 60 s, se ninguém estiver
+  a menos de 10 sqm dela. O normal cresce com quem está dentro.
+- Enquanto o anfitrião está na masmorra, a presença dele continua no canal da
+  cidade com `longe`, sem boneco, para a sala seguir na lista do Guia.
 
 - **O anfitrião é o servidor.** O aparelho dele roda a mesma `src/sim/` com
   uma ficha por jogador (`newRun(semente, fichas)`), recebe a entrada dos
