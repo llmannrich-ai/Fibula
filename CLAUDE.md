@@ -420,8 +420,8 @@ multiplayer.
 
 | # | Item | Onde | Estado |
 |---|---|---|---|
-| C1 | As 2 tarefas agendadas (Auditor e Ciclo, Parte 5), em Opus, com o repositório `llmannrich-ai/Fibula` selecionado | claude.ai/code → Tarefas agendadas | Pendente |
-| C2 | Desligar as rotinas antigas (as de 18/10 e Produto, Desenvolvedor, Revisor e Balanceamento) | claude.ai/code | Pendente |
+| C1 | As 2 tarefas agendadas (Auditor e Ciclo, Parte 5), em Opus, com o repositório `llmannrich-ai/Fibula` selecionado | claude.ai/code → Tarefas agendadas | Criadas em 19/10, sem conectores: falta ligar o GitHub e o Supabase em cada uma, pelo painel |
+| C2 | Desligar as rotinas antigas (as de 18/10 e Produto, Desenvolvedor, Revisor e Balanceamento) | claude.ai/code | ✅ desligadas em 19/10 |
 | C3 | Proteger a `main` exigindo CI verde | GitHub → Settings → Branches | Só se o modo virar `pr` |
 | C4 | Permitir que o app do Claude altere `.github/workflows` | GitHub → Settings → GitHub Apps | ✅ |
 | C5 | `SUPABASE_URL`, `SUPABASE_ANON_KEY` e `SUPABASE_ACCESS_TOKEN` no ambiente da nuvem | Configuração do ambiente | Parcial: o conector MCP do Supabase cobre por enquanto |
