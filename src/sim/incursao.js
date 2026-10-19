@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.29.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.29.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila} from './progresso.js?v=0.29.0';
-import {genMap,pecas} from './mapa.js?v=0.29.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.29.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.37.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.37.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.37.0';
+import {genMap,pecas} from './mapa.js?v=0.37.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito} from './combate.js?v=0.37.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -49,13 +49,15 @@ export const fichaLocal=()=>({cl:save.classe,c:ch(),up:save.up,prov:save.prov,lo
    jogadores não se bloqueiam (só monstros ocupam sqm) */
 const LADO=[[0,0],[1,0],[-1,0],[0,1]];
 /* as provisões (p.prov, o que sai do estoque quando a caçada começa) dão
-   poções, regeneração a mais (rgh, rgm) e buffs do começo (p.sup), que
-   somam aos das habilidades em vez de serem trocados por eles */
+   poções e buffs do começo (p.sup), que somam aos das habilidades em vez de
+   serem trocados por eles. A comida está na mochila (p.bag), como o loot.
+   Todo mundo entra com fome (p.ali, os segundos de alimentação, em zero):
+   sem comer, não se regenera nada */
 function novoJogador(f,i,s){
   const st=stats(f.c,f.cl,f.up),o=LADO[i]||LADO[0],e=efeitoProv(f.prov);
   const p={id:i,cl:f.cl,c:f.c,up:f.up,local:!!f.local,nome:f.nome||'',prov:Object.assign({},f.prov),
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
-    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,rgh:e.rhp,rgm:e.rmp,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
+    cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,ali:0,cdCo:0,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
   /* a mochila entra inteira (p.bag é ela durante a caçada); bag0 é como
      entrou, para o banco só contar como origem o que a caçada rendeu */
@@ -172,7 +174,9 @@ function guarda(){
 /* ---------- atualização ----------
    Um passo da regra; fora dos testes, quem chama é passo(), sempre com TICK.
    ent é a entrada do quadro, montada pelo cliente em src/controles.js:
-   {x,y} do movimento (comprimento até 1) e held[4] dos espaços seguros. Com
+   {x,y} do movimento (comprimento até 1), held[4] dos espaços seguros e,
+   opcionais, mira[4] (a direção de cada um; NaN é para onde o jogador olha)
+   e alc[4] (de 0 a 1, quão longe a bomba cai). Com
    mais de um jogador, ent é uma lista, uma entrada por jogador de G.ps. */
 const UM=[null],PARADO={x:0,y:0,held:[false,false,false,false]};
 export function update(dt,ent){
@@ -181,7 +185,7 @@ export function update(dt,ent){
   G.flowT-=dt;if(G.flowT<=0){buildFlow();G.flowT=.2}
   for(const p of G.ps)if(!p.fora)anda(p,dt,ents[p.id]||PARADO);
   for(let i=G.pend.length-1;i>=0;i--){const q=G.pend[i];q.t-=dt;if(q.t<=0){G.pend.splice(i,1);q.fn();if(G.over)return}}
-  for(const p of G.ps){if(p.fora)continue;const e=ents[p.id]||PARADO;for(let i=0;i<4;i++)if(e.held[i])lancarSlot(i,p)}
+  for(const p of G.ps){if(p.fora)continue;const e=ents[p.id]||PARADO;for(let i=0;i<4;i++)if(e.held[i])lancarSlot(i,p,e.mira?e.mira[i]:NaN,e.alc?e.alc[i]:1)}
   revela();
   updateMons(dt);if(G.over)return;
   updateProj(dt);if(G.over)return;
@@ -232,9 +236,11 @@ function anda(p,dt,ent){
     if(!p.sd&&Number.isFinite(ent.f))p.face=ent.f;
     p.mv=p.sd>0;if(p.mv)p.walk+=dt*12;
   }else movimenta(p,dt,ent);
-  const K=CLASSES[p.cl];
-  p.mp=Math.min(p.mmp,p.mp+(K.rmp+p.rgm)*dt);p.hp=Math.min(p.mhp,p.hp+(K.rhp+p.rgh)*dt);
-  p.cdC-=dt;p.flash-=dt;p.swing-=dt;
+  /* regeneração da classe, fixa, só enquanto houver alimentação */
+  if(p.ali>0){const K=CLASSES[p.cl];
+    p.mp=Math.min(p.mmp,p.mp+K.rmp*dt);p.hp=Math.min(p.mhp,p.hp+K.rhp*dt);
+    p.ali-=dt;if(p.ali<=0){p.ali=0;saida.log('Você está com fome: sem comer, não se regenera vida nem mana.','warn',p)}}
+  p.cdC-=dt;p.cdCo-=dt;p.flash-=dt;p.swing-=dt;
   for(const k in p.cds)if(p.cds[k]>0)p.cds[k]-=dt;
   for(const k in p.gcd)if(p.gcd[k]>0)p.gcd[k]-=dt;
   for(const k in p.buffs){p.buffs[k].left-=dt;if(p.buffs[k].left<=0)delete p.buffs[k]}
@@ -303,11 +309,12 @@ function updateProj(dt){
   for(let i=G.proj.length-1;i>=0;i--){
     const q=G.proj[i];q.life-=dt;let dead=q.life<=0;
     if(q.k==='b'){
-      if(q.tg&&q.tg.hp>0){
-        const dx=q.tg.x-q.x,dy=q.tg.y-q.y,d=hyp(dx,dy)||1;q.vx=dx/d*560;q.vy=dy/d*560;
-        if(d<q.tg.r+6){atingir(q.tg,q.s,1,q.p);spark(q.x,q.y,q.col);dead=true}
-      }else if(!q.vx&&!q.vy)dead=true;
+      /* o tiro do jogador vai reto: o primeiro monstro no caminho leva, a
+         parede para, e no fim do alcance ele se desfaz com o mesmo efeito */
       q.x+=q.vx*dt;q.y+=q.vy*dt;
+      let alvo=null;for(const m of G.mons)if(m.hp>0&&hyp(m.x-q.x,m.y-q.y)<m.r+6){alvo=m;break}
+      if(alvo){atingir(alvo,q.s,1,q.p);spark(q.x,q.y,q.col);dead=true}
+      else if(solid(q.x/T|0,q.y/T|0)||dead){efeito(q.x-q.vx*dt,q.y-q.vy*dt,q.s.el);spark(q.x,q.y,q.col);dead=true}
     }else if(q.k==='r'){
       const dx=q.tx-q.x,dy=q.ty-q.y,d=hyp(dx,dy),pa=430*dt;
       if(d<=pa){explode(q.tx,q.ty,q.s,q.p);dead=true}else{q.x+=dx/d*pa;q.y+=dy/d*pa}
@@ -384,6 +391,8 @@ let KMT=null,KEL=null;
 const ks=()=>KMT||(KMT=Object.keys(MT)),kel=()=>KEL||(KEL=Object.keys(EL_COR));
 const FXR={num:1,ef:1,cone:1,anel:1,feixe:1,boom:1};
 const r1=v=>Math.round(v*100)/100;
+/* quantas comidas há numa mochila (o botão Comer mostra; o convidado recebe pronto, em nc) */
+export const nComida=bag=>{let n=0;for(const k in bag)if(ehComida(k))n+=bag[k];return n};
 export function retrato(){
   const K=ks(),L=kel(),m=[],pr=[],fx=[],cad=[];
   for(const o of G.mons)m.push(o.id,K.indexOf(o.k),Math.round(o.x),Math.round(o.y),o.tx,o.ty,Math.ceil(o.hp),o.mhp,Math.round(o.face*100),(o.mv?1:0)|(o.flash>0?2:0));
@@ -393,8 +402,8 @@ export function retrato(){
   return{t:r1(G.t),po:G.portal.open?1:0,k:G.kills,m,pr,fx,cad,
     dr:G.drops.map(d=>[Math.round(d.x),Math.round(d.y),d.rar,d.dono,r1(d.t)]),
     ps:G.ps.map(p=>({cl:p.cl,nome:p.nome,eq:p.c.equip,x:Math.round(p.x),y:Math.round(p.y),tx:p.tx,ty:p.ty,hp:Math.ceil(p.hp),mhp:p.mhp,mp:Math.floor(p.mp),mmp:p.mmp,f:Math.round(p.face*100),
-      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,
-      cdC:r1(p.cdC),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
+      mv:p.mv?1:0,fl:p.flash>0?1:0,sw:p.swing>0?[r1(p.swing),r1(p.swingA),p.swingR]:0,fora:p.fora,pch:r1(p.pch),bv:p.bagVal,pot:p.pot,ali:Math.ceil(p.ali),nc:nComida(p.bag),
+      cdC:r1(p.cdC),cdCo:r1(p.cdCo),cds:p.cds,gcd:p.gcd,arm:bf('arm',p),c:[p.c.lvl,p.c.xp,p.c.mag,p.c.per]}))};
 }
 /* o convidado (o jogador eu de G.ps) aplica o retrato: cada coisa guarda a
    posição de antes (x0, y0) e o render() interpola até o próximo retrato, e
@@ -439,7 +448,8 @@ export function aplicaRetrato(r,eu){
       if(p.desv>=(longe?3:8)){poeNoSqm(p,qx,qy);p.x0=p.x;p.y0=p.y;p.desv=0}}
     p.hp=num0(q.hp);p.mhp=num0(q.mhp)||1;p.mp=num0(q.mp);p.mmp=num0(q.mmp)||1;p.flash=q.fl?.1:0;
     if(Array.isArray(q.sw)){p.swing=num0(q.sw[0]);p.swingA=num0(q.sw[1]);p.swingR=num0(q.sw[2])}
-    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);
+    p.fora=typeof q.fora==='string'?q.fora:null;p.pch=num0(q.pch);p.bagVal=num0(q.bv);p.pot=num0(q.pot);p.cdC=num0(q.cdC);p.cdCo=num0(q.cdCo);
+    p.ali=num0(q.ali);p.nc=num0(q.nc)|0;
     p.cds=q.cds&&typeof q.cds==='object'?q.cds:{};p.gcd=q.gcd&&typeof q.gcd==='object'?q.gcd:{};
     p.buffs=q.arm?{arm:{v:num0(q.arm),left:1}}:{};
     if(Array.isArray(q.c)){p.c.lvl=num0(q.c[0])||1;p.c.xp=num0(q.c[1]);p.c.mag=num0(q.c[2]);p.c.per=num0(q.c[3])}

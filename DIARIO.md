@@ -20,7 +20,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 10:42 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** mapas vestidos (0.29.0), a pedido do Leonardo ("o mapa está pobre para a arte do Tibia que temos"). Objetos sólidos por lugar em `hunts.<k>.mapa.objetos` (pilar, barril, caixote, rocha, sarcófago, gárgula, estátua, palmeira, cacto), postos por `objetos()` em `src/sim/mapa.js` com um hash da semente — não com o sorteio da regra, para a sequência de monstros, dano e loot não mudar — e recusados se fecharem caminho. Ficam em `G.g` com o valor 2: `solid()` passou a ser `g!==0`, o campo de fluxo e o projétil já paravam neles, `pecas()` só monta parede no valor 1 e o spawn pula o sqm de objeto. No desenho, `vesteMapa()` monta uma vez por masmorra a variante do chão, o detalhe (`arte.detalhes`: teias, pedrinhas, sangue, ossadas, grade, lodo, tufos, velas) e o sprite de cada objeto; a Ilha trocou o muro por mata (`arte.borda`). 54 sprites novos do OTSP (atlas de 502 KB para 584 KB). Plano das fases seguintes e pesquisa de fontes legais de mapa em `docs/plano-mapas.md`.
+**Item desenvolvido:** mapas vestidos (0.37.0), a pedido do Leonardo ("o mapa está pobre para a arte do Tibia que temos"). Objetos sólidos por lugar em `hunts.<k>.mapa.objetos` (pilar, barril, caixote, rocha, sarcófago, gárgula, estátua, palmeira, cacto), postos por `objetos()` em `src/sim/mapa.js` com um hash da semente — não com o sorteio da regra, para a sequência de monstros, dano e loot não mudar — e recusados se fecharem caminho. Ficam em `G.g` com o valor 2: `solid()` passou a ser `g!==0`, o campo de fluxo e o projétil já paravam neles, `pecas()` só monta parede no valor 1 e o spawn pula o sqm de objeto. No desenho, `vesteMapa()` monta uma vez por masmorra a variante do chão, o detalhe (`arte.detalhes`: teias, pedrinhas, sangue, ossadas, grade, lodo, tufos, velas) e o sprite de cada objeto; a Ilha trocou o muro por mata (`arte.borda`). 54 sprites novos do OTSP (atlas de 502 KB para 584 KB). Plano das fases seguintes e pesquisa de fontes legais de mapa em `docs/plano-mapas.md`.
 
 **Validação:** `node tools/testar.mjs` — 34/34. A simulação no Node agora confere, nos quatro lugares: há objetos, a mesma semente dá os mesmos objetos, nenhum monstro ou jogador nasce em cima de parede ou objeto, e todo chão continua alcançável da entrada; o carregamento recusa objeto com `onde` desconhecido e detalhe sem sprite. Capturas em 900×640 e 360×640 dos quatro lugares conferidas (em 30 sementes: 18 a 51 objetos por mapa, em média).
 
@@ -31,6 +31,142 @@ execução precisa saber e não vai descobrir lendo o código.
 **Pendências e riscos:** enquanto o mapa não for fixo, os objetos são só enfeite, não marco. Objeto de 64 px pode esconder monstro atrás (como no Tibia; nome e vida ficam por cima). O spawn pula o sqm de objeto, então pode nascer um monstro a menos numa sala; o Balanceamento deve contar isso ao medir horas por nível. Nas capturas locais o navegador headless entrou uma vez no canal real da cidade (Realtime) antes de eu bloquear a rede: só presença, por segundos.
 
 **Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`), separando a semente do mapa da semente da caçada.
+## 2026-10-19 10:51 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a comida virou item (0.36.0), a pedido do Leonardo ("animais também devem ter loot de comidas para guardar na mochila ou no cofre"). `items` ganhou seis comidas com `comida` (segundos): frutas, queijo, presunto, ensopado, carne e presunto de dragão (720 s). Loot: rato → queijo; leão → carne e presunto; orc e troll → carne; dragão → presunto de dragão. As provisões de comida da Quitanda viraram `efeito.item`: a compra vai direto para a mochila do personagem (recusa com a mochila cheia). `comer()` tira da mochila (`p.bag`); saíram `p.com` e `devolveComida()`, porque a mochila já volta extraindo e cai morrendo. No Banco, a comida guardada fica como item no cofre (`save.mats`, como os tesouros da 0.32.0), com "levar" a pilha inteira e sem "vender"; `normaliza()` move a comida da 0.29.0 (em `prov`) para lá. Sprites `it_*` das comidas no atlas (`tools/sprites.mjs`; o presunto de dragão é o pernil do pacote com o matiz girado).
+
+**Validação:** `node tools/testar.mjs` — 35/35 (simulação no Node refeita para comida-item: compra na mochila, mochila cheia, migração da 0.29.0, loot dos animais, comer da mochila, extrair/morrer, Banco guardar e levar; casos `lojas`, `sala-anfitriao` e `sala-convidado` ajustados). Capturas do Banco em 375×740.
+
+**Análise:** mesclado com a 0.32.0, que passou a guardar tudo o que não se veste em `save.mats`; o cofre de comida separado que eu tinha feito saiu, e a comida usa o mesmo lugar. `save.itens` (só peças) é o que a Feira e a origem conhecem, então **comida não se negocia na Feira**.
+
+**Roadmap:** item fora da fila (pedido do dono), decisão na Parte 6 do `CLAUDE.md`.
+
+**Pendências e riscos:**
+- Só cinco monstros derrubam comida; insetos, morcego e mortos-vivos não (como no Tibia). No Esgoto (nível 1) só há insetos e morcego: quem caça lá depende da Quitanda.
+- Comida ocupa uma casa da mochila por tipo: com 20 casas, carregar vários tipos aperta o loot.
+- Personagem novo sem ouro continua entrando sem comida (pendência da 0.29.0).
+- Comida não vai à Feira; se o Leonardo quiser, é mudança no banco (`003_mercado.sql`, `004_origem.sql`).
+
+**Próximo passo recomendado:** caçar ratos no nível 1 e ver se o queijo (30%) segura a regeneração; ajustar as chances no `content.json`.
+
+---
+
+## 2026-10-19 10:52 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** Grimório só na cidade e troca de personagem só na tela inicial (0.35.0), a pedido do Leonardo. Saíram o `#toGrim` do rodapé da tela inicial e o `#cPick` da cidade. O Grimório continua no botão `#cGrim` da cidade, e Personagens, no rodapé e na linha do personagem da tela inicial.
+
+**Validação:** `node tools/testar.mjs` — 36/36. Asserções novas: sem Grimório na tela inicial e sem Personagens na cidade. Os casos `equipamento` (trocar para o Cavaleiro passa pelo Menu), `classes` e `grimorio` (o Grimório abre na cidade e volta a ela) foram ajustados.
+
+**Análise:** trocar de personagem tirava da sala (`escolher()` chama `saiDaSala()`); agora isso só acontece fora do jogo, na tela inicial.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Mapas de caça fixos".
+
+**Pendências e riscos:** nenhuma nova.
+
+**Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).
+
+---
+## 2026-10-19 21:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** mira manual das habilidades (0.34.0), teste pedido pelo Leonardo, fora da fila. O botão da habilidade virou joystick (`src/controles.js`: apertar mostra a mira, arrastar escolhe direção e, na bomba, distância; soltar lança; voltar ao botão cancela; tocar lança para onde se olha). Em `src/sim/combate.js` saíram `target()` e `miraEm()`: o tiro vai reto até o alcance e para no primeiro monstro ou na parede, mostrando o efeito onde se desfaz; o golpe sai sem alvo; a bomba cai no ponto escolhido (cortada pela parede); o feixe para na parede. `formaMira()` diz à tela o que desenhar (`desenhaMira()` em `src/desenho.js`). Na sala, o convidado manda `ma`/`md` com a entrada.
+
+**Validação:** `node tools/testar.mjs` — 35/35, depois de mesclar a main (0.32.0). Sonda nova na simulação no Node: tiro para o lado oposto não acerta, gasta a mana e mostra o efeito; tiro mirado acerta. Visto em 360×640 com o Chromium: mira tracejada cortada pela parede e efeito de fogo no ponto do erro.
+
+**Análise:** os testes que lutam (simulação no Node, `incursao-extracao`, `arte`) contavam com o alvo automático; agora o jogador do teste mira no monstro mais perto (`P.miraBot` na cópia; no Node, uma mira lida dentro de cada passo da regra, para não depender do quadro).
+
+**Roadmap:** sem mudança; é teste do dono.
+
+**Pendências e riscos:** contraria a regra do pilar 5 ("alvo escolhido pelo jogo"); registrado como P10 na Parte 6, sensível. Risco: com uma mão, mirar e andar ao mesmo tempo não dá; o Cavaleiro e o Paladino perdem mais. O Balanceamento não deve medir dano por caçada como se a mira acertasse sempre.
+
+**Próximo passo recomendado:** esperar o veredito do Leonardo; se a mira ficar, reescrever a regra do pilar 5 e pensar em mira automática só no ataque básico.
+
+## 2026-10-19 10:47 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** armas de quem começa (0.33.0), a pedido do Leonardo. Dois itens novos no `content.json`, `faca` (+2% de dano) e `espadamadeira` (+3%), `val` 0, com sprites do OTSP (ids 1750 e 1748, tabela `ARTE` do `tools/sprites.mjs`, atlas regerado). Ficam no chão da casa sem morador ao norte da praça (sqm 37,6 e 39,6). `city.chao` ganhou o campo `respawn` (segundos, 120 nelas): pisar leva à mochila se couber (`pegaPraMochila()`), cheia fica no chão com aviso, e a peça volta ao sqm depois do tempo, só se o jogador não estiver em cima. As peças de teste sem `respawn` seguem como antes (cofre, uma vez por conta). No Banco, peça de `val` 0 mostra "jogar fora" em vez de "vender 0" e não chama `lastro_banco`; a Feira não lista peça de `val` 0.
+
+**Validação:** `node tools/testar.mjs` — 36/36 (depois de mesclar a 0.32.0). Caso novo `armas-que-renascem` (pega para a mochila, não marca `save.chao`, não renasce com o jogador em cima, renasce ao sair, mochila cheia deixa no chão); `validaConteudo()` recusa `respawn` 0. Captura em 360×640 da casa com as duas armas e da coleta.
+
+**Análise:** pilar 6 — recurso infinito sem ralo seria ouro grátis, por isso `val` 0 (não vira ouro, não tem origem, não entra na Feira). O relógio do respawn é de cada aparelho e só corre com o jogador na cidade; recarregar a página zera e a peça volta na hora. Aceito porque a peça não vale nada; se um dia valer, o relógio precisa ir para o save ou para o servidor.
+
+**Roadmap:** item fora da fila (pedido do dono).
+
+**Pendências e riscos:** a peça renasce para quem está no aparelho, não é compartilhada na cidade do Realtime (cada um vê a sua). Ninguém perde nada com isso, mas não é "o mesmo mundo para todos" em sentido estrito; quando a cidade for do servidor (F3), o respawn vai junto.
+
+**Próximo passo recomendado:** seguir a fila do `ROADMAP.md`.
+
+---
+## 2026-10-19 19:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** o cofre do Banco com tudo como item (0.32.0), a pedido do Leonardo ("tenho itens dos animais mas não aparece"; "o Banqueiro deve ter a lista completa do baú com todos os itens"). A mochila persistente já tinha entrado na `main` por outra sessão (`b3f8603`); faltava o baú: `guardaSaco()` mandava material para o depósito do Gordon (que o Banco não mostra) e transformava gema e coroa em ouro. Agora só a moeda vira ouro; peça vai para `save.itens` e todo o resto, como item, para `save.mats`. O Banco lista o cofre inteiro (`linhaObj()` em `src/telas.js`): tesouro se vende pelo valor, material não (só o Gordon compra), e os dois voltam à mochila com `leva()` (a pilha inteira). Uma primeira versão feita em paralelo, sobre a 0.19.0 (`claude/mochila-bau`), foi abandonada para não duplicar a mochila da `main`.
+
+**Validação:** `node tools/testar.mjs` — 34/34. Simulação no Node: guardar deixa gema e dente como item, o Banco vende gema e recusa dente, levar a pilha de seda. Casos `banco-mochila` (cofre lista espada, gema e seda; vender a gema; levar a seda) e `forja` reescritos. Tela do Banco conferida em 360×740.
+
+**Análise:** a origem (`caca_fim`) continua creditando como ouro o valor dos tesouros que a caçada rendeu, como antes; vender o tesouro depois no Banco não credita de novo (`lastro_banco` sai cedo sem a peça na origem). Material continua sem origem.
+
+**Roadmap:** fora da fila (pedido do dono).
+
+**Pendências e riscos:**
+- Gema e coroa ficam no cofre até alguém vender no Banco: um toque a mais, mas é o que o Leonardo pediu (ver todos os itens).
+- `save.mats` agora guarda tesouro também; a Forja só lista o que o Gordon compra, então não muda nada lá.
+- A comida que sobra e for guardada no Banco vira item no cofre (antes virava ouro); dá para levar de volta na mochila.
+
+**Próximo passo recomendado:** o Leonardo abrir o Banco depois de uma caçada e dizer se a lista do cofre ficou clara.
+
+---
+
+## 2026-10-19 10:43 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** tela inicial curta, com Regras e créditos (0.31.0), a pedido do Leonardo ("minimalista, poucas coisas escritas, um botão de regras; manter a facilidade de criar usuário e senha"). Decisões dele: o título é **Fibula**, o Grimório fica no rodapé, os créditos entram nas Regras. A tela tem o personagem (toque abre Personagens), o preço da morte em uma linha (`riscoCurto()`), Jogar, a conta com os mesmos campos e botões (o texto de apoio só aparece com mensagem) e o rodapé Regras · Personagens · Grimório. A grade de números foi para Personagens (`#pStats`); as instruções numeradas, que ainda falavam do portal de 1:30, viraram a tela `#regras` (`showRegras()`), com perda de XP, espaços da mochila, tempo na porta e lugares de caça lidos do `content.json`. Sem personagem, a tela inicial pede Criar personagem e mostra o login antes, para quem tem conta não criar um personagem à toa num aparelho novo.
+
+**Validação:** `node tools/testar.mjs` — 34/34. Asserções novas no caso do menu: Jogar visível sem rolar, sem grade nem instruções, as Regras com os números do `content.json` (buscado à parte pelo roteiro), todos os lugares, versão, links do OTSP e da CC BY 4.0, e nenhuma menção a "1:30" ou "portal abre". Os casos `classes`, `morte` e `save-corrompido` mudaram para o fluxo novo. Prints em 390×844 e 360×640 (tudo cabe sem rolar).
+
+**Análise:** o texto de regras escrito à mão envelheceu duas versões sem ninguém notar; o caso novo barra a volta do relógio, e os números vêm dos dados.
+
+**Roadmap:** "Tela de créditos" saiu de `Próximo` e foi para `Concluído`. `Agora` segue "Mapas de caça fixos".
+
+**Pendências e riscos:** o texto das Regras ainda é fixo fora dos números: quando a morte da opção B entrar, a seção "A morte" precisa mudar junto (o item 4 da fila diz isso). O `README.md` também tinha o portal de 1:30 e foi corrigido.
+
+**Próximo passo recomendado:** o Leonardo abrir no celular e dizer se a tela inicial ficou como queria; depois, "Mapas de caça fixos" (`Agora`).
+
+---
+
+## 2026-10-19 10:50 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** voz na sala de caçar junto (0.30.0), a pedido do Leonardo ("captação e envio de áudio para os usuários falarem"). Ele aceitou o STUN público como exceção à regra de não falar com outro servidor; voz só na sala, não na cidade aberta. Módulo novo `src/voz.js`: WebRTC nativo em malha, apresentação (`oi`, `oferta`, `resposta`, `tchau`) pelo canal da sala (`sinal()` em `src/sala.js`), segurar para falar (`#bVoz` acima de Comer, ou V), quem fala no botão, "Ligar voz"/"Desligar voz" no Guia de caça. Sair ou fechar a sala desliga a voz.
+
+**Validação:** mesclada com a `main` até a 0.29.0 (sala sem tempo, cidade maior, alimentação, guia único); o botão Voz subiu para cima de Comer. `node tools/testar.mjs` — 35/35, com o caso novo `voz-na-sala` (18 asserções, conexão WebRTC de verdade no Chromium headless: oferta com candidatos, resposta ao id menor, mudo sem segurar, som ao segurar, quem fala, estranho recusado, tchau, desligar ao fechar a sala). O caso rodou 6 vezes sozinho sem falhar. A cidade com o botão foi olhada em 390×844.
+
+**Análise:** o microfone falso do Chromium só alimenta uma captura por vez; o lado de teste usa um tom do WebAudio. No harness o tempo do jogo corre mais que o relógio, então os prazos da voz são do `performance.now()`, não do `dt`.
+
+**Roadmap:** "Voz na sala" em `Concluído`, fora da fila (pedido do dono). `Agora` não mudou.
+
+**Pendências e riscos:**
+- **Sem TURN.** Quem está atrás de CGNAT (comum no 4G) pode não ligar com alguém; o jogo avisa "Sem voz com Fulano" depois de 2 tentativas. Medir com o Leonardo em celulares reais (Wi-Fi × 4G) antes de decidir por um TURN, que custa e é outro serviço externo.
+- **Não testado em iPhone.** O Safari pode exigir toque para tocar áudio que chega; o `play()` que falha é engolido em silêncio. Se alguém não ouvir no iPhone, o caminho é tocar de novo no botão Voz (o toque destrava o áudio).
+- O WebRTC mostra o IP de cada um aos outros da sala. É aceitável entre amigos; para desconhecidos precisa de TURN obrigatório ou do servidor da F2.
+- Com a aba no fundo, a voz pode cair (principalmente no iOS); volta ao reabrir, pelo `oi` a cada 5 s.
+
+**Próximo passo recomendado:** o Leonardo testar a voz com um amigo em 4G e em Wi-Fi e dizer se ligou e se o atraso está bom.
+
+---
+
+## 2026-10-19 10:35 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** alimentação como no Tibia (0.29.0), a pedido do Leonardo. Sem comida não se regenera vida nem mana; a regeneração é a da classe (`rhp`, `rmp`), fixa, e só corre com `p.ali > 0`. Cada comida tem `efeito.comida` em segundos (frutas 90 s/15 ouro, queijo 180 s/25, presunto 300 s/40, ensopado 540 s/60), até `progression.comida.max` = 1200 s. Botão Comer no HUD (tecla C), acima da Mochila: come a menor comida que o jogador levou, mostra o tempo que falta ou "Fome". A comida empilha na loja (até 10 de cada, sem o grupo "refeição"), vai na mochila (`p.com`) e o que sobra volta ao estoque só extraindo (`devolveComida()`); na sala, o convidado pede pelo contador `com` e o `fim` traz a sobra.
+
+**Validação:** `node tools/testar.mjs` — 34/34. Simulação no Node: entra com fome, não regenera, come a menor, regenera o da classe, recusa passar do máximo, para quando acaba, sobra volta extraindo e não volta morrendo. Casos `lojas` (compra, botão Comer, HUD), `sala-anfitriao` (o anfitrião come pelo convidado, retrato com `ali` e `com`) e `sala-convidado` (tecla C vira pedido; `fim` devolve só comida que existe). Captura em 375×740 do HUD com fome e alimentado.
+
+**Análise:** as taxas `rhp`/`rmp` das classes foram calibradas quando a regeneração era permanente e somada ao bônus da comida antiga (até +3/s). Agora o alimentado regenera só o da classe, e o faminto nada: a caçada ficou mais dura, sobretudo para o cavaleiro (2,6 de vida/s) e para quem não tem ouro para comida. Mesclado com a 0.28.0 (guia único, mundo igual para todos): os conflitos foram só nas linhas de `import`.
+
+**Roadmap:** item fora da fila (pedido do dono), decisão na Parte 6 do `CLAUDE.md`.
+
+**Pendências e riscos:**
+- **Jogador novo sem ouro entra sem comida** e não regenera: só as 3 poções o sustentam. Considerar comida de saída para personagem novo (como o Tibia dá em Rookgaard) ou um preço de frutas que caiba na primeira caçada.
+- **Balanceamento das taxas da classe** precisa ser refeito com a regeneração condicionada; medir no pilar 3 (nível 20 em ~3 h).
+- O botão come sempre a menor comida; não há escolha de qual comer. Se o Leonardo quiser escolher, o caminho é pela Mochila.
+- `comer()` roda fora do `update()`, como `drinkPot()`: na F2 vira entrada (`ent`).
+
+**Próximo passo recomendado:** o Leonardo jogar uma caçada com e sem comida e decidir se o personagem novo ganha comida de saída.
 
 ## 2026-10-19 10:20 UTC — sessão manual (nuvem)
 
@@ -217,154 +353,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - Mesclado com a Forja, as peças no chão e o registro de caçada (0.18.0): cada entrada pela porta abre um registro de caçada na nuvem e cada saída fecha o dele. A **Mochila do convidado** mostra o saco local, que o retrato não sincroniza (só o valor): o saco de verdade é o do anfitrião e chega inteiro no resultado.
 
 **Próximo passo recomendado:** o Leonardo testar com um amigo: entrar em momentos diferentes, sair e voltar, e dizer se a sala sem tempo ficou boa; depois, "Sair cedo" (`Agora`).
-## 2026-10-19 16:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** Gordon e a Forja (0.18.0), a pedido do Leonardo ("vende armas e armaduras conforme você faz missões; compra quase qualquer item que cai dos monstros, barato; as missões são trazer loot para ele fabricar equipamento melhor"). NPC `city.npcs.gordon` (letra `F`, casa nova no canto sudoeste, sprite OTSP 21). Seção nova `forja` no `content.json`: `compra` (preço por material, cerca de metade do `val`), `missoes` (quatro encomendas em ordem) e `loja` (o que ele vende e a partir de qual encomenda). Regra em `src/sim/progresso.js` (`ehMat`, `entregar`, `venderMat`, `comprarForja`); tela `#forja` em `src/telas.js`. Quatro peças novas (maça cravejada, gibão acolchoado, machado de guerra, couraça de placas) com sprite no atlas. Save ganhou `mats` e `forja`, ambos da conta, normalizados.
-
-**Validação:** `node tools/testar.mjs` — 30/30, com o caso novo `forja` (19 asserções: encomenda incompleta barrada, entrega consome e libera, venda da sobra poupa o da encomenda, compra vai ao Banco, Mochila e tela final avisam do depósito, extração leva a seda ao depósito) e a forja na simulação do Node. Tela olhada em 390×844 com Playwright fora do repositório. Mesclada duas vezes com a `main` (0.16.0 e 0.17.0) durante a sessão.
-
-**Análise:** antes, todo item sem `slot` virava ouro na extração. Agora só gema e coroa viram; dente, seda, osso e erva vão para `save.mats`. Medido com 50 sementes no Node: a masmorra inteira tem ~2 dentes, ~5 sedas, ~9 ossos e ~2,6 ervas (~180 de ouro pelo `val`); uma incursão típica traz perto da metade.
-
-**Roadmap:** "Gordon e a Forja" em `Concluído`, fora da fila (pedido do dono). `Agora` não mudou.
-
-**Pendências e riscos:**
-- **Renda menor por incursão.** Quem só vende os materiais ao Gordon recebe ~metade do que a extração pagava antes por eles (~40 de ouro a menos numa incursão típica). É o "barato" pedido, mas mexe na economia: ajustar em `forja.compra` se a progressão ficar lenta.
-- **Origem na Feira.** Peça comprada do Gordon e ouro de material vendido a ele não têm origem no banco (`004_origem.sql`): servem para vestir e para o Mercador, mas não entram na Feira. Resolver pede uma função nova no Supabase (ex.: `lastro_forja`, que troca ouro com origem pela peça); não foi feita sem o Leonardo decidir.
-- Materiais não têm origem nem entram na Feira; também não estão na Mochila como vendáveis.
-- As quantidades das encomendas (dente 3+3, seda 4+10, osso 12+8, erva 6) foram estimadas pela simulação, não jogadas. O dente é o gargalo (só ~2 por masmorra inteira).
-
-**Próximo passo recomendado:** o Leonardo jogar umas incursões e dizer se o ritmo das encomendas e o preço do Gordon estão bons; decidir se a Forja entra na origem da Feira.
-
----
-
-## 2026-10-19 13:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** peças de teste no chão da cidade (0.17.0), a pedido do Leonardo, para testar o equipamento sem caçar. `city.chao` no `content.json` (7 peças perto do `@`, validadas: item existe e o sqm é chão); `C.chao` em `entraCidade()`, pegar ao pisar em `updateCidade()`, `pegaDoChao()` em `progresso.js` e `save.chao` (o que a conta já pegou, completado por `normaliza()`); desenhadas com o sprite do item em `renderCidade()`.
-
-**Validação:** `node tools/testar.mjs` — 29/29, com o caso novo `chao-da-cidade` (pega andando, vai ao cofre, o save lembra, não reaparece, o Banco lista). Cidade conferida em 390×740.
-
-**Análise:** as peças não têm origem no banco (`004_origem.sql`), então não se anunciam na Feira nem viram lastro pela venda ao Banco; só dão ouro local ao serem vendidas ao Banco.
-
-**Roadmap:** sem mudança (ferramenta de teste).
-
-**Pendências e riscos:**
-- **É coisa de teste.** Para tirar, apagar `city.chao` do `content.json`. Cada conta pega uma vez: 7 peças, ~360 de ouro no Banco no máximo.
-- Quem já pegou e quer testar de novo precisa de save novo (ou apagar `chao` do save).
-
-**Próximo passo recomendado:** o Leonardo testar o equipamento no corpo com as peças; depois tirar `city.chao`.
-
----
-
-## 2026-10-19 14:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** todo mundo uns 15% mais rápido (0.16.0), a pedido do Leonardo. Só dado: `progression.walk.ground` de 150 (o chão padrão do Tibia) para 130. Como o passo é proporcional ao chão e arredondado para cima em 50 ms, o ganho real vai de 9% a 17%: nível 1 de 550 para 500 ms (2 sqm/s), nível 50 de 400 para 350, nível 100 de 350 para 300; aranha 600→550, orc e esqueleto 800→700, xamã e Guardião 850→750, rato 900→800. Nível 200 fica em 250.
-
-**Validação:** `node tools/testar.mjs` — 28/28, com os valores esperados da fórmula ajustados na simulação no Node (nível 1 = 0,5 s, nível 200 = 0,25 s, velocidade 150 = 0,7 s, buff de 50% = 0,35 s, 1,8 s para leste = 4 sqm).
-
-**Análise:** trocar o chão mantém a proporção entre jogador e monstros e o arredondamento do Tibia; trocar o arredondamento para o mais próximo daria 20% a 40%, longe do pedido.
-
-**Roadmap:** sem mudança de fila.
-
-**Pendências e riscos:** a mesma de antes: medir mortes e XP por incursão com o ritmo novo.
-
-**Próximo passo recomendado:** o Leonardo jogar e dizer se o ritmo acertou.
-
----
-
-## 2026-10-19 14:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** origem na Feira e venda do saco (0.15.0), a pedido do Leonardo ("anunciar somente o que o player tem no cofre ou no saco"). Duas decisões dele: o saco vende **livre** na caçada, mesmo que depois morra; e o banco **registra a origem**. `tools/supabase/004_origem.sql`: `mercado_lastro` (segundo saldo, só o banco mexe), `cacadas`, `fibula_marcos` (anistia uma vez só), `caca_comecar`, `caca_fim`, `lastro_banco`, `mercado_anunciar` de 7 argumentos (o de 5 virou atalho, para cliente em cache) e `mercado_livro`/`mercado_cancelar` com a origem. Cliente: fila de origem em `nuvem.js` (`masmorra-runas-v2-fila`), `cacaComeca()` no `start()`, `cacaFim()` no `saida.fim`, `lastroBanco()` na venda ao Banco; na Feira, "N com origem" e o ouro com origem; na Mochila, "Vender 1 na Feira" para peça do saco (`tiraDoSaco`/`poeNoSaco` em `combate.js`).
-
-**Validação:** SQL num Postgres 16 local com uma conta "antiga" (anistia de cofre, peças guardadas e vestidas) e uma criada depois com save editado (99.999 de ouro, 5 cotas): tudo dela barrado com `sem_origem`; venda do saco antes de 20 s barrada; peça fora do saco barrada; venda do saco casando a 100 com 98 de origem; extração com menos de 85 s fecha sem crédito; extração válida credita só chaves válidas; fechar duas vezes recusado; venda ao Banco uma vez só por peça; cancelamento devolvendo a origem. `node tools/testar.mjs` — 26/26, com `feira` (31 asserções) e o caso novo `feira-saco` (14). Produção: migração aplicada em cinco partes, anistia nas 3 contas, auxiliares sem acesso de `anon`, API real respondendo `sessao` nos dois formatos de `mercado_anunciar`.
-
-**Análise:** com o save gravado pelo cliente, o saldo do save não prova nada; a origem só cresce por caminhos que o banco registra. É a mesma ideia do servidor autoritativo, mas sem rodar a masmorra: o banco não sabe se a cota do saco caiu de verdade, então põe teto (30 peças por caçada, 60 por dia, 20.000 de ouro por caçada, extração só depois de 85 s).
-
-**Roadmap:** item em `Concluído`; decisão no PRD 15.1.
-
-**Pendências e riscos:**
-- Na sala de caçar junto (0.14.0, que entrou em paralelo) a venda do saco fica desligada: no convidado o saco é retrato do anfitrião e vender dele duplicaria a peça. Liberar exige o anfitrião aplicar a venda pela regra.
-- **Vender do saco tira o peso da morte** para quem vende antes de morrer (escolha do Leonardo). Medir no playtest se a morte ainda dói; o pilar 1 do VISAO.md fala justamente disso.
-- **Não é anti-trapaça completo:** quem forjar chamadas à API tira até os tetos por dia. Fechar de vez é o servidor da F2.
-- Quem jogou sem conta e criou conta depois não negocia o que tinha antes (não há como provar a origem). Pode gerar reclamação; a saída seria uma anistia nova, decisão do Leonardo.
-- A venda do saco mexe no estado da regra fora do `update()` (como `drinkPot()`); na F2 vira entrada.
-- Gasto no Mercador não baixa a origem: ela pode passar do cofre, e vale o menor dos dois.
-
-**Próximo passo recomendado:** o Leonardo testar no celular: caçar com conta, vender uma peça do saco pela Mochila, extrair e ver a origem na Feira.
-
----
-
----
-
-## 2026-10-19 01:38 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** caçar junto (0.14.0), opção C do plano do multiplayer, a pedido do Leonardo ("criada na opção de entrar na masmorra na cidade; cada usuário pode criar uma sala; ela fica aberta até ele sair do jogo ou fechar"). Módulo novo `src/sala.js` (canal do Realtime por sala); seção "Caçar em grupo" no Guia de caça (criar, ver as abertas, entrar, sair, fechar); `retrato()`, `aplicaRetrato()` e `assiste()` em `src/sim/incursao.js`; `confereFicha()` em `src/sim/progresso.js`; `saida.sai(p)` para a tela final ser de cada jogador; o desenho mostra todos da sala com nome. Mesclada com o andar por sqm (`78b2abf`, sessão paralela) por commit de merge: a posição do convidado passou a ser o sqm, e o anfitrião o leva até lá pela regra (um sqm por passo, na velocidade do nível).
-
-**Validação:** `node tools/testar.mjs` — 24/24, com dois casos novos (`sala-anfitriao`, `sala-convidado`, Realtime falso) e, no Node, o retrato (o convidado vê os mesmos monstros, jogadores e sacos), a `confereFicha()` e o limite de um sqm por passo. Sete sabotagens barradas (teleporte, ficha sem conferir, poção ignorada, retrato puxando quem anda, item falso no save, e duas do retrato). Fora do harness: dois Chromium com saves próprios no **Realtime de verdade**, servindo esta cópia: criar, listar, entrar, caçar juntos (66–71 monstros iguais nos dois), andar e ser visto no sqm exato, habilidade do convidado lançada no anfitrião, extração dos dois com cofre de cada um, sala aberta depois, fechar — quatro rodadas verdes seguidas. Telas conferidas em 360×640.
-
-**Análise:** o teste ao vivo achou um problema que o harness não pegava: com mais de ~100 ms de atraso, o retrato podia mostrar o anfitrião um passo atrás com os dois parados, e o convidado era puxado de volta. Agora só volta quando a diferença dura (3 retratos se longe, 8 se é um sqm com os dois parados). O primeiro retrato de cada caçada atrasava até 5 s (temporizador do "estou vivo" da sala); corrigido.
-
-**Roadmap:** "Caçar junto" em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **O anfitrião não pode minimizar o jogo**: o navegador para o laço e a caçada congela para todos; 12 s depois os convidados voltam à cidade sem resultado. No celular, atender uma ligação derruba a sala.
-- **Só o anfitrião pode trapacear** (é ele quem calcula). Aceito para amigos; não abrir a desconhecidos sem a M2.
-- O convidado que fecha o jogo no meio fica parado na masmorra do anfitrião até morrer ou a masmorra desabar; o save dele não muda.
-- Entrar numa sala no meio de uma caçada dela deixa o convidado para a próxima.
-- Cota do Realtime: com 2 jogadores, ~40 mensagens/s contando entregas; a cota de 2 milhões/mês dá algumas dezenas de horas. Olhar o painel (Usage → Realtime Messages) depois dos testes com amigos.
-- Os efeitos que o convidado vê são os principais (dano, magias de área, cadáveres); faíscas e fumaça não vão pela rede.
-
-**Próximo passo recomendado:** o Leonardo testar com um amigo, cada um no seu celular, e dizer se o atraso do convidado incomoda; depois, "Sair cedo" (`Agora`).
-
----
-
-## 2026-10-19 13:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** equipamento visível no personagem (0.12.0), a pedido do Leonardo. Nova seção "equipamento no corpo" em `src/desenho.js`: `mede()` lê os pixels de cada quadro da classe uma vez (topo, altura, pescoço, mãos e quais pixels do tronco são roupa, pela cor dominante da faixa), `vestido()` guarda em cache o quadro retingido pela armadura, `poeArma()` desenha o sprite do item na mão (atrás do corpo de costas, girando no golpe) e `poeAmuleto()` a pedra no peito. `retrato()` desenha o mesmo boneco em qualquer canvas: o Banco mostra o personagem vestido e gira ao toque. Dados em `items.<k>.veste` (`cor`, `malha`), validados na carga. Rede: a presença leva `eq`, reenviada quando muda no Banco; `poeOutro()` só aceita peça que existe e é daquele espaço. Sem a arte, o desenho em código ganhou a faixa da armadura e a pedra.
-
-**Validação:** `node tools/testar.mjs` — todos os casos, com o caso novo `equipamento-no-corpo` (presença com `eq`, dado de fora conferido, retrato desenhado, giro, troca de armadura e arma mudando o boneco, presença reenviada, golpe na incursão com a arma). Fora do harness: bancada com as 4 classes × 4 combinações × 4 direções e o jogo em 390×740 (cidade e Banco), olhados um a um.
-
-**Análise:** os outfits com máscara de cor e addons existem no OTSP (16–18, 20, 21, 44, 45), mas são cidadãos genéricos; usá-los trocaria a cara das classes. A cor dominante resolve bem o manto dos magos e o aço do cavaleiro; no caçador, couro e pele têm o mesmo matiz, então a couraça pinta também os braços (fica como manga).
-
-**Roadmap:** "Equipamento no corpo" em `Concluído`, fora da fila (pedido do dono). Juntado com a Mochila e a Feira (0.11.0) que entraram em paralelo; o Leonardo autorizou deploy direto na `main` sempre.
-
-**Pendências e riscos:**
-- **Arte por código, não por sprite.** A posição da arma vem da borda do boneco na altura da mão, não de um ponto de mão desenhado; em alguns quadros ela fica um pouco solta do corpo. Se o Leonardo quiser acabamento de Tibia, o caminho é um ponto de mão por classe e direção numa tabela de arte (em `tools/sprites.mjs` ou no `atlas.json`).
-- No cavaleiro e no caçador de frente, a arma equipada aparece junto da arma que o sprite já segura.
-- A cor de cada peça nova precisa de `veste` no `content.json`; sem ela, a armadura não aparece (arma aparece sempre, pelo `it_<chave>`; amuleto usa dourado).
-- Presença com `eq` é aberta como o resto da cidade: quem tem a chave pode dizer que veste qualquer peça que existe. Não vale nada, só se vê.
-
-**Próximo passo recomendado:** o Leonardo olhar no celular (Banco e cidade com outra pessoa); depois, "Sair cedo" (`Agora`).
-
----
-
-## 2026-10-19 04:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a Feira, mercado entre jogadores (0.11.0), a pedido do Leonardo ("cada player vende para cada player, buy e sell, match"). O Corretor (`city.npcs.corretor`, letra `T`, ao lado do chafariz; sprite OTSP 45) abre a tela `#mkt`. Livro de ofertas por peça de equipamento, compra e venda com preço por peça e quantidade, match automático. Banco: `tools/supabase/003_mercado.sql` — `mercado_ordens`, `mercado_negocios`, `mercado_caixa` e as funções `mercado_livro/anunciar/cancelar/coletar`; `save_gravar` reescrito com a guarda de `mkt`. Cliente: `mercado()` e `temConta()` em `nuvem.js`, `showFeira()` em `telas.js`, `soPecas()` em `progresso.js`.
-
-**Validação:** SQL aplicado duas vezes num Postgres 16 local (idempotente) e exercitado com três contas: match em vários níveis de preço, preço do maker, devolução da diferença ao comprador, taxa de 2% arredondada para cima, caixa e coleta, cancelamento, sem auto-match, `sem_ouro`, `sem_peca`, `sessao`, guarda `mercado` no `save_gravar`, `anon` sem acesso a tabela nem a função auxiliar; soma de ouro conservada (1060 − 5 de taxa = 1055). `node tools/testar.mjs` — 23/23, com o caso novo `feira` (24 asserções; o Supabase falso ganhou as quatro funções e a guarda de `mkt`) e o Corretor no caso `cidade` e na cidade do Node. Tela conferida em 360×740 com Playwright fora do repositório, sem erro de página.
-
-**Análise:** o save continua do cliente, então a única forma de o banco decidir o mercado foi tornar o save **da nuvem** a fonte do cofre e das peças durante a operação: o cliente sobe o save, o banco debita na mesma transação do livro e devolve cofre, peças e `mkt`, que o cliente adota. A outra ponta nunca tem o save reescrito (ela pode estar no meio de uma incursão e sobrescreveria): recebe na `mercado_caixa`, que entra ao abrir a Feira. Um seletor `#mpPreco+` derrubava o grafo de módulos inteiro (todos os casos davam "não reportou em 45000 ms"): `querySelector` estoura com `+` no id.
-
-**Roadmap:** Feira em `Concluído` (antecipada da F3, decisão registrada no PRD 15.1). `Agora` segue "sair cedo".
-
-**Pendências e riscos:**
-- Migração 003 **aplicada** em produção pelo conector, em sete partes (`003a`…`003g`), com o Leonardo de acordo. O conector trava (60 s, desfaz tudo) em qualquer migração que contenha `delete`: a caixa agora é zerada por `update`, e o arquivo foi ajustado igual. Conferido depois: RLS ligada nas três tabelas, auxiliares sem acesso de `anon`, API real respondendo `sessao` para token inválido. Os avisos novos do Supabase (funções da Feira executáveis por `anon`, tabelas sem política) são o desenho.
-- **Trapaça vira problema dos outros.** Quem editar o JSON do próprio save cria ouro e peças e agora pode gastá-los com jogadores honestos. É a dívida do D-M3: o mercado deixa de ser seguro para abrir a desconhecidos sem cofre autoritativo no servidor.
-- Dois aparelhos na mesma conta: se um negociar enquanto o outro está numa incursão, a gravação do segundo é recusada e ele adota a nuvem, perdendo o resultado dessa incursão. Raro, mas real.
-- Sem expiração de oferta; limite de 10 abertas por jogador. Ouro preso numa compra não conta no cofre do menu.
-- Volume de match serializado num único `pg_advisory_xact_lock`: suficiente para dezenas de jogadores, não para milhares.
-
-**Próximo passo recomendado:** testar com duas contas reais vendendo uma peça uma para a outra, no jogo publicado.
-## 2026-10-19 04:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** velocidade do Tibia para jogador e monstros (0.13.0), a pedido do Leonardo ("reduza a velocidade dos monstros e do player para se assemelhar ao Tibia"). `passoDaVel()` em `progresso.js` é a fórmula do Forgotten Server (`Creature::getStepDuration`: 857,36·ln(vel/2+261,29)−4795,01, chão 150, arredondado para cima em 50 ms). Jogador: 220 + 2 por nível, teto 1500 (`progression.walk`, campos novos `speedBase`, `speedPerLevel`, `speedMax`, `ground`); monstros: `spd` agora em unidades do Tibia — rato 134 (900 ms), aranha 200 (600 ms), esqueleto e orc 150 (800 ms), xamã e Guardião 140 (850 ms). Andar à toa: 1,5× mais lento (era 2,5×).
-
-**Validação:** `node tools/testar.mjs` — 23/23. Na simulação no Node: nível 1 = 0,55 s, nível 200 = 0,25 s, velocidade 150 = 0,8 s, buff de 50% = 0,4 s, 2,2 s para leste = 4 sqm. O caso `rato letal` sobe o rato para 400. Os roteiros da cidade andam até chegar, não por tempo fixo. Caçada no Chromium em 360×640 sem erro (Cavaleiro nível 6: 3 sqm em 1,5 s).
-
-**Análise:** do sqm de entrada ao portal são 70 sqm na mediana (52 a 103, 40 sementes, em 4 direções). No nível 1 isso dá ~40 s em linha reta, contra ~18 s no 0.9.0: cabe na incursão de 6 min, mas a masmorra cobre menos. Monstros ficaram mais lentos que o jogador (a aranha, a mais rápida, a 600 ms contra 550 ms do nível 1): fugir ficou fácil, como no Tibia de níveis baixos.
-
-**Roadmap:** sem mudança de fila.
-
-**Pendências e riscos:** **balanceamento a medir** — com monstros mais lentos que o jogador, a morte pode ter ficado rara (pilar 1); se ficar, a alavanca é o `spd` de cada monstro no `content.json`. O `wander` só pede ≥ 1 na validação.
-
-**Próximo passo recomendado:** o Leonardo jogar no celular e dizer se o ritmo agrada; o agente de Balanceamento medir mortes e XP por incursão com a velocidade nova.
