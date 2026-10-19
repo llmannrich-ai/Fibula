@@ -910,9 +910,10 @@ arquitetura (Parte 2). Hoje guarda:
   tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
   save editado ou de antes da conta não se negocia (`'sem_origem'`). A
   extração tem limites de plausibilidade (30 peças por caçada, 60 por dia,
-  só depois de 85 s). A venda do saco durante a caçada saiu do cliente na
-  0.43.2 (decisão do Leonardo); o `mercado_anunciar` ainda aceita `p_caca` e
-  `p_saco`, e fechar isso no banco é item do `ROADMAP.md`. Esquema em
+  só depois de 85 s). Não se vende do saco durante a caçada (decisão do
+  Leonardo): o cliente não oferece desde a 0.43.2, e o `mercado_anunciar`
+  recusa `p_caca` com `'caca'` desde a
+  [006_sem_venda_na_caca.sql](tools/supabase/006_sem_venda_na_caca.sql). Esquema em
   [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql); na morte, a
   `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
   [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
@@ -1623,7 +1624,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
 | 19/10 | **Uma sala por lugar, com entrada automática:** pisa-se no portal do lugar na cidade; há servidor, entra-se nele; não há, abre-se aqui; cheio (4), cópia 2. O servidor fica com quem está lá dentro, e com o último que saiu quando não há ninguém. Aceito o risco de trapaça do anfitrião entre desconhecidos na fase de teste; voz opcional | Parte 3, Sala e Voz |
 | 19/10 | **Atlas em WebP sem perda**, gravado pelo `cwebp` do Google em `tools/sprites.mjs` (só na montagem; o jogador baixa um arquivo de imagem), com o PNG de reserva | Parte 3, "O que mais o jogador baixa" |
-| 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco também deve recusar | Pilar 4; Parte 3, Supabase |
+| 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco recusa desde a 006 | Pilar 4; Parte 3, Supabase |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes

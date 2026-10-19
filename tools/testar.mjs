@@ -192,6 +192,8 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
     if(fn==='caca_comecar')return r(200,++M.caca);
     if(fn==='caca_fim'){let n=0;const q=Object.values(b.p_saco||{}).reduce((a,x)=>a+x,0);if(b.p_desfecho==='extraiu'||q<=3)for(const k in b.p_saco){poeO(k,b.p_saco[k]);n+=b.p_saco[k]}O.ouro+=b.p_ouro;return r(200,{pecas:n,ouro:b.p_ouro})}
     if(fn==='lastro_banco'){if(O.itens[b.p_item]>0){poeO(b.p_item,-1);O.ouro+=b.p_val}return r(204,null)}
+    /* como o banco desde a 006: nada se anuncia com a caçada aberta */
+    if(fn==='mercado_anunciar'&&b.p_caca)return erro('caca');
     if(!N.dados)return erro('sem_save');
     if(N.forcaErro){const m=N.forcaErro;N.forcaErro='';return erro(m)}
     const D=N.dados,it=D.itens||(D.itens={}),poe=(k,q)=>{it[k]=(it[k]|0)+q;if(it[k]<=0)delete it[k]},rec={ouro:0,itens:{}};
@@ -202,7 +204,6 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
       if(o.lado==='compra'){D.cofre+=o.preco*o.resta;O.ouro+=o.preco*o.resta}else{poe(o.item,o.resta);poeO(o.item,o.resta)}return fim()}
     if(fn==='mercado_anunciar'){const k=b.p_item,pr=b.p_preco,q=b.p_qtd,compra=b.p_lado==='compra',L=M.itens[k]||{venda:[],compra:[]};
       if(compra){if(D.cofre<pr*q)return erro('sem_ouro');if(O.ouro<pr*q)return erro('sem_origem');D.cofre-=pr*q;O.ouro-=pr*q}
-      else if(b.p_caca){if(b.p_caca!==M.caca)return erro('caca');if(!(b.p_saco&&b.p_saco[k]>=q))return erro('sem_peca')}
       else{if((it[k]|0)<q)return erro('sem_peca');if((O.itens[k]|0)<q)return erro('sem_origem');poe(k,-q);poeO(k,-q)}
       const op=compra?L.venda:L.compra,n0=op[0],f=n0&&(compra?n0[0]<=pr:n0[0]>=pr)?Math.min(q,n0[1]):0,tot=f?f*n0[0]:0,tx=compra?0:Math.ceil(tot*2/100);
       if(f){if(compra){poe(k,f);poeO(k,f);D.cofre+=(pr-n0[0])*f;O.ouro+=(pr-n0[0])*f}else{D.cofre+=tot-tx;O.ouro+=tot-tx}n0[1]-=f;if(!n0[1])op.shift()}
@@ -2812,6 +2813,9 @@ const CASOS = [
     clica(esp);
     ok('na caçada, a Mochila não vende na Feira', !$('#moVenda')&&!todos('#moAcoes button').some(function(b){return /Feira/.test(b.textContent)}), txt('#moAcoes'));
     clica(todos('#moDoll .cel')[0]);
+    var rv=await fetch('https://bpwljbualdjlwmzcryzl.supabase.co/rest/v1/rpc/mercado_anunciar',{method:'POST',body:JSON.stringify({p_token:'tk1',p_lado:'venda',p_item:'espada',p_preco:20,p_qtd:1,p_caca:501,p_saco:{espada:1}})}).then(function(r){return r.json()}).then(function(x){return x&&x.message});
+    ok('o banco recusa anunciar com a caçada aberta', /caca/.test(rv), rv);
+    window.__nuvem.args.mercado_anunciar=null;
     clica($('#moX'));
     tecla('keydown','KeyJ');
     var acabou=await ate(function(){return visivel('#end')},1500);
