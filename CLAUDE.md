@@ -71,8 +71,9 @@ confundidas com precedente:
 | [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~250 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
-Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada,
-ver abaixo) só enquanto o jogador está na cidade. A folha do Google Fonts que existia saiu em
+Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
+as salas de caçar junto, ver abaixo) só enquanto o jogador está na cidade ou
+numa sala. A folha do Google Fonts que existia saiu em
 18/10/2026 junto com a arte do Tibia — as fontes agora são do sistema (Verdana,
 como o cliente do Tibia, e uma serifa Palatino nos títulos).
 
@@ -136,7 +137,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`setSave()` para trocar o objeto inteiro), `SAVE0()`, `normaliza()`,
   `novoChar()`, `ch()`, `KL()`, `stats()`, `xpNeed()`, `manaPraMag()`,
   `golpesPraPer()`, `nSlots()`, `desbloqueadas()`, `upCost()`, `sealPct()`,
-  `durPasso()` (duração do passo pela velocidade do nível)
+  `passoDaVel()` (a fórmula do passo do Tibia) e `durPasso()` (o passo do
+  personagem pelo nível)
 - `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
@@ -180,7 +182,15 @@ principal, o markup das telas e do HUD, e a linha que carrega
   broadcast de **um passo por mensagem** (`{id, x, y, d}`: sqm de destino e
   duração em ms), nada parado; erro do
   canal (expulsão por excesso) fecha o socket e religa. Não decide
-  regra nenhuma: a caçada é sozinha, e o co-op da incursão é o servidor da F2
+  regra nenhuma. Anuncia na presença a sala aberta deste aparelho
+  (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
+- `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
+  `realtime:sala-<x.y>-<id do anfitrião>` por sala. O anfitrião roda a
+  incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
+  por segundo; o convidado manda a entrada (o sqm em que está, espaços
+  segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
+  `saiDaSala()`, `quadro(dt,ent)` chamado pelo laço, e os `ganchos` que o
+  `main.js` liga às telas
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -224,7 +234,8 @@ Constantes de `src/sim/base.js`: `T=32` (lado do tile), `MW=MH=64` (mapa),
 `RUN=360` (duração da incursão em segundos), `PORTAL_AT=90` (quando o portal
 abre), `EXT=2.5` (segundos parado no portal para extrair), `TICK=0.05` (o
 passo da regra: 20 por segundo). A velocidade de andar mora em
-`progression.walk` do `content.json` (sqm por segundo, por nível).
+`progression.walk` do `content.json` (unidades do Tibia: 220 + 2 por nível) e
+no `spd` de cada monstro.
 
 Balanceamento vive nas tabelas `CLASSES`, `SPELLS`, `MT`, `LOOT`, `ITEMS` e
 `UP`, não espalhado pelo código. Ajuste de dificuldade é edição de tabela. Se
@@ -300,11 +311,12 @@ partida ao centro do sqm novo durante o passo e só servem ao desenho e ao
 alcance do combate, que continua em pixels. O sqm é de quem anda **desde o
 começo do passo**. Regras:
 
-- **Velocidade** do jogador em `progression.walk`: `base + perLevel·(nível−1)`
-  sqm/s até `max`, vezes o buff `velo`; o passo é arredondado para múltiplos
-  de 50 ms (`durPasso()`). Diagonal dura `diagonal` vezes mais e não corta
-  quina (`passoPara()` escorrega pelo eixo livre). Monstro: `spd` em px/s, o
-  passo dura `T/spd`.
+- **Velocidade do Tibia** (`progression.walk`): jogador `220 + 2·(nível−1)`,
+  vezes o buff `velo`; monstro, o `spd` dele na mesma unidade, vezes a
+  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`
+  (nível 1 = 550 ms, 1,8 sqm/s; nível 100 = 350 ms; `spd` 150 = 800 ms),
+  arredondado para múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
+  não corta quina (`passoPara()` escorrega pelo eixo livre).
 - **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
   passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
   não entra em sqm de monstro. Jogadores não se bloqueiam entre si.
@@ -478,8 +490,39 @@ desenha a dos outros: quem tem a chave pode mandar posição falsa, e tudo bem,
 porque na cidade não se ganha nem se perde nada. O que chega de fora passa por
 `poeOutro()` em `src/sim/cidade.js`, que prende a posição ao mapa, só aceita
 classe que existe e corta o nome. **Nada que valha ouro, XP ou item pode
-passar por esse canal**: isso é o servidor autoritativo da F2
+passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 ([docs/plano-multiplayer.md](docs/plano-multiplayer.md)).
+
+### Sala — caçar junto, com o anfitrião calculando
+
+Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
+co-op na masmorra **sem servidor próprio**. No Guia de caça, qualquer um cria
+uma sala; quem está na cidade a vê e entra (até 4). A sala fica aberta até o
+anfitrião fechar ou sair do jogo, e serve para várias caçadas seguidas.
+
+- **O anfitrião é o servidor.** O aparelho dele roda a mesma `src/sim/` com
+  uma ficha por jogador (`newRun(semente, fichas)`), recebe a entrada dos
+  convidados e manda o `retrato()` (`src/sim/incursao.js`, seção "retrato da
+  sala") a 10 por segundo. O mapa não vai: o convidado gera o mesmo pela
+  semente.
+- **O convidado anda no próprio aparelho** (sem atraso no próprio boneco) e
+  conta o sqm em que está; o anfitrião leva o boneco dele até lá **pela
+  regra**, um sqm por passo, na velocidade do nível e só por sqm livre. Se os
+  dois divergem por muito tempo (um monstro no caminho), o convidado volta ao
+  sqm do anfitrião (`p.desv` em `aplicaRetrato()`).
+- **Cada um grava o próprio save** com o resultado que o anfitrião manda
+  (`fim`), passando por conferência (item que existe, número inteiro,
+  habilidade da classe). A ficha que o convidado manda passa por
+  `confereFicha()` em `src/sim/progresso.js`.
+- **Só o anfitrião pode trapacear**, porque é ele quem calcula. É aceitável
+  entre amigos e é a exceção à regra acima, de propósito; para abrir a
+  desconhecidos, o caminho é o servidor da F2 (M2).
+- Custo: com 4 na sala, ~40 envios por segundo no canal, abaixo dos ~100 do
+  plano Free; a cota mensal (2 milhões, contando cada entrega) dá algumas
+  dezenas de horas de caçada a dois por mês.
+- **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
+  laço, a incursão congela para todos, e depois de 12 s sem notícia os
+  convidados voltam à cidade sem resultado.
 
 ## Convenções de código
 

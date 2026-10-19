@@ -81,6 +81,7 @@ export function passoPara(e,i,livre,mx,my){
 }
 
 /* log(msg,cls) e banner(txt) são as mensagens da incursão; nivel() avisa que
-   espaços e habilidades mudaram; fim(kind) fecha a incursão; persist() pede
-   para gravar o save. Sem cliente, tudo é silêncio. */
-export const saida={log(){},banner(){},nivel(){},fim(){},persist(){}};
+   espaços e habilidades mudaram; sai(p) que um jogador saiu da incursão (o
+   resultado dele está em p); fim(kind) fecha a sala; persist() pede para
+   gravar o save. Sem cliente, tudo é silêncio. */
+export const saida={log(){},banner(){},nivel(){},sai(){},fim(){},persist(){}};

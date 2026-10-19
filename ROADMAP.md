@@ -141,13 +141,22 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
-- **2026-10-19 — Origem na Feira e venda do saco (0.13.0)** *(decisão do
+- **2026-10-19 — Origem na Feira e venda do saco (0.15.0)** *(decisão do
   Leonardo: anunciar só o que se tem no cofre ou no saco, com o banco
   conferindo a origem)*. Saldo de origem no banco (`mercado_lastro`),
   caçadas registradas, venda ao Banco avisada, anistia de quem já tinha conta;
   venda do saco pela Mochila com limites de plausibilidade. Casos `feira`
   (31 asserções) e `feira-saco` (14) no harness; `004_origem.sql`.
 
+- **2026-10-19 — Caçar junto (0.14.0)** *(opção C do plano do multiplayer,
+  a pedido do Leonardo; pilar 2)*. No Guia de caça, qualquer um cria uma sala
+  e quem está na cidade a vê e entra (até 4); a sala fica aberta até o
+  anfitrião fechar ou sair do jogo. O aparelho do anfitrião roda a incursão de
+  todos com a simulação da M1 e manda o retrato a 10 por segundo pelo Realtime;
+  o convidado anda no próprio aparelho, conta o sqm, e o anfitrião o leva até
+  lá pela regra. Cada um grava o próprio save com o resultado. Testado com dois
+  navegadores no Realtime de verdade (quatro rodadas) e com dois casos novos
+  no harness (`sala-anfitriao`, `sala-convidado`); sete sabotagens barradas.
 - **2026-10-19 — Equipamento no corpo (0.12.0)** *(pedido do Leonardo; pilar 2:
   na cidade compartilhada, o que o outro veste conta quanto ele já arriscou)*.
   Os bonecos das classes no OTSP têm uma camada só, sem a máscara de cor dos

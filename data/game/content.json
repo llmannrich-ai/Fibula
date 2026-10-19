@@ -663,7 +663,7 @@
     "rato": {
       "nome": "Rato",
       "hp": 22,
-      "spd": 72,
+      "spd": 134,
       "dmg": 4,
       "xp": 6,
       "r": 9,
@@ -673,7 +673,7 @@
     "aranha": {
       "nome": "Aranha",
       "hp": 34,
-      "spd": 106,
+      "spd": 200,
       "dmg": 6,
       "xp": 12,
       "r": 10,
@@ -683,7 +683,7 @@
     "esqueleto": {
       "nome": "Esqueleto",
       "hp": 62,
-      "spd": 62,
+      "spd": 150,
       "dmg": 10,
       "xp": 24,
       "r": 11,
@@ -693,7 +693,7 @@
     "orc": {
       "nome": "Orc",
       "hp": 95,
-      "spd": 74,
+      "spd": 150,
       "dmg": 14,
       "xp": 40,
       "r": 13,
@@ -703,7 +703,7 @@
     "xama": {
       "nome": "Xamã Orc",
       "hp": 58,
-      "spd": 58,
+      "spd": 140,
       "dmg": 12,
       "xp": 46,
       "r": 12,
@@ -714,7 +714,7 @@
     "guardiao": {
       "nome": "Guardião do Portal",
       "hp": 520,
-      "spd": 54,
+      "spd": 140,
       "dmg": 24,
       "xp": 220,
       "r": 20,
@@ -1002,13 +1002,14 @@
       ]
     },
     "walk": {
-      "_note": "Andar por sqm, como no Tibia (decisao do Leonardo, 19/10/2026): todo mundo esta sempre num sqm e vai a um vizinho por vez. Velocidade do jogador em sqm por segundo: base + perLevel*(nivel-1), ate max; o buff de velocidade multiplica. A duracao do passo e arredondada para multiplos de stepMs (50 ms, como no Tibia, e o passo da simulacao). Passo na diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). Monstros: spd em pixels por segundo (32 = 1 sqm/s); wander e quantas vezes mais devagar andam a toa. Com 3,3 sqm/s o passo do nivel 1 e 300 ms; o antigo movimento livre era 4 sqm/s.",
-      "base": 3.3,
-      "perLevel": 0.02,
-      "max": 4.5,
+      "_note": "Andar por sqm com a velocidade do Tibia (decisoes do Leonardo, 19/10/2026). Velocidade em unidades do Tibia: jogador = speedBase + speedPerLevel*(nivel-1), ate speedMax, vezes (1 + buff de velocidade); monstro = spd do inimigo (mesma unidade), vezes a lentidao. O passo vem da formula do Forgotten Server (creature.cpp): passo = 1000*ground / (857,36*ln(vel/2 + 261,29) - 4795,01), arredondado para cima em multiplos de stepMs. Com ground 150: nivel 1 (220) = 550 ms, 1,8 sqm/s; nivel 50 (318) = 400 ms; nivel 100 (418) = 350 ms; nivel 200 (618) = 250 ms. Monstro com spd 150 = 800 ms. Diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). wander: quantas vezes mais devagar o monstro anda a toa.",
+      "speedBase": 220,
+      "speedPerLevel": 2,
+      "speedMax": 1500,
+      "ground": 150,
       "diagonal": 1.4,
       "stepMs": 50,
-      "wander": 2.5
+      "wander": 1.5
     },
     "xp": {
       "_note": "Experiencia para passar do nivel L ao L+1: base * L^exp. Medido em 18/10/2026 com a simulacao no Node: a masmorra inteira vale ~1.680 de XP, e uma incursao tipica (metade dela) ~840. Com 520 e 0,9 o nivel 8 (terceiro espaco) chega depois de ~15 incursoes. deathLoss e a fatia do XP acumulado no nivel atual que a morte (ou o desabamento) leva, sem nunca descer de nivel; com esta curva, perder 25% custa no maximo 2 incursoes ate o nivel 17.",

@@ -2,10 +2,23 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.12.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,listaDaClasse,slotsIniciais} from './dados.js?v=0.15.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
+/* a ficha que um convidado manda ao anfitrião da sala é dado de fora: só
+   passa classe que existe, números inteiros no intervalo, habilidades da
+   classe já liberadas no nível e equipamento do espaço certo. Devolve a ficha
+   limpa ou null */
+export function confereFicha(f){
+  if(!f||typeof f!=='object'||!CLASSES[f.cl]||!f.c||typeof f.c!=='object')return null;
+  const n=(v,a,b)=>Number.isFinite(v)?Math.max(a,Math.min(b,Math.floor(v))):a,c=f.c,lvl=n(c.lvl,1,200);
+  const slots=[0,1,2,3].map(i=>{const k=Array.isArray(c.slots)&&c.slots[i];return SPELLS[k]&&SPELLS[k].c===f.cl&&SPELLS[k].lvl<=lvl?k:null});
+  const equip=EQ0();for(const sl of SLOTS_EQ){const k=c.equip&&c.equip[sl];if(ITEMS[k]&&ITEMS[k].slot===sl)equip[sl]=k}
+  const up={};for(const k in UP0)up[k]=n(f.up&&f.up[k],0,UP[k]?UP[k].max:0);
+  return{cl:f.cl,nome:String(f.nome||CLASSES[f.cl].nome).replace(/[\u0000-\u001f]/g,'').slice(0,20),
+    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,equip},up};
+}
 export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),equip:EQ0()});
 /* cofre (ouro) e itens (equipamento guardado) são da conta; equip é de cada personagem */
 export const SAVE0=()=>({cofre:0,itens:{},runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{}});
@@ -30,13 +43,16 @@ export const ch=()=>save.chars[save.classe];
 export const KL=()=>CLASSES[save.classe];
 
 /* curva e perda na morte vêm de progression.xp no content.json */
-/* duração de um passo do personagem, em segundos, pela velocidade em sqm/s
-   (progression.walk): cresce com o nível, como no Tibia, e é arredondada para
-   múltiplos de stepMs. velo é o buff de velocidade (0 sem buff) */
-export function durPasso(c,velo=0){
-  const w=PROG.walk,v=Math.min(w.max,w.base+w.perLevel*(c.lvl-1))*(1+velo);
-  return Math.max(w.stepMs,Math.round(1000/v/w.stepMs)*w.stepMs)/1000;
+/* duração de um passo, em segundos, para uma velocidade em unidades do Tibia:
+   a fórmula do Forgotten Server (Creature::getStepDuration), com o chão de
+   progression.walk.ground e arredondada para cima em múltiplos de stepMs */
+export function passoDaVel(vel){
+  const w=PROG.walk,c=Math.max(1,Math.floor(857.36*Math.log(Math.max(1,vel)/2+261.29)-4795.01+.5));
+  return Math.max(w.stepMs,Math.ceil(Math.floor(1000*w.ground/c)/w.stepMs)*w.stepMs)/1000;
 }
+/* o passo do personagem: velocidade 220 + 2 por nível, como no Tibia, até
+   speedMax; velo é o buff de velocidade (0 sem buff) */
+export const durPasso=(c,velo=0)=>{const w=PROG.walk;return passoDaVel(Math.min(w.speedMax,w.speedBase+w.speedPerLevel*(c.lvl-1))*(1+velo))};
 export const xpNeed=l=>Math.round(PROG.xp.base*Math.pow(l,PROG.xp.exp));
 /* a morte leva uma fatia do XP do nível atual, nunca o nível */
 export const pctPerdaXp=()=>Math.round(PROG.xp.deathLoss*100);
