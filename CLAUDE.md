@@ -640,10 +640,13 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
-- `telas.js` — **telas** (`showMenu()`, a tela inicial: o personagem, o preço
-  da morte em uma linha (`riscoCurto()`), Jogar, a conta e o rodapé Regras ·
-  Personagens (o único lugar de trocar de personagem; o Grimório fica só na
-  cidade, no botão `#cGrim`); sem personagem, Jogar vira Criar personagem;
+- `telas.js` — **telas** (`showMenu()`, a tela de entrada: só a conta —
+  usuário, senha, Entrar, Criar conta — e o `#play`, que é "Continuar" com
+  sessão e "Jogar sem conta" sem ela, e leva à escolha de personagem;
+  `showPick()`, a tela seguinte e o único lugar de trocar de personagem,
+  aberta também pelo Menu da cidade: tocar num personagem entra na cidade
+  (`escolher()`), cada um mostra o preço da morte (`riscoCurto(c)`), e o
+  rodapé tem Regras e Voltar; o Grimório fica só na cidade, no `#cGrim`;
   `showRegras()`, cujos números saem do `content.json`; `start()`,
   `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),

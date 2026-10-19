@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.38.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.38.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.38.0';
-import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.38.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.38.0';
-import {persist,saveFalhou} from './salvar.js?v=0.38.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.38.0';
-import {rede,SALAS} from './rede.js?v=0.38.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.38.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.38.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.38.0';
-import {icone} from './arte.js?v=0.38.0';
-import {$,app} from './dom.js?v=0.38.0';
-import {retrato} from './desenho.js?v=0.38.0';
+import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.39.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.39.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.39.0';
+import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.39.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.39.0';
+import {persist,saveFalhou} from './salvar.js?v=0.39.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.39.0';
+import {rede,SALAS} from './rede.js?v=0.39.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.39.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.39.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.39.0';
+import {icone} from './arte.js?v=0.39.0';
+import {$,app} from './dom.js?v=0.39.0';
+import {retrato} from './desenho.js?v=0.39.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -24,9 +24,9 @@ const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS]
 export const V={cidade:false};
 const soTela=el=>{
   for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing','cidade');fechaMochila();
-  for(const b of document.querySelectorAll('.voltar'))b.textContent=V.cidade?'Voltar à cidade':'Voltar ao acampamento';
+  for(const b of document.querySelectorAll('.voltar'))b.textContent=V.cidade?'Voltar à cidade':'Voltar';
 };
-const volta=()=>V.cidade?showCidade():showMenu();
+const volta=()=>V.cidade?showCidade():showPick();
 /* pilar 1: o preço da morte, em número, antes de entrar — no acampamento e no
    Guia de caça, que é por onde se entra */
 const risco=()=>{const pd=perdaXp(),v=valMochila(ch().mochila),sela=Math.round(v*sealPct());
@@ -35,22 +35,14 @@ const risco=()=>{const pd=perdaXp(),v=valMochila(ch().mochila),sela=Math.round(v
 /* a tela inicial: o personagem, o preço da morte em uma linha, Jogar, a conta
    e o rodapé. Sem personagem, o mesmo lugar diz Criar personagem, e a conta
    fica à mão para quem já tem progresso na nuvem entrar antes de criar */
-const riscoCurto=()=>{const pd=perdaXp(),v=valMochila(ch().mochila),perde=v-Math.round(v*sealPct());
+const riscoCurto=(c=ch())=>{const pd=perdaXp(c),v=valMochila(c.mochila),perde=v-Math.round(v*sealPct());
   return `Morrer custa a mochila (${v?perde+' de ouro':'vazia'}) e ${pd?pd+' de XP':'nada de XP'}.`};
-const numeros=()=>{$('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;$('#sSlots').textContent=save.classe?nSlots():0;
-  $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;$('#pStats').hidden=!save.classe};
+const numeros=()=>{$('#sLvl').textContent=save.classe?ch().lvl:0;$('#sCofre').textContent=save.cofre;$('#sBest').textContent=save.best;$('#sSlots').textContent=save.classe?nSlots():0;
+  $('#sRuns').textContent=save.runs;$('#sDead').textContent=save.deaths;$('#pStats').hidden=!save.classe};
 export function showMenu(){
   V.cidade=false;
-  const tem=!!save.classe;
-  $('#mLede').hidden=tem;$('#mQuem').hidden=$('#mRisco').hidden=$('#toPick').hidden=!tem;
-  const play=$('#play');if(!play.disabled)play.textContent=tem?'Jogar':'Criar personagem';
-  if(tem){const c=ch();$('#mCls').textContent=KL().nome;$('#sLvl').textContent=c.lvl;
-    $('#mCofre').textContent=`cofre: ${save.cofre}`;$('#mRisco').textContent=riscoCurto()}
   numeros();$('#mAviso').hidden=!saveFalhou;desenhaConta();
   soTela(menu);
-  if(!tem)return;
-  /* a masmorra da sala roda no aparelho do anfitrião enquanto a sala existir */
-  if(!G||(G.active&&!(G.sala&&SALA.papel==='anfitriao'))){newRun()}
 }
 /* as regras: o texto é fixo, os números saem do content.json, para não
    envelhecerem quando o balanceamento muda */
@@ -277,18 +269,24 @@ export function showPick(){
       const i=document.createElement('i');i.style.setProperty('--v',Math.round(v*100)+'%');
       d.append(t,i);bars.appendChild(d);
     }
-    b.append(hd,p,bars);
+    b.append(hd,p);
+    if(c){const r=document.createElement('p');r.className='risco';r.textContent=riscoCurto(c);b.appendChild(r)}
+    b.appendChild(bars);
     b.addEventListener('click',()=>escolher(k));
     li.appendChild(b);ul.appendChild(li);
   }
-  $('#pickBack').hidden=!save.classe;numeros();
+  V.cidade=false;numeros();
   soTela(pickS);
 }
+/* escolher é entrar: o personagem tocado vai para a cidade. Trocar de
+   personagem tira da sala, porque a ficha que está lá é a do outro */
 function escolher(k){
-  /* trocar de personagem tira da sala: a ficha que está lá é a do outro */
-  if(SALA.papel)saiDaSala();
+  if(save.classe!==k){if(SALA.papel)saiDaSala();setG(null)}
   if(!save.chars[k])save.chars[k]=novoChar(k);
-  save.classe=k;persist();setG(null);volta();
+  save.classe=k;persist();numeros();
+  /* a masmorra da sala roda no aparelho do anfitrião enquanto a sala existir */
+  if(!G||(G.active&&!(G.sala&&SALA.papel==='anfitriao'))){newRun()}
+  showCidade('chegada');
 }
 
 /* ---------- grimório ---------- */
@@ -734,22 +732,22 @@ $('#mpLadoV').addEventListener('click',()=>abrePeca(MK.peca,'venda'));
 $('#mpOk').addEventListener('click',anuncia);
 $('#mpVolta').addEventListener('click',()=>{MK.peca=null;msgMk('');desenhaFeira()});
 
-for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack','#mktBack','#fgBack','#ljBack'])$(id).addEventListener('click',volta);
+for(const id of['#shopBack','#grimBack','#eqBack','#huntBack','#mktBack','#fgBack','#ljBack'])$(id).addEventListener('click',volta);
 /* Banco: guardar a mochila inteira e tirar ouro do cofre para ela */
 $('#eqGuarda').addEventListener('click',()=>{if(!ocupa(ch().mochila))return;const r=guardaMochila();persist();drawEquip();msgEq(guardou(r))});
 for(const[id,d]of[['#eqMenos',-50],['#eqMais',50]])$(id).addEventListener('click',()=>{const el=$('#eqQtd');el.value=clamp((Math.round(+el.value)||0)+d,1,Math.max(1,save.cofre))});
 $('#eqRetira').addEventListener('click',()=>{const q=Math.round(+$('#eqQtd').value);
   if(!(q>=1))return msgEq('Diga quanto ouro levar.');if(q>save.cofre)return msgEq(`O cofre tem ${save.cofre} de ouro.`);
   if(!retira(q))return msgEq('A mochila está cheia.');persist();drawEquip();msgEq(`${q} de ouro na mochila: cai se você morrer.`)});
-for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
+for(const id of['#shopBack','#grimBack','#eqBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
 $('#cGrim').addEventListener('click',drawGrim);
-$('#toPick').addEventListener('click',showPick);
-$('#mQuem').addEventListener('click',showPick);
 $('#toRegras').addEventListener('click',showRegras);
-$('#regrasBack').addEventListener('click',showMenu);
-$('#cMenu').addEventListener('click',showMenu);
-$('#play').addEventListener('click',()=>save.classe?showCidade('chegada'):showPick());
+$('#regrasBack').addEventListener('click',showPick);
+$('#pickBack').addEventListener('click',showMenu);
+/* o Menu da cidade leva à escolha de personagem: só ali ele se troca */
+$('#cMenu').addEventListener('click',showPick);
+$('#play').addEventListener('click',showPick);
 $('#again').addEventListener('click',()=>start());
 $('#toMenu').addEventListener('click',()=>showCidade('portao'));
 

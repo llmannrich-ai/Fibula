@@ -142,6 +142,13 @@ Ilha mostra areia e grama com borda, e o caso `arte` cobre o desenho.
 
 ## Concluído
 
+- **2026-10-19 — Tela de entrada só com a conta (0.39.0)** *(pedido do
+  Leonardo; pilar 5)*. A primeira tela tem usuário, senha, Entrar, Criar conta
+  e "Jogar sem conta" (ou "Continuar", com sessão). A escolha de personagem é
+  a tela seguinte: tocar num personagem entra na cidade, cada um mostra o
+  preço da morte, e o rodapé tem Regras e Voltar. O Menu da cidade abre essa
+  escolha.
+
 - **2026-10-19 — Mapas vestidos (0.37.0)** *(pedido do Leonardo; pilar 2)*.
   Objetos sólidos por lugar (`mapa.objetos`: pilar, barril, caixote, rocha,
   sarcófago, gárgula, palmeira, cacto), que bloqueiam jogador, monstro e

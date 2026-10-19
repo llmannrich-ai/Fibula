@@ -18,6 +18,22 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 11:11 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** tela de entrada só com a conta (0.39.0), a pedido do Leonardo ("serve somente para login e criação de login; o personagem deve ser escolhido na tela seguinte"). A primeira tela (`#menu`) ficou com o título, usuário e senha, Entrar, Criar conta e o `#play`: "Jogar sem conta" (um link discreto) sem sessão, "Continuar" com ela. Saíram dela o personagem, o preço da morte e o rodapé. A escolha de personagem (`#pick`) virou a tela seguinte: tocar num personagem entra na cidade (`escolher()`, que só tira da sala e zera a incursão se a classe mudar), cada personagem mostra o preço da morte (`riscoCurto(c)`), os números da conta ganharam o nível, e o rodapé tem Regras e Voltar. O Menu da cidade abre a escolha de personagem.
+
+**Validação:** `node tools/testar.mjs` — 36/36. O harness ganhou `entrar()` (tela de entrada → escolha → cidade), que substituiu os 20 cliques diretos em `#play`; asserções novas: a tela de entrada só tem a conta, "Jogar sem conta" e "Continuar" conforme a sessão, o preço da morte no cartão do personagem, Regras e Voltar na escolha, e o Menu da cidade abrindo a escolha. Prints em 390×844.
+
+**Análise:** "Jogar sem conta" ficou porque jogar sem conta é regra do produto (save no aparelho); se o Leonardo quiser exigir conta, é mudança sensível (dados pessoais e testadores).
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Mapas de caça fixos".
+
+**Pendências e riscos:** depois de entrar ou criar conta, a tela mostra "Continuar" em vez de ir sozinha para a escolha de personagem, porque o save da nuvem chega depois (assíncrono); ir sozinho exigiria esperar a nuvem.
+
+**Próximo passo recomendado:** o Leonardo abrir no celular; depois, "Mapas de caça fixos" (`Agora`).
+
+---
+
 ## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala, com a masmorra
 
 **Item desenvolvido:** a pedido do Leonardo ("caso o anfitrião feche o servidor, o usuário mais antigo dentro do servidor passa a ser o servidor" e, depois, "o novo anfitrião recebe todos os dados do mapa e mantém o servidor com ele"), 0.38.0. `src/sala.js` separa o canal da sala (`SALA.id`, id de quem criou + contador) do anfitrião de agora (`SALA.anf`) e conta as trocas em `SALA.gen`. O anfitrião manda a **herança** a cada segundo (com alguém dentro; 5 s sem ninguém) e no `passa`: `heranca()`/`adota()` em `src/sim/incursao.js`, o estado inteiro da regra (monstros, jogadores com ficha e saco, projéteis, sacos no chão, salas, sorteio, fonte do campo de fluxo, sqm ocupados), ~20 KB. Quem assume adota a última herança e segue rodando; quem estava dentro continua (`G.convidado` cai e o laço passa a rodar `passo()` aqui). Sem `passa` (fechou o jogo, caiu a rede), a saída é vista pela presença do canal da sala ou por 12 s sem notícia (`sucede()`). Dois anfitriões: `gen` maior, empate pelo id menor (`cede()`). `src/sim/base.js` ganhou `sorteAgora()`/`poeSorte()` (mesma sequência do mulberry32); `buildFlow()` guarda a origem em `G.fsrc`. O lugar do anfitrião em `G.ps` deixou de ser sempre 0 (`meuI()`), e a poção do anfitrião é a de `G.p` (`src/controles.js`).
@@ -326,20 +342,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - O Gordon pede materiais pensando na Masmorra; a Ilha dá muita seda e a Cripta muita erva, o que barateia as encomendas.
 
 **Próximo passo recomendado:** o Leonardo jogar o Esgoto com um personagem novo e a Ilha com um de nível 8 e dizer se o perigo está certo; depois, Balanceamento dos mapas novos.
-
-## 2026-10-19 02:45 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** habilidades se aprendem com o Mestre de magias (0.21.0), decisão do Leonardo com três escolhas: quem já jogava mantém o que o nível liberou, a de nível 1 continua grátis e as runas continuam à venda. `preco` em cada habilidade do `content.json` (0 no nível 1; 100 a 3.500 até o nível 32); `ch().sabe` no save; `podeAprender()` e `aprende()` em `src/sim/progresso.js` (a aprendida vai para o espaço livre); subir de nível não ensina mais a habilidade com preço, o registro diz quem ensina e quanto custa; o Mestre ganhou a seção "Habilidades da sua classe" (`ensina: true` em `city.npcs`), e o Grimório mostra "no Mestre" e o preço. `confereFicha()` e o resultado da sala só aceitam habilidade sabida.
-
-**Validação:** `node tools/testar.mjs` — 31/31. No Node: personagem novo só sabe a de nível 1, aprender pede nível e ouro, vai para o espaço livre, save antigo (sem `sabe`) fica com tudo do nível, ficha de fora não usa habilidade que não sabe, e o conteúdo sem habilidade grátis no nível 1 ou sem quem ensine é recusado. Navegador: `lojas` compra a Golpe Brutal no Mestre; `nivel-na-incursao` reescrito (o nível 9 não traz mais a Onda de Fogo sozinha). Telas do Mestre e do Grimório conferidas em 390×844.
-
-**Análise:** a decisão muda o ritmo de quem começa agora: o personagem novo chega ao nível 4 sem a segunda habilidade até juntar 150 de ouro. Quem já tinha save não sente nada.
-
-**Roadmap:** item novo em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **Preços são chute** (tabela por nível: 3→100, 4→150, 9→500, 15→1.100, 22→2.000, 32→3.500). Concorrem com as melhorias do Mercador, a Forja e as provisões pelo mesmo cofre; medir com o agente de Balanceamento quanto ouro uma caçada típica traz em cada faixa de nível.
-- A morte não leva habilidade; perder o nível não existe, então o que se aprende nunca volta atrás.
-- O convidado da sala que aprende no meio da sala manda a ficha nova só na próxima entrada pela porta (é o fluxo da 0.19).
-
-**Próximo passo recomendado:** o Leonardo criar um personagem novo e jogar até o nível 4–5 para sentir se o ouro chega a tempo da segunda habilidade.
