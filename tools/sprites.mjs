@@ -78,7 +78,9 @@ const ARTE = {
   arvore: {i: 1507}, arvore2: {i: 1504},
   npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45}, npc_gordon: {o: 21},
   npc_quitandeira: {o: 17}, npc_boticaria: {o: 44}, npc_mago: {o: 10},
-  npc_vigia: {o: 20}, npc_capitao: {o: 36},
+  npc_capitao: {o: 36},
+  /* um lugar da cidade (lugar: true), não uma pessoa: a grade do esgoto */
+  npc_grade: {i: 999},
   /* cidade: chão da praça, ponte, terra da horta, o que cresce por cima
      (flores e horta, por onde se anda) e os objetos sólidos (OBJETOS em
      src/sim/dados.js, obj_<nome>) */

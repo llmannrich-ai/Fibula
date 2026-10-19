@@ -95,6 +95,13 @@ Para isso, sair cedo tem que ser viável e sair tarde tem que ser ganancioso.
 Se a estratégia ótima for sempre ficar até o último segundo, o arco morreu e o
 tempo virou só uma contagem.
 
+**Revisto em 19/10/2026, por decisão do Leonardo:** toda caçada agora é numa
+sala, e a masmorra da sala não tem relógio. O arco não vem mais do desabamento:
+vem do saco que cresce e da morte que leva tudo. O risco a vigiar é o que este
+pilar já previa: se ficar for sempre melhor que sair, a decisão de ir embora
+morre. Sessão curta continua sendo o alvo; quem garante isso agora é o
+balanceamento (o saco pesar, a profundidade apertar), não o tempo.
+
 Nada de mecânica que exija planejar a sessão: sem energia, sem vidas que
 recarregam, sem evento que só acontece às oito da noite. O jogador abre, joga uma
 incursão, fecha.

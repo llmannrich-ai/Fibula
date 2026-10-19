@@ -1,18 +1,18 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.24.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.24.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,equipar,desequipar} from './sim/progresso.js?v=0.24.0';
-import {G} from './sim/incursao.js?v=0.24.0';
-import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.24.0';
-import {temConta,mercado,cacaId} from './nuvem.js?v=0.24.0';
-import {erroFeira} from './telas.js?v=0.24.0';
-import {persist} from './salvar.js?v=0.24.0';
-import {C} from './sim/cidade.js?v=0.24.0';
-import {ART,icone} from './arte.js?v=0.24.0';
-import {retrato} from './desenho.js?v=0.24.0';
-import {rede} from './rede.js?v=0.24.0';
-import {$,app} from './dom.js?v=0.24.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.26.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.26.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat,equipar,desequipar} from './sim/progresso.js?v=0.26.0';
+import {G} from './sim/incursao.js?v=0.26.0';
+import {tiraDoSaco,poeNoSaco,vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.26.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.26.0';
+import {erroFeira} from './telas.js?v=0.26.0';
+import {persist} from './salvar.js?v=0.26.0';
+import {C} from './sim/cidade.js?v=0.26.0';
+import {ART,icone} from './arte.js?v=0.26.0';
+import {retrato} from './desenho.js?v=0.26.0';
+import {rede} from './rede.js?v=0.26.0';
+import {$,app} from './dom.js?v=0.26.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -74,7 +74,7 @@ export function hud(){
 /* ---------- HUD da cidade ----------
    Quem você é, o cofre, e o botão de falar quando há um NPC ao alcance. Ao
    chegar perto, o NPC diz a frase dele no registro, como no Tibia. */
-const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT')};
+const EC={cls:$('#cCls'),lvl:$('#cLvl'),cofre:$('#cCofre'),rede:$('#cRede'),falar:$('#bFalar'),quem:$('#falarT'),acao:$('#bFalar .nm')};
 let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
@@ -84,8 +84,10 @@ export function hudCidade(){
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
   if(!C.perto)return;
   const n=CITY.npcs[C.perto];
-  setT(EC.quem,n.nome);EC.falar.setAttribute('aria-label',`Falar com ${n.nome} (${n.casa}) — Enter`);
-  log(`${n.nome}: ${n.fala}`,'info');
+  /* um lugar (a grade do esgoto) não fala: o botão diz a ação dele */
+  const ac=n.acao||'Falar';setT(EC.acao,ac);setT(EC.quem,n.nome);
+  EC.falar.setAttribute('aria-label',n.lugar?`${ac}: ${n.nome} (${n.casa}) — Enter`:`${ac} com ${n.nome} (${n.casa}) — Enter`);
+  log(n.lugar?n.fala:`${n.nome}: ${n.fala}`,'info');
 }
 /* ao entrar na cidade o botão recomeça escondido */
 export const zeraCidade=()=>{pertoAntes=null;EC.falar.hidden=true};
@@ -159,16 +161,17 @@ export function desenhaMochila(){
   if(!selInfo)MO.sel=null;
   info(...(selInfo||[]));
   acoes(selInfo,caca,p);
-  /* na sala de caçar junto o saco é do anfitrião: vender daqui duplicaria a peça */
-  vendaDoSaco(caca&&!G.sala&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
+  /* o convidado da sala só vê o saco: quem o guarda é o anfitrião, e vender
+     daqui duplicaria a peça. Toda caçada é numa sala, e o anfitrião vende */
+  vendaDoSaco(caca&&!G.convidado&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
 }
 /* vestir e tirar sem ir ao Banco: um toque na peça, um botão grande (pilar 3).
    Na cidade a troca é com o cofre; na caçada, com o saco (vesteDoSaco), e a
-   peça vestida passa a não cair na morte. Na sala de caçar junto, não: quem
-   calcula a ficha é o anfitrião */
+   peça vestida passa a não cair na morte. O convidado da sala, não: quem
+   calcula a ficha dele é o anfitrião */
 function acoes(sel,caca,p){
   const el=$('#moAcoes');el.textContent='';
-  const pode=sel&&ITEMS[sel[0]].slot&&(!caca||(!G.sala&&!p.fora&&!G.over));
+  const pode=sel&&ITEMS[sel[0]].slot&&(!caca||(!G.convidado&&!p.fora&&!G.over));
   el.hidden=!pode;if(!pode)return;
   const [k,,vestida]=sel,it=ITEMS[k],sl=it.slot,atual=ch().equip[sl];
   const bt=(t,rot,fn)=>{const b=document.createElement('button');b.type='button';b.className='cta';b.textContent=t;b.setAttribute('aria-label',rot);

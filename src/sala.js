@@ -20,15 +20,15 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha. */
-import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.24.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.24.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.24.0';
-import {novaSemente} from './sim/base.js?v=0.24.0';
-import {drinkPot} from './sim/combate.js?v=0.24.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.24.0';
-import {rede,ID,anuncia} from './rede.js?v=0.24.0';
-import {persist} from './salvar.js?v=0.24.0';
-import {log} from './hud.js?v=0.24.0';
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.26.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.26.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.26.0';
+import {novaSemente} from './sim/base.js?v=0.26.0';
+import {drinkPot} from './sim/combate.js?v=0.26.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.26.0';
+import {rede,ID,anuncia} from './rede.js?v=0.26.0';
+import {persist} from './salvar.js?v=0.26.0';
+import {log} from './hud.js?v=0.26.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -58,7 +58,7 @@ function liga(){
   s.onclose=()=>{if(ws!==s)return;ws=null;caiu()};
   s.onerror=()=>{};
 }
-function caiu(){pronto=false;if(!SALA.papel){SALA.estado='fora';return}SALA.estado='sem rede';espera=Math.min(20,2**tenta++)}
+function caiu(){pronto=false;if(!SALA.papel){SALA.estado='fora';return}SALA.estado='sem rede';espera=Math.min(20,2**tenta++);SALA.aoMudar()}
 function solta(){
   if(ws){manda('phx_leave',{});try{ws.close()}catch(e){}}
   ws=null;pronto=false;pedindo=false;SALA.papel=null;SALA.id=null;SALA.caca=null;SALA.membros=[];SALA.estado='fora';IDX.clear();ENTS.length=0;avisa();
@@ -220,7 +220,7 @@ function recebe(d){
   const p=d.payload||{};
   if(expulso(d)){const s=ws;ws=null;caiu();try{s&&s.close()}catch(e){}return}
   if(d.event==='phx_reply'&&d.ref==='1'){
-    if(p.status!=='ok'){SALA.estado='sem rede';return}
+    if(p.status!=='ok'){SALA.estado='sem rede';SALA.aoMudar();return}
     pronto=true;SALA.estado='ligado';SALA.aoMudar();
     manda('presence',{type:'presence',event:'track',payload:{anf:SALA.papel==='anfitriao'}});
     if(SALA.papel==='convidado')bc('quero',{id:ID,ficha:minhaFicha()});else mandaMembros();

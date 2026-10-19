@@ -1641,7 +1641,7 @@
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, o Vigia do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador.",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
     "nome": "Cidade",
     "_chao": "Pecas de teste no chao da cidade (pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao). Nao tem origem no banco, entao nao entra na Feira. Para tirar, apague a lista.",
     "chao": [
@@ -1712,9 +1712,9 @@
       "A,,,.,.bc......wb.,,,,,,,,.,.kk.......kk.,~~,,,,N,,,,A",
       "A,,,.,............,,,,A,,,.,......T......,~~~~~~~~~~~~",
       "A,,,.,,,,,,,,,,,,,,,,,,,,,.,...c.....b...,~~~~~~~~~~~~",
-      "AAy,.,vvv,vvv,,A,,r,V,,,,,.,.k.........k.,,,,,,,,,,,,A",
+      "AAy,.,vvv,vvv,,A,,r,,,,,,,.,.k.........k.,,,,,,,,,,,,A",
       "AA,,.,,,,p,,,,,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,,,,,,,A",
-      "A,,,..................................,,,,,,,,,,,,,,,A",
+      "A,,,................V.................,,,,,,,,,,,,,,,A",
       "A,,,,,,,,,,,,,,,,,,,,,,,,,.,##_######,,,,,,,,,,,,,,,,A",
       "A,y,,,,,,r,,,,y,,,,r,,,A,,.,#____F_n#,,,,,,,,,,,,,,,,A",
       "A,,,,,,,,,,,,,,,,,,,,,,,,,.,#w______#,,,,,,,,,,,,,,,,A",
@@ -1794,12 +1794,14 @@
         ],
         "ensina": true
       },
-      "vigia": {
+      "grade": {
         "letra": "V",
-        "nome": "Vigia do esgoto",
-        "casa": "Grade do esgoto",
+        "nome": "Grade do esgoto",
+        "casa": "Rua do mercado",
         "abre": "cacadas",
-        "fala": "A grade dá nas galerias. Rato e barata, coisa de iniciante. Só não acorde a rainha lá do fundo."
+        "lugar": true,
+        "acao": "Descer",
+        "fala": "Uma grade de ferro no chão da rua, e o cheiro que sobe dela. Lá embaixo, ratos e baratas, e dizem que uma centopeia do tamanho de um homem."
       },
       "capitao": {
         "letra": "N",
@@ -1816,8 +1818,8 @@
       "nome": "Esgoto",
       "desc": "Galerias úmidas sob a cidade. Morcegos e ratos perto da grade, baratas e lesmas lá embaixo, e a Centopeia-rainha no ninho.",
       "nivel": 1,
-      "npc": "vigia",
-      "entrada": "Você desceu pela grade do esgoto. O portal abre em 1:30.",
+      "npc": "grade",
+      "entrada": "Você desceu pela grade do esgoto.",
       "bands": [
         {
           "untilDepth": 0.4,
@@ -1891,7 +1893,7 @@
       "desc": "O navio do porto leva até uma ilha de areia e pedra. Vespas e lagartas na praia, leões e trolls no interior, e um dragão dorme na enseada.",
       "nivel": 8,
       "npc": "capitao",
-      "entrada": "O navio deixou você na praia da ilha. O portal de volta abre em 1:30.",
+      "entrada": "O navio deixou você na praia da ilha.",
       "bands": [
         {
           "untilDepth": 0.35,
@@ -1960,7 +1962,7 @@
       "desc": "Túmulos debaixo da colina, que o Guia só indica para quem já sabe lutar. Esqueletos e fantasmas na entrada, múmias e necromantes no fundo, e a Senhora das Sombras.",
       "nivel": 15,
       "npc": "guia",
-      "entrada": "Você desceu à cripta. O portal abre em 1:30.",
+      "entrada": "Você desceu à cripta.",
       "bands": [
         {
           "untilDepth": 0.35,

@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.24.0';
-import {CITY,CLASSES,ITEMS,HUNTS} from './sim/dados.js?v=0.24.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.24.0';
-import {G,solid} from './sim/incursao.js?v=0.24.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.24.0';
-import {bf} from './sim/combate.js?v=0.24.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.24.0';
-import {$,app,RM} from './dom.js?v=0.24.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.26.0';
+import {CITY,CLASSES,ITEMS,HUNTS} from './sim/dados.js?v=0.26.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.26.0';
+import {G,solid} from './sim/incursao.js?v=0.26.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.26.0';
+import {bf} from './sim/combate.js?v=0.26.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.26.0';
+import {$,app,RM} from './dom.js?v=0.26.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
@@ -471,6 +471,10 @@ function drawNpc(n,p){
   /* o NPC vira para quem chega perto, como no Tibia */
   const perto=hyp(p.x-n.x,p.y-n.y)<T*3,face=perto?Math.atan2(p.y-n.y,p.x-n.x):Math.PI/2;
   if(C.perto===n.k){ctx.strokeStyle='rgba(232,194,90,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(n.x,n.y+10,15,6,0,0,TAU);ctx.stroke()}
+  /* um lugar (a grade do esgoto) é um item deitado no chão, não uma pessoa */
+  if(n.n.lugar){if(ART.ok&&spr('npc_'+n.k,0,0,n.x,n.y))return;
+    ctx.fillStyle='#2a2a2e';circle(ctx,n.x,n.y,11);ctx.strokeStyle='#8a8a90';ctx.lineWidth=2;ctx.beginPath();ctx.arc(n.x,n.y,11,0,TAU);
+    for(let k=-1;k<=1;k++){ctx.moveTo(n.x+k*6,n.y-10);ctx.lineTo(n.x+k*6,n.y+10)}ctx.stroke();return}
   if(ART.ok&&sprCriatura('npc_'+n.k,face,false,0,false,n.x,n.y))return;
   const x=n.x,y=n.y;
   ctx.fillStyle='rgba(0,0,0,.45)';ctx.beginPath();ctx.ellipse(x,y+11,12,4,0,0,TAU);ctx.fill();
@@ -521,7 +525,7 @@ export function renderCidade(){
   }
   /* nomes por cima de tudo, como no mapa da masmorra */
   ctx.font=FONTE_MAPA;
-  for(const n of C.npcs)outText(CITY.npcs[n.k].nome,n.x-(A?desl('npc_'+n.k):0),n.y-(A?36:30),'#8fd0ff');
+  for(const n of C.npcs)outText(n.n.nome,n.x-(A&&!n.n.lugar?desl('npc_'+n.k):0),n.y-(n.n.lugar?20:A?36:30),'#8fd0ff');
   C.outros.forEach(nomeDoOutro);
   outText('Você',p.x-(A?desl('cls_'+save.classe):0),p.y-(A?36:30),'#00c000');
 }

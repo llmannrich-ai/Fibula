@@ -233,7 +233,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
   com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
-  cidade → quem leva à caçada (o Guia, o Vigia do esgoto, o Capitão do porto,
+  cidade → quem leva à caçada (o Guia, a Grade do esgoto — um lugar no chão
+  da rua, não uma pessoa: `lugar: true` no NPC —, o Capitão do porto,
   cada um com os mapas dele, `showHunts(npc)`) → incursão → tela final → a
   cidade, ao lado de quem levou; as telas abertas na
   cidade voltam para ela (`volta()`)
@@ -523,6 +524,11 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
 co-op na masmorra **sem servidor próprio**. Em quem leva à caçada, qualquer um cria
 uma sala; quem está na cidade a vê e entra (até 4).
+**Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): o lugar de
+caça do Guia cria uma sala e entra pela porta, e sozinho é uma sala de um. A
+incursão solo com relógio (`start()` sem `prepara`) continua no código só para
+os testes e a simulação; o jogador não a alcança. O anfitrião entra pela porta
+mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
 
 - **A sala é de um mapa de caça** (`SALA.caca`), escolhido ao criar ("criar
   sala" na linha do lugar). Vai no anúncio da cidade (`rede.sala.h`), na lista

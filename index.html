@@ -134,6 +134,7 @@ h2.lost{color:var(--hp)}
 .cta{font:700 15px var(--f-body);color:var(--torch);padding:13px 14px;text-shadow:1px 1px 0 #000}
 .cta:focus-visible,.ghost:focus-visible{outline:2px solid var(--bone);outline-offset:3px}
 .ghost{font:700 13px var(--f-body);color:var(--bone);padding:11px 12px;text-shadow:1px 1px 0 #000}
+.ghost:disabled{color:#7d786d;cursor:default;background:#34322d}
 .keys{margin:0;color:var(--muted);font-size:11px;line-height:1.5}
 .keys b{color:var(--bone);font-weight:600}
 .ledger{display:grid;grid-template-columns:1fr auto;gap:7px 12px;margin:0;font-size:13px;font-variant-numeric:tabular-nums}
@@ -595,7 +596,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.24.0"></script>
+<script type="module" src="src/main.js?v=0.26.0"></script>
 
 </body>
 </html>
