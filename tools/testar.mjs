@@ -1036,6 +1036,8 @@ const CASOS = [
     ok('a tela inicial diz o personagem e o nível', txt('#mCls')==='Feiticeiro'&&txt('#sLvl')==='1', txt('#mQuem'));
     ok('o cofre semeado aparece na tela inicial', txt('#mCofre')==='cofre: 1000', txt('#mCofre'));
     ok('a tela inicial é curta: sem grade de números nem instruções', !$('#menu .stats')&&!$('#menu ol')&&visivel('#play')&&visivel('#toRegras'));
+    ok('o Grimório não está na tela inicial, só na cidade', !$('#toGrim')&&!!$('#cGrim'));
+    ok('trocar de personagem não existe na cidade, só na tela inicial', !$('#cPick')&&!!$('#toPick'));
     var r0=$('#play').getBoundingClientRect();
     ok('Jogar aparece sem rolar a tela', r0.bottom<=innerHeight&&r0.top>=0, r0.top+'..'+r0.bottom+' de '+innerHeight);
     /* as regras: os números vêm do content.json, a versão e os créditos estão nelas */
@@ -1628,10 +1630,11 @@ const CASOS = [
     ok('tocar no espaço devolve o amuleto ao cofre', sv().chars.feiticeiro.equip.amuleto===null&&sv().itens.amuleto===1, JSON.stringify(sv().chars.feiticeiro.equip));
     clica(bt('amuleto',0));
     clica($('#eqBack'));
-    clica($('#cPick'));
+    clica($('#cMenu'));clica($('#toPick'));
     var cav=todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Cavaleiro'})[0];
     clica(cav);
-    ok('escolher personagem na cidade volta para a cidade', $('#app').classList.contains('cidade'));
+    ok('o personagem se troca pela tela inicial, e a escolha volta a ela', visivel('#menu')&&txt('#mCls')==='Cavaleiro', txt('#mCls'));
+    clica($('#play'));
     Tl.abreNpc('banqueiro');
     ok('o Cavaleiro tem os próprios espaços, vazios', todos('#eqSlots button.full').length===0, todos('#eqSlots button.full').length);
     ok('o cofre é o mesmo da conta', !!linha('espada')&&txt('#eqGold')==='190', todos('#eqList li.sp').length+' / '+txt('#eqGold'));
@@ -1639,7 +1642,7 @@ const CASOS = [
     ok('a espada foi para o Cavaleiro', sv().chars.cavaleiro.equip.arma==='espada', JSON.stringify(sv().chars.cavaleiro.equip));
     ok('o cofre ficou vazio e diz isso', todos('#eqList li.vazio').length===1, todos('#eqList li').length);
     clica($('#eqBack'));
-    clica($('#cPick'));
+    clica($('#cMenu'));clica($('#toPick'));
     var fei=todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Feiticeiro'})[0];
     clica(fei);
     ok('o Feiticeiro manteve o que vestia', sv().chars.feiticeiro.equip.arma==='machado'&&sv().chars.feiticeiro.equip.amuleto==='amuleto', JSON.stringify(sv().chars.feiticeiro.equip));
@@ -2146,7 +2149,7 @@ const CASOS = [
     ok('os quatro personagens coexistem no save', s&&Object.keys(s.chars).sort().join(',')==='cacador,cavaleiro,druida,feiticeiro', s&&Object.keys(s.chars).sort().join(','));
     ok('cada personagem guarda os próprios espaços', s&&Object.keys(s.chars).every(function(k){return Array.isArray(s.chars[k].slots)&&s.chars[k].slots.length===4}), s&&JSON.stringify(s.chars));
     clica(cards().filter(function(b){return b.querySelector('h3').textContent==='Cavaleiro'})[0]);
-    clica($('#toGrim'));
+    clica($('#play'));clica($('#cGrim'));
     ok('o grimório abriu', visivel('#grim'));
     ok('o cabeçalho do grimório no nível 1', txt('#grimEye')==='Cavaleiro · Nível 1 · 2 espaços', txt('#grimEye'));
     var slots=todos('#grimSlots button');
@@ -2174,7 +2177,7 @@ const CASOS = [
     ok('o acampamento abriu com o Caçador', visivel('#menu'));
     ok('o nível semeado aparece no menu', txt('#sLvl')==='18', txt('#sLvl'));
     ok('quatro espaços no nível 18', txt('#sSlots')==='4', txt('#sSlots'));
-    clica($('#toGrim'));
+    clica($('#play'));clica($('#cGrim'));
     ok('o cabeçalho do grimório', txt('#grimEye')==='Caçador · Nível 18 · 4 espaços', txt('#grimEye'));
     ok('as três barras de progressão estão desenhadas', todos('#grimProg .pr').length===3, todos('#grimProg .pr').length);
     var rotulos=todos('#grimProg .pr b').map(function(b){return b.textContent});
@@ -2201,7 +2204,7 @@ const CASOS = [
     ok('guardar esvaziou um espaço', slots().filter(function(b){return b.className==='full'}).length===3, slots().map(function(b){return b.textContent}).join(' | '));
     ok('esvaziar foi persistido', sv()&&sv().chars.cacador.slots.filter(Boolean).length===3, sv()&&JSON.stringify(sv().chars.cacador.slots));
     clica($('#grimBack'));
-    ok('voltou ao acampamento', visivel('#menu'));
+    ok('o Grimório volta à cidade', $('#app').classList.contains('cidade')&&!visivel('#grim'));
     cacar();
     await quadros(3);
     var visiveis=[0,1,2,3].filter(function(i){return !$('#s'+i).hidden});

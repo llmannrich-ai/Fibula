@@ -111,6 +111,11 @@ recomendado acima de 15, e o caso da cidade entra nele.
 
 ## Concluído
 
+- **2026-10-19 — Grimório só na cidade, troca de personagem só na tela inicial (0.34.0)**
+  *(pedido do Leonardo; pilar 5)*. O rodapé da tela inicial ficou Regras ·
+  Personagens; o botão Personagens saiu da cidade. Os casos `equipamento`,
+  `classes` e `grimorio` seguem o caminho novo.
+
 - **2026-10-19 — Tela inicial curta, com Regras e créditos (0.31.0)**
   *(pedido do Leonardo: minimalista, botão de regras, login fácil; pilares 4
   e 5; fecha o item "Tela de créditos" da F0)*. A tela inicial tem o

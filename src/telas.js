@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.33.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.33.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.33.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.33.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.33.0';
-import {persist,saveFalhou} from './salvar.js?v=0.33.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.33.0';
-import {rede,SALAS} from './rede.js?v=0.33.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.33.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.33.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.33.0';
-import {icone} from './arte.js?v=0.33.0';
-import {$,app} from './dom.js?v=0.33.0';
-import {retrato} from './desenho.js?v=0.33.0';
+import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.34.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.34.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.34.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.34.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.34.0';
+import {persist,saveFalhou} from './salvar.js?v=0.34.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.34.0';
+import {rede,SALAS} from './rede.js?v=0.34.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.34.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.34.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.34.0';
+import {icone} from './arte.js?v=0.34.0';
+import {$,app} from './dom.js?v=0.34.0';
+import {retrato} from './desenho.js?v=0.34.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -42,7 +42,7 @@ const numeros=()=>{$('#sCofre').textContent=save.cofre;$('#sBest').textContent=s
 export function showMenu(){
   V.cidade=false;
   const tem=!!save.classe;
-  $('#mLede').hidden=tem;$('#mQuem').hidden=$('#mRisco').hidden=$('#toPick').hidden=$('#toGrim').hidden=!tem;
+  $('#mLede').hidden=tem;$('#mQuem').hidden=$('#mRisco').hidden=$('#toPick').hidden=!tem;
   const play=$('#play');if(!play.disabled)play.textContent=tem?'Jogar':'Criar personagem';
   if(tem){const c=ch();$('#mCls').textContent=KL().nome;$('#sLvl').textContent=c.lvl;
     $('#mCofre').textContent=`cofre: ${save.cofre}`;$('#mRisco').textContent=riscoCurto()}
@@ -742,13 +742,11 @@ $('#eqRetira').addEventListener('click',()=>{const q=Math.round(+$('#eqQtd').val
   if(!retira(q))return msgEq('A mochila está cheia.');persist();drawEquip();msgEq(`${q} de ouro na mochila: cai se você morrer.`)});
 for(const id of['#shopBack','#grimBack','#eqBack','#pickBack','#huntBack'])$(id).addEventListener('click',volta);
 $('#eqBoneco').addEventListener('click',()=>{eqDir=(eqDir+1)%4;desenhaBoneco()});
-$('#toGrim').addEventListener('click',drawGrim);
 $('#cGrim').addEventListener('click',drawGrim);
 $('#toPick').addEventListener('click',showPick);
 $('#mQuem').addEventListener('click',showPick);
 $('#toRegras').addEventListener('click',showRegras);
 $('#regrasBack').addEventListener('click',showMenu);
-$('#cPick').addEventListener('click',showPick);
 $('#cMenu').addEventListener('click',showMenu);
 $('#play').addEventListener('click',()=>save.classe?showCidade('chegada'):showPick());
 $('#again').addEventListener('click',()=>start());

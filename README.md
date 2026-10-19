@@ -48,7 +48,7 @@ Cada classe aprende **seis habilidades**, mas você não leva todas:
 | 3 | 8 |
 | 4 | 18 |
 
-Monte a mão no **Grimório**, no menu. Subir de nível não é só um número maior: é
+Monte a mão no **Grimório**, na cidade. Subir de nível não é só um número maior: é
 uma decisão sobre o que trocar. Cada grupo (ataque, cura, apoio) tem uma recarga
 compartilhada, então encadear três ataques exige ordem, não botão rápido.
 
@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.34.0 (19/10/2026) | O Grimório saiu da tela inicial e fica na cidade, no botão de sempre. Trocar de personagem só pela tela inicial: o botão Personagens saiu da cidade |
 | 0.33.0 (19/10/2026) | Armas de quem começa: numa casa vazia ao norte da praça, uma faca e uma espada de madeira ficam no chão. Pise para pegar: vão para a mochila, e outra aparece no mesmo lugar dois minutos depois. Não valem ouro no Banco nem entram na Feira |
 | 0.32.0 (19/10/2026) | O cofre do Banco guarda tudo como item: guardar a mochila não transforma mais gema e coroa em ouro nem manda material para um depósito escondido. O Banqueiro lista o cofre inteiro (peças, tesouros e materiais) e cada item pode voltar à mochila; tesouro se vende no Banco, material continua com o Gordon, que vê o que está no cofre |
 | 0.31.0 (19/10/2026) | Tela inicial nova: o personagem, o preço da morte em uma linha, Jogar e a conta, tudo sem rolar. As regras e os créditos da arte foram para o botão **Regras**; os números da conta, para Personagens. Quem ainda não tem personagem vê o login antes de criar um |
