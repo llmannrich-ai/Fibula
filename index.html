@@ -212,6 +212,10 @@ h2.lost{color:var(--hp)}
 .slots.eqs button{min-height:76px;justify-items:center}
 .slots.eqs button.full{box-shadow:inset 0 0 0 2px var(--torch)}
 .slots.eqs .ico{display:block}
+.boneco{display:block;margin:10px auto 8px;padding:0;background:radial-gradient(ellipse 34% 9% at 50% 88%,rgba(0,0,0,.45),transparent),#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);cursor:pointer}
+.boneco[hidden]{display:none}
+.boneco canvas{display:block;width:128px;height:128px;image-rendering:pixelated}
+.boneco:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
 .slots.eqs em{font:normal 9px/1.2 var(--f-body);color:var(--loot)}
 .eqtot{margin:0;font:11px/1.4 var(--f-body);color:var(--muted);text-align:center}
 .sub{margin:4px 0 0;font:700 12px var(--f-body);color:var(--bone)}
@@ -237,6 +241,24 @@ h2.lost{color:var(--hp)}
 #bFalar .ct{font-size:10px;color:var(--bone);text-wrap:balance;padding:0 4px}
 #huntList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
 #huntList .sp{border-left-color:var(--torch)}
+#mktItens,#mktMinhas,.livro ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+#mktItens .sp{border-left-color:var(--torch)} #mktItens .sp.r1{border-left-color:var(--rare)} #mktItens .sp.r2{border-left-color:var(--epic)}
+#mktMinhas .sp{border-left-color:var(--muted)} #mktMinhas .vazio{font:11px/1.4 var(--f-body);color:var(--muted);padding:9px 11px;background:#1c1b18;border:1px solid #000}
+.mmsg{margin:0;min-height:1.4em;font:12px/1.45 var(--f-body);color:var(--bone)} .mmsg.ruim{color:var(--warn)}
+.mpHd{display:flex;gap:10px;align-items:center} .mpHd h3{margin:0;font:700 14px var(--f-body);color:var(--bone)} .mpHd p{margin:2px 0 0;font:11px/1.35 var(--f-body);color:var(--muted)}
+.livro{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.livro h4{margin:0 0 4px;font:700 11px var(--f-body);color:var(--muted)}
+.livro button{width:100%;display:flex;justify-content:space-between;gap:6px;font:12px var(--f-body);font-variant-numeric:tabular-nums;color:var(--bone);background:#1c1b18;border:1px solid #000;padding:9px 8px;cursor:pointer}
+.livro button b{color:var(--torch)} .livro .nada{font:11px var(--f-body);color:var(--muted);padding:6px 2px}
+.livro button:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+.lado button[aria-pressed="true"]{color:var(--torch);border-color:var(--lo) var(--hi) var(--hi) var(--lo);background:linear-gradient(#45423c,#5a5650)}
+.campo{display:grid;gap:4px} .campo label{font:700 11px var(--f-body);color:var(--muted)}
+.passo{display:grid;grid-template-columns:52px 1fr 52px;gap:6px}
+.passo input{min-width:0;text-align:center;font:700 16px var(--f-body);background:#151412;color:var(--bone);border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);padding:9px}
+.passo input:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
+#mktLista,#mktPeca{display:grid;gap:10px} #mktLista[hidden],#mktPeca[hidden]{display:none} #mktPeca .cta,#mktPeca .ghost{width:100%}
+#mkt.peca .lede{display:none}
+.mpRes{margin:0;font:12px/1.45 var(--f-body);color:var(--muted)}
 #huntList .sp .meta.alto{color:var(--warn)}
 /* Mochila: janela sobre o jogo, que não pausa. Fica entre o HUD de cima e os botões de baixo, e fora
    dela o toque continua sendo joystick: dá para fugir com ela aberta. */
@@ -417,11 +439,41 @@ h2.lost{color:var(--hp)}
       <h2>Banco</h2>
       <p class="lede">O cofre é da conta: o que está nele serve a qualquer personagem. O que este personagem veste é só dele e não cai na morte. Toque num espaço para devolver a peça ao cofre.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
+      <button type="button" class="boneco" id="eqBoneco" aria-label="Girar o personagem para ver o que ele veste" hidden><canvas width="256" height="256"></canvas></button>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
       <h3 class="sub">Peças no cofre</h3>
       <ul id="eqList"></ul>
       <button class="ghost voltar" id="eqBack">Voltar ao acampamento</button>
+    </div>
+  </div>
+
+  <div class="screen" id="mkt" hidden>
+    <div class="panel">
+      <p class="eyebrow">Mercado entre jogadores</p>
+      <h2>Feira</h2>
+      <p class="lede">Diga o preço por peça. Se alguém já pede ou oferece esse preço, o negócio fecha na hora; senão a oferta fica no livro até alguém aceitar ou você cancelar. O que você anuncia sai do cofre enquanto a oferta existir, e a venda paga <span id="mktTaxa">2</span>% de taxa.</p>
+      <div class="vault"><span>Ouro no cofre</span><b id="mktGold">0</b></div>
+      <p class="mmsg" id="mktMsg" role="status"></p>
+      <div id="mktLista">
+        <ul id="mktItens"></ul>
+        <h3 class="sub">Suas ofertas</h3>
+        <ul id="mktMinhas"></ul>
+      </div>
+      <div id="mktPeca" hidden>
+        <div class="mpHd"><span class="ico" id="mpIco" aria-hidden="true"></span><div><h3 id="mpNome"></h3><p id="mpInfo"></p></div></div>
+        <div class="livro">
+          <div><h4>Vendem por</h4><ul id="mpVenda"></ul></div>
+          <div><h4>Compram por</h4><ul id="mpCompra"></ul></div>
+        </div>
+        <div class="row2 lado" role="group" aria-label="Lado da oferta"><button class="ghost" type="button" id="mpLadoC" aria-pressed="false">Comprar</button><button class="ghost" type="button" id="mpLadoV" aria-pressed="true">Vender</button></div>
+        <div class="campo"><label for="mpPreco">Preço por peça</label><div class="passo"><button class="ghost" type="button" id="mpPrecoMenos" aria-label="Baixar o preço">−</button><input id="mpPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1"><button class="ghost" type="button" id="mpPrecoMais" aria-label="Subir o preço">+</button></div></div>
+        <div class="campo"><label for="mpQtd">Quantidade</label><div class="passo"><button class="ghost" type="button" id="mpQtdMenos" aria-label="Uma peça a menos">−</button><input id="mpQtd" type="number" inputmode="numeric" min="1" max="100" step="1"><button class="ghost" type="button" id="mpQtdMais" aria-label="Uma peça a mais">+</button></div></div>
+        <p class="mpRes" id="mpRes"></p>
+        <button class="cta" type="button" id="mpOk">Anunciar</button>
+        <button class="ghost" type="button" id="mpVolta">Outras peças</button>
+      </div>
+      <button class="ghost voltar" id="mktBack">Voltar à cidade</button>
     </div>
   </div>
 
@@ -459,7 +511,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.11.0"></script>
+<script type="module" src="src/main.js?v=0.13.0"></script>
 
 </body>
 </html>

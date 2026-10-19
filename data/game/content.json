@@ -6,7 +6,8 @@
     "tierReference": "O campo tier de cada inimigo aponta a banda equivalente em ../mechanics/tiers.json (por HP).",
     "lootFormat": "[chaveDoItem, probabilidade, quantidadeMin, quantidadeMax]",
     "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)",
-    "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)"
+    "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
+    "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)"
   },
   "classes": {
     "feiticeiro": {
@@ -774,6 +775,9 @@
       "bonus": {
         "vida": 15,
         "mana": 15
+      },
+      "veste": {
+        "cor": "#3fc7a8"
       }
     },
     "gema": {
@@ -793,6 +797,9 @@
       "slot": "armadura",
       "bonus": {
         "red": 0.04
+      },
+      "veste": {
+        "cor": "#7a4a22"
       }
     },
     "cota": {
@@ -802,6 +809,10 @@
       "slot": "armadura",
       "bonus": {
         "red": 0.08
+      },
+      "veste": {
+        "cor": "#949daa",
+        "malha": true
       }
     }
   },
@@ -1021,7 +1032,7 @@
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) ou cacadas (mapas de caca). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) cacadas (mapas de caca) ou mercado (a feira entre jogadores, no banco da nuvem). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
     "nome": "Cidade",
     "mapa": [
       "AAAAAAAAAAAAAAAAAAAAAAAA",
@@ -1033,7 +1044,7 @@
       "A,###_###,,,,,,###_###,A",
       "A,,,,.,,,,,,,,,,,,.,,,,A",
       "A,,,,..............,,,,A",
-      "A,A,,.,,,,,~~,,,,,.,,A,A",
+      "A,A,,.,,,,,~~,T,,,.,,A,A",
       "A,,,,.,,,,,~~,,,,,.,,,,A",
       "A,,,,......@.......,,,,A",
       "A,,,,,,,,,,.,,,,,,,,,,,A",
@@ -1063,6 +1074,13 @@
         "casa": "Portão da cidade",
         "abre": "cacadas",
         "fala": "Escolha onde caçar. O portal abre em 1:30."
+      },
+      "corretor": {
+        "letra": "T",
+        "nome": "Corretor",
+        "casa": "Feira",
+        "abre": "mercado",
+        "fala": "Aqui se compra e se vende entre jogadores. Diga o preço; se alguém aceitar, o negócio fecha na hora."
       }
     }
   },
