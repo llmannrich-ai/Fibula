@@ -2,18 +2,18 @@
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
    nada daqui direto: o laço pede leEntrada() e passa o resultado a update(),
    ou a updateCidade() quando se anda na cidade. */
-import {hyp} from './sim/base.js?v=0.37.0';
-import {G} from './sim/incursao.js?v=0.37.0';
-import {drinkPot,comer,formaMira} from './sim/combate.js?v=0.37.0';
-import {SPELLS} from './sim/dados.js?v=0.37.0';
-import {pocao,comida} from './sala.js?v=0.37.0';
-import {VOZ,ligaVoz,fala} from './voz.js?v=0.37.0';
+import {hyp} from './sim/base.js?v=0.41.0';
+import {G} from './sim/incursao.js?v=0.41.0';
+import {drinkPot,comer,formaMira} from './sim/combate.js?v=0.41.0';
+import {SPELLS} from './sim/dados.js?v=0.41.0';
+import {pocao,comida} from './sala.js?v=0.41.0';
+import {VOZ,ligaVoz,fala} from './voz.js?v=0.41.0';
 /* na sala, o convidado pede a poção ao anfitrião, que é quem a bebe */
-const bebe=()=>{if(G&&G.convidado)pocao();else drinkPot()};
-const come=()=>{if(G&&G.convidado)comida();else comer()};
-import {W,H,MIRA} from './desenho.js?v=0.37.0';
-import {E} from './hud.js?v=0.37.0';
-import {$,app} from './dom.js?v=0.37.0';
+const bebe=()=>{if(G&&G.convidado)pocao();else drinkPot(G&&G.p)};
+const come=()=>{if(G&&G.convidado)comida();else comer(G&&G.p)};
+import {W,H,MIRA} from './desenho.js?v=0.41.0';
+import {E} from './hud.js?v=0.41.0';
+import {$,app} from './dom.js?v=0.41.0';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++){held[i]=false;tiroAte[i]=0}MIRA.i=-1};

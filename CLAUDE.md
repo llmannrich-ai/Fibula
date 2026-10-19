@@ -98,9 +98,13 @@ placar.
 - **Regra:** cada lugar de caça tem mapa, spawn e chefe fixos, iguais em toda
   caçada e para todo jogador. Lugar novo tem nome, nível recomendado e um jeito
   de chegar. Nada de "fase 3".
-- **Estado hoje:** **não cumprido.** A sala sorteia uma semente nova a cada
-  caçada (`novaSemente()` em `src/sala.js`), então o mapa muda sempre. Item do
-  `ROADMAP.md`.
+- **Estado hoje (0.41.0):** cumprido na regra. Cada lugar tem o mapa fixo em
+  `hunts.<lugar>.mapa` (os itens do OTSP de cada sqm, a entrada e um monstro
+  por ponto de spawn), igual em toda caçada; a semente só sorteia o que
+  acontece na caçada. O harness confere que outra semente dá o mesmo mapa e os
+  mesmos monstros nos mesmos sqm. Os quatro mapas de hoje são **rascunhos**
+  gerados; desenhá-los no Remere's Map Editor ([docs/rme.md](docs/rme.md)) é
+  item do `ROADMAP.md`.
 
 #### Pilar 3 — Evoluir é lento e é seu
 
@@ -140,26 +144,28 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   vigor, mas tira peso da morte. Está na Parte 6 como pendência **sensível**:
   nenhum agente muda isso sem ele.
 
-#### Pilar 5 — Uma mão, e pode parar a qualquer hora
+#### Pilar 5 — Duas mãos, e pode parar a qualquer hora
 
 O jogo nasce para o toque. O teste é brutal e simples: **dá para jogar bem, em
-pé, no ônibus, com uma mão?** E, quando o ônibus chega, **dá para parar sem
-perder nada que a regra não diga?**
+pé, no ônibus, com o celular nas duas mãos** — o polegar esquerdo anda, o
+direito mira? E, quando o ônibus chega, **dá para parar sem perder nada que a
+regra não diga?** (Até 19/10/2026 era "com uma mão"; o Leonardo trocou por
+duas ao aprovar a mira manual: o jogo sempre se joga com duas.)
 
-- **Regra:** alvo escolhido pelo jogo, não apontado pelo jogador. Poucos
-  botões, grandes (≥ 48 px), na zona do polegar. Toda tela funciona em 360×640
+- **Regra:** o alvo é apontado pelo jogador, como a direção de andar: o botão
+  da habilidade é um joystick (apertar mostra a mira, arrastar escolhe a
+  direção, soltar lança; tocar lança para onde se olha), nada procura o
+  monstro sozinho e o que sai pode errar, gastando mana e recarga. Poucos
+  botões, grandes (≥ 48 px), na zona dos polegares: andar à esquerda,
+  habilidades à direita. Toda tela funciona em 360×640
   retrato. Nada de arrastar e soltar em inventário minúsculo, menu com seis
   níveis ou efeito de passar o mouse; o teclado existe só para desenvolver.
   Sempre há uma saída segura perto: padrão de **60 s** de qualquer ponto de um
   lugar de caça até uma saída (pendência P8 da Parte 6). Sem energia, sem
   vidas que recarregam, sem evento com hora marcada. Tempo morto — andar longe
   à toa na cidade, esperar sem nada a decidir — é defeito.
-- **Em teste (0.34.0, pedido do Leonardo em 19/10/2026):** a mira manual. O
-  botão da habilidade é um joystick (apertar mira, arrastar escolhe a direção,
-  soltar lança) e nada procura o monstro mais perto: o que sai pode errar.
-  Contraria a frase "alvo escolhido pelo jogo" desta regra, que fica até o
-  Leonardo decidir depois de jogar (pendência P10 da Parte 6).
-- **Estado hoje:** controle e telas cumprem. A única saída é a porta na sala de
+- **Estado hoje:** controle e telas cumprem; a mira manual está no ar desde a
+  0.34.0. A única saída é a porta na sala de
   entrada; o mapa de caça tem 64×64 sqm, então do fundo até a porta pode levar
   mais de 60 s.
 
@@ -219,7 +225,7 @@ Cinco perguntas, nesta ordem. Reprovou em uma, está fora.
 1. Isso existiria num mundo que não sabe que você está jogando?
 2. Qual pilar isso serve? Se nenhum, está fora, mesmo que seja boa.
 3. Bate em algum não-objetivo? Se sim, está fora, mesmo que seja ótima.
-4. Dá para fazer com uma mão, em pé, no ônibus?
+4. Dá para fazer com as duas mãos no celular, em pé, no ônibus?
 5. Dá para parar no meio sem perder nada que a regra não diga?
 
 Se a ideia for boa e o pilar parecer errado, diga isso numa issue
@@ -454,7 +460,7 @@ confundidas com precedente:
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~510 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~780 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão) | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -538,16 +544,13 @@ principal, o markup das telas e do HUD, e a linha que carrega
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
   `soProv()`); a **comida** (`ehComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
   `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`, `pegaPraMochila()`)
-- `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
-  que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
-  sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, **objetos**
-  (`objetos()`: os sólidos do lugar, de `mapa.objetos` — pilar, rocha,
-  sarcófago, palmeira —, postos com um hash da semente e não com o sorteio da
-  regra, e recusados se fecharem caminho; ficam em `g` com o valor 2, sólido
-  com chão debaixo, e em `obj`, o número do objeto mais 1) e `pecas()` (qual
-  peça de parede cada bloco de valor 1 recebe; a cidade usa com a grade dela).
-  O plano do que vem depois (mapa fixo, forma por lugar, bordas de chão, mapa
-  desenhado no editor) está em [docs/plano-mapas.md](docs/plano-mapas.md)
+- `mapa.js` — **o mapa fixo** (`leMapa(m)`, `lePilha()`, `ALFA`: lê
+  `hunts.<k>.mapa` — ver "Os mapas de caça são fixos" abaixo — e devolve `g`,
+  a pilha de cada sqm, a entrada e os pontos de spawn com a profundidade de
+  cada um) e `pecas()` (qual peça de parede cada bloco de valor 1 recebe; a
+  cidade usa com a grade dela). O **gerador** (`genMap()`, `carveRooms()`,
+  `corridor()`, `carve()`, `objetos()`) só serve ao rascunho de
+  `tools/mapas.mjs`: o jogo não sorteia mapa
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
   vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
@@ -561,7 +564,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
   e faz o boneco de cada um correr atrás da última posição recebida
 - `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
-  `spawn()`, `pickType()`), **jogadores** (`G.ps`, `fichaLocal()`,
+  `spawn()`: cada ponto de spawn do mapa fixo é uma "sala" de um monstro em
+  `G.rooms`, e `G.rooms[0]` é a porta), **jogadores** (`G.ps`, `fichaLocal()`,
   `novoJogador()`, `sai()`), **física** (`solid()`, `blocked()`, `move()`,
   `buildFlow()`, `reveal()`), **efeitos** (`num()`, `shake()`, `spark()`) e
   **passo fixo** (`passo(dt,ent)`, `efeitos()`, `guarda()`),
@@ -603,7 +607,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   regra nenhuma. Anuncia na presença a sala aberta deste aparelho
   (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
 - `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
-  `realtime:sala-<x.y>-<id do anfitrião>` por sala. O anfitrião roda a
+  `realtime:sala-<x.y>-<id da sala>` por sala (o id de quem a criou; não muda quando o anfitrião muda). O anfitrião roda a
   incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
   por segundo; o convidado manda a entrada (o sqm em que está, espaços
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
@@ -617,10 +621,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
-- `desenho.js` — canvas, `resize()`, **o mapa vestido** (`vesteMapa()`:
-  variante do chão, detalhe e sprite de cada objeto por sqm, de
-  `hunts.<k>.arte`, montado uma vez por masmorra com um hash da semente; na
-  Ilha, `arte.borda` troca a parede por mato), **interpolação** (`render()` desenha
+- `desenho.js` — canvas, `resize()`, **o mapa fixo** (`preparaPilhas()`,
+  `item()`: cada sqm desenha a pilha de itens do OTSP dele, `t<id>` no atlas,
+  com o padrão do sqm e a animação; o chão e o que é rente a ele antes, o
+  resto junto das criaturas; o item que dá luz acende a escuridão),
+  **interpolação** (`render()` desenha
   entre o passo anterior e o atual e chama `cena()`), `spr()` (desenha com o canto inferior
   direito no tile, como o Tibia), `render()`, `drawPlayer()`, `drawMon()`,
   `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`, o
@@ -638,10 +643,13 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
-- `telas.js` — **telas** (`showMenu()`, a tela inicial: o personagem, o preço
-  da morte em uma linha (`riscoCurto()`), Jogar, a conta e o rodapé Regras ·
-  Personagens (o único lugar de trocar de personagem; o Grimório fica só na
-  cidade, no botão `#cGrim`); sem personagem, Jogar vira Criar personagem;
+- `telas.js` — **telas** (`showMenu()`, a tela de entrada: só a conta —
+  usuário, senha, Entrar, Criar conta — e o `#play`, que é "Continuar" com
+  sessão e "Jogar sem conta" sem ela, e leva à escolha de personagem;
+  `showPick()`, a tela seguinte e o único lugar de trocar de personagem,
+  aberta também pelo Menu da cidade: tocar num personagem entra na cidade
+  (`escolher()`), cada um mostra o preço da morte (`riscoCurto(c)`), e o
+  rodapé tem Regras e Voltar; o Grimório fica só na cidade, no `#cGrim`;
   `showRegras()`, cujos números saem do `content.json`; `start()`,
   `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
@@ -694,7 +702,9 @@ do Banco como item, em `save.mats` (não em `save.itens`, que é só de peças e
 Banco não a compra). Come-se pelo botão Comer
 (`comer()`, a menor da mochila primeiro, nada se passar de
 `progression.comida.max`, 1200 s). Na sala, o convidado pede pelo contador
-`com` da entrada, como a poção, e o retrato manda quantas tem (`nc`).
+`com` da entrada, como a poção, e o retrato manda quantas tem (`nc`) e a
+mochila de cada um (`bag`), que o convidado aplica só na dele: é o que a
+janela da Mochila dele mostra durante a caçada.
 
 #### As três moedas de progressão
 
@@ -726,7 +736,8 @@ antes de tocar em qualquer curva.
 **A sorte tem semente, e são duas.** Nada no jogo usa `Math.random`, a não ser
 `novaSemente()`, que escolhe a semente de uma incursão nova. Toda a sorte sai
 de `src/sim/base.js`: `newRun(s)` chama `semeia(s)`, e a partir daí a mesma
-semente dá a mesma masmorra — mapa, monstros, dano, loot. É a base do
+semente dá a mesma caçada — dano, loot, movimento, recarga (o mapa e os
+pontos de spawn não dependem dela: são fixos, ver abaixo). É a base do
 multiplayer (cliente e servidor precisam sortear igual), de reproduzir um bug
 pelo número da masmorra (a tela final mostra; `?semente=12345` no endereço
 repete) e de medir balanceamento sem ruído.
@@ -786,6 +797,31 @@ começo do passo**. Regras:
 - Na rede, **um passo é uma mensagem**: quem recebe anima o mesmo passo com a
   mesma duração. É isso que vai deixar o servidor da F2 barato: conferir
   movimento é ver se o sqm é vizinho, livre e se o tempo do passo passou.
+
+**Os mapas de caça são fixos** (pilar 2; decisão do Leonardo em
+19/10/2026: sem aleatoriedade no mapa). `hunts.<lugar>.mapa` no
+`content.json` tem `pilhas` (`"<k> <chão> <itens...>"`, ids do OTSP de baixo
+para cima; `k` é `c` chão, `p` parede ou água, `o` objeto sólido sobre chão
+ou `v` vazio, com um `l` a mais quando algo dá luz), `grade` (64 linhas, dois
+caracteres por sqm em base 64: o número da pilha), `entrada` (`"x y"`, a
+porta) e `spawn` (`"x y monstro"`, um por ponto: nasce ali e renasce ali).
+Em `G.g`, `c` vira 0 e o resto é sólido (`p`/`v` 1, `o` 2). O tipo de cada
+pilha sai das regras do OTSP (`tools/otsp-itens.json`, do `items.otb`), igual
+no rascunho e no import. Três ferramentas, todas em `tools/`:
+
+- `node tools/mapas.mjs <lugar> --forca` — o **rascunho**, a partir de
+  `hunts.<lugar>.rascunho` (semente, salas, chão, parede, objetos, detalhes,
+  mata) e das `bands`. Apaga o desenho do editor; por isso o `--forca`.
+- `node tools/otbm.mjs exporta|importa <lugar>` — a ponte com o **Remere's
+  Map Editor**: o mapa vai para `mapas-rme/<lugar>.otbm` (fora do git) e
+  volta para o `content.json`. `rme` monta a pasta do editor com os monstros
+  do Fibula; `tabela` refaz o `otsp-itens.json`. O passo a passo para quem
+  desenha está em [docs/rme.md](docs/rme.md).
+- `node tools/sprites.mjs` — depois de mudar um mapa: os itens novos entram
+  no atlas como `t<id>`.
+
+O plano do que ainda falta (forma por lugar, bordas de chão, redesenho no
+editor) está em [docs/plano-mapas.md](docs/plano-mapas.md).
 
 **O campo de fluxo.** A perseguição dos monstros não é um pathfinding por
 monstro: `buildFlow()` faz uma BFS a partir do sqm de cada jogador e preenche `G.flow` com a
@@ -983,14 +1019,38 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
   sala" na linha do lugar). Vai no anúncio da cidade (`rede.sala.h`), na lista
   de membros e na porta; a porta só abre no NPC que leva a esse mapa.
 - **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
-  nasce com a sala, no aparelho do anfitrião, e fica aberta até ele fechar a
-  sala (só na cidade) ou sair do jogo. Ninguém é soterrado. É o modo
+  nasce com a sala, no aparelho do anfitrião, e fica aberta enquanto ele
+  estiver nela. Ninguém é soterrado. É o modo
   "masmorra aberta" de `src/sim/incursao.js` (`newRun(s, fichas, true)`).
 - **A porta** é o portal, na sala de entrada: qualquer membro entra por ela
   quando quiser (Guia de caça → Entrar pela porta), com a caçada já em
   andamento, e sai por ela com o saco, parado 2,5 s (só depois de se afastar
   dela, `p.longe`). Quem sai ou morre pode entrar de novo, com ficha nova
   (`entra()`). Fechar a sala tira quem está dentro, sem resultado.
+- **Sucessão do anfitrião** (decisão do Leonardo em 19/10/2026): se o
+  anfitrião sai da sala, fecha o jogo ou some da rede, o convidado **mais
+  antigo** vira o anfitrião e a sala continua. Com gente na sala o botão do
+  anfitrião é "Sair da sala" (manda `passa`); sozinho, "Fechar sala". Sem
+  `passa`, os convidados percebem pela presença do canal da sala ou por 12 s
+  sem notícia, e cada um elege o primeiro da lista depois do anfitrião. A
+  sala é o **canal** (`SALA.id`, o id de quem a criou mais um contador),
+  separado do **anfitrião** (`SALA.anf`); a presença da cidade anuncia o
+  canal em `sala.id`. **A masmorra passa junto**: o anfitrião manda a
+  **herança** (`heranca()` em `src/sim/incursao.js`, o estado inteiro da
+  regra, ~20 KB) a cada segundo com alguém lá dentro e no `passa`; quem
+  assume refaz a masmorra pela semente, aplica `adota()` e segue rodando,
+  com cada um no mesmo lugar de `G.ps`. Ninguém sai dela; no pior caso a
+  caçada volta um segundo. A herança leva o sorteio (`sorteAgora()` e
+  `poeSorte()` em `base.js`), de onde partiu o campo de fluxo (`G.fsrc`) e
+  os sqm ocupados, e a simulação no Node confere que quem adota segue
+  **exatamente** como o anfitrião seguiria. Não leva `G.pend` (funções): no
+  máximo se perde o segundo golpe de um ataque múltiplo. Sem herança (o novo
+  anfitrião acabou de entrar), ele abre outra masmorra, anuncia a semente
+  nova em `membros.s`, e quem estava dentro volta à cidade sem resultado.
+  Cada troca sobe `SALA.gen`; se dois aparelhos se acharem anfitrião (a rede
+  voltou no meio da troca), fica o de geração maior e, empatados, o de id
+  menor. O lugar do anfitrião em `G.ps` não é mais sempre 0 (`meuI()` em
+  `src/sala.js`).
 - **Os monstros renascem** como no Tibia (`progression.respawn`): sala da
   masmorra com menos que o normal repovoa depois de 60 s, se ninguém estiver
   a menos de 10 sqm dela. O normal é o mesmo com qualquer número de
@@ -1020,7 +1080,8 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
   dezenas de horas de caçada a dois por mês.
 - **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
   laço, a incursão congela para todos, e depois de 12 s sem notícia os
-  convidados voltam à cidade sem resultado.
+  convidados elegem o mais antigo, que assume a sala e a masmorra pela
+  última herança.
 
 ### Voz — falar na sala
 
@@ -1512,6 +1573,8 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Mapas de caça fixos**, que se aprendem | Pilar 2 |
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
+| 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
+| 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes
 
@@ -1528,4 +1591,3 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |
-| P10 | Mira manual das habilidades (em teste na 0.34.0) contra o "alvo escolhido pelo jogo" do pilar 5 (**sensível**) | Fica no ar como teste; o Leonardo decide depois de jogar se a regra do pilar 5 muda ou se a mira volta a ser automática | Depois do teste do Leonardo |

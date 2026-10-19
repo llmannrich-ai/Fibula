@@ -67,7 +67,7 @@ aumente espera ou deslocamento (pilar 5).
 
 ## 4. Fases
 
-### Fase 1 — Vestir os mapas (feita na 0.29.0)
+### Fase 1 — Vestir os mapas (feita na 0.37.0)
 
 - **Objetos sólidos** por lugar (`hunts.<k>.mapa.objetos`): pilar, barril e
   caixote, rocha (Runas); barril, caixote e rocha com musgo (Esgoto); palmeira,
@@ -82,19 +82,22 @@ aumente espera ou deslocamento (pilar 5).
 - **Ilha aberta** (`arte.borda`): sem muro; a rocha vira grama com mata.
 - 54 sprites novos do OTSP no atlas (de 502 KB para 584 KB).
 
-### Fase 2 — Mapas fixos (o `Agora` do ROADMAP)
+Na 0.41.0 tudo isso deixou de ser sorteado no jogo: virou o rascunho que
+`tools/mapas.mjs` grava, uma vez, no mapa fixo de cada lugar.
 
-Cada lugar com a semente dele no `content.json`. O detalhe que importa: a
-semente do **mapa** (forma, objetos, onde os monstros nascem) é fixa, e a da
-**caçada** (dano, loot, movimento) continua nova a cada sala. Hoje as duas são
-a mesma; é preciso semear o mapa com a fixa, chamar `genMap()` e o spawn
-inicial, e então semear a caçada com uma nova (a porta da sala passa a mandar
-as duas). Com isso a Fase 1 vira marco que se aprende.
+### Fase 2 — Mapas fixos (feita na 0.41.0)
 
-### Fase 3 — Forma por lugar
+Decisão do Leonardo: o mapa é fixo e igual sempre, sem aleatoriedade. Em vez
+de fixar uma semente do gerador, o mapa inteiro virou dado: `hunts.<lugar>.mapa`
+guarda a pilha de itens do OTSP de cada sqm, a entrada e um monstro por ponto
+de spawn (nasce e renasce ali, como no Tibia). A semente só sorteia o que
+acontece na caçada. Formato em `leMapa()` (`src/sim/mapa.js`) e na Parte 3 do
+`CLAUDE.md`.
 
-`genMap()` ganha um `estilo` por lugar, todos com sorteio da regra e mesma
-saída (`g`, `rooms`, `obj`):
+### Fase 3 — Forma por lugar (no editor)
+
+Com o mapa fixo, a forma se desenha no Remere's Map Editor, não no gerador.
+O que cada lugar deve virar:
 
 | Lugar | Estilo | Do Tibia |
 |---|---|---|
@@ -103,32 +106,25 @@ saída (`g`, `rooms`, `obj`):
 | Ilha | **caverna orgânica** por autômato celular: clareiras de areia, ilhas de mato no meio, sem retângulo | ilhas de Tiquanda/Liberty Bay |
 | Cripta | corredores estreitos com **nichos de sarcófago** dos dois lados e câmaras redondas | tumbas de Ankrahmun |
 
-A água precisa de um valor novo em `g` (sólido, desenhado como água) e de
-borda de margem (Fase 4).
+A água já funciona: o chão de água do OTSP é sólido pelo `items.otb`, e a
+pilha dela é `p`.
 
-### Fase 4 — Bordas de chão do Tibia
+### Fase 4 — Bordas de chão do Tibia (pincéis do editor)
 
-Uma camada de chão por sqm (areia, grama, terra, lama, água) e, onde dois se
-encontram, a peça de borda certa (norte, sul, leste, oeste, quatro cantos de
-fora, quatro de dentro) — o "auto-border" do Remere's Map Editor. As peças
-estão no OTSP (215–504); a tabela por material vai para o `content.json`. A
-mesma camada serve à cidade (rua de pedra sobre grama com borda, margem do
-rio).
+A borda (norte, sul, leste, oeste, quatro cantos de fora, quatro de dentro)
+é o "auto-border" do Remere's Map Editor: o editor põe a peça certa ao
+pintar, e ela chega ao jogo como mais um item da pilha. Falta dar ao editor
+os pincéis com os ids do OTSP (215–504) — item "Pincéis do Fibula no editor"
+do ROADMAP. A cidade pode seguir o mesmo caminho depois.
 
-### Fase 5 — Mapas autorais desenhados no editor (decisão do Leonardo)
+### Fase 5 — Mapas desenhados no editor (decidida em 19/10/2026; ferramenta pronta na 0.41.0)
 
-O ponto de chegada do Tibia: mapa feito à mão, com intenção. Duas opções:
-
-1. **Remere's Map Editor + `tools/otbm.mjs`** (recomendada) — quem desenha usa
-   o editor que a comunidade OT usa há 15 anos, com os `rme_files` do OTSP; o
-   script lê o `.otbm` (formato do OTBM2JSON, MIT) e grava `hunts.<k>.grade`
-   (letras, como `city.mapa`) e as zonas de spawn no `content.json`. O jogo não
-   muda de natureza: continua lendo texto.
-2. **Letras à mão no `content.json`**, como a cidade — sem ferramenta nova,
-   mas 64×64 por lugar é muito texto para editar no celular.
-
-Nas duas, o gerador vira só a ferramenta que faz o primeiro rascunho. O
-`otsp.otbm` entra em `assets/CREDITOS.md` se algum pedaço dele for usado.
+O Leonardo escolheu o Remere's Map Editor. `tools/otbm.mjs` exporta o mapa
+para `.otbm`, importa de volta (ida e volta exata, conferida no harness) e
+monta a pasta do editor com os monstros do Fibula na paleta. O passo a passo
+está em [docs/rme.md](rme.md). Falta redesenhar os quatro lugares (item do
+ROADMAP). O `otsp.otbm` entra em `assets/CREDITOS.md` se algum pedaço dele
+for usado.
 
 ### Fase 6 — A cidade
 
@@ -143,5 +139,6 @@ o porto, a colina da cripta) como marcos.
 | Objeto alto (64 px) esconde monstro atrás | O Tibia tem o mesmo; o nome e a barra de vida ficam por cima. Conferir em 360×640 a cada lugar novo |
 | Objeto no sqm do spawn reduz monstros | O spawn pula o sqm sólido; medido: diferença pequena. O Balanceamento confere ao medir horas por nível |
 | Atlas cresce | 584 KB hoje, orçamento de 2 MB; um atlas por lugar quando passar (Parte 2, regra 3) |
-| Mapa sorteado com marco "fixo" engana | Só depois da Fase 2 os marcos valem; até lá são enfeite |
+| O rascunho do gerador parece "mapa pronto" e ninguém redesenha | O item do ROADMAP pede o redesenho no editor, lugar por lugar |
+| A primeira configuração do editor com o OTSP não foi testada no Windows | `docs/rme.md` marca o ponto; o resto do caminho não depende dele |
 | Arte de fonte nova | Tudo aqui é OTSP. Qualquer outra fonte é decisão do Leonardo |

@@ -11,13 +11,13 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.37.0';
-import {ITEMS} from './sim/dados.js?v=0.37.0';
-import {G} from './sim/incursao.js?v=0.37.0';
-import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.37.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.37.0';
-import {menu,showMenu} from './telas.js?v=0.37.0';
-import {$} from './dom.js?v=0.37.0';
+import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.41.0';
+import {ITEMS} from './sim/dados.js?v=0.41.0';
+import {G} from './sim/incursao.js?v=0.41.0';
+import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.41.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.41.0';
+import {menu,showMenu} from './telas.js?v=0.41.0';
+import {$} from './dom.js?v=0.41.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
@@ -138,6 +138,8 @@ export const lastroBanco=(k,val)=>enfila('lastro_banco',{p_item:k,p_val:val});
 /* o nome de usuário da conta ligada: é o nome que os outros veem na cidade */
 export const quemSou=()=>sessao?sessao.usuario||null:null;
 export function desenhaConta(){
+  /* a tela de entrada é só a conta: com sessão, Continuar; sem, entra-se sem conta */
+  const pl=$('#play');if(!pl.disabled){pl.textContent=!SB_KEY?'Jogar':sessao?'Continuar':'Jogar sem conta';pl.className=SB_KEY&&!sessao?'link':'cta'}
   const box=$('#mConta');box.hidden=!SB_KEY;if(!SB_KEY)return;
   $('#contaF').hidden=!!sessao;$('#contaSair').hidden=!sessao;
   $('#contaT').textContent=sessao

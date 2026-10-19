@@ -9,30 +9,7 @@ Parte 4; as decisões do dono, na Parte 6. Ao concluir, mova o item para
 
 ## Agora
 
-### Mapas de caça fixos
-
-**Pilar 2.** Hoje cada sala sorteia uma semente nova (`novaSemente()` em
-`src/sala.js`), então o Esgoto muda a cada caçada e conhecer o mapa não vale
-nada. Cada lugar de `hunts` ganha uma semente fixa no `content.json`
-(`semente`), validada no carregamento, e a sala usa essa semente. O que ainda
-for sorteado por caçada (dano, loot, movimento) continua sorteado: são duas
-sementes, a do mapa (forma, objetos e spawn inicial, fixa) e a da caçada
-(nova a cada sala), e a porta da sala manda as duas. Com isso os objetos e
-enfeites da 0.29.0 viram marcos que se aprendem
-([docs/plano-mapas.md](docs/plano-mapas.md), Fase 2).
-
-**Pronto quando:** duas salas do mesmo lugar, criadas em momentos diferentes,
-têm o mesmo mapa e os mesmos monstros nos mesmos sqm (caso no
-`tools/testar.mjs`), e lugares diferentes continuam com mapas diferentes.
-
----
-
-## Próximo
-
-Ordem decidida em 19/10/2026 com os pilares novos: primeiro o que faz o mundo
-ser fixo e a morte ser justa, depois o que a endurece, depois o resto da F0.
-
-### 1. Queda de conexão não mata
+### Queda de conexão não mata
 
 **Pilar 4.** Pré-requisito da morte da opção B. Hoje o convidado que fica 12 s
 sem notícia volta à cidade sem resultado. Regra: jogador sem entrada por
@@ -45,9 +22,16 @@ sozinho.
 e volta à cidade com a mochila, e outro em que some em combate e fica protegido
 os 20 s.
 
-### 2. Saída segura perto
+---
 
-**Pilar 5.** Depende do item "Mapas de caça fixos" e da pendência P8 (padrão:
+## Próximo
+
+Ordem decidida em 19/10/2026 com os pilares novos: primeiro o que faz o mundo
+ser fixo e a morte ser justa, depois o que a endurece, depois o resto da F0.
+
+### 1. Saída segura perto
+
+**Pilar 5.** Depende da pendência P8 (padrão:
 60 s). Medir, em cada lugar fixo, o tempo de caminhada no nível recomendado do
 sqm mais longe até a porta; onde passar do limite, pôr uma segunda saída (escada
 ou porta) numa sala funda.
@@ -55,7 +39,7 @@ ou porta) numa sala funda.
 **Pronto quando:** o tempo máximo até uma saída, por lugar, está no diário e
 nenhum passa do limite; caso no harness confere que a segunda saída extrai.
 
-### 3. Medir o ritmo até o nível 20 em horas
+### 2. Medir o ritmo até o nível 20 em horas
 
 **Pilar 3.** Alvo do Leonardo: nível 20 em ~3 h de caçada efetiva. Script em
 `tools/balanceamento/` que simula caçadas no lugar recomendado para cada nível
@@ -66,9 +50,9 @@ sensível.
 **Pronto quando:** a tabela "nível × horas" atual e a proposta estão no diário,
 e a issue existe.
 
-### 4. Morte da opção B
+### 3. Morte da opção B
 
-**Pilar 4.** Depende dos itens 1 e 3 e da pendência P9 (**sensível**: os
+**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 e da pendência P9 (**sensível**: os
 números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
@@ -78,7 +62,7 @@ entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 5. PWA instalável
+### 4. PWA instalável
 
 **Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
@@ -87,7 +71,7 @@ sem rede com o último conteúdo baixado. Sem biblioteca.
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 6. Escada de lugares de caça
+### 5. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -97,36 +81,39 @@ ele, todos no `content.json`.
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
-### 8. Forma por lugar
+### 6. Pincéis do Fibula no editor
 
-**Pilar 2.** Depende de "Mapas de caça fixos". `genMap()` ganha um `estilo`
-por lugar no `content.json` ([docs/plano-mapas.md](docs/plano-mapas.md), Fase
-3): salões de pilares na Masmorra de Runas, canal de água com pontes no
-Esgoto, caverna orgânica na Ilha, nichos de sarcófago na Cripta. Um lugar por
-execução, começando pelo Esgoto.
+**Pilar 2.** O OTSP traz para o Remere's Map Editor só um pincel (grama com
+borda); o resto se pinta item por item. `node tools/otbm.mjs rme` passa a
+gravar pincéis prontos com os ids do pacote: os quatro chãos com as
+variantes (`grounds.xml`), as quatro paredes com peça vertical, horizontal,
+poste e canto (`walls.xml`), as bordas de areia, terra e lama do OTSP
+(215–504, `borders.xml`) e enfeites (teias, ossadas, pedras: `doodads.xml`).
+Com isso a borda de chão do Tibia sai do auto-border do editor e chega ao
+jogo como item da pilha, sem código novo no jogo
+([docs/plano-mapas.md](docs/plano-mapas.md), Fase 4).
 
-**Pronto quando:** o lugar tem o estilo no `content.json`, a simulação no Node
-confere que todo chão é alcançável e que a mesma semente dá o mesmo mapa, e a
-captura em 360×640 está no diário.
+**Pronto quando:** a pasta do editor tem os quatro arquivos com os pincéis, o
+harness confere que todo id citado existe no `items.otb`, e o
+[docs/rme.md](docs/rme.md) diz como usar.
 
-### 9. Bordas de chão do Tibia
+### 7. Redesenhar os lugares no editor
 
-**Pilar 2.** Uma camada de chão por sqm (areia, grama, terra, água) e a peça
-de borda do OTSP (215–504) onde dois chãos se encontram, como o auto-border do
-Remere's Map Editor ([docs/plano-mapas.md](docs/plano-mapas.md), Fase 4).
-Primeiro na Ilha (areia, grama e margem de água), depois na cidade.
+**Pilar 2.** Os quatro mapas de hoje são rascunhos do gerador antigo. Cada
+um é redesenhado no Remere's Map Editor com intenção do Tibia: o Esgoto com
+canal de água e pontes, a Ilha como clareira irregular com margem de areia e
+água, a Cripta com nichos de sarcófago, a Masmorra de Runas com salões de
+pilares; marcos que se reconhecem e uma segunda saída onde a P8 pedir. Um
+lugar por vez, começando pelo Esgoto. **Precisa do Leonardo** na primeira
+configuração do editor ([docs/rme.md](docs/rme.md)); depois disso, um agente
+pode desenhar pelo `.otbm` também.
 
-**Pronto quando:** a tabela de bordas por material está no `content.json`, a
-Ilha mostra areia e grama com borda, e o caso `arte` cobre o desenho.
+**Pronto quando:** o lugar redesenhado passa no harness, a captura em
+360×640 está no diário, e o Leonardo aprovou o desenho.
 
 ---
 
 ## Depois
-
-- **Mapas desenhados no editor** (pilar 2; precisa de decisão do Leonardo) —
-  o Remere's Map Editor com os `rme_files` do OTSP e um `tools/otbm.mjs` que
-  converte o `.otbm` em letras no `content.json`, como `city.mapa`
-  ([docs/plano-mapas.md](docs/plano-mapas.md), Fase 5).
 
 - **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
   raro com loot próprio; entrada em `MT` e em `LOOT`.
@@ -141,6 +128,23 @@ Ilha mostra areia e grama com borda, e o caso `arte` cobre o desenho.
 ---
 
 ## Concluído
+
+- **2026-10-19 — Mapas de caça fixos e o Remere's Map Editor (0.41.0)**
+  *(decisão do Leonardo: "o mapa será fixo e igual sempre, não tem
+  aleatoriedade no mapa"; pilar 2)*. Cada lugar tem o mapa em
+  `hunts.<lugar>.mapa`: os itens do OTSP de cada sqm, a entrada e um monstro
+  por ponto de spawn, que nasce e renasce ali. `tools/mapas.mjs` gerou os
+  quatro rascunhos; `tools/otbm.mjs` exporta e importa `.otbm` do Remere's
+  Map Editor (ida e volta exata, conferida no harness) e monta a pasta do
+  editor com os monstros do Fibula; `docs/rme.md` é o passo a passo. O atlas
+  traz os itens dos mapas com os padrões de chão do Tibia (784 KB).
+
+- **2026-10-19 — Tela de entrada só com a conta (0.40.0)** *(pedido do
+  Leonardo; pilar 5)*. A primeira tela tem usuário, senha, Entrar, Criar conta
+  e "Jogar sem conta" (ou "Continuar", com sessão). A escolha de personagem é
+  a tela seguinte: tocar num personagem entra na cidade, cada um mostra o
+  preço da morte, e o rodapé tem Regras e Voltar. O Menu da cidade abre essa
+  escolha.
 
 - **2026-10-19 — Mapas vestidos (0.37.0)** *(pedido do Leonardo; pilar 2)*.
   Objetos sólidos por lugar (`mapa.objetos`: pilar, barril, caixote, rocha,

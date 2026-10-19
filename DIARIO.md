@@ -18,6 +18,77 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 11:23 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** mapas de caça fixos e a ponte com o Remere's Map Editor (0.41.0), por decisão do Leonardo ("pode publicar na main e seguir com o Remere; o mapa será fixo e igual sempre, não tem aleatoriedade no mapa"). Antes, a 0.37.0 publicou os mapas vestidos (mesclando a `main` 0.36.0). Agora cada lugar tem `hunts.<lugar>.mapa`: pilhas de itens do OTSP por sqm (`c`/`p`/`o`/`v`, `l` para luz), grade em base 64, entrada e um monstro por ponto de spawn; `newRun()` lê com `leMapa()` e cada ponto é uma "sala" de um monstro em `G.rooms` (nasce e renasce ali; a herança da sala da 0.38.0 segue funcionando). `tools/mapas.mjs` gerou os quatro rascunhos a partir de `hunts.<lugar>.rascunho` (o gerador e os enfeites da 0.37.0 viraram ferramenta); `tools/otbm.mjs` exporta e importa `.otbm` (formato OTBM 2, items.otb 3.55, como o `otsp.otbm` salvo pelo RME 3.3), lê o spawn.xml e o waypoint `entrada`, e monta a pasta do editor com os 19 monstros do Fibula; `tools/otsp-itens.json` traz o que é chão, sólido, luz e parede no `items.otb` do OTSP (no OTSP o id do servidor é o do cliente). O desenho pinta a pilha de cada sqm com os padrões e a animação dos itens (`t<id>` no atlas, que foi a 784 KB). Guia em `docs/rme.md`.
+
+**Validação:** `node tools/testar.mjs` — 36/36. A simulação no Node confere, nos quatro lugares: outra semente dá o mesmo mapa e os mesmos monstros nos mesmos sqm; ninguém nasce fora do chão; todo ponto de spawn se alcança da porta; exportar e importar pelo `.otbm` devolve o mesmo mapa. O carregamento recusa lugar sem mapa, linha curta, spawn fora do chão, mapa sem o chefe e entrada fora do chão. O leitor de `.otbm` leu os 10.455 sqm do `otsp.otbm` salvo pelo editor. Capturas dos quatro lugares conferidas.
+
+**Análise:** três testes da `main` supunham o mapa sorteado e foram ajustados ao mapa fixo sem perder o que provam: "sementes 7 e 8" agora exige o **mesmo** mapa; o `spawnNaEntrada` põe dois pontos do monstro mais fraco a 2 sqm da porta; a herança da sala começa no maior grupo de monstros longe do chefe e sai depois do primeiro abate (e não depois de 400 passos). Escolhas de sprite corrigidas pelas regras do OTSP: o caixote 1115 não bloqueia (virou o 1139), a vela 1178 bloqueia e dá luz (virou objeto da Cripta).
+
+**Roadmap:** "Mapas de caça fixos" para `Concluído`; `Agora`: queda de conexão não mata. Saíram "Forma por lugar" e "Bordas de chão" (agora é desenho no editor); entraram "Pincéis do Fibula no editor" e "Redesenhar os lugares no editor".
+
+**Pendências e riscos:** a configuração do RME com o OTSP (pasta de dados da 10.41, cliente renomeado para `Tibia.dat`/`Tibia.spr`, assinatura) não foi testada numa máquina com o editor: está marcada em `docs/rme.md`. O import só lê o andar 7, 64×64 a partir de (1000, 1000), sem escada, casa ou atributo de item. Os quatro mapas são rascunhos do gerador, não desenho com intenção. `content.json` foi a ~100 KB e o atlas a 784 KB (orçamento de 2 MB). `node tools/mapas.mjs --forca` apaga o que foi desenhado no editor.
+
+**Próximo passo recomendado:** o Leonardo configurar o RME pelo `docs/rme.md` e abrir o `esgoto.otbm`; em paralelo, "Pincéis do Fibula no editor" pode ser feito por um agente.
+
+## 2026-10-19 11:11 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** tela de entrada só com a conta (0.40.0), a pedido do Leonardo ("serve somente para login e criação de login; o personagem deve ser escolhido na tela seguinte"). A primeira tela (`#menu`) ficou com o título, usuário e senha, Entrar, Criar conta e o `#play`: "Jogar sem conta" (um link discreto) sem sessão, "Continuar" com ela. Saíram dela o personagem, o preço da morte e o rodapé. A escolha de personagem (`#pick`) virou a tela seguinte: tocar num personagem entra na cidade (`escolher()`, que só tira da sala e zera a incursão se a classe mudar), cada personagem mostra o preço da morte (`riscoCurto(c)`), os números da conta ganharam o nível, e o rodapé tem Regras e Voltar. O Menu da cidade abre a escolha de personagem.
+
+**Validação:** `node tools/testar.mjs` — 36/36. O harness ganhou `entrar()` (tela de entrada → escolha → cidade), que substituiu os 20 cliques diretos em `#play`; asserções novas: a tela de entrada só tem a conta, "Jogar sem conta" e "Continuar" conforme a sessão, o preço da morte no cartão do personagem, Regras e Voltar na escolha, e o Menu da cidade abrindo a escolha. Prints em 390×844.
+
+**Análise:** "Jogar sem conta" ficou porque jogar sem conta é regra do produto (save no aparelho); se o Leonardo quiser exigir conta, é mudança sensível (dados pessoais e testadores).
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Mapas de caça fixos".
+
+**Pendências e riscos:** depois de entrar ou criar conta, a tela mostra "Continuar" em vez de ir sozinha para a escolha de personagem, porque o save da nuvem chega depois (assíncrono); ir sozinho exigiria esperar a nuvem.
+
+**Próximo passo recomendado:** o Leonardo abrir no celular; depois, "Mapas de caça fixos" (`Agora`).
+
+---
+## 2026-10-19 12:20 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** correção 0.38.1, a partir da pergunta do Leonardo "por que os alimentos não aparecem na mochila?". Reproduzido no navegador: sozinho (o anfitrião), a comida comprada e a que cai do rato aparecem na janela da Mochila. O defeito era do **convidado da sala**: o retrato do anfitrião mandava só o valor da mochila (`bv`), nunca o conteúdo, e a janela do convidado ficava parada no que ele levou ao entrar — nenhum loot aparecia, comida ou não. O retrato agora leva `bag` de cada jogador e o convidado aplica a dele (`soMochila`).
+
+**Validação:** `node tools/testar.mjs` — 36/36, com asserção nova no `sala-convidado` (a mochila vem no retrato, item inexistente fora, a do anfitrião não muda).
+
+**Análise:** outra causa possível, que não é defeito: a comida comprada na 0.29.0 (quando ficava em `prov`) foi migrada na 0.33.0 para o **cofre do Banco**, não para a mochila; aparece no Banqueiro, com "levar".
+
+**Roadmap:** sem mudança.
+
+**Pendências e riscos:** o retrato cresce ~100 bytes por jogador (a mochila de cada um a 10/s); com 4 na sala continua muito abaixo do limite do Realtime.
+
+**Próximo passo recomendado:** o Leonardo confirmar, como convidado numa sala, que o loot aparece na Mochila.
+
+## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala, com a masmorra
+
+**Item desenvolvido:** a pedido do Leonardo ("caso o anfitrião feche o servidor, o usuário mais antigo dentro do servidor passa a ser o servidor" e, depois, "o novo anfitrião recebe todos os dados do mapa e mantém o servidor com ele"), 0.38.0. `src/sala.js` separa o canal da sala (`SALA.id`, id de quem criou + contador) do anfitrião de agora (`SALA.anf`) e conta as trocas em `SALA.gen`. O anfitrião manda a **herança** a cada segundo (com alguém dentro; 5 s sem ninguém) e no `passa`: `heranca()`/`adota()` em `src/sim/incursao.js`, o estado inteiro da regra (monstros, jogadores com ficha e saco, projéteis, sacos no chão, salas, sorteio, fonte do campo de fluxo, sqm ocupados), ~20 KB. Quem assume adota a última herança e segue rodando; quem estava dentro continua (`G.convidado` cai e o laço passa a rodar `passo()` aqui). Sem `passa` (fechou o jogo, caiu a rede), a saída é vista pela presença do canal da sala ou por 12 s sem notícia (`sucede()`). Dois anfitriões: `gen` maior, empate pelo id menor (`cede()`). `src/sim/base.js` ganhou `sorteAgora()`/`poeSorte()` (mesma sequência do mulberry32); `buildFlow()` guarda a origem em `G.fsrc`. O lugar do anfitrião em `G.ps` deixou de ser sempre 0 (`meuI()`), e a poção do anfitrião é a de `G.p` (`src/controles.js`).
+
+**Validação:** `node tools/testar.mjs` inteiro verde, depois de mesclar a `main` 0.37.0 (mapas de caça, comida como item, voz, mapas vestidos): a herança leva `G.caca` e as comidas já vistas. Na simulação no Node: com 3 jogadores em combate, quem adota a herança e recebe as mesmas entradas fica **idêntico** ao anfitrião por 400 passos (monstros, abates, sacos, vida, XP); herança com classe inexistente é recusada; tamanho abaixo de 60 KB. Sabotagem (adotar sem o sorteio) barrada. Nos casos `sala-*`: `passa` com a herança, convidado que continua na masmorra quando outro assume, convidado que vira anfitrião sem sair dela (mesma semente, abates e monstros da herança, mesmo sqm) e passa a rodar a regra, recebe gente nova pela porta e manda a própria herança, lista do anfitrião velho ignorada, geração maior leva a sala. Não testado com dois Chromium no Realtime de verdade.
+
+**Análise:** a herança custa uma mensagem por segundo por sala (a cota mensal conta cada entrega: com 4 na sala, +3 por segundo sobre os ~40 do retrato), ~20 KB cada, bem abaixo do limite de tamanho do broadcast.
+
+**Roadmap:** sem mudança de seção (pedido do dono fora da fila).
+
+**Pendências e riscos:**
+- A volta de até 1 s na troca: o que aconteceu nesse segundo no aparelho do anfitrião velho (um abate, um saco pego) se desfaz, e acontece de novo ou não. Não duplica nada, porque o resultado de cada um só sai do anfitrião de agora.
+- Uma queda curta de rede do anfitrião já dispara a troca; ao voltar ele vê a geração maior e vira convidado. A masmorra dele (que seguiu rodando sozinha) é descartada; quem estava dentro dela, nele, volta à cidade.
+- Nenhuma mensagem do canal tem remetente conferido: um terceiro com a chave pode mandar `passa`/`membros` com geração alta, ou uma herança falsa, e tomar a sala. É o mesmo nível de confiança do anfitrião (que já calcula tudo), agora ao alcance de quem conhece o canal.
+- `G.pend` não vai na herança (perde-se no máximo o segundo golpe de um ataque múltiplo).
+
+**Próximo passo recomendado:** testar com dois ou três aparelhos de verdade: anfitrião fecha a aba com convidados na masmorra e eles continuam caçando; anfitrião sai pelo Guia.
+
+---
+
+## 2026-10-19 22:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** decisão do Leonardo registrada no guia, sem código. Ele testou a mira manual (0.34.0) no celular e aprovou "por agora": o jogo se joga sempre com duas mãos. O pilar 5 virou "Duas mãos, e pode parar a qualquer hora", a regra passou a dizer que o alvo é apontado pelo jogador, a pergunta 4 do teste das ideias fala em duas mãos, a P10 saiu das pendências e entrou em "Em vigor".
+
+**Validação:** só texto; nenhum arquivo de `src/` tocado.
+
+**Pendências e riscos:** "por agora": se testadores reclamarem do esforço de mirar o ataque básico, o meio-termo conversado é alvo automático só no ataque básico e mira nas magias fortes. O Balanceamento não deve supor que todo tiro acerta.
+
 ## 2026-10-19 10:42 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** mapas vestidos (0.37.0), a pedido do Leonardo ("o mapa está pobre para a arte do Tibia que temos"). Objetos sólidos por lugar em `hunts.<k>.mapa.objetos` (pilar, barril, caixote, rocha, sarcófago, gárgula, estátua, palmeira, cacto), postos por `objetos()` em `src/sim/mapa.js` com um hash da semente — não com o sorteio da regra, para a sequência de monstros, dano e loot não mudar — e recusados se fecharem caminho. Ficam em `G.g` com o valor 2: `solid()` passou a ser `g!==0`, o campo de fluxo e o projétil já paravam neles, `pecas()` só monta parede no valor 1 e o spawn pula o sqm de objeto. No desenho, `vesteMapa()` monta uma vez por masmorra a variante do chão, o detalhe (`arte.detalhes`: teias, pedrinhas, sangue, ossadas, grade, lodo, tufos, velas) e o sprite de cada objeto; a Ilha trocou o muro por mata (`arte.borda`). 54 sprites novos do OTSP (atlas de 502 KB para 584 KB). Plano das fases seguintes e pesquisa de fontes legais de mapa em `docs/plano-mapas.md`.
@@ -263,93 +334,3 @@ execução precisa saber e não vai descobrir lendo o código.
 **Pendências e riscos:** a grade fica perto da borda sul do mapa, então a câmera presa à borda a deixa colada aos botões no celular; se incomodar, subir a grade uma ou duas linhas.
 
 **Próximo passo recomendado:** o Leonardo descer pela grade no celular e dizer se a posição está boa.
-
-## 2026-10-19 03:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** o corpo da Mochila no desenho da janela de inventário do Tibia (0.23.0), a pedido do Leonardo ("algo bem melhor para representar os equipamentos na tela inventário, que se assemelhe à do Tibia, equipamentos em posição de uso"). `desenhaMochila()` em `src/hud.js` monta três colunas (amuleto/arma/anel, elmo/armadura/calça/botas, saco/escudo/munição), a do meio mais alta, como no Tibia. Casa vazia mostra a silhueta do que vai nela (SVG inline como `mask` no `<style>`, variável `--sil` por classe `s-<casa>`); as casas que o jogo não tem são `.trava`, apagadas e `aria-hidden`. Ao lado, `#moFig`: o `retrato()` do Banco com o boneco vestido, que gira ao toque (`MO.dir`). Sem o atlas, a letra da classe.
-
-**Validação:** `node tools/testar.mjs` — 31/31; o caso `mochila` acha a arma pela classe `s-arma` (a ordem no DOM mudou) e confere as três colunas, as seis casas apagadas e o boneco. Conferido com Chromium em 390×844 e 375×667.
-
-**Análise:** o corpo cresceu ~70 px na tela alta; na baixa (`max-height:740px`) as linhas de anel, calça, munição e botas somem, e o corpo fica com duas linhas e o boneco de 96 px.
-
-**Roadmap:** item novo em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **As casas apagadas prometem peças que não existem** (elmo, escudo, anel, calça, botas, munição). É o desenho do Tibia, mas se virar pergunta de jogador, ou elas entram no `content.json` (cada uma é um `slot` novo em `SLOTS_EQ` e na `veste`), ou saem da tela — apagar as `trava()` de `desenhaMochila()`.
-- A tela do Banco (`drawEquip()`) continua com os três botões em linha; não foi pedida.
-
-**Próximo passo recomendado:** o Leonardo abrir a Mochila no celular e dizer se as casas apagadas ficam ou saem; depois, "Sair cedo" (`Agora`).
-
-## 2026-10-19 03:10 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** mais mapas de caça (0.22.0), a pedido do Leonardo ("crie mais mapas de caça: esgoto, navio que leva para ilha, outros; cada um acessado como a masmorra, criando ou entrando em salas"). `hunts` no `content.json` ganhou, por mapa, `npc` (quem leva até ele), `bands` e `boss` (no formato de `progression`), `mapa` (salas, tamanho, atalhos, lido por `genMap(m)`), `arte` (chão, parede, cores sem sprite, escuridão, tochas) e as frases `entrada`/`volta`. Três mapas novos: **Esgoto** (nível 1, Vigia do esgoto, letra `V` perto do mercado: morcego, barata, lesma, Centopeia-rainha; muitas salas pequenas), **Ilha da Enseada** (nível 8, Capitão, letra `N` no porto do canal leste: vespa, lagarta-cuspideira à distância, leão, troll, Dragão da enseada; poucas salas grandes, menos escuro, sem tochas) e **Cripta Antiga** (nível 15, no Guia: esqueleto, fantasma, múmia, necromante à distância, Senhora das Sombras; mais escura). A Masmorra de Runas não mudou (sem `bands`, `boss` e `mapa`, usa `progression`, e `genMap()` sorteia na mesma ordem). Treze monstros e dois NPCs com sprite do OTSP; chão e parede de cada mapa no atlas. `showHunts(npc)`: cada NPC que abre `cacadas` mostra só os mapas dele, com os monstros listados, e cada linha tem "entrar" e "criar sala". A sala guarda o mapa (`SALA.caca`), anunciado na presença (`sala.h`), na lista de membros e na porta; a porta só abre no NPC daquele mapa. A volta da caçada é ao lado de quem levou (`entraCidade(npc)`).
-
-**Validação:** `node tools/testar.mjs` — 32/32, com o caso novo `mapas-de-caca` (Vigia → Esgoto e volta ao lado dele, Capitão → Ilha, sala da Ilha anunciada com o mapa, porta fechada no Guia, volta de navio ao porto) e, no Node, os quatro mapas: monstros só da tabela de cada um, um chefe só, mesma semente igual, mapas diferentes por mapa de caça, chave desconhecida virando Runas, quatro conteúdos tortos recusados. Telas e os quatro mapas conferidos com Chromium em 390×780 com o atlas.
-
-**Análise:** o chefe podia **não nascer** quando um monstro comum já ocupava o sqm dele (acontecia também na Masmorra de Runas, em algumas sementes). Agora, com o sqm ocupado, o chefe vai para o livre mais perto do centro da sala, sem sorteio, então nenhuma masmorra muda de mapa. O "Entrar pela porta" ficava desabilitado até outra coisa redesenhar o Guia depois que o canal da sala ligava: `SALA.aoMudar()` agora roda ao ligar. A `main` subiu para 0.21.0 (habilidades no Mestre de magias) durante o trabalho; mesclado, esta é a 0.22.0, e a sala de 0.21 não enxerga a de 0.22 (o canal leva a versão).
-
-**Roadmap:** "Lugares com nome" foi para `Concluído`; o Acampamento Orc do item original ficou de fora (os orcs já são da Masmorra). `Agora` não mudou.
-
-**Pendências e riscos:**
-- **Balanceamento é chute medido só no papel.** Simulação de 40 sementes, masmorra inteira: Esgoto ~620 XP e ~400 de loot; Runas ~1.640 e ~1.600; Ilha ~3.170 e ~2.040; Cripta ~6.440 e ~3.000. Ninguém jogou a Ilha no nível 8 nem a Cripta no 15; o dano dos monstros (12 a 52) precisa do agente de Balanceamento com personagens de referência.
-- O chefe dos mapas novos não deixa troféu próprio (a coroa é só do Guardião); os novos dropam gema e equipamento.
-- Monstro à distância usa sempre o projétil do xamã (`mi_xama`).
-- O atlas foi de ~340 KB para ~510 KB (o dragão e a sombra são grandes).
-- O Gordon pede materiais pensando na Masmorra; a Ilha dá muita seda e a Cripta muita erva, o que barateia as encomendas.
-
-**Próximo passo recomendado:** o Leonardo jogar o Esgoto com um personagem novo e a Ilha com um de nível 8 e dizer se o perigo está certo; depois, Balanceamento dos mapas novos.
-
-## 2026-10-19 02:45 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** habilidades se aprendem com o Mestre de magias (0.21.0), decisão do Leonardo com três escolhas: quem já jogava mantém o que o nível liberou, a de nível 1 continua grátis e as runas continuam à venda. `preco` em cada habilidade do `content.json` (0 no nível 1; 100 a 3.500 até o nível 32); `ch().sabe` no save; `podeAprender()` e `aprende()` em `src/sim/progresso.js` (a aprendida vai para o espaço livre); subir de nível não ensina mais a habilidade com preço, o registro diz quem ensina e quanto custa; o Mestre ganhou a seção "Habilidades da sua classe" (`ensina: true` em `city.npcs`), e o Grimório mostra "no Mestre" e o preço. `confereFicha()` e o resultado da sala só aceitam habilidade sabida.
-
-**Validação:** `node tools/testar.mjs` — 31/31. No Node: personagem novo só sabe a de nível 1, aprender pede nível e ouro, vai para o espaço livre, save antigo (sem `sabe`) fica com tudo do nível, ficha de fora não usa habilidade que não sabe, e o conteúdo sem habilidade grátis no nível 1 ou sem quem ensine é recusado. Navegador: `lojas` compra a Golpe Brutal no Mestre; `nivel-na-incursao` reescrito (o nível 9 não traz mais a Onda de Fogo sozinha). Telas do Mestre e do Grimório conferidas em 390×844.
-
-**Análise:** a decisão muda o ritmo de quem começa agora: o personagem novo chega ao nível 4 sem a segunda habilidade até juntar 150 de ouro. Quem já tinha save não sente nada.
-
-**Roadmap:** item novo em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **Preços são chute** (tabela por nível: 3→100, 4→150, 9→500, 15→1.100, 22→2.000, 32→3.500). Concorrem com as melhorias do Mercador, a Forja e as provisões pelo mesmo cofre; medir com o agente de Balanceamento quanto ouro uma caçada típica traz em cada faixa de nível.
-- A morte não leva habilidade; perder o nível não existe, então o que se aprende nunca volta atrás.
-- O convidado da sala que aprende no meio da sala manda a ficha nova só na próxima entrada pela porta (é o fluxo da 0.19).
-
-**Próximo passo recomendado:** o Leonardo criar um personagem novo e jogar até o nível 4–5 para sentir se o ouro chega a tempo da segunda habilidade.
-
-## 2026-10-19 02:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a cidade cinco vezes maior e as lojas de provisões (0.20.0), a pedido do Leonardo ("amplie o mapa da cidade para cerca de 5 vezes; insira NPCs que vendem itens como mercado de alimentos, poções e magias"). Mapa de 54×38 (2.052 sqm, era 408): praça com fonte e canteiros, templo com estátuas, rio com duas pontes, Torre dos magos do outro lado, pomar, horta, poço, casas de moradores, Quitanda e Feira a céu aberto. Chãos novos (`:` praça, `=` ponte, `v` flores, `h` horta) e objetos sólidos (`OBJETOS` em `src/sim/dados.js`: fonte, poço, barril, caixote, estátua, arbusto, cerejeira, frutífera, forno, estante, banca, lenha), que ficam sobre o chão do vizinho como os NPCs. Mapa da cidade no canto (`drawMiniCidade()`). Três NPCs com `abre: "loja"` e uma tela só (`showLoja()`): Quitandeira (refeição: regenera vida e/ou mana a caçada toda, uma por vez), Boticária (poção a mais, até 5; elixir de pressa no primeiro minuto) e Mestre de magias (runas de pele de pedra, fúria e olho de águia nos primeiros 90 s). Provisões em `supplies` no `content.json`, guardadas em `save.prov`, levadas pela ficha (`prov`) e gastas no `start()`. O buff da provisão mora em `p.sup` e soma ao das habilidades em vez de ser trocado. 15 sprites novos do OTSP no atlas.
-
-**Validação:** `node tools/testar.mjs` — 31/31, com o caso novo `lojas` (comprar, uma refeição por vez, máximo por provisão, o Guia mostra o que vai, a caçada começa com as poções, a regeneração e a runa, e o estoque zera) e, no Node, compra, aparo do save e da ficha de fora, efeito na caçada, buff somando ao do Provocar e acabando no tempo, e o conteúdo torto recusado. Duas sabotagens barradas (o `start()` não gastar o estoque; a comida não regenerar). Telas conferidas com Chromium em 390×844 e o mapa inteiro em 1728×1216, com e sem o atlas.
-
-**Análise:** a `main` andou da 0.14 para a 0.19 durante o trabalho; a mescla trouxe a Forja do Gordon, que tornava redundante um Ferreiro que eu tinha feito (removido: o Gordon foi para a forja do mapa novo, letra `F`), e as peças de teste do chão (realocadas na praça, em volta do `@`; a conferência de `city.chao` aceita os chãos novos). Na sala sem tempo, o convidado manda a ficha a cada entrada (`entro`), então as provisões dele vão atualizadas sem mensagem nova.
-
-**Roadmap:** item novo em `Concluído`, fora da fila (pedido do dono). `Agora` continua "sair cedo".
-
-**Pendências e riscos:**
-- **Andar pesa mais.** Do `@` ao Banco são ~30 sqm (~15 s); ao Guia, ~16 sqm. A volta da caçada é ao lado do Guia, mas as lojas ficam no caminho, não na porta. Se incomodar, a saída é encurtar a cidade em volta do portão, não teleporte.
-- **Balanceamento das provisões é chute.** Preços de 15 a 80 de ouro; a runa da fúria (+20% de dano por 90 s) e a poção (+1, até 5) são as mais fortes. Medir com o agente de Balanceamento antes de mexer na curva de ouro.
-- Na masmorra da sala, cada entrada pela porta gasta as provisões de novo (buff dos 90 s conta de cada entrada).
-- A arte do OTSP não tem pão nem lampião de rua: a cesta de frutas é uma maçã e os cantos da praça viraram arbustos floridos.
-
-**Próximo passo recomendado:** o Leonardo andar pela cidade no celular e dizer se o tamanho e as distâncias estão bons; depois, "Sair cedo" (`Agora`).
-
-## 2026-10-19 01:55 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a masmorra da sala sem tempo, com porta (0.19.0), a pedido do Leonardo ("entrada e saída por uma porta acessível por qualquer usuário; fecha quando quem criou fecha na cidade ou sai do programa"), com as três escolhas dele: sem tempo, monstros renascem, porta na sala de entrada. Modo "masmorra aberta" em `src/sim/incursao.js` (`newRun(s,fichas,true)`, `entra()`, `repovoa()`, `progression.respawn` no `content.json`); `src/sala.js` troca o "começar com o grupo" por `entraPorta()`/`porta`; o Guia de caça mostra quem está na masmorra e o botão "Entrar pela porta"; a presença da cidade segue com `longe` enquanto o anfitrião caça, para a sala não sumir da lista.
-
-**Validação:** `node tools/testar.mjs` — 27/27; os dois casos da sala reescritos para o fluxo novo (entrar, sair, voltar a entrar, anfitrião entrando depois, masmorra que não desaba, fechar com gente dentro). No Node: não desaba depois do tempo da solo, quem entra não sai sem querer pela porta, a sala repovoa em 60 s e não repovoa com jogador perto, sair pela porta guarda o saco e entrar de novo dá jogador novo. Quatro sabotagens barradas. Dois Chromium no Realtime de verdade, duas rodadas verdes: B entra sozinho com o anfitrião na cidade, anda e é visto, o anfitrião entra depois, B sai com o saco e volta, o anfitrião sai e fecha a sala, B volta à cidade. Tela conferida em 360×640.
-
-**Análise:** a masmorra da sala nasce com o grupo de um (o anfitrião), então tem menos monstros que antes na largada (~40 contra ~66 com dois); o respawn sobe o normal de cada sala com quem está dentro. Com a porta na entrada e sem tempo, o risco da sala é só o caminho de volta com o saco cheio.
-
-**Roadmap:** item em `Concluído`, fora da fila (pedido do dono, PRD 15.1). `Agora` continua "sair cedo", que agora vale só para o solo.
-
-**Pendências e riscos:**
-- **Conflito com o pilar das partidas curtas**, aceito pelo Leonardo: na sala não há pressão de tempo; o solo continua com 6 minutos. Medir no playtest se a sala virou farm sem risco.
-- O anfitrião continua não podendo deixar o jogo em segundo plano: a masmorra congela para quem está dentro, e em 12 s eles voltam sem resultado.
-- O anfitrião não troca de personagem com a sala aberta (trocar fecha a sala).
-- A masmorra do anfitrião roda sem parar enquanto a sala existir; com a aba aberta horas, `G.t` cresce sem limite (inofensivo) e os cadáveres ficam capados em 60.
-- O Guardião renasce também: matar o chefe e esperar 60 s longe dele é farm. Se pesar, `progression.respawn` ganha um tempo próprio para o chefe.
-- Mesclado com a Forja, as peças no chão e o registro de caçada (0.18.0): cada entrada pela porta abre um registro de caçada na nuvem e cada saída fecha o dele. A **Mochila do convidado** mostra o saco local, que o retrato não sincroniza (só o valor): o saco de verdade é o do anfitrião e chega inteiro no resultado.
-
-**Próximo passo recomendado:** o Leonardo testar com um amigo: entrar em momentos diferentes, sair e voltar, e dizer se a sala sem tempo ficou boa; depois, "Sair cedo" (`Agora`).

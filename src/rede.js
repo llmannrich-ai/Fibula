@@ -9,11 +9,11 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES,SLOTS_EQ,cacaDe} from './sim/dados.js?v=0.37.0';
-import {save,ch} from './sim/progresso.js?v=0.37.0';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.37.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.37.0';
-import {log} from './hud.js?v=0.37.0';
+import {CLASSES,SLOTS_EQ,cacaDe} from './sim/dados.js?v=0.41.0';
+import {save,ch} from './sim/progresso.js?v=0.41.0';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.41.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.41.0';
+import {log} from './hud.js?v=0.41.0';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
@@ -76,10 +76,11 @@ function conta(){rede.n=OUTROS.size;rede.aoMudar()}
 function chegou(id,meta,avisa){
   if(id===ID||!meta)return;
   const o=poeOutro(id,meta);
-  /* a sala anunciada: o número de gente e o mapa de caça (conferido em
-     cacaDe), o resto é o nome já conferido */
-  const n=meta.sala&&meta.sala.n|0;
-  if(o&&n>=1&&n<=4)SALAS.set(id,{id,nome:o.nome,classe:o.classe,n,h:cacaDe(meta.sala.h)});else SALAS.delete(id);
+  /* a sala anunciada: o número de gente, o mapa de caça (conferido em
+     cacaDe) e o canal dela, que é o de quem a criou (e não o de quem anuncia,
+     se ela já mudou de anfitrião); o resto é o nome já conferido */
+  const n=meta.sala&&meta.sala.n|0,sid=meta.sala&&typeof meta.sala.id==='string'&&/^\w{1,40}$/.test(meta.sala.id)?meta.sala.id:id;
+  if(o&&n>=1&&n<=4)SALAS.set(id,{id:sid,nome:o.nome,classe:o.classe,n,h:cacaDe(meta.sala.h)});else SALAS.delete(id);
   /* quem está na masmorra da sala dele não aparece andando na cidade */
   if(meta.longe){tiraOutro(id);return}
   if(o&&avisa&&!longe)log(`${o.nome} chegou à cidade.`,'info');

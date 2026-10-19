@@ -358,6 +358,8 @@ h2.lost{color:var(--hp)}
 .inicio .cta{font-size:18px;padding:16px}
 .contaok{display:flex;justify-content:space-between;align-items:center;gap:8px}
 .contaok p:empty{display:none}
+.inicio .link{justify-self:center;font-size:13px}
+.cls .risco{font-size:11px}
 .link{background:none;border:0;color:var(--bone);text-decoration:underline;font:12px var(--f-body);min-height:44px;padding:0 0 0 12px;cursor:pointer}
 .link[hidden]{display:none}
 .rodape{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
@@ -445,11 +447,7 @@ h2.lost{color:var(--hp)}
   <div class="screen" id="menu">
     <div class="panel inicio">
       <h1>Fibula</h1>
-      <p class="lede" id="mLede" hidden>Cace, encha a mochila e volte vivo.</p>
       <p class="aviso" id="mAviso" role="status" hidden>Seu progresso não está sendo salvo neste navegador (aba anônima ou armazenamento bloqueado). Ao fechar a aba, ele se perde.</p>
-      <button class="quem" id="mQuem" type="button" aria-label="Trocar de personagem"><span><b id="mCls">Feiticeiro</b> · nível <span id="sLvl">1</span></span><span id="mCofre">cofre: 0</span></button>
-      <p class="risco" id="mRisco"></p>
-      <button class="cta" id="play">Jogar</button>
       <div class="conta" id="mConta" hidden>
         <form class="conta" id="contaF">
           <div class="row2"><input id="contaU" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="usuário" aria-label="Nome de usuário"><input id="contaS" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha"></div>
@@ -457,7 +455,7 @@ h2.lost{color:var(--hp)}
         </form>
         <div class="contaok"><p id="contaT" role="status"></p><button class="link" type="button" id="contaSair" hidden>Sair</button></div>
       </div>
-      <div class="rodape"><button class="ghost" id="toRegras">Regras</button><button class="ghost" id="toPick">Personagens</button></div>
+      <button class="cta" id="play">Jogar</button>
     </div>
   </div>
 
@@ -469,7 +467,7 @@ h2.lost{color:var(--hp)}
         <p>Na cidade, fale com quem leva à caçada: o Guia, no portão sul, a grade do esgoto na rua, o Capitão no porto. Entre pela porta. Não há relógio: você sai pela mesma porta quando quiser, parado nela por <span id="rExt">2,5</span> segundos. Sozinho ou com até três amigos. Leve comida, comprada nas lojas da cidade: sem estar alimentado, a vida e a mana não voltam sozinhas. Coma pelo botão Comer.</p>
       </details>
       <details open><summary>A morte</summary>
-        <p>Morrer custa a mochila inteira e <span id="rPerda">25</span>% da experiência do nível atual. O nível nunca cai. O Selo de resguardo, comprado no Mercador, guarda parte do valor da mochila. A tela inicial e quem leva à caçada dizem quanto está em jogo antes de entrar.</p>
+        <p>Morrer custa a mochila inteira e <span id="rPerda">25</span>% da experiência do nível atual. O nível nunca cai. O Selo de resguardo, comprado no Mercador, guarda parte do valor da mochila. A escolha de personagem e quem leva à caçada dizem quanto está em jogo antes de entrar.</p>
       </details>
       <details><summary>Mochila e cofre</summary>
         <p>O loot vai para a mochila, que tem <span id="rEsp">20</span> espaços: cada peça ocupa um, o resto empilha. Ela fica com o personagem entre as caçadas e vai junto na próxima. Só o cofre do Banco é seguro: guarde lá o que não quer perder. O ouro do cofre se gasta no Mercador, no Mestre de magias, nas lojas e na Forja.</p>
@@ -498,18 +496,18 @@ h2.lost{color:var(--hp)}
   <div class="screen" id="pick" hidden>
     <div class="panel">
       <p class="eyebrow">Personagens</p>
-      <h2>Escolha a classe</h2>
-      <p class="lede">Nenhuma classe ganha poder de graça: o que muda é a <b>velocidade com que cada coisa cresce</b>. O cofre e as melhorias do Mercador são da conta e valem para todos; o equipamento vestido é de cada personagem.</p>
+      <h2>Escolha o personagem</h2>
+      <p class="lede">Toque num personagem para entrar na cidade. Nenhuma classe ganha poder de graça: o que muda é a <b>velocidade com que cada coisa cresce</b>.</p>
       <dl class="stats" id="pStats" hidden>
+        <div><dt>Nível</dt><dd id="sLvl">1</dd></div>
         <div><dt>Cofre</dt><dd id="sCofre">0</dd></div>
         <div><dt>Recorde</dt><dd id="sBest">0</dd></div>
         <div><dt>Espaços</dt><dd id="sSlots">2</dd></div>
         <div><dt>Caçadas</dt><dd id="sRuns">0</dd></div>
-        <div><dt>Saídas</dt><dd id="sExt">0</dd></div>
         <div><dt>Mortes</dt><dd id="sDead">0</dd></div>
       </dl>
       <ul id="pickList"></ul>
-      <button class="ghost voltar" id="pickBack" hidden>Voltar ao acampamento</button>
+      <div class="rodape"><button class="ghost" id="toRegras">Regras</button><button class="ghost" id="pickBack">Voltar</button></div>
     </div>
   </div>
 
@@ -659,7 +657,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.37.0"></script>
+<script type="module" src="src/main.js?v=0.41.0"></script>
 
 </body>
 </html>
