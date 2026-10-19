@@ -93,7 +93,10 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.16.0 (19/10/2026) | Todo mundo anda uns 15% mais rápido: o personagem do nível 1 dá um passo a cada 0,5 s (2 sqm/s), e os monstros aceleram na mesma proporção |
 | 0.6.0 (18/10/2026) | Morrer custa 25% da experiência do nível (nunca o nível), com aviso no menu e linha própria na tela final; curva de nível mais lenta, ajustável no `content.json` |
+| 0.15.0 (19/10/2026) | A Feira só aceita o que tem origem registrada no banco: o que foi extraído, comprado, recebido na Feira ou vendido ao Banco com a conta ligada. Na caçada, a Mochila vende uma peça do saco direto na Feira |
+| 0.14.0 (19/10/2026) | Caçar junto: no Guia de caça, crie uma sala ou entre na de quem está na cidade (até 4). O aparelho de quem criou calcula a caçada de todos; loot disputado, mais monstros, e cada um sai pelo portal quando quiser. A sala fica aberta até quem criou fechar ou sair do jogo |
 | 0.13.0 (19/10/2026) | Velocidade do Tibia: o personagem anda 1,8 sqm/s no nível 1 e acelera a cada nível (220 + 2 por nível, a fórmula do Tibia); monstros mais lentos que o jogador, a aranha mais rápida e o esqueleto e o orc a 1,25 sqm/s |
 | 0.12.0 (19/10/2026) | O que o personagem veste aparece nele: a armadura retinge o tronco (couro marrom, malha cinza), a arma vai na mão e corta no golpe, e o amuleto brilha no peito. O Banco mostra o boneco vestido, que gira com um toque, e na cidade os outros jogadores veem o que você veste |
 | 0.11.0 (19/10/2026) | A Feira: mercado entre jogadores, com conta. Anuncia-se compra ou venda de uma peça a um preço; o banco casa as ofertas na hora (melhor preço primeiro), e o que não casa fica no livro até alguém aceitar ou o dono cancelar. A venda paga 2% de taxa. Quem vendeu ou comprou enquanto estava fora recebe ao abrir a Feira |

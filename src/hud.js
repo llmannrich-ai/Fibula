@@ -1,13 +1,17 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.14.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus} from './sim/dados.js?v=0.14.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat} from './sim/progresso.js?v=0.14.0';
-import {G} from './sim/incursao.js?v=0.14.0';
-import {C} from './sim/cidade.js?v=0.14.0';
-import {ART,icone} from './arte.js?v=0.14.0';
-import {rede} from './rede.js?v=0.14.0';
-import {$,app} from './dom.js?v=0.14.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.17.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES} from './sim/dados.js?v=0.17.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,soPecas,ehMat} from './sim/progresso.js?v=0.17.0';
+import {G} from './sim/incursao.js?v=0.17.0';
+import {tiraDoSaco,poeNoSaco} from './sim/combate.js?v=0.17.0';
+import {temConta,mercado,cacaId} from './nuvem.js?v=0.17.0';
+import {erroFeira} from './telas.js?v=0.17.0';
+import {persist} from './salvar.js?v=0.17.0';
+import {C} from './sim/cidade.js?v=0.17.0';
+import {ART,icone} from './arte.js?v=0.17.0';
+import {rede} from './rede.js?v=0.17.0';
+import {$,app} from './dom.js?v=0.17.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -48,11 +52,11 @@ export function montaBotoes(){ // chamado ao entrar na incursão: os espaços mu
   }
 }
 export function hud(){
-  const p=G.p,c=ch(),left=Math.max(0,RUN-G.t);
+  const p=G.p,c=p.c,left=Math.max(0,RUN-G.t);
   E.hpI.style.width=(p.hp/p.mhp*100)+'%';setT(E.hpT,`${Math.ceil(p.hp)}/${p.mhp}`);
   E.mpI.style.width=(p.mp/p.mmp*100)+'%';setT(E.mpT,`${Math.floor(p.mp)}/${p.mmp}`);
   E.xpI.style.width=(c.xp/xpNeed(c.lvl)*100)+'%';setT(E.lvlT,'Nv '+c.lvl);
-  setT(E.clsT,KL().nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
+  setT(E.clsT,CLASSES[p.cl].nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
   setT(E.bagT,String(p.bagVal));if(p.bagVal!==MO.val&&!MO.el.hidden)desenhaMochila();setT(E.timeT,fmt(left));E.clock.classList.toggle('warn',left<=60);
   setT(E.portalT,G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
   const showCompass=G.portal.open&&!G.over;E.compass.hidden=!showCompass;
@@ -74,7 +78,7 @@ let pertoAntes=null;
 export function hudCidade(){
   const c=ch();
   setT(EC.cls,KL().nome);setT(EC.lvl,'Nv '+c.lvl);setT(EC.cofre,String(save.cofre));
-  setT(EC.rede,rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…');
+  setT(EC.rede,(rede.estado==='ligado'?(rede.n?`${rede.n+1} na cidade`:'Só você na cidade'):rede.estado==='sem rede'?'Sem rede: só você':'Conectando…')+(rede.naSala?` · sala ${rede.naSala}/4`:''));
   if(C.perto===pertoAntes)return;
   pertoAntes=C.perto;EC.falar.hidden=!C.perto;
   if(!C.perto)return;
@@ -149,7 +153,40 @@ export function desenhaMochila(){
   for(let i=rows.length;i<Math.max(12,Math.ceil(rows.length/6)*6);i++)g.appendChild(cel(null));
   if(!selInfo)MO.sel=null;
   info(...(selInfo||[]));
+  /* na sala de caçar junto o saco é do anfitrião: vender daqui duplicaria a peça */
+  vendaDoSaco(caca&&!G.sala&&selInfo&&!selInfo[2]&&ITEMS[selInfo[0]].slot?selInfo[0]:null);
 }
+/* ---------- venda do saco ----------
+   Na caçada, a peça do saco pode ir direto para a Feira, uma por vez (decisão
+   do Leonardo: livre, mesmo que depois morra). Sai do saco na hora e volta se
+   o banco recusar; o ouro de um negócio fechado já entra no cofre. */
+const MV={k:null,ocupado:false};
+function vendaDoSaco(k){
+  const el=$('#moVenda');el.hidden=!k||!temConta();
+  if(el.hidden){MV.k=null;return}
+  if(MV.k!==k){MV.k=k;$('#mvPreco').value=ITEMS[k].val;$('#mvMsg').textContent=''}
+  $('#mvOk').disabled=MV.ocupado;
+}
+async function vendeDoSaco(){
+  const k=MV.k,p=G&&G.p,pr=Math.round(+$('#mvPreco').value),msg=$('#mvMsg');
+  if(!k||!p||p.fora||MV.ocupado)return;
+  if(!(pr>=1&&pr<=1e6)){msg.textContent='O preço vai de 1 a 1.000.000 de ouro.';return}
+  const id=cacaId();if(!id){msg.textContent=erroFeira('caca');return}
+  const saco=soPecas(p.bag);if(!tiraDoSaco(p,k,1))return;
+  MV.ocupado=true;msg.textContent='Anunciando…';desenhaMochila();
+  try{
+    const r=await mercado('mercado_anunciar',{p_lado:'venda',p_item:k,p_preco:pr,p_qtd:1,p_caca:id,p_saco:saco});
+    msg.textContent=r.feitos?`Vendeu ${ITEMS[k].nome}: ${r.ouro} de ouro já no cofre (taxa de ${r.taxa}).`
+      :`${ITEMS[k].nome} anunciada na Feira a ${pr}. Se ninguém comprar, cancele lá e ela vai para o cofre.`;
+  }catch(e){
+    /* recusada: volta para o saco, ou para o cofre se a caçada já acabou em extração */
+    if(!p.fora)poeNoSaco(p,k,1);else if(p.fora==='extraiu'){save.itens[k]=(save.itens[k]|0)+1;persist()}
+    msg.textContent=erroFeira(e.message);
+  }
+  MV.ocupado=false;if(!MO.el.hidden)desenhaMochila();
+}
+$('#mvOk').addEventListener('click',vendeDoSaco);
+for(const[id,d]of[['#mvMenos',-1],['#mvMais',1]])$(id).addEventListener('click',()=>{const el=$('#mvPreco');el.value=clamp((Math.round(+el.value)||0)+d,1,1e6)});
 export function abreMochila(){MO.sel=null;MO.el.hidden=false;MO.bt.setAttribute('aria-expanded','true');MO.bt.setAttribute('aria-label','Fechar a mochila (B)');desenhaMochila()}
 export function fechaMochila(){if(MO.el.hidden)return;MO.el.hidden=true;MO.bt.setAttribute('aria-expanded','false');MO.bt.setAttribute('aria-label','Abrir a mochila (B)')}
 const alterna=()=>MO.el.hidden?abreMochila():fechaMochila();

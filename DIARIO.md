@@ -18,6 +18,68 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 14:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** todo mundo uns 15% mais rápido (0.16.0), a pedido do Leonardo. Só dado: `progression.walk.ground` de 150 (o chão padrão do Tibia) para 130. Como o passo é proporcional ao chão e arredondado para cima em 50 ms, o ganho real vai de 9% a 17%: nível 1 de 550 para 500 ms (2 sqm/s), nível 50 de 400 para 350, nível 100 de 350 para 300; aranha 600→550, orc e esqueleto 800→700, xamã e Guardião 850→750, rato 900→800. Nível 200 fica em 250.
+
+**Validação:** `node tools/testar.mjs` — 28/28, com os valores esperados da fórmula ajustados na simulação no Node (nível 1 = 0,5 s, nível 200 = 0,25 s, velocidade 150 = 0,7 s, buff de 50% = 0,35 s, 1,8 s para leste = 4 sqm).
+
+**Análise:** trocar o chão mantém a proporção entre jogador e monstros e o arredondamento do Tibia; trocar o arredondamento para o mais próximo daria 20% a 40%, longe do pedido.
+
+**Roadmap:** sem mudança de fila.
+
+**Pendências e riscos:** a mesma de antes: medir mortes e XP por incursão com o ritmo novo.
+
+**Próximo passo recomendado:** o Leonardo jogar e dizer se o ritmo acertou.
+
+---
+
+## 2026-10-19 14:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** origem na Feira e venda do saco (0.15.0), a pedido do Leonardo ("anunciar somente o que o player tem no cofre ou no saco"). Duas decisões dele: o saco vende **livre** na caçada, mesmo que depois morra; e o banco **registra a origem**. `tools/supabase/004_origem.sql`: `mercado_lastro` (segundo saldo, só o banco mexe), `cacadas`, `fibula_marcos` (anistia uma vez só), `caca_comecar`, `caca_fim`, `lastro_banco`, `mercado_anunciar` de 7 argumentos (o de 5 virou atalho, para cliente em cache) e `mercado_livro`/`mercado_cancelar` com a origem. Cliente: fila de origem em `nuvem.js` (`masmorra-runas-v2-fila`), `cacaComeca()` no `start()`, `cacaFim()` no `saida.fim`, `lastroBanco()` na venda ao Banco; na Feira, "N com origem" e o ouro com origem; na Mochila, "Vender 1 na Feira" para peça do saco (`tiraDoSaco`/`poeNoSaco` em `combate.js`).
+
+**Validação:** SQL num Postgres 16 local com uma conta "antiga" (anistia de cofre, peças guardadas e vestidas) e uma criada depois com save editado (99.999 de ouro, 5 cotas): tudo dela barrado com `sem_origem`; venda do saco antes de 20 s barrada; peça fora do saco barrada; venda do saco casando a 100 com 98 de origem; extração com menos de 85 s fecha sem crédito; extração válida credita só chaves válidas; fechar duas vezes recusado; venda ao Banco uma vez só por peça; cancelamento devolvendo a origem. `node tools/testar.mjs` — 26/26, com `feira` (31 asserções) e o caso novo `feira-saco` (14). Produção: migração aplicada em cinco partes, anistia nas 3 contas, auxiliares sem acesso de `anon`, API real respondendo `sessao` nos dois formatos de `mercado_anunciar`.
+
+**Análise:** com o save gravado pelo cliente, o saldo do save não prova nada; a origem só cresce por caminhos que o banco registra. É a mesma ideia do servidor autoritativo, mas sem rodar a masmorra: o banco não sabe se a cota do saco caiu de verdade, então põe teto (30 peças por caçada, 60 por dia, 20.000 de ouro por caçada, extração só depois de 85 s).
+
+**Roadmap:** item em `Concluído`; decisão no PRD 15.1.
+
+**Pendências e riscos:**
+- Na sala de caçar junto (0.14.0, que entrou em paralelo) a venda do saco fica desligada: no convidado o saco é retrato do anfitrião e vender dele duplicaria a peça. Liberar exige o anfitrião aplicar a venda pela regra.
+- **Vender do saco tira o peso da morte** para quem vende antes de morrer (escolha do Leonardo). Medir no playtest se a morte ainda dói; o pilar 1 do VISAO.md fala justamente disso.
+- **Não é anti-trapaça completo:** quem forjar chamadas à API tira até os tetos por dia. Fechar de vez é o servidor da F2.
+- Quem jogou sem conta e criou conta depois não negocia o que tinha antes (não há como provar a origem). Pode gerar reclamação; a saída seria uma anistia nova, decisão do Leonardo.
+- A venda do saco mexe no estado da regra fora do `update()` (como `drinkPot()`); na F2 vira entrada.
+- Gasto no Mercador não baixa a origem: ela pode passar do cofre, e vale o menor dos dois.
+
+**Próximo passo recomendado:** o Leonardo testar no celular: caçar com conta, vender uma peça do saco pela Mochila, extrair e ver a origem na Feira.
+
+---
+
+---
+
+## 2026-10-19 01:38 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** caçar junto (0.14.0), opção C do plano do multiplayer, a pedido do Leonardo ("criada na opção de entrar na masmorra na cidade; cada usuário pode criar uma sala; ela fica aberta até ele sair do jogo ou fechar"). Módulo novo `src/sala.js` (canal do Realtime por sala); seção "Caçar em grupo" no Guia de caça (criar, ver as abertas, entrar, sair, fechar); `retrato()`, `aplicaRetrato()` e `assiste()` em `src/sim/incursao.js`; `confereFicha()` em `src/sim/progresso.js`; `saida.sai(p)` para a tela final ser de cada jogador; o desenho mostra todos da sala com nome. Mesclada com o andar por sqm (`78b2abf`, sessão paralela) por commit de merge: a posição do convidado passou a ser o sqm, e o anfitrião o leva até lá pela regra (um sqm por passo, na velocidade do nível).
+
+**Validação:** `node tools/testar.mjs` — 24/24, com dois casos novos (`sala-anfitriao`, `sala-convidado`, Realtime falso) e, no Node, o retrato (o convidado vê os mesmos monstros, jogadores e sacos), a `confereFicha()` e o limite de um sqm por passo. Sete sabotagens barradas (teleporte, ficha sem conferir, poção ignorada, retrato puxando quem anda, item falso no save, e duas do retrato). Fora do harness: dois Chromium com saves próprios no **Realtime de verdade**, servindo esta cópia: criar, listar, entrar, caçar juntos (66–71 monstros iguais nos dois), andar e ser visto no sqm exato, habilidade do convidado lançada no anfitrião, extração dos dois com cofre de cada um, sala aberta depois, fechar — quatro rodadas verdes seguidas. Telas conferidas em 360×640.
+
+**Análise:** o teste ao vivo achou um problema que o harness não pegava: com mais de ~100 ms de atraso, o retrato podia mostrar o anfitrião um passo atrás com os dois parados, e o convidado era puxado de volta. Agora só volta quando a diferença dura (3 retratos se longe, 8 se é um sqm com os dois parados). O primeiro retrato de cada caçada atrasava até 5 s (temporizador do "estou vivo" da sala); corrigido.
+
+**Roadmap:** "Caçar junto" em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **O anfitrião não pode minimizar o jogo**: o navegador para o laço e a caçada congela para todos; 12 s depois os convidados voltam à cidade sem resultado. No celular, atender uma ligação derruba a sala.
+- **Só o anfitrião pode trapacear** (é ele quem calcula). Aceito para amigos; não abrir a desconhecidos sem a M2.
+- O convidado que fecha o jogo no meio fica parado na masmorra do anfitrião até morrer ou a masmorra desabar; o save dele não muda.
+- Entrar numa sala no meio de uma caçada dela deixa o convidado para a próxima.
+- Cota do Realtime: com 2 jogadores, ~40 mensagens/s contando entregas; a cota de 2 milhões/mês dá algumas dezenas de horas. Olhar o painel (Usage → Realtime Messages) depois dos testes com amigos.
+- Os efeitos que o convidado vê são os principais (dano, magias de área, cadáveres); faíscas e fumaça não vão pela rede.
+
+**Próximo passo recomendado:** o Leonardo testar com um amigo, cada um no seu celular, e dizer se o atraso do convidado incomoda; depois, "Sair cedo" (`Agora`).
+
+---
+
 ## 2026-10-19 13:00 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** equipamento visível no personagem (0.12.0), a pedido do Leonardo. Nova seção "equipamento no corpo" em `src/desenho.js`: `mede()` lê os pixels de cada quadro da classe uma vez (topo, altura, pescoço, mãos e quais pixels do tronco são roupa, pela cor dominante da faixa), `vestido()` guarda em cache o quadro retingido pela armadura, `poeArma()` desenha o sprite do item na mão (atrás do corpo de costas, girando no golpe) e `poeAmuleto()` a pedra no peito. `retrato()` desenha o mesmo boneco em qualquer canvas: o Banco mostra o personagem vestido e gira ao toque. Dados em `items.<k>.veste` (`cor`, `malha`), validados na carga. Rede: a presença leva `eq`, reenviada quando muda no Banco; `poeOutro()` só aceita peça que existe e é daquele espaço. Sem a arte, o desenho em código ganhou a faixa da armadura e a pedra.
@@ -362,76 +424,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - A entrada anterior deste diário está marcada 23:30 UTC, depois desta: relógio da outra sessão, não ordem real.
 
 **Próximo passo recomendado:** gerador com semente em `src/sim/base.js` e passo fixo no `update()`, aproveitando o teste da simulação no Node, que já compara duas execuções.
-
-## 2026-10-18 23:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** arte e layout do Tibia, a pedido do Leonardo ("puxar e alterar a parte de layout e de arte para ficar igual à do Tibia"). Cobre o item `Agora` (pipeline OTSP) e vai além do que ele dizia: o desenho foi trocado de fato. Arquivos novos: `tools/sprites.mjs`, `assets/otsp/` (atlas.png, atlas.json, LICENSE.txt, AUTHORS.md), `assets/CREDITOS.md`. Mudados: `index.html` (seção nova `arte`, `pecas()` no mapa, `render()`, CSS das telas e do HUD), `tools/testar.mjs` (atlas no prelúdio, casos `arte` e `sem-arte`).
-
-**Validação:** `node tools/testar.mjs` — 16/16, sintaxe OK, rodado de novo depois do merge com o login por usuário e senha. `node tools/sprites.mjs` duas vezes deu o mesmo MD5 do atlas. Telas conferidas em 390×844 com DPR 2 no Chromium (menu, escolha de classe, incursão com combate, portal aberto).
-
-**Análise:**
-- **Por que o .dat/.spr e não as folhas PNG:** as folhas do pacote são despejo do `.spr` em ordem de id, sem dizer qual peça de 32 px é de qual criatura, direção ou quadro. O `.dat` diz; o script monta criatura de 64 px, 4 direções e quadros de caminhada sem recorte à mão. O `.spr` já traz transparência, então não há magenta a converter. Desvio consciente da regra 1 da seção 9 do PRD ("copiar as folhas usadas"): o repositório guarda só o atlas gerado (205 KB) e o script baixa o pacote no commit fixado — copiar o `.spr` (9 MB) não faria sentido.
-- **Escolhas de sprite** (tabela `ARTE` no script): Feiticeiro = mago vermelho (15), Druida = mago verde (33), Caçador = caçador de couro (19), Cavaleiro = guerreiro de armadura (3); Rato = roedor (6), Aranha = besouro verde (8, o pacote não tem aranha), Esqueleto = criatura de ossos (22), Orc = goblin com tocha (7), Xamã = encapuzado com tocha (4), Guardião = demônio grande (46). Chão de terra (140), paredes de tijolo cinza (534–537), portal = poço de pedra (1122) com o brilho de teletransporte (efeito 2). O pacote tem só 15 efeitos úteis: energia, sagrado e terra são o brilho azul e a nuvem com o matiz girado no script.
-- **Paredes:** peça por bloco sólido em `pecas()`, com a regra de encaixe do Tibia (vertical, horizontal, poste no canto de cima à esquerda, canto onde a horizontal do oeste encontra a vertical do norte). O `render()` desenha linha a linha, parede e depois criatura, então a parede de baixo cobre o pé de quem encosta nela, como no Tibia. Testei também a rocha de montanha (956–961): fica bonita, mas cobre uma linha inteira de chão e esconde monstro — descartada por legibilidade no celular.
-- **Fontes:** o Google Fonts saiu. Verdana (a fonte do cliente do Tibia) no corpo e Palatino nos títulos, do sistema. No Android sem Verdana cai na sans do sistema.
-- Cadáver de cada monstro fica no chão (até 60, o mais antigo some). O saco de loot aparece ao lado quando há loot.
-
-**Roadmap:** item `Agora` em `Concluído` (com o que foi além); "Cortar a dependência de fontes externas" saiu de `Depois`. `Agora` virou o gerador com semente; entrou em `Próximo` a tela de créditos no jogo.
-
-**Pendências e riscos:**
-- **Créditos dentro do jogo:** a CC BY 4.0 exige atribuição; hoje está em `assets/CREDITOS.md` e no README. A seção 9 do PRD pede tela no jogo — virou o item 1 de `Próximo`.
-- **Dois caminhos de desenho:** com e sem atlas. Quem mexer no `render()` precisa manter os dois ou o `sem-arte` quebra. Se um dia o atlas for obrigatório, apagar o caminho antigo encolhe o arquivo em ~120 linhas.
-- **Nomes x sprites:** "Aranha" é um besouro e "Orc" é um goblin, porque o OTSP não tem aranha nem orc. Se incomodar, renomear no `content.json` é decisão do Leonardo.
-- O `index.html` foi a 1629 linhas; o limite combinado para discutir divisão é ~2000.
-- O PWA (outra metade do F0 item 6) precisa pôr `assets/otsp/atlas.*` no cache do service worker.
-
-**Próximo passo recomendado:** tela de créditos (pequena, fecha a atribuição) ou o gerador com semente, que está em `Agora`.
-
----
-
-## 2026-10-18 22:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** login simples com usuário e senha, sem e-mail, no lugar do link mágico, a pedido do Leonardo ("fase de teste, qualquer usuário, qualquer senha"). Banco: migração `login_simples` (`tools/supabase/002_login_simples.sql`), aplicada pelo conector. Jogo: seção `conta e save na nuvem` reescrita, com campos de usuário e senha e os botões Entrar e Criar conta.
-
-**Validação:** `node tools/testar.mjs` — 14/14, sintaxe OK. O caso `nuvem-entrar` foi refeito: campo vazio, senha errada, usuário repetido sem diferenciar maiúscula, conta nova, sessão guardada sem a senha, leitura e gravação com o token. Contra o banco real, por `curl` com a chave publishable: criar, duplicar (recusado), senha errada (recusada), entrar, ler vazio, gravar, ler, token falso (recusado), leitura direta das tabelas (recusada), função auxiliar (recusada), sair (token morto). O CORS a partir de `llmannrich-ai.github.io` está liberado. Menu conferido em 360 px.
-
-**Análise:**
-- O login não usa o Supabase Auth: são cinco funções `security definer` que conferem senha (bcrypt via `pgcrypto`) e token (o banco guarda só o sha256). As tabelas ficam fechadas para `anon`. Os avisos do Supabase sobre "função executável por anon" e "RLS sem política" são o desenho, não um furo; está explicado no `CLAUDE.md`.
-- A sessão guardada do login por e-mail (formato antigo, sem `tk`) agora é apagada do aparelho ao abrir o jogo. O teste novo pegou que ela só era ignorada.
-- O `save.dono` mudou de espaço de nomes: antes era o id do Supabase Auth, agora é o id de `public.jogadores`. Um aparelho ligado ao login antigo é tratado como "de outra conta" e adota o que estiver na nuvem.
-
-**Roadmap:** sem item novo; é ajuste do save na nuvem, já em `Concluído`.
-
-**Pendências e riscos:**
-- **Sem limite de tentativas e sem recuperação de senha.** Aceito para a fase de teste. Antes de abrir para desconhecidos, voltar ao Supabase Auth ou pôr limite de taxa.
-- **Conta `teste_claude_tmp` ficou no banco** (senha `1`, sessões encerradas, save `{"cofre":42}`). O `execute_sql` do conector expira em `delete`; apagar no painel (Table Editor → `jogadores`).
-- A tabela `public.saves` (login por e-mail) ficou sem uso. Não apagar sem decisão do Leonardo.
-- O PRD 7.5 ainda diz "link mágico e Google"; a troca é temporária e precisa voltar para lá ou o PRD mudar.
-
-**Próximo passo recomendado:** Leonardo cria uma conta no celular e confere o "Progresso salvo na nuvem"; o ciclo segue no pipeline de sprites OTSP.
-
----
-
-## 2026-10-18 21:40 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** revisão e mescla na `main` do save na nuvem (branch `claude/fibula-supabase-connection-1d3e9b`, feita na sessão do computador). Na revisão, uma correção no `puxa()` do `index.html` e o caso `nuvem-outra-conta`.
-
-**Validação:** `node tools/testar.mjs` — 14/14, sintaxe OK. O caso novo falhou contra o código da branch (leu cofre 777 no lugar de 30) e passa com a correção. Banco conferido pelo conector: `public.saves` com RLS ligada, migração `saves` aplicada, nenhum aviso de segurança. Só a chave publishable está no código.
-
-**Análise:**
-- **Perda de dados ao trocar de conta no mesmo aparelho.** Na primeira entrada de uma conta, vencia o save com mais incursões. Se o aparelho tinha o save da conta A (`dono` = A) e alguém entrava com B, o save de A, com mais incursões, sobrescrevia o de B na nuvem. Agora, quando o `dono` local é outra conta, vence sempre a nuvem.
-- Sem save na nuvem para B, o save local de A ainda é copiado para B. É cópia, não perda; mantido de propósito para não apagar progresso que ainda não subiu.
-- O conflito entre aparelhos já ligados usa `save.em`, o relógio do cliente. Relógio errado num aparelho pode fazer o save mais antigo vencer. Aceitável para os testadores; resolver de verdade é do servidor.
-- O `CLAUDE.md` da branch dizia que o conector do Supabase não enxergava o projeto. Deixou de ser verdade quando o Leonardo o religou à organização "Versa" (Free); o texto foi corrigido.
-
-**Roadmap:** o save na nuvem entrou em `Concluído`, marcado como antecipado da F1. `Agora` continua o pipeline de sprites OTSP.
-
-**Pendências e riscos:**
-- **Configuração do Auth no painel, com o Leonardo:** Site URL e Redirect URLs com `https://llmannrich-ai.github.io/Fibula/`. Sem isso o link mágico pode voltar para o endereço errado.
-- **E-mail:** o SMTP padrão do Supabase só entrega para membros da organização. Testadores de fora não recebem o link até existir SMTP próprio.
-- **Trapaça:** o cliente grava o save inteiro. A RLS só impede mexer no save de outra pessoa.
-- O link mágico precisa ser aberto no mesmo aparelho em que foi pedido (o token volta no `#hash` da URL).
-
-**Próximo passo recomendado:** Leonardo configura o Auth e testa o login no próprio celular; o ciclo segue no pipeline de sprites OTSP.
-
----

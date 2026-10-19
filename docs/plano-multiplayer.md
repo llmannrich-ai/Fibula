@@ -60,6 +60,21 @@ multiplayer isso muda três coisas:
 - **Jogo em grupo:** bloqueio de corpo (monstros ocupam sqm) dá papel ao
   cavaleiro, que segura o corredor.
 
+## 1.3 Caçar junto com o anfitrião calculando (19/10/2026, versão 0.14.0)
+
+Opção C, decidida pelo Leonardo depois de testar a cidade compartilhada com
+dois celulares: co-op na masmorra **antes da M2 e sem gasto**, com o aparelho
+de quem cria a sala no papel do servidor. Usa a M1 (fichas, `G.ps`) e o
+andar por sqm: o convidado anda no próprio aparelho e conta o sqm; o
+anfitrião leva o boneco até lá pela regra, então não há teleporte. O
+`CLAUDE.md` (Realtime → Sala) descreve o funcionamento.
+
+O que isso adianta da M2: o protocolo (entrada por passo, retrato a 10/s,
+resultado por jogador) e o convidado desenhando um estado que não calcula.
+O que **não** resolve, e continua sendo da M2/M3: trapaça do anfitrião,
+partida que congela se o anfitrião minimiza o jogo, e o limite de ~100
+envios por segundo por canal do Realtime.
+
 ## 2. Onde o código está hoje (o que impede o multiplayer)
 
 O que já ajuda muito:

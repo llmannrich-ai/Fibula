@@ -71,8 +71,9 @@ confundidas com precedente:
 | [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~250 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
-Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada,
-ver abaixo) só enquanto o jogador está na cidade. A folha do Google Fonts que existia saiu em
+Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
+as salas de caçar junto, ver abaixo) só enquanto o jogador está na cidade ou
+numa sala. A folha do Google Fonts que existia saiu em
 18/10/2026 junto com a arte do Tibia — as fontes agora são do sistema (Verdana,
 como o cliente do Tibia, e uma serifa Palatino nos títulos).
 
@@ -181,7 +182,15 @@ principal, o markup das telas e do HUD, e a linha que carrega
   broadcast de **um passo por mensagem** (`{id, x, y, d}`: sqm de destino e
   duração em ms), nada parado; erro do
   canal (expulsão por excesso) fecha o socket e religa. Não decide
-  regra nenhuma: a caçada é sozinha, e o co-op da incursão é o servidor da F2
+  regra nenhuma. Anuncia na presença a sala aberta deste aparelho
+  (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
+- `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
+  `realtime:sala-<x.y>-<id do anfitrião>` por sala. O anfitrião roda a
+  incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
+  por segundo; o convidado manda a entrada (o sqm em que está, espaços
+  segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
+  `saiDaSala()`, `quadro(dt,ent)` chamado pelo laço, e os `ganchos` que o
+  `main.js` liga às telas
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -304,9 +313,10 @@ começo do passo**. Regras:
 
 - **Velocidade do Tibia** (`progression.walk`): jogador `220 + 2·(nível−1)`,
   vezes o buff `velo`; monstro, o `spd` dele na mesma unidade, vezes a
-  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`
-  (nível 1 = 550 ms, 1,8 sqm/s; nível 100 = 350 ms; `spd` 150 = 800 ms),
-  arredondado para múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
+  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`,
+  com o chão `ground` 130 (o do Tibia é 150; ~15% mais rápido, pedido do
+  Leonardo): nível 1 = 500 ms, 2 sqm/s; nível 100 = 300 ms; `spd` 150 =
+  700 ms; arredondado para cima em múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
   não corta quina (`passoPara()` escorrega pelo eixo livre).
 - **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
   passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
@@ -375,6 +385,17 @@ O Fibula tem banco no Supabase: projeto `bpwljbualdjlwmzcryzl`,
   `save_gravar` recusa save com `mkt` menor (`'mercado'`) e o cliente relê a
   nuvem. Esquema em
   [tools/supabase/003_mercado.sql](tools/supabase/003_mercado.sql).
+- **Origem do que se negocia** — `public.mercado_lastro` é um segundo saldo
+  (ouro e peças) que só o banco mexe: extração de caçada registrada
+  (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
+  negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
+  tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
+  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
+  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
+  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql). O cliente
+  guarda o que não chegou por falta de rede em `masmorra-runas-v2-fila`.
 - **`public.saves`** — do login por e-mail (Supabase Auth), hoje **sem uso**.
   Fica para quando o login com e-mail ou Google voltar.
   Esquema em [tools/supabase/001_saves.sql](tools/supabase/001_saves.sql).
@@ -384,10 +405,11 @@ O jogo fala com o banco por [`src/nuvem.js`](src/nuvem.js), com
 é pública por natureza. O navegador não toca nas tabelas: chama só as funções
 `conta_criar`, `conta_entrar`, `conta_sair`, `save_ler` e `save_gravar`, e as
 quatro da Feira (`mercado_livro`, `mercado_anunciar`, `mercado_cancelar`,
-`mercado_coletar`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
+`mercado_coletar`) e as três da origem (`caca_comecar`, `caca_fim`,
+`lastro_banco`) (`POST /rest/v1/rpc/<nome>`), que rodam como dono e
 conferem senha ou token por dentro. As tabelas têm RLS ligada e nenhuma
 política, de propósito. Por isso os avisos de segurança do Supabase listam
-essas nove funções como "executáveis
+essas funções como "executáveis
 por anon" e as tabelas como "RLS sem política": é o desenho, não um furo. Se
 um aviso **novo** aparecer, aí sim investigue.
 
@@ -469,8 +491,39 @@ desenha a dos outros: quem tem a chave pode mandar posição falsa, e tudo bem,
 porque na cidade não se ganha nem se perde nada. O que chega de fora passa por
 `poeOutro()` em `src/sim/cidade.js`, que prende a posição ao mapa, só aceita
 classe que existe e corta o nome. **Nada que valha ouro, XP ou item pode
-passar por esse canal**: isso é o servidor autoritativo da F2
+passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 ([docs/plano-multiplayer.md](docs/plano-multiplayer.md)).
+
+### Sala — caçar junto, com o anfitrião calculando
+
+Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
+co-op na masmorra **sem servidor próprio**. No Guia de caça, qualquer um cria
+uma sala; quem está na cidade a vê e entra (até 4). A sala fica aberta até o
+anfitrião fechar ou sair do jogo, e serve para várias caçadas seguidas.
+
+- **O anfitrião é o servidor.** O aparelho dele roda a mesma `src/sim/` com
+  uma ficha por jogador (`newRun(semente, fichas)`), recebe a entrada dos
+  convidados e manda o `retrato()` (`src/sim/incursao.js`, seção "retrato da
+  sala") a 10 por segundo. O mapa não vai: o convidado gera o mesmo pela
+  semente.
+- **O convidado anda no próprio aparelho** (sem atraso no próprio boneco) e
+  conta o sqm em que está; o anfitrião leva o boneco dele até lá **pela
+  regra**, um sqm por passo, na velocidade do nível e só por sqm livre. Se os
+  dois divergem por muito tempo (um monstro no caminho), o convidado volta ao
+  sqm do anfitrião (`p.desv` em `aplicaRetrato()`).
+- **Cada um grava o próprio save** com o resultado que o anfitrião manda
+  (`fim`), passando por conferência (item que existe, número inteiro,
+  habilidade da classe). A ficha que o convidado manda passa por
+  `confereFicha()` em `src/sim/progresso.js`.
+- **Só o anfitrião pode trapacear**, porque é ele quem calcula. É aceitável
+  entre amigos e é a exceção à regra acima, de propósito; para abrir a
+  desconhecidos, o caminho é o servidor da F2 (M2).
+- Custo: com 4 na sala, ~40 envios por segundo no canal, abaixo dos ~100 do
+  plano Free; a cota mensal (2 milhões, contando cada entrega) dá algumas
+  dezenas de horas de caçada a dois por mês.
+- **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
+  laço, a incursão congela para todos, e depois de 12 s sem notícia os
+  convidados voltam à cidade sem resultado.
 
 ## Convenções de código
 

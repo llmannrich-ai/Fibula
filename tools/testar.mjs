@@ -160,20 +160,27 @@ const P = {
      do jogador, mk.caixa o que espera para entrar no cofre. O match é o do
      primeiro nível do outro lado, que basta para a tela; o algoritmo de
      verdade é testado no SQL. N.forcaErro faz a próxima operação falhar com
-     a palavra-chave dada, e save_gravar recusa save com mkt mais velho. */
+     a palavra-chave dada, e save_gravar recusa save com mkt mais velho.
+     mk.lastro é a origem registrada (tools/supabase/004_origem.sql): anunciar
+     exige o saldo dela, e caca_comecar, caca_fim e lastro_banco a movem.
+     N.args guarda os argumentos da última chamada de cada função. */
   nuvem: (remoto, contas, mk) => (h) => patch(h,
     MODULO,
     `<script>
 window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0,
-  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100}, mk || {}))},chamadas:[],forcaErro:''};
+  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100, lastro: {ouro: 0, itens: {}}, caca: 500}, mk || {}))},chamadas:[],args:{},forcaErro:''};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
   const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
     erro=m=>r(400,{code:'P0001',message:m}),fn=u.split('/rpc/')[1];
   if(fn==='save_ler'){N.gets++;N.token=b.p_token;return b.p_token==='tk1'?r(200,N.dados):erro('sessao')}
   if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');
     if(N.dados&&(b.p_dados.mkt|0)<(N.dados.mkt|0))return erro('mercado');N.posts++;N.dados=b.p_dados;return r(204,null)}
-  if(fn.indexOf('mercado_')===0){if(b.p_token!=='tk1')return erro('sessao');N.chamadas.push(fn);const M=N.mk;
-    if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa});
+  if(/^(mercado|caca|lastro)_/.test(fn)){if(b.p_token!=='tk1')return erro('sessao');N.chamadas.push(fn);N.args[fn]=b;const M=N.mk,O=M.lastro,
+      poeO=(k,q)=>{O.itens[k]=(O.itens[k]|0)+q;if(O.itens[k]<=0)delete O.itens[k]};
+    if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa,lastro:O});
+    if(fn==='caca_comecar')return r(200,++M.caca);
+    if(fn==='caca_fim'){let n=0;if(b.p_desfecho==='extraiu')for(const k in b.p_saco){poeO(k,b.p_saco[k]);n+=b.p_saco[k]}O.ouro+=b.p_ouro;return r(200,{pecas:n,ouro:b.p_ouro})}
+    if(fn==='lastro_banco'){if(O.itens[b.p_item]>0){poeO(b.p_item,-1);O.ouro+=b.p_val}return r(204,null)}
     if(!N.dados)return erro('sem_save');
     if(N.forcaErro){const m=N.forcaErro;N.forcaErro='';return erro(m)}
     const D=N.dados,it=D.itens||(D.itens={}),poe=(k,q)=>{it[k]=(it[k]|0)+q;if(it[k]<=0)delete it[k]},rec={ouro:0,itens:{}};
@@ -181,11 +188,13 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
     const fim=x=>{D.mkt=(D.mkt|0)+1;D.em=Date.now();return r(200,Object.assign({cofre:D.cofre,itens:JSON.parse(JSON.stringify(it)),mkt:D.mkt,recebido:rec},x||{}))};
     if(fn==='mercado_coletar')return fim();
     if(fn==='mercado_cancelar'){const i=M.minhas.findIndex(o=>o.id===b.p_id);if(i<0)return erro('ordem');const o=M.minhas.splice(i,1)[0];
-      if(o.lado==='compra')D.cofre+=o.preco*o.resta;else poe(o.item,o.resta);return fim()}
+      if(o.lado==='compra'){D.cofre+=o.preco*o.resta;O.ouro+=o.preco*o.resta}else{poe(o.item,o.resta);poeO(o.item,o.resta)}return fim()}
     if(fn==='mercado_anunciar'){const k=b.p_item,pr=b.p_preco,q=b.p_qtd,compra=b.p_lado==='compra',L=M.itens[k]||{venda:[],compra:[]};
-      if(compra){if(D.cofre<pr*q)return erro('sem_ouro');D.cofre-=pr*q}else{if((it[k]|0)<q)return erro('sem_peca');poe(k,-q)}
+      if(compra){if(D.cofre<pr*q)return erro('sem_ouro');if(O.ouro<pr*q)return erro('sem_origem');D.cofre-=pr*q;O.ouro-=pr*q}
+      else if(b.p_caca){if(b.p_caca!==M.caca)return erro('caca');if(!(b.p_saco&&b.p_saco[k]>=q))return erro('sem_peca')}
+      else{if((it[k]|0)<q)return erro('sem_peca');if((O.itens[k]|0)<q)return erro('sem_origem');poe(k,-q);poeO(k,-q)}
       const op=compra?L.venda:L.compra,n0=op[0],f=n0&&(compra?n0[0]<=pr:n0[0]>=pr)?Math.min(q,n0[1]):0,tot=f?f*n0[0]:0,tx=compra?0:Math.ceil(tot*2/100);
-      if(f){if(compra){poe(k,f);D.cofre+=(pr-n0[0])*f}else D.cofre+=tot-tx;n0[1]-=f;if(!n0[1])op.shift()}
+      if(f){if(compra){poe(k,f);poeO(k,f);D.cofre+=(pr-n0[0])*f;O.ouro+=(pr-n0[0])*f}else{D.cofre+=tot-tx;O.ouro+=tot-tx}n0[1]-=f;if(!n0[1])op.shift()}
       const resta=q-f;if(resta)M.minhas.unshift({id:++M.seq,lado:b.p_lado,item:k,preco:pr,qtd:q,resta:resta});
       return fim({feitos:f,resta:resta,ouro:tot-tx,taxa:tx,ordem:resta?M.seq:null})}}
   if(fn==='conta_entrar'){N.login=b.p_usuario;return N.contas[b.p_usuario.toLowerCase()]===b.p_senha?r(200,{token:'tk1',id:'u1',usuario:b.p_usuario}):erro('credenciais')}
@@ -317,6 +326,12 @@ function prelude(caso) {
   RT.sai=function(id){var m=RT.outros[id];delete RT.outros[id];var l={};l[id]={metas:[m]};RT.todos({event:'presence_diff',payload:{joins:{},leaves:l}})};
   /* x, y em sqm; d é a duração do passo em ms (0: aparece parado lá) */
   RT.pos=function(id,x,y,d){RT.todos({event:'broadcast',payload:{type:'broadcast',event:'pos',payload:{id:id,x:x,y:y,d:d||0}}})};
+  /* a sala (src/sala.js): o roteiro faz o outro lado com RT.sala(evento,
+     dados) e lê o que o jogo mandou no canal da sala com RT.salaMandadas() */
+  var naSala=function(w){return w.readyState===1&&String(w.topico||'').indexOf('realtime:sala-')===0};
+  RT.sala=function(ev,pl){RT.vivos.forEach(function(w){if(naSala(w))w.diz({event:'broadcast',payload:{type:'broadcast',event:ev,payload:JSON.parse(JSON.stringify(pl))}})})};
+  RT.salaSai=function(id){var l={};l[id]={metas:[{}]};RT.vivos.forEach(function(w){if(naSala(w))w.diz({event:'presence_diff',payload:{joins:{},leaves:l}})})};
+  RT.salaMandadas=function(ev){return RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:sala-')===0&&d.event==='broadcast'&&(!ev||d.payload.event===ev)}).map(function(d){return d.payload.payload})};
   RT.posMandadas=function(){return RT.enviadas.filter(function(d){return d.event==='broadcast'&&d.payload.event==='pos'})};
   window.WebSocket=FakeWS;
 })();
@@ -339,6 +354,9 @@ function epilogo(caso, alvo) {
 import './src/main.js?v=${VERSAO}';
 import * as Tl from './src/telas.js?v=${VERSAO}';
 import * as Cd from './src/sim/cidade.js?v=${VERSAO}';
+import * as I from './src/sim/incursao.js?v=${VERSAO}';
+import * as Sa from './src/sala.js?v=${VERSAO}';
+import * as Pg from './src/sim/progresso.js?v=${VERSAO}';
 (async function(){
   var H=document.documentElement;
   var $=function(s){return document.querySelector(s)};
@@ -711,6 +729,29 @@ async function testaSimulacao() {
     a0.x = I.G.portal.x; a0.y = I.G.portal.y; a0.bag = {ouro: 25}; a0.bagVal = 25;
     for (let i = 0; i < 80 && !I.G.over; i++) I.update(0.05, [parado, parado]);
     if (!I.G.over || sv.cofre !== cofre0 + 25 || sv.ext !== ext0 + 1) falhas.push(`o último a extrair não fechou a sala ou não guardou o saco (cofre ${cofre0} → ${sv.cofre})`);
+    /* o retrato da sala: o convidado que gera a mesma masmorra pela semente e
+       aplica o retrato do anfitrião vê os mesmos monstros, jogadores e sacos */
+    const fr = fichas(2); I.newRun(31, fr); I.G.active = true;
+    for (let q = 0; q < 300 && !I.G.over; q++) I.passo(0.05, entradas(2, q));
+    const host = I.G, ret = JSON.parse(JSON.stringify(I.retrato()));
+    const mons = (G) => G.mons.map((m) => `${m.k}@${Math.round(m.x)},${Math.round(m.y)}:${Math.ceil(m.hp)}`).join(';');
+    const esperado = mons(host), pAnf = [Math.round(host.ps[0].x), Math.round(host.ps[0].y), Math.ceil(host.ps[0].hp)].join(), nDr = host.drops.length;
+    I.newRun(31, fr.map((f) => P.confereFicha({...f, c: JSON.parse(JSON.stringify(f.c))})));
+    I.aplicaRetrato(ret, 1);
+    if (mons(I.G) !== esperado) falhas.push('o convidado não vê os mesmos monstros que o anfitrião depois do retrato');
+    if ([Math.round(I.G.ps[0].x), Math.round(I.G.ps[0].y), Math.ceil(I.G.ps[0].hp)].join() !== pAnf) falhas.push('o convidado não vê o anfitrião onde ele está');
+    if (I.G.drops.length !== nDr) falhas.push(`sacos no chão: ${nDr} no anfitrião, ${I.G.drops.length} no convidado`);
+    /* o sqm contado pelo convidado: o anfitrião anda até lá um sqm por passo,
+       na velocidade do nível, sem teleporte */
+    I.newRun(32, fichas(2)); I.G.active = true; I.G.mons.length = 0; I.G.ocu.fill(0);
+    const cv = I.G.ps[1], B0 = await import(url('base.js')); B0.poeNoSqm(cv, Math.floor(I.G.portal.x / 32), Math.floor(I.G.portal.y / 32));
+    const ctx0 = cv.tx, alvo = {x: 0, y: 0, held: [false, false, false, false]}, rem = {x: 0, y: 0, held: [false, false, false, false], pos: {x: ctx0 + 30, y: cv.ty}, f: 0};
+    I.update(0.05, [alvo, rem]);
+    if (Math.abs(cv.tx - ctx0) > 1) falhas.push(`o convidado pulou ${cv.tx - ctx0} sqm num passo`);
+    for (let k = 0; k < 20; k++) I.update(0.05, [alvo, rem]);
+    if (cv.tx - ctx0 > Math.ceil(1.05 / P.durPasso(cv.c)) + 1) falhas.push(`o convidado andou ${cv.tx - ctx0} sqm em 1 s, mais que a velocidade do nível ${cv.c.lvl}`);
+    if (P.confereFicha({cl: 'dragao', c: {}}) || P.confereFicha({cl: 'druida', c: {lvl: 1e9, slots: ['golpe', 'gelo']}}).c.lvl !== 200 || P.confereFicha({cl: 'druida', c: {lvl: 2, slots: ['golpe', 'gelo']}}).c.slots[0] !== null)
+      falhas.push('confereFicha() deixou passar classe inexistente, nível absurdo ou habilidade de outra classe');
   } catch (e) { falhas.push('o grupo quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
   /* andar por sqm, como no Tibia: passo pela velocidade do nível, diagonal
@@ -719,19 +760,19 @@ async function testaSimulacao() {
     novoSave();
     const W = JSON.parse(CONTEUDO).progression.walk, c = P.ch();
     c.lvl = 1; const d1 = P.durPasso(c); c.lvl = 200; const dmax = P.durPasso(c); c.lvl = 1;
-    /* a fórmula do Tibia: nível 1 (220) = 550 ms; nível 200 (618) = 250 ms; 150 (orc) = 800 ms */
-    if (d1 !== 0.55 || dmax !== 0.25 || P.passoDaVel(150) !== 0.8) falhas.push(`passo do nível 1 = ${d1} s, nível 200 = ${dmax} s, velocidade 150 = ${P.passoDaVel(150)} s (esperado 0,55, 0,25 e 0,8 como no Tibia)`);
-    if (P.durPasso(c, 0.5) !== 0.4) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)} (esperado 0,4)`);
+    /* a fórmula do Tibia com chão 130: nível 1 (220) = 500 ms; nível 200 (618) = 250 ms; 150 (orc) = 700 ms */
+    if (d1 !== 0.5 || dmax !== 0.25 || P.passoDaVel(150) !== 0.7) falhas.push(`passo do nível 1 = ${d1} s, nível 200 = ${dmax} s, velocidade 150 = ${P.passoDaVel(150)} s (esperado 0,5, 0,25 e 0,7 com chão ${W.ground})`);
+    if (P.durPasso(c, 0.5) !== 0.35) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)} (esperado 0,35)`);
     I.newRun(7); I.G.active = true;
     const p = I.G.ps[0], cx = (t) => (t + 0.5) * 32;
     if (p.x !== cx(p.tx) || p.y !== cx(p.ty)) falhas.push(`o jogador não nasce no centro de um sqm (${p.x},${p.y})`);
-    /* leste por 2,2 s: 4 passos de 0,55 s, e para no centro do sqm */
+    /* leste por 1,8 s: 4 passos de 0,5 s começam, e ele para no centro do sqm */
     const leste = {x: 1, y: 0, held: [false, false, false, false]}, nada = {x: 0, y: 0, held: [false, false, false, false]};
     let livres = 0; while (!I.solid(p.tx + livres + 1, p.ty) && livres < 8) livres++;
     const x0 = p.tx, alvo = Math.min(4, livres);
-    for (let i = 0; i < 44; i++) I.passo(0.05, leste);
+    for (let i = 0; i < 36; i++) I.passo(0.05, leste);
     for (let i = 0; i < 12; i++) I.passo(0.05, nada);
-    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 2,2 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
+    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 1,8 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
     /* um monstro por sqm, nenhum no sqm de um jogador, em toda uma incursão com o jogador andando */
     I.newRun(11); I.G.active = true;
     const roteiro = [{x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 1, y: 1}];
@@ -901,6 +942,129 @@ const CASOS = [
     clica($('#cMenu'));
     ok('o botão Menu da cidade volta ao acampamento', visivel('#menu')&&!$('#app').classList.contains('cidade'));
 `,
+  },
+  {
+    nome: 'sala-anfitriao',
+    o_que: 'caçar junto, lado do anfitrião: cria a sala no Guia, recebe um convidado, leva o grupo à masmorra, roda a regra com a entrada dele, manda o retrato e o resultado, e fecha a sala',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 3, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt,BIA={nome:'Bia',cl:'druida',c:{lvl:2,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:['gelo',null,null,null],equip:{}},up:{}};
+    clica($('#play'));
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    Tl.abreNpc('guia');
+    var criar=todos('#hSala button').filter(function(b){return b.textContent==='Criar sala'})[0];
+    ok('o Guia de caça oferece criar sala', !!criar, txt('#hSala'));
+    clica(criar);
+    var ligou=await ate(function(){return Sa.SALA.estado==='ligado'},40);
+    var join=RT.enviadas.filter(function(d){return d.event==='phx_join'&&d.topic.indexOf('realtime:sala-')===0})[0];
+    ok('criar sala abre o canal da sala, com o id deste aparelho', ligou&&join&&join.topic.split('-').pop()===Sa.SALA.id, join&&join.topic);
+    var anunc=RT.enviadas.filter(function(d){return d.event==='presence'&&d.topic.indexOf('realtime:cidade-')===0&&d.payload.payload.sala}).pop();
+    ok('a sala é anunciada na cidade, para os outros verem no Guia', anunc&&anunc.payload.payload.sala.n===1, anunc&&JSON.stringify(anunc.payload.payload));
+    RT.sala('quero',{id:'conv1',ficha:BIA});
+    var entrou=await ate(function(){return Sa.SALA.membros.length===2},20);
+    ok('o convidado entra, e o Guia mostra quem está na sala', entrou&&/Bia/.test(txt('#hSala')||''), txt('#hSala'));
+    ok('a lista vai para a sala', RT.salaMandadas('membros').some(function(m){return m.lista.length===2}), RT.salaMandadas('membros').length);
+    RT.sala('quero',{id:'mal',ficha:{nome:'Mal',cl:'dragao',c:{lvl:99}}});await quadros(3);
+    ok('ficha de classe que não existe é recusada', Sa.SALA.membros.length===2, Sa.SALA.membros.length);
+    var b=$('#huntList button');
+    ok('o botão do lugar vira entrar com o grupo', b&&b.textContent==='entrar com o grupo', b&&b.textContent);
+    clica(b);await quadros(3);
+    ok('o grupo entra na masmorra: dois jogadores, o convidado com a ficha dele', I.G&&I.G.ps.length===2&&I.G.sala&&I.G.ps[1].cl==='druida'&&I.G.ps[1].c.lvl===2&&!I.G.ps[1].local, I.G&&I.G.ps.length);
+    var com=RT.salaMandadas('comeca')[0];
+    ok('a sala recebe a semente e as fichas', com&&com.semente===I.G.semente&&com.ids[1]==='conv1'&&com.fichas.length===2, com&&JSON.stringify(com.ids));
+    var q=I.G.ps[1],tx0=q.tx,e0=RT.salaMandadas('estado').length,t0=I.G.t;
+    var lado=!I.solid(q.tx+1,q.ty)&&!I.solid(q.tx+2,q.ty)?1:-1;
+    RT.sala('ent',{id:'conv1',x:tx0+lado,y:q.ty,f:0,h:0,pot:0});await quadros(4);
+    RT.sala('ent',{id:'conv1',x:tx0+2*lado,y:q.ty,f:0,h:0,pot:0});
+    var chegou=await ate(function(){return q.tx===tx0+2*lado&&!q.sd},60);
+    ok('o anfitrião leva o convidado até o sqm que ele conta', chegou, tx0+' → '+q.tx);
+    var ne=RT.salaMandadas('estado').length-e0,dtj=I.G.t-t0;
+    ok('o retrato vai a uns 10 por segundo', ne>=Math.floor(dtj/0.1)-1&&ne<=Math.ceil(dtj/0.1)+1, ne+' em '+dtj.toFixed(2)+' s');
+    var r=RT.salaMandadas('estado').pop();
+    ok('o retrato tem os monstros e os dois jogadores', r&&r.m.length===I.G.mons.length*10&&r.ps.length===2, r&&(r.m.length/10)+' / '+I.G.mons.length);
+    var xa=q.tx;RT.sala('ent',{id:'conv1',x:q.tx+40,y:q.ty,f:0,h:0,pot:0});await quadros(2);
+    ok('posição de fora não teletransporta: um sqm por passo', Math.abs(q.tx-xa)<=1, xa+' → '+q.tx);
+    RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:0});await ate(function(){return !q.sd},40);
+    q.hp=10;var pots=q.pot;RT.sala('ent',{id:'conv1',x:q.tx,y:q.ty,f:0,h:0,pot:1});await quadros(2);
+    ok('a poção do convidado é bebida pelo anfitrião', q.pot===pots-1&&q.hp>10, pots+' → '+q.pot+', vida '+q.hp);
+    q.bag={ouro:12};q.bagVal=12;I.sai(q,'morreu');await quadros(1);
+    var fim=RT.salaMandadas('fim')[0];
+    ok('o convidado que sai recebe o resultado dele', fim&&fim.id==='conv1'&&fim.r.fora==='morreu'&&fim.r.bagVal===12&&fim.r.c.lvl===2, fim&&JSON.stringify(fim.r).slice(0,90));
+    ok('a incursão segue para o anfitrião, e a conta dele não mudou', !I.G.over&&!I.G.ps[0].fora&&Pg.save.deaths===0, I.G.over+' / '+Pg.save.deaths);
+    I.finish('extraiu');await ate(function(){return visivel('#end')},400);
+    ok('o anfitrião tem a tela final dele', visivel('#end')&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    RT.salaSai('conv1');await quadros(3);
+    ok('quem fecha o jogo sai da sala', Sa.SALA.membros.length===1, Sa.SALA.membros.length);
+    clica($('#toMenu'));Tl.abreNpc('guia');
+    ok('a sala segue aberta depois da incursão', Sa.SALA.papel==='anfitriao'&&/Sua sala/.test(txt('#hSala')||''), txt('#hSala'));
+    var fecha=todos('#hSala button').filter(function(b){return b.textContent==='Fechar sala'})[0];clica(fecha);await quadros(3);
+    ok('fechar a sala avisa e desliga o canal dela', RT.salaMandadas('fecha').length===1&&Sa.SALA.papel===null&&!RT.vivos.some(function(w){return String(w.topico).indexOf('realtime:sala-')===0}), RT.salaMandadas('fecha').length);
+    ok('o Guia volta a oferecer criar sala', todos('#hSala button').some(function(b){return b.textContent==='Criar sala'}), txt('#hSala'));
+    `,
+  },
+  {
+    nome: 'sala-convidado',
+    o_que: 'caçar junto, lado do convidado: vê a sala no Guia, entra, começa quando o anfitrião manda, desenha o retrato, anda no próprio aparelho, manda a entrada, grava o resultado e volta à cidade se o anfitrião some',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'druida',
+      chars: {druida: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['gelo', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt,ANA={nome:'Ana',cl:'cavaleiro',c:{lvl:5,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:['golpe',null,null,null],equip:{}},up:{}};
+    clica($('#play'));
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    RT.entra('anf1',{nome:'Ana',classe:'cavaleiro',lvl:5,sala:{n:1}});await quadros(3);
+    Tl.abreNpc('guia');
+    var entrar=todos('#hSala li button')[0];
+    ok('o Guia lista a sala aberta de quem está na cidade', entrar&&/Sala de Ana/.test(txt('#hSala')||''), txt('#hSala'));
+    clica(entrar);
+    await ate(function(){return RT.salaMandadas('quero').length>0},40);
+    var qr=RT.salaMandadas('quero')[0],EU=qr&&qr.id;
+    ok('entrar abre o canal da sala dela e manda a ficha', qr&&qr.ficha.cl==='druida'&&qr.ficha.c.lvl===2&&RT.enviadas.some(function(d){return d.topic==='realtime:sala-'+d.topic.split('-')[1]+'-anf1'}), qr&&JSON.stringify(qr.ficha).slice(0,80));
+    RT.sala('membros',{lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},{id:EU,nome:'Druida',cl:'druida',lvl:2}]});await quadros(3);
+    ok('o convidado vê quem está na sala', /Sala de Ana · 2\\/4/.test(txt('#hSala')||''), txt('#hSala'));
+    var hb=$('#huntList button');
+    ok('quem escolhe o lugar é o anfitrião', hb&&hb.disabled&&hb.textContent==='o anfitrião escolhe', hb&&hb.textContent);
+    RT.sala('comeca',{semente:77,ids:['anf1',EU],fichas:[ANA,{nome:'Druida',cl:'druida',c:qr.ficha.c,up:{}}]});
+    var foi=await ate(function(){return I.G&&I.G.convidado&&$('#app').classList.contains('playing')},20);
+    ok('o anfitrião começa e o convidado entra junto, na mesma masmorra', foi&&I.G.semente===77&&I.G.p===I.G.ps[1]&&I.G.ps.length===2, I.G&&I.G.semente);
+    var r=I.retrato();r.m[2]+=40;r.ps[0].x+=20;r.ps[1].x=Math.round(I.G.portal.x);r.ps[1].y=Math.round(I.G.portal.y);r.ps[1].tx=Math.floor(I.G.portal.x/32);r.ps[1].ty=Math.floor(I.G.portal.y/32);r.t=12.5;var m0=I.G.mons[0],xa=I.G.ps[0].x;
+    for(var k=0;k<3;k++){RT.sala('estado',r);await quadros(2)}
+    ok('o retrato do anfitrião move os monstros e o anfitrião', I.G.mons[0].id===m0.id&&Math.abs(I.G.mons[0].x-(Math.round(m0.x)+40))<1&&Math.abs(I.G.ps[0].x-(Math.round(xa)+20))<1&&I.G.t>=12.5, I.G.mons[0].x+' / '+I.G.ps[0].x);
+    ok('longe demais, o convidado volta para onde o anfitrião o vê', Math.abs(I.G.p.x-Math.round(I.G.portal.x))<1, I.G.p.x);
+    var n0=RT.salaMandadas('ent').length,x0=I.G.p.x,rt0=I.G.rT;
+    tecla('keydown','KeyD');await quadros(6);
+    var antes=I.G.p.tx,xA=I.G.p.x,rtA=I.G.rT,r2=I.retrato();r2.ps[1].tx=antes-1;r2.ps[1].x=antes*32-16;r2.ps[1].mv=1;RT.sala('estado',r2);await quadros(1);
+    ok('o retrato não puxa de volta quem está andando no próprio aparelho', I.G.p.x>=xA-.5, xA+' → '+I.G.p.x);
+    await quadros(4);tecla('keyup','KeyD');await quadros(8);
+    var ents=RT.salaMandadas('ent').slice(n0),ult=ents[ents.length-1];
+    ok('o convidado anda no próprio aparelho e conta o sqm', I.G.p.x>x0+20&&ult&&ult.x===I.G.p.tx&&ult.y===I.G.p.ty&&ult.id===EU, x0+' → '+I.G.p.x+' / sqm '+(ult&&ult.x)+' de '+I.G.p.tx);
+    var dtj=(rtA-rt0)+I.G.rT;
+    ok('manda a entrada a uns 10 por segundo', ents.length>=Math.floor(dtj/0.1)-1&&ents.length<=Math.ceil(dtj/0.1)+1, ents.length+' em '+dtj.toFixed(2)+' s');
+    tecla('keydown','KeyP');tecla('keyup','KeyP');await quadros(4);
+    ok('a poção vira pedido ao anfitrião', RT.salaMandadas('ent').pop().pot===1, RT.salaMandadas('ent').pop().pot);
+    RT.sala('fim',{id:EU,r:{fora:'extraiu',bag:{ouro:40,inexistente:9},bagVal:40,sealed:0,xpPerdido:0,kills:3,xpGain:90,magGain:1,perGain:0,c:{lvl:3,xp:15,mag:1,manaG:10,per:10,golpes:0,slots:['gelo','golpe',null,null]}}});
+    await ate(function(){return visivel('#end')},400);
+    ok('o resultado do anfitrião vira a tela final', visivel('#end')&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    var s=sv(),c=s&&s.chars.druida;
+    ok('e vai para o save deste aparelho: cofre, extração e o personagem', s&&s.cofre===40&&s.ext===1&&c.lvl===3&&c.xp===15&&c.mag===1, s&&JSON.stringify({cofre:s.cofre,ext:s.ext,lvl:c.lvl,xp:c.xp}));
+    ok('item que não existe e habilidade de outra classe não entram', !(s.itens&&s.itens.inexistente)&&c.slots[1]===null, JSON.stringify(c.slots));
+    clica($('#toMenu'));
+    ok('depois da incursão, continua na sala', Sa.SALA.papel==='convidado', Sa.SALA.papel);
+    RT.sala('comeca',{semente:78,ids:['anf1',EU],fichas:[ANA,{nome:'Druida',cl:'druida',c:qr.ficha.c,up:{}}]});
+    await ate(function(){return I.G&&I.G.semente===78&&I.G.active},20);
+    var voltou=await ate(function(){return $('#app').classList.contains('cidade')},400);
+    ok('se o anfitrião some no meio, volta à cidade sem resultado', voltou&&/acabou sem resultado/.test(txt('#log')||'')&&Sa.SALA.papel===null&&sv().ext===1, txt('#log'));
+    `,
   },
   {
     nome: 'cidade-compartilhada',
@@ -1662,9 +1826,11 @@ const CASOS = [
       itens: {espada: {venda: [[25, 1]], compra: [[18, 3]], ultimo: 22, dia: 4}, cota: {venda: [[70, 2]], compra: [], ultimo: null, dia: 0}, bogus: {venda: [[1, 1]], compra: [], ultimo: null, dia: 0}},
       minhas: [{id: 7, lado: 'compra', item: 'cota', preco: 50, qtd: 1, resta: 1}],
       caixa: {ouro: 40, itens: {}},
+      /* o machado está no cofre mas não tem origem: veio de antes da conta */
+      lastro: {ouro: 340, itens: {espada: 2}},
     })],
     save: {'masmorra-runas-v2': {
-      cofre: 300, itens: {espada: 2}, runs: 1, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      cofre: 300, itens: {espada: 2, machado: 1}, runs: 1, ext: 0, deaths: 0, best: 0, dono: 'u1',
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'feiticeiro',
       chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
@@ -1683,6 +1849,13 @@ const CASOS = [
     ok('a lista tem só as peças de equipamento do jogo (item desconhecido do livro fica fora)', lis.length===9&&!/bogus/.test(txt('#mktItens')), lis.length);
     ok('a espada mostra os dois lados do livro e o cofre', /2 no cofre/.test(lis[0].textContent)&&/vendem a partir de 25/.test(lis[0].textContent)&&/compram até 18/.test(lis[0].textContent), lis[0].textContent);
     ok('suas ofertas listam a compra de cota', /Compra: cota de malha a 50/.test(txt('#mktMinhas')||''), txt('#mktMinhas'));
+    ok('peça sem origem aparece como tal na lista', /machado rachado · 1 no cofre, 0 com origem/.test(lis[1].textContent), lis[1].textContent);
+    clica(lis[1].querySelector('button'));
+    ok('peça sem origem abre comprando', $('#mpLadoC').getAttribute('aria-pressed')==='true', $('#mpLadoC').getAttribute('aria-pressed'));
+    clica($('#mpLadoV'));
+    ok('vender peça sem origem fica bloqueado e explicado', $('#mpOk').disabled&&/Só 0 têm origem registrada/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpVolta'));
+    lis=todos('#mktItens li');
     clica(lis[0].querySelector('button'));
     ok('quem tem a peça abre vendendo, pelo melhor preço de compra', visivel('#mktPeca')&&$('#mpLadoV').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='18', $('#mpPreco').value);
     ok('o resumo diz o que recebe, já com a taxa', /recebe 17 de ouro \\(taxa de 1\\)/.test(txt('#mpRes')||''), txt('#mpRes'));
@@ -1716,14 +1889,72 @@ const CASOS = [
     clica($('#mpOk'));
     var recusou=await ate(function(){return /10 ofertas abertas/.test(txt('#mktMsg')||'')},300);
     ok('o erro do banco vira aviso legível e nada muda no cofre', recusou&&$('#mktMsg').classList.contains('ruim')&&sv().cofre===350, txt('#mktMsg'));
+    ok('a origem acompanhou os negócios', window.__nuvem.mk.lastro.ouro===350&&window.__nuvem.mk.lastro.itens.espada===1, JSON.stringify(window.__nuvem.mk.lastro));
+    /* parte do ouro do cofre sem origem: a Feira mostra quanto vale e barra a compra acima disso */
+    window.__nuvem.mk.lastro.ouro=60;
+    clica($('#mktBack'));Tl.abreNpc('corretor');
+    var leu=await ate(function(){return visivel('#mktOrig')},300);
+    ok('a Feira mostra o ouro com origem quando é menor que o cofre', leu&&/Com origem registrada: 60 de ouro/.test(txt('#mktOrig')), txt('#mktOrig'));
+    clica(todos('#mktItens li button')[6]);
+    $('#mpPreco').value='70';$('#mpQtd').value='1';$('#mpQtd').dispatchEvent(new Event('input'));
+    ok('comprar acima do ouro com origem fica bloqueado', $('#mpOk').disabled&&/Só 60 de ouro têm origem/.test(txt('#mpRes')||''), txt('#mpRes'));
+    window.__nuvem.mk.lastro.ouro=350;
     clica($('#mktBack'));
     /* outro aparelho negociou: a nuvem tem mkt maior, e a próxima gravação daqui é recusada */
     window.__nuvem.dados.mkt+=5;window.__nuvem.dados.cofre=999;
     Tl.abreNpc('banqueiro');
     clica(todos('#eqList button.rm')[0]);
     ${espera(2500)}
+    ok('a venda ao Banco avisa o banco da origem', window.__nuvem.args.lastro_banco&&window.__nuvem.args.lastro_banco.p_item==='machado'&&window.__nuvem.args.lastro_banco.p_val===28, JSON.stringify(window.__nuvem.args.lastro_banco));
     var trocou=await ate(function(){return sv()&&sv().cofre===999},300);
     ok('save mais velho que o mercado é recusado e o da nuvem entra', trocou&&sv().mkt===window.__nuvem.dados.mkt, sv()&&JSON.stringify([sv().cofre,sv().mkt,window.__nuvem.dados.mkt]));
+`,
+  },
+  {
+    nome: 'feira-saco',
+    o_que: 'com conta, a caçada abre no banco; a Mochila vende uma peça do saco na Feira (sai do saco, vai com a caçada e o saco); a extração fecha a caçada com o saco que sobrou e a peça vendida não volta ao cofre',
+    semente: 11,
+    limite: 90000,
+    patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.nuvem(null, {}, {lastro: {ouro: 0, itens: {}}})],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    },
+    'masmorra-runas-v2-sessao': {tk: 'tk1', uid: 'u1', usuario: 'ana'}},
+    roteiro: `
+    var pronto=await ate(function(){return /salvo na nuvem · ana/.test(txt('#contaT')||'')},300);
+    ok('a sessão guardada liga a nuvem', pronto, txt('#contaT'));
+    cacar();
+    var abriu=await ate(function(){return window.__nuvem.chamadas.indexOf('caca_comecar')>=0},200);
+    ok('a caçada abre no banco ao começar', abriu, window.__nuvem.chamadas.join());
+    await quadros(4);
+    ok('o saco entrou com a espada', txt('#bagT')==='220', txt('#bagT'));
+    clica($('#bMochila'));
+    var esp=todos('#moGrade .cel:not(:disabled)').filter(function(b){return /espada/.test(b.getAttribute('aria-label')||'')})[0];
+    ok('a espada está no saco da Mochila', !!esp);
+    clica(esp);
+    ok('peça do saco oferece a venda na Feira pelo valor dela', visivel('#moVenda')&&$('#mvPreco').value==='20', $('#mvPreco').value);
+    clica($('#mvMais'));
+    clica($('#mvOk'));
+    var vendeu=await ate(function(){return /anunciada na Feira a 21/.test(txt('#mvMsg')||'')},300);
+    ok('a venda do saco foi anunciada', vendeu, txt('#mvMsg'));
+    var a=window.__nuvem.args.mercado_anunciar||{};
+    ok('o anúncio leva a caçada e o saco de antes', a.p_caca===501&&a.p_saco&&a.p_saco.espada===1&&a.p_qtd===1&&a.p_lado==='venda', JSON.stringify(a));
+    ok('a espada saiu do saco e do valor dele', txt('#bagT')==='200'&&!todos('#moGrade .cel:not(:disabled)').some(function(b){return /espada/.test(b.getAttribute('aria-label')||'')}), txt('#bagT'));
+    ok('peça vestida não oferece venda', (clica(todos('#moDoll .cel')[0]),!visivel('#moVenda')));
+    clica($('#moX'));
+    tecla('keydown','KeyJ');
+    var acabou=await ate(function(){return visivel('#end')},1500);
+    tecla('keyup','KeyJ');
+    ok('saiu pelo portal', acabou&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
+    var fim=await ate(function(){return !!window.__nuvem.args.caca_fim},300);
+    var f=window.__nuvem.args.caca_fim||{};
+    ok('a extração fecha a caçada no banco, sem a peça vendida', fim&&f.p_id===501&&f.p_desfecho==='extraiu'&&!(f.p_saco||{}).espada, JSON.stringify(f));
+    ok('o ouro extraído vai como origem', f.p_ouro>=200&&window.__nuvem.mk.lastro.ouro===f.p_ouro, f.p_ouro+' / '+window.__nuvem.mk.lastro.ouro);
+    ok('a espada vendida não volta ao cofre', sv()&&!(sv().itens||{}).espada, sv()&&JSON.stringify(sv().itens));
+    ok('a fila da origem esvaziou', (localStorage.getItem('masmorra-runas-v2-fila')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-fila'));
 `,
   },
   {

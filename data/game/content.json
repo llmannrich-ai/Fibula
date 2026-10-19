@@ -1044,11 +1044,11 @@
       ]
     },
     "walk": {
-      "_note": "Andar por sqm com a velocidade do Tibia (decisoes do Leonardo, 19/10/2026). Velocidade em unidades do Tibia: jogador = speedBase + speedPerLevel*(nivel-1), ate speedMax, vezes (1 + buff de velocidade); monstro = spd do inimigo (mesma unidade), vezes a lentidao. O passo vem da formula do Forgotten Server (creature.cpp): passo = 1000*ground / (857,36*ln(vel/2 + 261,29) - 4795,01), arredondado para cima em multiplos de stepMs. Com ground 150: nivel 1 (220) = 550 ms, 1,8 sqm/s; nivel 50 (318) = 400 ms; nivel 100 (418) = 350 ms; nivel 200 (618) = 250 ms. Monstro com spd 150 = 800 ms. Diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). wander: quantas vezes mais devagar o monstro anda a toa.",
+      "_note": "Andar por sqm com a velocidade do Tibia (decisoes do Leonardo, 19/10/2026). Velocidade em unidades do Tibia: jogador = speedBase + speedPerLevel*(nivel-1), ate speedMax, vezes (1 + buff de velocidade); monstro = spd do inimigo (mesma unidade), vezes a lentidao. O passo vem da formula do Forgotten Server (creature.cpp): passo = 1000*ground / (857,36*ln(vel/2 + 261,29) - 4795,01), arredondado para cima em multiplos de stepMs. O chao padrao do Tibia e 150; aqui 130, uns 15% mais rapido (pedido do Leonardo, 19/10/2026). Com ground 130: nivel 1 (220) = 500 ms, 2 sqm/s; nivel 50 (318) = 350 ms; nivel 100 (418) = 300 ms; nivel 200 (618) = 250 ms. Monstro com spd 150 = 700 ms. Diagonal dura diagonal vezes mais (o Tibia usa 3; aqui 1,4, porque o joystick puxa para a diagonal). wander: quantas vezes mais devagar o monstro anda a toa.",
       "speedBase": 220,
       "speedPerLevel": 2,
       "speedMax": 1500,
-      "ground": 150,
+      "ground": 130,
       "diagonal": 1.4,
       "stepMs": 50,
       "wander": 1.5
