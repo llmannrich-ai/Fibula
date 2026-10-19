@@ -48,7 +48,7 @@ IDs for everything", GUIDE.md do pacote), então todo mapa tem de nascer no OTSP
 ## 3. O que o Tibia faz e o Fibula copia
 
 O que entra é o que aumenta **peso e consequência** (pilares 1 e 2); nada que
-aumente espera ou deslocamento (pilar 5).
+aumente espera ou deslocamento (não-objetivo "o tempo morto do Tibia").
 
 1. **Cada lugar tem um desenho próprio.** Esgoto é canal de água com passarela
    e grade; caverna é parede orgânica, não retângulo; tumba é corredor com
@@ -61,7 +61,7 @@ aumente espera ou deslocamento (pilar 5).
    olhar o mapa. Só funciona com o mapa fixo (pilar 2).
 4. **Chão com borda.** Grama que vira areia, terra que vira lama: as peças de
    borda do OTSP (215–504) são o que dá a cara de Tibia.
-5. **Saída perto.** Escada, buraco e corda espalhados (pendência P8: ≤ 60 s).
+5. **Saídas.** Escada, buraco e corda onde o desenho pedir (a regra de sair durante a luta ainda será decidida).
 6. **Luz como informação.** Tocha marca o corredor principal; escuridão marca
    o fundo.
 
