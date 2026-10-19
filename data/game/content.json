@@ -1071,6 +1071,11 @@
       "bossHp": 0.8,
       "lootProtection": 10,
       "shareTiles": 9
+    },
+    "respawn": {
+      "_note": "So na masmorra da sala (cacar junto), que nao tem tempo e fica aberta enquanto a sala existir (decisao do Leonardo, 19/10/2026). Cada sala da masmorra com menos monstros que o normal repovoa depois de seconds segundos, se nenhum jogador estiver a menos de clearTiles tiles do centro dela, como o respawn do Tibia. O normal da sala cresce com quem esta dentro, pelas regras de party.",
+      "seconds": 60,
+      "clearTiles": 10
     }
   },
   "city": {

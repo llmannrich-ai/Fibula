@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, Feira (mercado entre jogadores) e Forja (o
    Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.19.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.19.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.19.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.19.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.19.0';
-import {persist,saveFalhou} from './salvar.js?v=0.19.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.19.0';
-import {rede,SALAS} from './rede.js?v=0.19.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,comecaGrupo,correndo} from './sala.js?v=0.19.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.19.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.19.0';
-import {icone} from './arte.js?v=0.19.0';
-import {$,app} from './dom.js?v=0.19.0';
-import {retrato} from './desenho.js?v=0.19.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.20.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA} from './sim/dados.js?v=0.20.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja} from './sim/progresso.js?v=0.20.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.20.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.20.0';
+import {persist,saveFalhou} from './salvar.js?v=0.20.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.20.0';
+import {rede,SALAS} from './rede.js?v=0.20.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.20.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.20.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.20.0';
+import {icone} from './arte.js?v=0.20.0';
+import {$,app} from './dom.js?v=0.20.0';
+import {retrato} from './desenho.js?v=0.20.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS];
@@ -41,7 +41,8 @@ export function showMenu(){
   $('#sRuns').textContent=save.runs;$('#sExt').textContent=save.ext;$('#sDead').textContent=save.deaths;
   $('#mRisco').textContent=risco();
   soTela(menu);
-  if(!G||G.active){newRun()}
+  /* a masmorra da sala roda no aparelho do anfitrião enquanto a sala existir */
+  if(!G||(G.active&&!(G.sala&&SALA.papel==='anfitriao'))){newRun()}
 }
 /* ?semente=12345 (ou um texto qualquer) no endereço fixa a masmorra de toda
    incursão desta aba: para reproduzir um problema pelo número que a tela final
@@ -57,7 +58,7 @@ export function start(prepara){
   if(prepara)prepara();else newRun(SEM_URL);
   G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
-  log(G.ps.length>1?`Vocês entraram na masmorra, ${G.ps.length} juntos. O portal abre em 1:30, e cada um sai por ele quando quiser.`:'Você entrou na masmorra. O portal abre em 1:30.','info');
+  log(G.aberta?'Você entrou pela porta da sala. A masmorra não tem tempo: volte à porta, na sala de entrada, para sair com o saco.':'Você entrou na masmorra. O portal abre em 1:30.','info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
 
@@ -76,8 +77,9 @@ export function abreNpc(k){
   const a=CITY.npcs[k].abre;
   if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else showHunts();
 }
-/* a incursão da sala: o anfitrião leva quem está nela */
-const comGrupo=()=>start(()=>{const s=SEM_URL!==undefined?SEM_URL:novaSemente();newRun(s,comecaGrupo(s));G.sala=true});
+/* a porta da sala: o anfitrião entra na masmorra que o aparelho dele já roda;
+   o convidado pede, e a incursão começa quando a resposta chega (src/main.js) */
+const pelaPorta=()=>{if(SALA.papel==='anfitriao'){start(()=>{entraPorta()})}else if(entraPorta())showHunts()};
 const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent=txt;b.setAttribute('aria-label',rot);b.disabled=!!off;b.addEventListener('click',fn);return b};
 /* ---------- sala no Guia de caça ----------
    Criar sala, ver as abertas de quem está na cidade e entrar, ou, dentro de
@@ -85,16 +87,18 @@ const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='
 function desenhaSala(){
   const box=$('#hSala');box.textContent='';
   const h=document.createElement('h3'),p=document.createElement('p'),ul=document.createElement('ul'),ac=document.createElement('div');ac.className='acoes';
-  const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})`).join(', ');
+  const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})${dentro(m.id)?' na masmorra':''}`).join(', ');
+  const porta=()=>botao('Entrar pela porta','Entrar na masmorra da sala pela porta',pelaPorta,SALA.estado!=='ligado'||(SALA.papel==='convidado'&&!SALA.membros.length));
   if(SALA.papel==='anfitriao'){
+    const n=SALA.membros.filter(m=>m.id!==SALA.id&&dentro(m.id)).length;
     h.textContent=`Sua sala · ${SALA.membros.length}/${MAX}`;
-    p.textContent=correndo()?'A incursão do grupo ainda está em andamento.':`Na sala: ${nomes()}. Ao entrar num lugar abaixo, todos vão juntos.`;
-    ac.append(botao('Fechar sala','Fechar a sala',()=>{saiDaSala();showHunts()},correndo()));
+    p.textContent=`Na sala: ${nomes()}. A masmorra dela não tem tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+(n?` Fechar a sala tira quem está lá dentro, sem resultado.`:'');
+    ac.append(porta(),botao('Fechar sala','Fechar a sala e a masmorra dela',()=>{saiDaSala();showHunts()}));
   }else if(SALA.papel==='convidado'){
     const a=SALA.membros[0];
     h.textContent=a?`Sala de ${a.nome} · ${SALA.membros.length}/${MAX}`:'Entrando na sala…';
-    p.textContent=a?`Na sala: ${nomes()}. Espere o anfitrião começar; enquanto isso, ande pela cidade à vontade.`:'Esperando o anfitrião responder.';
-    ac.append(botao('Sair da sala','Sair da sala',()=>{saiDaSala();showHunts()}));
+    p.textContent=a?`Na sala: ${nomes()}. A masmorra não tem tempo: entre e saia pela porta quando quiser.`:'Esperando o anfitrião responder.';
+    ac.append(porta(),botao('Sair da sala','Sair da sala',()=>{saiDaSala();showHunts()}));
   }else{
     h.textContent='Caçar em grupo';
     if(rede.estado!=='ligado'){p.textContent=rede.estado==='sem rede'?'Sem conexão com a cidade agora: dá para caçar sozinho.':'Conectando à cidade…'}
@@ -131,9 +135,8 @@ function showHunts(){
     meta.textContent=`nível recomendado ${h.nivel}`+(c.lvl<h.nivel?' · acima do seu':'');
     info.append(t,p,meta);
     const b=document.createElement('button');b.type='button';
-    /* na sala, quem escolhe o lugar e começa é o anfitrião */
-    if(SALA.papel==='convidado'){b.textContent='o anfitrião escolhe';b.disabled=true}
-    else if(SALA.papel==='anfitriao'){b.textContent=correndo()?'em andamento':'entrar com o grupo';b.disabled=correndo();b.addEventListener('click',comGrupo)}
+    /* quem está numa sala caça na masmorra dela, pela porta */
+    if(SALA.papel){b.textContent='só fora da sala';b.disabled=true}
     else{b.textContent='entrar';b.addEventListener('click',()=>start())}
     b.setAttribute('aria-label',`Entrar em ${h.nome}`);
     li.append(info,b);ul.appendChild(li);
@@ -177,6 +180,8 @@ export function showPick(){
   soTela(pickS);
 }
 function escolher(k){
+  /* trocar de personagem tira da sala: a ficha que está lá é a do outro */
+  if(SALA.papel)saiDaSala();
   if(!save.chars[k])save.chars[k]=novoChar(k);
   save.classe=k;persist();setG(null);volta();
 }
