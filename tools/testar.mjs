@@ -1283,6 +1283,17 @@ async function testaSimulacao() {
     for (let q = 0; q < 600 && !b.fora; q++) I.passo(0.05, [{...PAR, held: [true, false, false, false], mira: [0, NaN, NaN, NaN]}, PAR, PAR]);
     const d = G.drops.find((x) => x.items.some(([k]) => k === 'ouro'));
     if (b.fora !== 'morreu' || a.pk !== 1 || b.sealed !== 0 || !d || d.dono !== -1) falhas.push(`Arena: o PvP não derrubou o adversário com a mochila no chão (${b.fora}, pk ${a.pk}, selo ${b.sealed}, ${JSON.stringify(G.drops.map((x) => x.items))})`);
+    /* o convidado que morre larga só o que pegou nesta entrada: o resto sai
+       do save dele com o fim, e se a rede dele cair antes não se duplica */
+    {
+      const G2 = partida(6), [x, y] = G2.ps; y.bag = {ouro: 30}; y.bag0 = {ouro: 20}; y.bagVal = 30; G2.drops.length = 0;
+      y.hp = 1; Cb.hurtPlayer(y, 5, x);
+      const g = G2.drops.map((q) => q.items).flat();
+      if (y.fora !== 'morreu' || g.length !== 1 || g[0][0] !== 'ouro' || g[0][1] !== 10) falhas.push(`Arena: o convidado morto largou o que trouxe, não só o que pegou (${JSON.stringify(g)})`);
+      if (Math.max(Math.abs(x.tx - y.tx), Math.abs(x.ty - y.ty)) < 8) falhas.push('Arena: dois times nasceram no mesmo canto com canto livre');
+      const h2 = JSON.parse(JSON.stringify(I.heranca()));
+      if (!I.adota(h2, -1, I.fichaLocal()) || I.G.ps[0].time !== 'A' || I.G.ps[0].pk !== 1 || I.G.arCanto.tB !== G2.arCanto.tB) falhas.push(`Arena: a herança perdeu o time, os abates ou os cantos (${I.G.ps[0].time}/${I.G.ps[0].pk})`);
+    }
     /* fora da Arena ninguém fere ninguém */
     novoSave(); I.newRun(4, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B')], true, 'runas');
     if (Cb.podeFerir(I.G.ps[0], I.G.ps[1])) falhas.push('Arena: jogador fere jogador fora da Arena');
@@ -1562,7 +1573,7 @@ const CASOS = [
   },
   {
     nome: 'arena-convidado',
-    o_que: 'a Arena com servidor de outro jogador: o pedido leva o código do time, cabem 8, e no meio da partida o servidor responde que a porta fechou e diz quando a próxima começa',
+    o_que: 'a Arena com servidor de outro jogador: o pedido leva o código do time, cabem arena.max, e no meio da partida o servidor responde que a porta fechou e diz quando a próxima começa',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1581,7 +1592,7 @@ const CASOS = [
     await ate(function(){return RT.salaMandadas('quero').length===1},40);
     var q=RT.salaMandadas('quero')[0],EU=q.id;
     ok('o pedido para entrar leva o código do time', q.ficha&&q.ficha.time==='LOBO', JSON.stringify(q.ficha&&q.ficha.time));
-    ok('a Arena cabe 8 jogadores', Sa.maxSala('arena')===8&&Sa.maxSala('esgoto')===4, Sa.maxSala('arena'));
+    ok('a Arena cabe arena.max jogadores', Sa.maxSala('arena')===4&&Sa.maxSala('esgoto')===4, Sa.maxSala('arena'));
     RT.sala('membros',{anf:'anf1',gen:0,s:7,h:'arena',lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},{id:EU,nome:'Druida',cl:'druida',lvl:8}]});
     await ate(function(){return RT.salaMandadas('entro').length===1},40);
     ok('aceito na sala, pede a porta sozinho', RT.salaMandadas('entro').length===1, RT.salaMandadas('entro').length);

@@ -3366,13 +3366,13 @@
       },
       "arte": {},
       "arena": {
-        "_nota": "A Arena (decisão do Leonardo em 19/10/2026): partida de dur segundos que recomeça sozinha, no aparelho de quem tem o servidor dela. Até entraAte se entra pela porta; os anéis desabam da borda ao centro (r é a distância ao centro em sqm, no maior dos dois eixos) e quem está fora perde desaba da vida máxima por segundo; as saídas do centro abrem em saidas; no fim, quem não saiu morre. Quem morre deixa a mochila no chão, para qualquer um, e o Selo não guarda nada aqui. pvp é a fração do dano que passa de jogador a jogador de times diferentes. pontos é gerado por tools/mapas.mjs.",
+        "_nota": "A Arena (decisão do Leonardo em 19/10/2026): partida de dur segundos que recomeça sozinha, no aparelho de quem tem o servidor dela. Até entraAte se entra pela porta; os anéis desabam da borda ao centro (r é a distância ao centro em sqm, no maior dos dois eixos) e quem está fora perde desaba da vida máxima por segundo; as saídas do centro abrem em saidas; no fim, quem não saiu morre. Quem morre deixa a mochila no chão, para qualquer um, e o Selo não guarda nada aqui. pvp é a fração do dano que passa de jogador a jogador de times diferentes. pontos é gerado por tools/mapas.mjs. max fica em 4 até o Leonardo decidir o custo: com 8, a cota mensal do Realtime grátis (2 milhões de entregas) acaba em cerca de uma hora de Arena cheia.",
         "dur": 600,
         "entraAte": 240,
         "saidas": 420,
         "desaba": 0.08,
         "pvp": 0.5,
-        "max": 8,
+        "max": 4,
         "aneis": [
           {
             "t": 300,

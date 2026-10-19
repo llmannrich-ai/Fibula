@@ -183,7 +183,7 @@ pode desenhar pelo `.otbm` também.
 - **2026-10-19 — A Arena (0.48.0)** *(decisão do Leonardo; pilares 4 e 6,
   a pedido dos testadores)*. Um lugar de caça com outra dinâmica, pelo Mestre
   da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha,
-  até 8 jogadores, times por código, anéis que desabam, chefes e saídas no
+  até 4 jogadores por enquanto (8 espera a decisão de custo), times por código, anéis que desabam, chefes e saídas no
   centro, PvP entre times, a mochila do morto no chão e sem Selo. O
   personagem sai com XP e itens. Plano em
   [docs/plano-arena.md](docs/plano-arena.md); casos `arena` e

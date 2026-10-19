@@ -18,6 +18,28 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 23:50 UTC — sessão manual (nuvem): a Arena (0.48.0)
+
+**Item desenvolvido:** decisão do Leonardo a partir da conversa com os testadores. `hunts.arena` traz a Arena: o Mestre da Arena no portão sul, e o botão Arena no menu e na escolha de personagem. É uma partida de 10 min que recomeça sozinha no servidor da sala. A porta fecha aos 4:00, os anéis desabam da borda ao centro (5:00, 7:00 e 9:00), os chefes nascem no centro (3:00 e 6:00), e as saídas, só no centro, abrem aos 7:00. Os times se formam por código. Há PvP entre times, com 50% do dano; quem morre deixa a mochila no chão, e o Selo não guarda lá. O personagem sai com XP e itens. O mapa é um rascunho com salas fixas (`rascunho.fixas`), e o script grava `arena.pontos`.
+
+**Validação:** `node tools/testar.mjs`, 44/44, com os casos novos `arena` e `arena-convidado` e o bloco "Arena" da simulação no Node: PvP por time, cantos, porta que fecha, borda que mata, saída do centro, chefes, partida que recomeça limpa, herança com o relógio, o time, os abates e os cantos, e o convidado que larga só o que pegou. Capturas em 360×640 da tela do Mestre e do centro com as saídas abertas. A revisão independente levantou dois bloqueios, os dois resolvidos: a duplicação da mochila do convidado que cai da rede e morre, e o custo com 8 jogadores (o `max` ficou em 4). Também foram aplicados os avisos de fase só para quem está dentro, os pontos lidos uma vez, os cantos por ordem de chegada, `cheia` na 9ª ficha, `pk` no `fim`, o tempo da partida omitido para o convidado e o `praArena` zerado.
+
+**Análise:** o PvP vive em `podeFerir()`/`alvos()` (combate.js) e só vale com `G.arena`. O relógio é do `G.t` da masmorra aberta, então quem chega no meio tem menos tempo.
+
+**Roadmap:** "A Arena" em `Concluído`; a fila não mudou.
+
+**Pendências e riscos:**
+- **Custo (sensível, do Leonardo):** com 8 na sala, ~640 entregas por segundo esgotam a cota mensal grátis do Realtime (2 milhões) em cerca de uma hora. Com 4, ~4 h de Arena cheia por mês. O `arena.max` está em 4 até ele decidir (mais cota, retrato a 5 Hz ou o servidor da F2).
+- **Fugir da morte fechando o jogo:** o pilar 4 prevê proteção contra queda, mas hoje quem fecha a aba no meio de um PvP sai sem resultado e sem perda. O item `Agora` ("Queda de conexão não mata") precisa cobrir o PvP.
+- **D1:** ainda não há punição para quem mata. Matar não dá XP; conta em `p.pk`.
+- Na Arena o Selo não guarda nada. Foi escolha minha, para morrer de propósito não duplicar valor (Selo + mochila no chão), e o Leonardo precisa confirmar.
+- O lastro do morto não cai quando o matador ganha origem para os mesmos itens (risco baixo).
+- Dois cúmplices de códigos diferentes podem treinar Perícia um no outro.
+- Lentidão e dano contínuo não se aplicam a jogador.
+- O mapa da Arena é rascunho.
+
+**Próximo passo recomendado:** levar a Arena aos testadores (o PDF esquemático está sendo feito noutra sessão, na branch `arena-pdf`) e medir o uso do Realtime numa partida real antes de subir o `max`.
+
 ## 2026-10-19 19:45 UTC — sessão manual (nuvem): telemetria mínima (0.47.0)
 
 **Item desenvolvido:** pedido do Leonardo, a telemetria mínima da F1. Os seis eventos da Parte 2 (`sessao_inicio`, `caca_inicio`, `caca_fim`, `compra`, `nivel_up`, `erro_cliente`) sobem em lote para `telemetria_gravar` ([007_telemetria.sql](tools/supabase/007_telemetria.sql), aplicada no banco), por um uuid de aparelho sorteado no navegador; com conta, o banco liga ao jogador pelo token. Fila no aparelho sem rede (até 300). O painel são as views `tel_dia`, `tel_retencao`, `tel_sessoes`, `tel_niveis` (horas de caçada até cada nível, por classe, o número do pilar 3) e `tel_erros`, que o anon não lê. A tela de Regras ganhou "Dados", e "Controles" deixou de dizer que o jogo escolhe o alvo (mira manual desde a 0.34.0).

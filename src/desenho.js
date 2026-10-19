@@ -351,10 +351,10 @@ const portais=()=>{if(!G.arena){UMP[0]=G.portal;return UMP}leArena();for(const q
 const centroArena=()=>{leArena();return CEN};
 const proxAnel=()=>{const A=HUNTS[G.caca].arena,t=A.dur-reabreEm();for(const a of A.aneis)if(t<a.t)return a.t-t<=30?a.r:99;return 99};
 function chaoArena(x0,x1,y0,y1){
-  const r=raioArena(),r2=proxAnel(),[cx,cy]=centroArena(),pulso=.12+.1*Math.sin(G.t*5);
+  const r=raioArena(),r2=proxAnel(),[cx,cy]=centroArena(),aviso=`rgba(216,72,63,${(.12+.1*Math.sin(G.t*5)).toFixed(2)})`;
   for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const d=Math.max(Math.abs(x-cx),Math.abs(y-cy));
     if(d>r){ctx.fillStyle='rgba(40,8,4,.55)';ctx.fillRect(x*T,y*T,T,T)}
-    else if(d>r2){ctx.fillStyle=`rgba(216,72,63,${pulso})`;ctx.fillRect(x*T,y*T,T,T)}}
+    else if(d>r2){ctx.fillStyle=aviso;ctx.fillRect(x*T,y*T,T,T)}}
 }
 export function render(){
   if(!G)return cena();

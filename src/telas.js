@@ -75,7 +75,8 @@ export function start(prepara,caca){
   telCacaInicio(G.caca,ch(),save.classe,G.ps.length);
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
   const H=HUNTS[G.caca];
-  if(G.arena)log(`${H.entrada} A partida está em ${fmtEl(H.arena.dur-reabreEm())}.`,'info');
+  /* o convidado só sabe o tempo da partida no primeiro retrato */
+  if(G.arena)log(G.convidado?H.entrada:`${H.entrada} A partida está em ${fmtEl(H.arena.dur-reabreEm())}.`,'info');
   else log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com a mochila.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
   if(levou)log(`Você levou ${levou}.`,'info');
   log(nComida(G.p.bag)?'Você está com fome: toque em Comer para regenerar vida e mana.':'Não há comida na mochila: sem comer, não se regenera vida nem mana.','warn');
@@ -778,9 +779,9 @@ $('#cGrim').addEventListener('click',drawGrim);
 $('#toRegras').addEventListener('click',showRegras);
 $('#regrasBack').addEventListener('click',showPick);
 /* com conta aberta, sair da escolha de personagem é sair da conta */
-$('#pickBack').addEventListener('click',async()=>{if(temConta())await sairDaConta();showMenu()});
+$('#pickBack').addEventListener('click',async()=>{praArena=false;if(temConta())await sairDaConta();showMenu()});
 /* o Menu da cidade leva à escolha de personagem: só ali ele se troca */
-$('#cMenu').addEventListener('click',showPick);
+$('#cMenu').addEventListener('click',()=>{praArena=false;showPick()});
 $('#play').addEventListener('click',()=>{praArena=false;showPick()});
 $('#playArena').addEventListener('click',vaiArena);
 $('#toArena').addEventListener('click',vaiArena);
