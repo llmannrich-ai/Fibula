@@ -188,7 +188,9 @@ Nada daqui entra sem o Leonardo mudar esta parte primeiro.
   contínuo não. PvP, se vier, é arena opcional (D1).
 - **Dependência externa nova.** Nenhuma biblioteca, nenhum build: o jogo abre
   em dois segundos num 3G ruim (motivo técnico na Parte 3). O Supabase é
-  serviço do produto, não biblioteca no navegador.
+  serviço do produto, não biblioteca no navegador. O STUN da voz da sala
+  (19/10) também não é biblioteca: só diz ao aparelho o próprio endereço, e o
+  som vai direto entre os jogadores.
 - **Rastreamento invasivo.** Sem cookie de terceiro, sem SDK de anúncio, sem
   vender dado. Telemetria própria e mínima, dentro da LGPD.
 - **Qualquer coisa da CipSoft.** Nada do cliente oficial (`Tibia.spr`,
@@ -279,7 +281,7 @@ na mão.
   que o Banqueiro guarda no cofre está seguro.
 - **Cidade:** gastar, guardar, trocar, ver outros jogadores, formar a sala.
 
-### O que existe hoje (0.30.0)
+### O que existe hoje (0.33.0)
 
 | Área | Estado |
 |---|---|
@@ -302,7 +304,7 @@ fase.
 
 | Fase | Entrega | Estado | Pronto quando |
 |---|---|---|---|
-| **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: tela de créditos e PWA instalável | Créditos no jogo e PWA instalável |
+| **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: PWA instalável (os créditos estão nas Regras desde a 0.31.0) | PWA instalável |
 | **F1 · Personagem e mundo** | Contas e save na nuvem ✅, 4 classes ✅, equipamento ✅, lugares de caça com nome ✅; **os pilares desta guia**: mapas fixos, morte da opção B com proteção contra queda, curva de 3 h até o nível 20, saída a ≤ 60 s; telemetria mínima | Em andamento | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op autoritativo** | Servidor próprio rodando `src/sim/`, salas de 1 a 4 para desconhecidos, convite por link, reconexão | Só a sala entre amigos (anfitrião calcula) | 4 celulares completam uma caçada juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Cidade compartilhada ✅ (Realtime), Feira ✅; chat com filtro, grupos, amigos, guildas | Parcial | 100 simultâneos estáveis; moderação básica (denunciar, silenciar, banir) |
@@ -341,7 +343,7 @@ modificação permitidos, crédito aos autores obrigatório.
    tabela `ARTE` do script e rode `node tools/sprites.mjs` (o `--catalogo`
    grava folhas com o id de cada sprite).
 2. `assets/CREDITOS.md` lista origem, licença e alterações de cada arquivo; a
-   tela de créditos do jogo mostra esse conteúdo (pendente, F0).
+   seção "Créditos" da tela de Regras mostra esse conteúdo no jogo.
 3. Um atlas por lugar quando o atlas único passar do orçamento de download.
 4. **Proibido:** arte de `Tibia.spr`/`Tibia.dat`, do site oficial, da TibiaWiki
    ou de pacote sem licença explícita. Na dúvida, não use e abra issue. Arte de
@@ -451,7 +453,11 @@ confundidas com precedente:
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
 as salas de caçar junto, ver abaixo) só enquanto o jogador está na cidade ou
-numa sala. A folha do Google Fonts que existia saiu em
+numa sala. **A única exceção é a voz da sala** (decisão do Leonardo em
+19/10/2026): quem liga a voz consulta o STUN do Cloudflare e o do Google
+(`STUN` em `src/voz.js`), que só respondem o endereço de fora do aparelho; o
+som vai direto entre os aparelhos e não passa por servidor nenhum. Não
+acrescente outro servidor, nem um TURN, sem decisão dele. A folha do Google Fonts que existia saiu em
 18/10/2026 junto com a arte do Tibia — as fontes agora são do sistema (Verdana,
 como o cliente do Tibia, e uma serifa Palatino nos títulos).
 
@@ -524,7 +530,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
-  `soProv()`); a **comida** (`ehComida()`, `soComida()`, `levaComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
+  `soProv()`); a **comida** (`ehComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
   `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
@@ -583,6 +589,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
   `saiDaSala()`, `quadro(dt,ent)` chamado pelo laço, e os `ganchos` que o
   `main.js` liga às telas
+- `voz.js` — **voz da sala** (ver "Voz" na seção do Realtime): WebRTC
+  nativo em malha entre quem está na sala, apresentação (`oi`, `oferta`,
+  `resposta`, `tchau`) pelo canal da sala (`sinal()` de `sala.js`), segurar
+  para falar (`fala()`), `ligaVoz()`, `desligaVoz()`, `quadro(dt)` chamado
+  pelo laço e `VOZ`, que o botão `#bVoz` do HUD lê (`hudVoz()`)
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -604,7 +615,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
-- `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`), **cidade**
+- `telas.js` — **telas** (`showMenu()`, a tela inicial: o personagem, o preço
+  da morte em uma linha (`riscoCurto()`), Jogar, a conta e o rodapé Regras ·
+  Personagens · Grimório; sem personagem, Jogar vira Criar personagem;
+  `showRegras()`, cujos números saem do `content.json`; `start()`,
+  `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
@@ -649,9 +664,10 @@ só corre enquanto `p.ali` (segundos de alimentação) for maior que zero; todo
 jogador entra com fome. **A comida é item** (`comida` em `items`, os segundos
 dela), como no Tibia: cai dos animais pela tabela `loot`, se compra na
 Quitanda (provisão com `efeito.item`, que vai direto para a mochila), mora na
-mochila (volta com ela extraindo, cai com ela morrendo) e se guarda no **cofre
-de comida** do Banco (`save.comida`, separado de `save.itens`, que é só de
-peças e é o que a Feira e o banco conhecem). Come-se pelo botão Comer
+mochila (volta com ela extraindo, cai com ela morrendo) e se guarda no cofre
+do Banco como item, em `save.mats` (não em `save.itens`, que é só de peças e
+é o que a Feira e o banco conhecem; por isso comida não vai à Feira, e o
+Banco não a compra). Come-se pelo botão Comer
 (`comer()`, a menor da mochila primeiro, nada se passar de
 `progression.comida.max`, 1200 s). Na sala, o convidado pede pelo contador
 `com` da entrada, como a poção, e o retrato manda quantas tem (`nc`).
@@ -756,9 +772,9 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},comida:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<item>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
 O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
-próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
+próxima caçada em `prov`, o resto do que se guarda no Banco como item — materiais do Gordon e tesouros — em `mats`; só a moeda vira ouro no cofre, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento
 vestido e a mochila) fica em `chars`, um por classe.
 
@@ -981,6 +997,34 @@ mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
 - **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
   laço, a incursão congela para todos, e depois de 12 s sem notícia os
   convidados voltam à cidade sem resultado.
+
+### Voz — falar na sala
+
+Decisão do Leonardo em 19/10/2026: **voz só dentro da sala de caçar junto**,
+entre quem se chamou; na cidade aberta, não, porque com desconhecidos pede a
+moderação da F3. `src/voz.js`, sem biblioteca:
+
+- **O som não passa pelo Supabase.** Cada par de aparelhos abre um
+  `RTCPeerConnection` direto (malha: com 4, cada um manda para 3, ~30 kbit/s
+  por pessoa). O canal da sala só leva a apresentação: `oi` a cada 5 s de
+  quem tem a voz ligada, uma `oferta` e uma `resposta` (o SDP já com os
+  candidatos, sem trickle) e `tchau`. Quem tem o `ID` menor oferece. Custo
+  no Realtime: quase nada.
+- **STUN sim, TURN não.** Sem TURN, quem está atrás de CGNAT de operadora
+  (comum no 4G) pode não ligar com alguém; depois de 2 tentativas o jogo
+  avisa "Sem voz com Fulano" e para de tentar. Medir isso é o próximo passo
+  antes de decidir por um TURN (que custa, porque repassa o áudio).
+- **Segurar para falar.** O microfone abre ao ligar a voz (botão Voz, acima
+  de Comer, ou "Ligar voz" no Guia de caça), mas a trilha fica com
+  `enabled=false`; só manda som com `#bVoz` apertado ou V segurado. O botão
+  mostra quem fala, pelo `audioLevel` do que chega (5 vezes por segundo).
+- Os prazos da voz (`SUMIU`, `DESISTE`) são do relógio, não do passo do
+  jogo. Sair ou fechar a sala desliga a voz e solta o microfone.
+- No teste (caso `voz-na-sala`), o Chromium tem microfone falso
+  (`--use-fake-device-for-media-stream`), o `STUN` vira `[]` e o outro lado
+  é um `RTCPeerConnection` de verdade no mesmo navegador, com um tom do
+  WebAudio no lugar do microfone: o falso do Chromium só alimenta uma
+  captura por vez.
 
 ### Convenções de código
 
@@ -1438,6 +1482,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | Vestir e tirar pela Mochila, na cidade e na caçada | Parte 3 |
 | 19/10 | Inventário como no Tibia: só mochila e cofre. A mochila é do personagem, fica com ele entre as caçadas, entra inteira na seguinte e cai toda na morte (menos o Selo); 20 espaços (`progression.mochila`). O Banqueiro guarda e devolve | Parte 3, "O save é mesclado" |
 | 19/10 | **Alimentação como no Tibia:** sem comida não se regenera vida nem mana; a regeneração é a da classe, fixa; cada comida dá um tempo de alimentação, maior nas mais caras, até 1200 s acumulados (`progression.comida`). Come-se pelo botão Comer na caçada (escolha do dono contra a recomendação de comer sozinho). A comida é item: os animais a derrubam, vai na mochila e se guarda no cofre do Banco | Parte 3, "Números que governam o jogo" |
+| 19/10 | **Voz na sala de caçar junto:** WebRTC direto entre os aparelhos, segurar para falar, apresentação pelo canal da sala; só na sala, nunca na cidade aberta (moderação vem antes). Aceita o STUN público do Cloudflare e do Google, a única exceção a não falar com outro servidor; sem TURN até medir quantos não ligam | Parte 3, "Voz" |
 | 19/10 | **Um guia só** (este arquivo), com o princípio-mãe "a realidade como ela é" e os seis pilares | Parte 1 |
 | 19/10 | **O mundo é igual para todos:** nada escala com nível, classe ou grupo | Pilar 1 |
 | 19/10 | **Mapas de caça fixos**, que se aprendem | Pilar 2 |
