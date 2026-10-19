@@ -26,8 +26,9 @@ Nenhum pixel foi desenhado à mão: o atlas sai inteiro de
 [`tools/sprites.mjs`](../tools/sprites.mjs), que baixa o pacote no commit acima
 e gera os arquivos de novo, idênticos. A tabela `ARTE` no topo do script diz
 qual sprite do pacote virou o quê no jogo (monstros, classes, cadáveres, chão,
-paredes, itens, efeitos e projéteis, e na cidade a grama, a rua, o assoalho, a
-água, as árvores e os quatro NPCs).
+paredes, itens, efeitos e projéteis e os NPCs). Os itens dos mapas de caça e os
+da cidade (chão, bordas, paredes, árvores e objetos, listados em `city.arte` no
+`data/game/content.json`) entram no atlas pelo id do pacote.
 
 Os nomes de monstros, itens, lugares e magias são do Fibula. Nada vem do
 cliente oficial do Tibia (`Tibia.spr`/`Tibia.dat`), do site da CipSoft ou da

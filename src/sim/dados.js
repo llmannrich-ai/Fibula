@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.43.2';
-import {ALFA} from './mapa.js?v=0.43.2';
+import {MW,MH} from './base.js?v=0.44.0';
+import {ALFA} from './mapa.js?v=0.44.0';
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
@@ -93,7 +93,7 @@ export function validaConteudo(c){
   for(const q of ci.chao||[]){
     const l=M[q&&q.y],t=l&&typeof q.x==='number'?l[q.x]:undefined;
     if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
-    if(!t||!',._@:=vh'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
+    if(!t||!(t in LEGENDA)||SOLIDO_C[LEGENDA[t]])throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
     if('respawn'in q&&!(typeof q.respawn==='number'&&q.respawn>0))throw new Error(`city.chao: o respawn de ${q.item} em ${q.x},${q.y} precisa ser um número de segundos maior que zero`);
   }
   const hs=Object.entries(c.hunts).filter(([k])=>k[0]!=='_');
@@ -149,13 +149,22 @@ export function validaConteudo(c){
    O mapa da cidade é texto no content.json, uma letra por tile: mudar uma
    casa de lugar é editar dado. LEGENDA diz o que cada letra é (o número é o
    tipo de tile de src/sim/cidade.js); as letras dos NPCs vêm de city.npcs.
-   ABRE é o que um NPC pode abrir. OBJETOS são as coisas sólidas que enfeitam
-   a cidade (o nome é o sprite obj_<nome>); ficam sobre o chão do vizinho.
+   ABRE é o que um NPC pode abrir. OBJETOS são as coisas que enfeitam a
+   cidade (fonte, poste, mesa, túmulo...); ficam sobre o chão do vizinho e são
+   sólidos, menos os de PISAVEL (cadeira, toldo), por cima dos quais se anda.
+   SOLIDO_C diz, por tipo de tile, se ele bloqueia; os tipos de 11 em diante
+   são o vocabulário de 0.44.0: terra, cais, areia, lajota, tapete, piso de
+   pedra, quatro estilos de parede e a cerca. Como cada tipo se desenha é de
+   city.arte (src/desenho.js), não daqui.
    HUNTS são os mapas de caça, cada um com o NPC que leva até ele (npc), a
    tabela de spawn, o chefe, o jeito de cavar o mapa e a arte; caçaDe(k) dá o
    mapa k, ou o primeiro se k não existe (o que vem da rede passa por aqui). */
-export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10};
-export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha'};
+export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10,
+  t:11,d:12,a:13,l:14,m:15,z:16,'%':17,'&':18,'$':19,'+':20,'|':21};
+export const SOLIDO_C=[0,1,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1];
+export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha',
+  L:'poste',i:'pilar',E:'monumento',W:'bandeira',u:'tumulo',x:'mesa',o:'bau',j:'cama',g:'fogueira',X:'rocha',H:'sebe',Y:'pinheiro',C:'cadeira',Z:'toldo'};
+export const PISAVEL=['cadeira','toldo'];
 export const ABRE=['mercador','banco','cacadas','mercado','forja','loja'];
 export let CITY,HUNTS;
 export const cacaDe=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(HUNTS,k)?k:HUNTS.runas?'runas':Object.keys(HUNTS)[0];

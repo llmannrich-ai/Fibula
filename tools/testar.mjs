@@ -1002,6 +1002,23 @@ async function testaSimulacao() {
     const iObj = M.join('').indexOf('f'), iPonte = M.join('').indexOf('=');
     if (!(iObj >= 0 && C.obj[iObj] && C.sol[iObj] && C.t[iObj] !== 1)) falhas.push(`a fonte não virou objeto sólido sobre chão (obj ${C.obj[iObj]}, sol ${C.sol[iObj]}, chão ${C.t[iObj]})`);
     if (!(iPonte >= 0 && !C.sol[iPonte])) falhas.push('a ponte não deixa atravessar o rio');
+    /* a cara da cidade (city.arte): todo id citado está no atlas, toda letra de
+       chão e de parede do mapa tem desenho, e todo objeto também; cadeira e
+       toldo se pisam, o resto dos objetos não */
+    {
+      const A = JSON.parse(CONTEUDO).city.arte, S = JSON.parse(readFileSync(join(RAIZ, 'assets', 'otsp', 'atlas.json'), 'utf8')).sprites, falta = new Set();
+      const ve = (v) => { if (typeof v === 'number') { if (!S['t' + v]) falta.add(v); } else if (typeof v === 'string') { if (!S[v]) falta.add(v); } else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (k[0] !== '_' && k !== 'p' && k !== 'janelas') ve(x); };
+      ve(A);
+      if (falta.size) falhas.push(`city.arte cita o que não está no atlas (rode node tools/sprites.mjs): ${[...falta]}`);
+      const D = await import(url('dados.js')), usadas = new Set(M.join(''));
+      for (const l of usadas) {
+        if (l in D.LEGENDA && !D.SOLIDO_C[D.LEGENDA[l]] && l !== '@' && !A.chao[l]) falhas.push(`a letra de chão "${l}" do mapa não tem desenho em city.arte.chao`);
+        if ('#%&$+|'.includes(l) && !A.paredes[l]) falhas.push(`a parede "${l}" do mapa não tem desenho em city.arte.paredes`);
+        if (l in D.OBJETOS && !A.objetos[D.OBJETOS[l]]) falhas.push(`o objeto ${D.OBJETOS[l]} do mapa não tem desenho em city.arte.objetos`);
+      }
+      const iCad = M.join('').indexOf('C'), iPoste = M.join('').indexOf('L');
+      if (!(iCad >= 0 && !C.sol[iCad] && iPoste >= 0 && C.sol[iPoste])) falhas.push(`a cadeira devia se pisar e o poste bloquear (cadeira ${C.sol[iCad]}, poste ${C.sol[iPoste]})`);
+    }
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
     /* anda por sqm: oeste pela rua principal até a coluna do Mercador, parando no centro dela */
@@ -1022,8 +1039,8 @@ async function testaSimulacao() {
     if (!ruim((c) => { c.supplies.pocao.efeito = {voar: 1}; })) falhas.push('provisão com efeito desconhecido foi aceita');
     if (!ruim((c) => { delete c.supplies.pocao.max; })) falhas.push('provisão sem máximo por caçada foi aceita');
     if (!ruim((c) => { c.city.npcs.mago.letra = 'f'; })) falhas.push('NPC com a letra de um objeto foi aceito');
-    if (!ruim((c) => { c.city.chao = [{x: 26, y: 17, item: 'espada'}]; })) falhas.push('peça do chão em cima da fonte foi aceita');
-    if (!ruim((c) => { c.city.chao = [{x: 37, y: 6, item: 'faca', respawn: 0}]; })) falhas.push('peça do chão com respawn zero foi aceita');
+    if (!ruim((c) => { c.city.chao = [{x: 30, y: 19, item: 'espada'}]; })) falhas.push('peça do chão em cima da fonte foi aceita');
+    if (!ruim((c) => { c.city.chao = [{x: 50, y: 4, item: 'faca', respawn: 0}]; })) falhas.push('peça do chão com respawn zero foi aceita');
     if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
     if (!ruim((c) => { c.hunts.esgoto.npc = 'mercador'; })) falhas.push('mapa de caça levado por quem não abre cacadas foi aceito');
     if (!ruim((c) => { c.hunts.ilha.bands[0].weights = {grifo: 1}; })) falhas.push('mapa de caça com monstro inexistente foi aceito');
@@ -2009,7 +2026,7 @@ const CASOS = [
     nome: 'chao-da-cidade',
     o_que: 'peças de teste no chão da cidade: pisar leva ao cofre do Banco, uma vez por conta, e não voltam ao chão',
     semente: 7,
-    conteudo: [c => { c.city.chao = [{x: 27, y: 20, item: 'espada'}, {x: 29, y: 20, item: 'cota'}]; }],
+    conteudo: [c => { c.city.chao = [{x: 31, y: 22, item: 'espada'}, {x: 33, y: 22, item: 'cota'}]; }],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
@@ -2024,7 +2041,7 @@ const CASOS = [
     tecla('keyup','KeyD');await quadros(8);
     ok('andando por cima, pegou as duas', pegou, Cd.C.chao.length);
     ok('foram para o cofre da conta', sv().itens.espada===1&&sv().itens.cota===1, JSON.stringify(sv().itens));
-    ok('o save lembra que já pegou', sv().chao['27,20']===1&&sv().chao['29,20']===1, JSON.stringify(sv().chao));
+    ok('o save lembra que já pegou', sv().chao['31,22']===1&&sv().chao['33,22']===1, JSON.stringify(sv().chao));
     ok('o registro avisa', /Você pegou espada enferrujada/.test(txt('#log')||''), txt('#log'));
     clica($('#bMochila'));
     ok('foram para o cofre, não para a mochila', txt('#moTit')==='Mochila'&&txt('#moVal')==='0 ouro · 0/20'&&todos('#moGrade .cel:not([disabled])').length===0, txt('#moTit')+' / '+txt('#moVal')+' / '+todos('#moGrade .cel:not([disabled])').length);
@@ -2039,7 +2056,7 @@ const CASOS = [
     nome: 'armas-que-renascem',
     o_que: 'a faca e a espada de madeira da casa vazia: pisar leva à mochila, a peça renasce no mesmo sqm e, com a mochila cheia, fica no chão',
     semente: 7,
-    conteudo: [c => { c.city.chao = [{x: 27, y: 20, item: 'faca', respawn: 2}]; }],
+    conteudo: [c => { c.city.chao = [{x: 31, y: 22, item: 'faca', respawn: 2}]; }],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
@@ -2053,17 +2070,17 @@ const CASOS = [
     var pegou=await ate(function(){return Cd.C.chao.length===0},40);
     tecla('keyup','KeyD');await quadros(60);
     ok('pisou e pegou', pegou, Cd.C.chao.length);
-    ok('parado em cima, ela não renasce', Cd.C.p.tx===27&&Cd.C.chao.length===0, Cd.C.p.tx+' / '+Cd.C.chao.length);
-    tecla('keydown','KeyD');await ate(function(){return Cd.C.p.tx>=29},40);tecla('keyup','KeyD');
+    ok('parado em cima, ela não renasce', Cd.C.p.tx===31&&Cd.C.chao.length===0, Cd.C.p.tx+' / '+Cd.C.chao.length);
+    tecla('keydown','KeyD');await ate(function(){return Cd.C.p.tx>=33},40);tecla('keyup','KeyD');
     ok('foi para a mochila, não para o cofre', sv().chars.cavaleiro.mochila.faca===1&&!sv().itens.faca, JSON.stringify(sv().chars.cavaleiro.mochila)+' / '+JSON.stringify(sv().itens));
-    ok('o save não marca a peça como pega', !sv().chao['27,20'], JSON.stringify(sv().chao));
+    ok('o save não marca a peça como pega', !sv().chao['31,22'], JSON.stringify(sv().chao));
     ok('o registro avisa', /Você pegou faca\. Está na mochila/.test(txt('#log')||''), txt('#log'));
     var volta=await ate(function(){return Cd.C.chao.length===1},80);
-    ok('renasce no mesmo sqm', volta&&Cd.C.chao[0].x===27&&Cd.C.chao[0].y===20, JSON.stringify(Cd.C.chao));
+    ok('renasce no mesmo sqm', volta&&Cd.C.chao[0].x===31&&Cd.C.chao[0].y===22, JSON.stringify(Cd.C.chao));
     Pg.ch().mochila={faca:1,espada:19};
     ok('a mochila está cheia', Pg.cabe(Pg.ch().mochila,'faca')===0, Pg.cabe(Pg.ch().mochila,'faca'));
     tecla('keydown','KeyA');
-    var pisou=await ate(function(){return Cd.C.p.tx===27},40);
+    var pisou=await ate(function(){return Cd.C.p.tx===31},40);
     tecla('keyup','KeyA');await quadros(4);
     ok('chegou no sqm da faca', pisou, Cd.C.p.tx);
     ok('mochila cheia: a faca fica no chão', Cd.C.chao.length===1&&Pg.ch().mochila.faca===1, Cd.C.chao.length+' / '+Pg.ch().mochila.faca);

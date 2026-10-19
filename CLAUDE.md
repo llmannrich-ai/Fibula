@@ -547,8 +547,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `mapa.js` — **o mapa fixo** (`leMapa(m)`, `lePilha()`, `ALFA`: lê
   `hunts.<k>.mapa` — ver "Os mapas de caça são fixos" abaixo — e devolve `g`,
   a pilha de cada sqm, a entrada e os pontos de spawn com a profundidade de
-  cada um) e `pecas()` (qual peça de parede cada bloco de valor 1 recebe; a
-  cidade usa com a grade dela). O **gerador** (`genMap()`, `carveRooms()`,
+  cada um) e `pecas()` (qual peça de parede cada bloco de valor 1 recebe,
+  para o rascunho). O **gerador** (`genMap()`, `carveRooms()`,
   `corridor()`, `carve()`, `objetos()`) só serve ao rascunho de
   `tools/mapas.mjs`: o jogo não sorteia mapa
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
@@ -641,8 +641,18 @@ principal, o markup das telas e do HUD, e a linha que carrega
   pé de quem encosta nela. Sem a arte, o caminho antigo (formas em código)
   fica intacto; mexa nos dois ou teste o `sem-arte`. A **cidade** tem o
   `renderCidade()` dela (dia claro, sem escuridão), com `drawNpc()`,
-  `drawObj()` (os objetos, com e sem a arte) e `drawMiniCidade()` (o mapa da
-  cidade no canto, com os NPCs em amarelo)
+  `drawObj()` (os objetos sem a arte) e `drawMiniCidade()` (o mapa da
+  cidade no canto, com os NPCs em amarelo). A cara da cidade é dado:
+  `city.arte` no `content.json` diz, por letra do mapa, os ids do OTSP do
+  chão, do que cresce por cima, da borda da grama (que avança sobre rua,
+  água e terra, como no Tibia), dos detalhes soltos na grama, das paredes de
+  cada estilo (peças, janelas e o arco da porta, que aparece sozinho no vão
+  de assoalho de uma parede), do portão, das árvores e dos objetos.
+  `preparaCidade()` monta uma vez por cidade a lista do que cada sqm desenha
+  (chão e o rente a ele; o resto linha a linha, junto das criaturas), e a
+  peça de cada parede sai de com quem ela emenda. Os ids entram no atlas
+  sozinhos (`tools/sprites.mjs` lê `city.arte`), e o harness reprova id que
+  não esteja nele
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)

@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.44.0 (19/10/2026) | A cidade foi redesenhada por bairros, no jeito de Thais e Venore: templo com pilares e cemitério, praça com fonte e postes, feira com toldos, bairro dos canais com casas de enxaimel sobre cais, porto com píer e a muralha com o portão. Grama que avança sobre a rua, cinco estilos de parede com janelas e portas em arco, casas mobiliadas e detalhes soltos no chão |
 | 0.43.2 (19/10/2026) | A Mochila não vende mais na Feira durante a caçada: o que está nela só fica a salvo saindo pela porta. Vender é na cidade |
 | 0.43.0 (19/10/2026) | A escolha de personagem cabe inteira na tela, sem barra de rolagem: os números da conta numa linha e cartões mais baixos, com o preço da morte no lugar da descrição de quem já existe |
 | 0.42.0 (19/10/2026) | Sem tela intermediária: quem tem conta aberta abre o jogo direto na escolha de personagem, e quem entra ou cria conta vai para ela sozinho. "Sair da conta" fica na escolha de personagem |

@@ -4,8 +4,8 @@
    não segura o jogo: enquanto não chega, ou se não chegar, o render() usa o
    desenho em código de antes. app.dataset.arte marca que chegou (o CSS usa
    para os ícones). */
-import {TAU} from './sim/base.js?v=0.43.2';
-import {app} from './dom.js?v=0.43.2';
+import {TAU} from './sim/base.js?v=0.44.0';
+import {app} from './dom.js?v=0.44.0';
 
 export const ART_URL='assets/otsp/';
 /* a imagem leva a versão do jogo (?v=, como os módulos): sem ela, um atlas
@@ -46,5 +46,4 @@ export function icone(el,n,d,f,caixa){
 export const dir4=a=>{const c=Math.cos(a),s=Math.sin(a);return Math.abs(c)>=Math.abs(s)?(c>0?1:3):(s>0?2:0)};
 /* oito direções do projétil, a partir do leste no sentido horário */
 export const dir8=(x,y)=>((Math.round(Math.atan2(y,x)/(TAU/8))%8)+8)%8;
-export const PECA=['','par_v','par_h','par_poste','par_canto'];
 export const desl=n=>(ART.s[n]&&ART.s[n].ox)||0;

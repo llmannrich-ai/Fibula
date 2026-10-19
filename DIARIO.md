@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 16:10 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** a cidade enriquecida (0.44.0), pedido do Leonardo ("o mapa da cidade ainda está muito pobre; se inspire em Venore, Thais"). Mapa novo de 60×48 (antes 54×38), por bairros: templo de pedra com lajota, pilares, monumento e tapete (Thais), cemitério cercado, torre dos magos, praça com fonte, postes, canteiros e bandeira, Banco e Mercador ao lado dela, Quitanda e Forja ao sul, feira com bancas sob toldos, bairro dos canais com casas de enxaimel sobre cais e pontes (Venore; a Botica está lá), porto com armazém, areia e píer (o Capitão na ponta), casas mobiliadas (cama, mesa, cadeira, baú, estante) e a muralha de pedra bruta com o portão. A cara de cada letra virou dado: `city.arte` no `content.json` (ids do OTSP), lida por `preparaCidade()` em `src/desenho.js` e posta no atlas pelo `tools/sprites.mjs`. Bordas de grama automáticas (o conjunto 227–238 do pacote), cinco estilos de parede com janelas e arco de porta, árvores variadas e detalhes soltos na grama. Letras novas em `LEGENDA`/`OBJETOS` (`src/sim/dados.js`), com `SOLIDO_C` e `PISAVEL` (cadeira e toldo se pisam). O `C.par` e o `PECA` saíram: a peça da parede sai de com quem ela emenda. Pilar 2 (o mundo se aprende, e a cidade passa a ter lugares com cara própria).
+
+**Validação:** `SINTAXE_OK`; `node tools/testar.mjs` — 38/38. O caso da cidade no Node ganhou: todo id de `city.arte` está no atlas, toda letra de chão, parede e objeto do mapa tem desenho, a cadeira se pisa e o poste bloqueia. As coordenadas dos casos `chao-da-cidade` e da peça sobre a fonte foram para o mapa novo. Download: 1.057 KB (atlas 909 KB, +115 KB), 4G calculado: primeira tela 980 ms, arte 1.789 ms. Capturas no Chromium em 1920×1536 (o mapa inteiro) e 360×640.
+
+**Análise:** a cidade cresceu ~40% em área. Do @ ao Guia são ~21 sqm (antes 16) e ao Capitão ~27 (antes 22), uns 3 s a mais no nível 1: o pilar 5 chama tempo morto de defeito, então a cidade não deve crescer mais sem atalho. A água segue com um padrão só (o 2260 tem 8×8 padrões e pesaria ~100 KB).
+
+**Roadmap:** sem mudança.
+
+**Pendências e riscos:** as peças de enxaimel (600/601/598/599) e a cerca (639–643) foram escolhidas olhando o catálogo; se alguma ficar torta no jogo, é trocar o id em `city.arte.paredes`. O texto do Guia ainda fala em "portal abre em 1:30", que não existe mais (não é desta mudança).
+
+**Próximo passo recomendado:** o Leonardo andar pela cidade no celular e apontar o que trocar; a mudança de cara é só dado (`city.arte` e `city.mapa`).
+
 ## 2026-10-19 15:04 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** nenhum publicado. Pedido do Leonardo: filtro de linha no PNG do atlas. Implementado em `tools/sprites.mjs` (os cinco filtros do PNG, um para todas as linhas ou o melhor por linha, com deflate 9) e **desfeito**, porque não reduz: 794 KB contra os 793 KB de hoje.
@@ -316,21 +330,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 **Pendências e riscos:** jogador de nível alto agora acha os lugares baixos fáceis — é o pilar 1 funcionando, mas falta lugar acima do nível 15 (item 7). As quatro tarefas agendadas ainda mandam ler `docs/agentes/comum.md` e `docs/agentes/<papel>.md` (a instrução só pode ser trocada na conversa de cada uma); esses arquivos agora só redirecionam para o `CLAUDE.md`. O ciclo continua `pausado`. Pendências do dono na Parte 6: P7 (venda do saco na caçada, sensível, em conflito com o pilar 4), P8 (saída a ≤ 60 s), P9 (números da morte B, sensível).
 
 **Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).
-## 2026-10-20 01:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** mochila e cofre como no Tibia (0.27.0), a pedido do Leonardo ("apenas com a mochila e o cofre"). O saco deixou de existir como inventário: `p.bag` é a mochila durante a caçada, começa com `ch().mochila` e volta para ela na extração; a morte a esvazia. O Banco ganhou "Guardar tudo", "guardar" por linha, "levar" nas peças do cofre e "Retirar" ouro. Mochila de 20 espaços (`progression.mochila.espacos`), peça de equipamento ocupa um, o resto empilha; cheia, o que não cabe fica no chão.
-
-**Validação:** `node tools/testar.mjs` — 34/34 (caso novo `banco-mochila`; bloco novo da mochila na simulação no Node: entrar com ela, extrair sem cofre, morrer esvaziando com o selo, guardar, levar, retirar, mochila cheia deixando loot no chão, `normaliza()` e `confereFicha()` limpando item inexistente). Banco e Mochila conferidos em captura de 390×844.
-
-**Análise:** mesclado com a 0.26.0 (vestir pela Mochila) e a 0.26.1 (vestida ganha origem na morte), feitas em paralelo: na cidade a troca passou a ser com a mochila, não com o cofre, e tirar só sai se couber; `pecasDaCaca()` desconta `p.bag0`, para a origem não contar de novo o que entrou na mochila. A conversão automática (ouro, gema, peça, material) que a extração fazia em `guardaSaco()` foi mantida, só mudou de hora: acontece no Banco. Por isso o servidor da Feira não mudou (`itens` e `cofre` continuam sendo o cofre). Na sala, a ficha do convidado agora leva a mochila (`confereFicha()` limpa) e o `fim` do anfitrião vira a mochila do convidado.
-
-**Roadmap:** item fora da fila (pedido do dono), decisão na seção 15.1 do PRD.
-
-**Pendências e riscos:**
-- **Fechar o jogo no meio da caçada preserva a mochila** com que se entrou (só o ganho da caçada se perde, e nenhum XP). Já era assim com o XP; com a mochila valendo mais, o incentivo a fechar o app antes de morrer cresce. Corrigir pede esvaziar a mochila ao entrar e devolvê-la ao sair, cuidando do anfitrião que cria a sala com o próprio jogador "fora".
-- **Origem (lastro) a mais:** a extração credita na origem o que a caçada rendeu, mas se o jogador morrer depois com aquilo na mochila a origem não diminui. Só quem edita o save tira proveito, e só até esse teto.
-- O cofre não tem limite de espaços (o Leonardo citou espaços no banco também); com peças empilhando por tipo no save, um limite precisaria contar peça por peça e decidir o que fazer com quem já passou dele.
-- A mochila cheia é um freio novo à ganância (pilar 4): medir com o Balanceamento se 20 espaços apertam ou sobram nos mapas fundos.
-- Gema e coroa só viram ouro no Banco; não há NPC que compre loot avulso, de propósito por enquanto.
-
-**Próximo passo recomendado:** o Leonardo jogar duas caçadas seguidas sem passar no Banco e morrer na segunda, para sentir se a perda está legível; decidir se fechar o app deve contar como morte.

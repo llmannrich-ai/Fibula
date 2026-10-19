@@ -1727,98 +1727,365 @@
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, t terra, d cais de madeira, a areia, l lajota, m tapete, z piso de pedra, @ onde se chega. Obstaculo: A arvore, ~ agua, P portao da muralha, | cerca e as paredes: # pedra, & tijolo, % enxaimel, $ reboco, + pedra bruta (a muralha); o vao de assoalho numa parede e a porta. Objetos (sobre o chao vizinho; solidos, menos cadeira e toldo): f fonte, p poco, b barril, c caixote, e estatua, E monumento, y arbusto florido, H sebe, r cerejeira, q arvore de frutas, Y pinheiro, X rocha, n forno, s estante, k banca, Z toldo, w lenha, L poste, i pilar, W bandeira, u tumulo, x mesa, C cadeira, o bau, j cama, g fogueira. Como cada letra se desenha esta em arte. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem), forja (o Gordon: compra materiais, da encomendas e vende armas e armaduras; ver forja abaixo) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca; cada um diz qual NPC leva ate ele (o Guia, a Grade do esgoto, o Capitao do porto); nivel e so recomendacao, o mundo nao se ajusta ao jogador. Um NPC com lugar: true e uma entrada, nao uma pessoa (a grade do esgoto): nao bloqueia o caminho, e desenhado com o sprite npc_<chave> deitado no chao e o botao diz acao (Descer) em vez de Falar.",
     "nome": "Cidade",
-    "_chao": "Pecas no chao da cidade. Sem respawn (as de teste, pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao); nao tem origem no banco, entao nao entra na Feira. Com respawn (segundos): pisou, vai para a mochila se couber, e a peca volta ao mesmo sqm depois desse tempo de cidade, contado em cada aparelho (as armas de quem comeca, na casa vazia ao norte da praca). Val 0: nao vira ouro no Banco. Para tirar, apague da lista.",
+    "_chao": "Pecas no chao da cidade. Sem respawn (as de teste, pedido do Leonardo para testar o equipamento): pisou, vai para o cofre do Banco, uma vez por conta (save.chao); nao tem origem no banco, entao nao entra na Feira. Com respawn (segundos): pisou, vai para a mochila se couber, e a peca volta ao mesmo sqm depois desse tempo de cidade, contado em cada aparelho (as armas de quem comeca, na casa vazia do bairro dos canais). Val 0: nao vira ouro no Banco. Para tirar, apague da lista.",
     "chao": [
       {
-        "x": 37,
-        "y": 6,
+        "x": 50,
+        "y": 4,
         "item": "faca",
         "respawn": 120
       },
       {
-        "x": 39,
-        "y": 6,
+        "x": 51,
+        "y": 4,
         "item": "espadamadeira",
         "respawn": 120
       },
       {
-        "x": 23,
+        "x": 27,
         "y": 21,
         "item": "espada"
       },
       {
-        "x": 29,
+        "x": 33,
         "y": 21,
         "item": "machado"
       },
       {
-        "x": 22,
-        "y": 22,
+        "x": 26,
+        "y": 23,
         "item": "couraca"
       },
       {
-        "x": 30,
-        "y": 22,
+        "x": 34,
+        "y": 23,
         "item": "cota"
       },
       {
-        "x": 23,
-        "y": 23,
+        "x": 28,
+        "y": 24,
         "item": "amuleto"
       },
       {
-        "x": 29,
-        "y": 23,
+        "x": 32,
+        "y": 24,
         "item": "espada"
       },
       {
-        "x": 26,
-        "y": 22,
+        "x": 30,
+        "y": 24,
         "item": "cota"
       }
     ],
     "mapa": [
-      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~AAAAAAAA",
-      "AAAAAAA,,,A,AAAA,,,,AA,,,,A,,,A,A,,,A,,,,,A,~~A,AA,A,A",
-      "A,,,,,,,,,,,,,,,,,,,#############,,#######,,~~,,,,,,,A",
-      "AA,########,#######,#:::::::::::#,,#s___n#,,~~,,,,,,,A",
-      "A,,#c____c#,#s___n#,#:e:::f:::e:#,,#_____#,,~~######,A",
-      "AA,#__B___#,#_____#,#:::::::::::#,,#_____#r,~~#s__s#,A",
-      "A,,#______#,#_____#,#:::::::::::#A,#_____#,,~~#_S__#,A",
-      "AA,#______#,#___b_#,#:e:::::::e:#,,#_____#,,~~#____#,A",
-      "A,,#______#,#_____#,#:::::::::::#,,#_____#,,~~#____#,A",
-      "AA,###_####,###_###,######_######,,###_###,~~,#____#,A",
-      "A,,,vv.vv,,,,vv.vv,,,,,,,,.,,,,,,,,,vv.vv,,~~,##_###,A",
-      "A,........................................,==....,,,,A",
-      "AA,,.,,,,,,,,,,,,,,,,,,,y,.,y,,,,,,,,,,,,,,~~,,,,,,,,A",
-      "A,,,.,,,,,########,,,,,,,,.,,,,,,,,######,,~~,,,,,,,,A",
-      "A,,,.,,,,,#b____c#,y:::::::::::::y,#s__s#,,~~,,q,,q,,A",
-      "AA,,.,,,,,#___M__#,::vv:::::::vv::,#_O__#r,~~,hhhhhh,A",
-      "AA,,.,,,,,#______#,:::::::::::::::,#____#,,~~,hhhhhh,A",
-      "AA,,.,,,,,#c_____#,:::::::f:::::::,#___b#,,~~,,q,,q,,A",
-      "A,,,.,,,,,####_###,:::::::::::::::,##_###,,~~,hhhhhh,A",
-      "A,,,.,,,,,,,,,.,,,,:::::::::::::::,,,.,,,,~~,,hhhhhh,A",
-      "AA.................:::::::@:::::::........==.....,,r,A",
-      "AA,,.,,,,,,,,,,,,,,:::::::::::::::,,,,,,,,~~,,r,,,,,,A",
-      "AA,,.,............,:::::::::::::::,,A,,,,,~~,,,,p,,,,A",
-      "A,,,.,.kk.kk.kk.k.,::vv:::::::vv::,,,,,,A,~~,,,,,,,,,A",
-      "AA,,.,............,y:::::::::::::y,,,,,,,,~~,,,,q,,q,A",
-      "A,,,.,......Q.....,,,,,,y,.,y,,,,,,,,,,,,,~~,,,,,,,,,A",
-      "A,,r.,............A,,,,,,,.,.............,~~,r,,,,,,,A",
-      "A,,,.,.bc......wb.,,,,,,,,.,.kk.......kk.,~~,,,,N,,,,A",
-      "A,,,.,............,,,,A,,,.,......T......,~~~~~~~~~~~~",
-      "A,,,.,,,,,,,,,,,,,,,,,,,,,.,...c.....b...,~~~~~~~~~~~~",
-      "AAy,.,vvv,vvv,,A,,r,,,,,,,.,.k.........k.,,,,,,,,,,,,A",
-      "AA,,.,,,,p,,,,,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,,,,,,,A",
-      "A,,,................V.................,,,,,,,,,,,,,,,A",
-      "A,,,,,,,,,,,,,,,,,,,,,,,,,.,##_######,,,,,,,,,,,,,,,,A",
-      "A,y,,,,,,r,,,,y,,,,r,,,A,,.,#____F_n#,,,,,,,,,,,,,,,,A",
-      "A,,,,,,,,,,,,,,,,,,,,,,,,,.,#w______#,,,,,,,,,,,,,,,,A",
-      "A,,,,,,,,,,,,,,,,,,,,,,,,,.G#########,,,,,,,,,,,,,,,,A",
-      "A#########################P##########################A"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~AAAAAAAAAAAAAA",
+      "AA,AA,,A,AA,A,,AA,AA,A,,AA,AA,AA,AA,A,,AA,AA~~A,AA,AA,AA,AA,",
+      "A,,$$$$$$$$$,||||||,#####################,,,~~dd%%%%%%,,AAAA",
+      "AA,$ssslsss$,|Y,,,|,#lelllllllmlllllllel#,cc~~Ld%s__j%,,AAAA",
+      "A,,$lllllll$,|,u,u|,#lllillilLELlillilll#,b,~~dd%____%,,AAAA",
+      "A,,$LllSlll$,|,t,,|,#lllllllllmlllllllll#,,w~~dd_____%,,AAAA",
+      "A,,$lllllll$,|,u,u|,#lllllllllmlllllllll#,,,~~dd%__Cx%,,AAAA",
+      "AA,$xlllllx$,|,tt,|,#lllillillmllillilll#,,,~~dd%%%%%%,,AAAA",
+      "A,,$lllllll$,|,u,X|,#lllllllllmlllllllll#,,,~~dd%%%%%%,,AAAA",
+      "A,,$olllllL$,|,t,,|,#lClllllllmlllllllCl#,,,~~dd%_b_o%,,AAAA",
+      "A,,$$$$l$$$$,||t|||,##########l##########,,A~~Ld_____%~~~~~~",
+      "AAA,,,y,y,,,,,,,,,,,,vrvvvrvv...vvrvvvrv,,,,~~dd%%%%%%~~~~~~",
+      "A,,,,,,,,,,,A,,,,,A,,vvvvvvvL...Lvvvvvvv,,A,~~dd,,,,,~~~~~~~",
+      "A,..........................................==dddddddd~~~~~~",
+      "A,..........................................==dddddddd~~~~~~",
+      "AA..#########,&&&&&&&&,L:::::::::::::L,&&&&&~~dd%%%%%%~~~~~~",
+      "A,..#ssszsss#y&cb__ss&,:::::C:::C:::::,&s__&~~bd%s__s%~~~~~~",
+      "A,..#zzzBzzz#,&______&,:::y:::::::y:::,&_j_&~~dd%____%~~~~~~",
+      "A,..#LzxmxzL#,&x__M_x&,:::::::::::::::,&__x&~~dd___Ox%~~~~~~",
+      "AA..#zzzmzzz#,&______&,::vrv::f::vrv::,&___&~~dd%____%~~~~~~",
+      "A,..#ozzmzzo#L&b____c&,::vvv:::::vvv::,&&_&&~~dc%b__n%~~~~~~",
+      "A,..####z####,&&&&_&&&,:::::::::::::::,,,,,,~~dd%%%%%%~~~~~~",
+      "A,.....................:::::::@:::::::......==dd,,,,,,~~~~~~",
+      "AA.....................:::::::::::::::......==dd,,,,,,~~~~~~",
+      "A,..%%%%_%%%,++++z++++,::vvv:::::vvv::,$$_$$~~dd%%%%%%~~~~~~",
+      "A,..%kk___b%,+nnzzzzw+,::vev:::::vev::,$___$~~dL____c%~~~~~~",
+      "A,..%___Q__%L+zzzFzzz+A:::y:::::::y:::,$x__$~~dd%%%%%%~~~~~~",
+      "AA..%cx___n%,+bzzzzcw+,:::::::W:::::::,$__o$~~~~~~~~~~~~~~~~",
+      "A,..%%%%%%%%,+++++++++,L:::::::::::::L,$$$$$~~~~~~~~~~~~~~~~",
+      "A,....................................................~~~~~~",
+      "A,....................................................~~~~~~",
+      "AA.|||||t|||||,,,,,,,,,,,,,,,...,,,,,,,,,,,,aaaaaaaaaa~~~~~~",
+      "A,.|hhhhhhhhh|,,q,,pL::::::::...::::::::L,,,%%%%%%%aaa~~~~~~",
+      "A,.|hhhhhhhhh|q,,,,,:ZZ::ZZ::...:ZZ::ZZ::,,,%cc__b%aaa~~~~~~",
+      "A,.|hhhhhhhhh|,q,q,,:kk::kk::...:kk::kk::A,,%_____%aaa~~~~~~",
+      "AA..,,,,,,,H,,,,,,,,:::::::::...:::::::::,,,%o___b%aaa~~~~~~",
+      "A,..................:c::V::::...:::::::b:...%%%_%%%aaa~~~~~~",
+      "A,..................:::::::::...:::::::::.............~~~~~~",
+      "A,..&&&_&&&,$$$_$$$H::::::b:x.T.x:c::::::,,,aaaaaadddLdbddd~",
+      "AA..&j___s&,$s___j$,:ZZ::ZZ::...:ZZ::ZZ::,,,aaaaaadddddddNd~",
+      "A,..&_____&H$_____$A:kk::kk::...:kk::kk::,A,agaaaadddLdcddd~",
+      "A,..&xC__o&,$n_x_b$,L::::::::...::::::::L,,,aaaXaaaaaa~~~~~~",
+      "A,..&&&&&&&,$$$$$$$H,,,,,,,,,...,,,,,,,,,,,,aaaaaaaXaa~~~~~~",
+      "AA..........................G.........................~~~~~~",
+      "A+++++++++++++++++++++++++++++P+++++++++++++++++++++++~~~~~~",
+      "A,,,,,,,,,,,A,,,,,,,,,,,,,X,,ttt,,Y,,,,,,,,,A,,,,,,,,,~~~~~~",
+      "A,,,,A,,,,,A,,,,,,,,,,,,A,,,,ttt,,,,,A,,,,,,,,,,,,,,,,~~~~~~",
+      "A,,,,,,,,,,,,,,,,,,A,,,,,,,,,ttt,,,,,,,,,,,,,,,,,,A,,,~~~~~~"
     ],
+    "arte": {
+      "_note": "A cara da cidade: ids do OpenTibia Sprite Pack (entram no atlas como t<id>, pelo tools/sprites.mjs) ou um nome do atlas (agua). chao: a letra do mapa e o chao dela (com mais de um, o sqm escolhe; repetir um id pesa a escolha). sobre: o que cresce por cima (flores, horta). borda: a grama que avanca sobre o vizinho que nao e grama (rua, agua, terra), na ordem do borders.xml do Remere's: n e s w, cantos pequenos nw ne sw se, cantos grandes nw ne sw se. detalhes: o que se solta na grama, com a chance p por sqm. paredes: por letra de parede, as pecas v (vertical), h (horizontal), poste, canto, jv e jh (com janela, numa fracao janelas dos lances retos) e av e ah (o arco da porta, no vao de assoalho da parede). portao: o portao da muralha. arvores: uma por sqm de arvore. objetos: por nome de OBJETOS (src/sim/dados.js).",
+      "chao": {
+        ",": [
+          107,
+          107,
+          107,
+          107,
+          108
+        ],
+        ".": [
+          154
+        ],
+        "_": [
+          172
+        ],
+        ":": [
+          155
+        ],
+        "=": [
+          173
+        ],
+        "v": [
+          107
+        ],
+        "h": [
+          135
+        ],
+        "t": [
+          135
+        ],
+        "d": [
+          182
+        ],
+        "a": [
+          128
+        ],
+        "l": [
+          196
+        ],
+        "m": [
+          176
+        ],
+        "z": [
+          165
+        ],
+        "~": [
+          "agua"
+        ]
+      },
+      "sobre": {
+        "v": [
+          1386,
+          1387,
+          1400,
+          1406
+        ],
+        "h": [
+          1381,
+          1384
+        ]
+      },
+      "borda": [
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236,
+        237,
+        238
+      ],
+      "detalhes": {
+        "p": 0.13,
+        "ids": [
+          1425,
+          1427,
+          1430,
+          1434,
+          1436,
+          1594,
+          1596,
+          1598,
+          1388,
+          1403
+        ]
+      },
+      "paredes": {
+        "#": {
+          "v": 534,
+          "h": 535,
+          "poste": 536,
+          "canto": 537,
+          "jv": 539,
+          "jh": 541,
+          "av": 2313,
+          "ah": 2314
+        },
+        "&": {
+          "v": 552,
+          "h": 553,
+          "poste": 554,
+          "canto": 555,
+          "jv": 556,
+          "jh": 557,
+          "av": 2317,
+          "ah": 2318
+        },
+        "%": {
+          "v": 600,
+          "h": 601,
+          "poste": 592,
+          "canto": 602,
+          "jv": 598,
+          "jh": 599,
+          "av": 2327,
+          "ah": 2328
+        },
+        "$": {
+          "v": 617,
+          "h": 618,
+          "poste": 619,
+          "canto": 620,
+          "jv": 621,
+          "jh": 622,
+          "av": 2333,
+          "ah": 2334
+        },
+        "+": {
+          "v": 518,
+          "h": 519,
+          "poste": 520,
+          "canto": 521,
+          "av": 2311,
+          "ah": 2312
+        },
+        "|": {
+          "v": 640,
+          "h": 643,
+          "poste": 641,
+          "canto": 639
+        }
+      },
+      "janelas": 0.3,
+      "portao": 1015,
+      "arvores": [
+        1504,
+        1507,
+        1509,
+        1531,
+        1532,
+        1534,
+        1563,
+        1564
+      ],
+      "objetos": {
+        "fonte": [
+          1151
+        ],
+        "poco": [
+          1154
+        ],
+        "barril": [
+          1186,
+          1185
+        ],
+        "caixote": [
+          1115,
+          1117,
+          1109
+        ],
+        "estatua": [
+          1155,
+          1156
+        ],
+        "arbusto": [
+          1479,
+          1480
+        ],
+        "cerejeira": [
+          1530
+        ],
+        "frutifera": [
+          1561
+        ],
+        "forno": [
+          1207
+        ],
+        "estante": [
+          1209
+        ],
+        "banca": [
+          1197
+        ],
+        "lenha": [
+          1140,
+          1141,
+          1142
+        ],
+        "poste": [
+          1169
+        ],
+        "pilar": [
+          1131
+        ],
+        "monumento": [
+          1159
+        ],
+        "bandeira": [
+          1179
+        ],
+        "tumulo": [
+          1146
+        ],
+        "mesa": [
+          1104,
+          1105
+        ],
+        "bau": [
+          1113
+        ],
+        "cama": [
+          1201
+        ],
+        "fogueira": [
+          1166
+        ],
+        "rocha": [
+          1622,
+          1623,
+          1624,
+          1625
+        ],
+        "sebe": [
+          1483,
+          1484,
+          1485
+        ],
+        "pinheiro": [
+          1505,
+          1508
+        ],
+        "cadeira": [
+          1094,
+          1095,
+          1096,
+          1097
+        ],
+        "toldo": [
+          1233
+        ]
+      }
+    },
     "npcs": {
       "mercador": {
         "letra": "M",
