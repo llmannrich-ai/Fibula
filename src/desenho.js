@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.28.0';
-import {CITY,CLASSES,ITEMS,HUNTS} from './sim/dados.js?v=0.28.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.28.0';
-import {G,solid} from './sim/incursao.js?v=0.28.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.28.0';
-import {bf} from './sim/combate.js?v=0.28.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.28.0';
-import {$,app,RM} from './dom.js?v=0.28.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.29.0';
+import {CITY,CLASSES,ITEMS,HUNTS,SPELLS,EL_COR} from './sim/dados.js?v=0.29.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.29.0';
+import {G,solid} from './sim/incursao.js?v=0.29.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.29.0';
+import {bf,formaMira} from './sim/combate.js?v=0.29.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.29.0';
+import {$,app,RM} from './dom.js?v=0.29.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
@@ -292,6 +292,23 @@ function drawMon(m){
    nunca vê a posição desenhada. */
 const lerp=(e,a)=>{e.xr=e.x;e.yr=e.y;if(e.x0!==undefined){e.x=e.x0+(e.x-e.x0)*a;e.y=e.y0+(e.y-e.y0)*a}};
 const volta=e=>{e.x=e.xr;e.y=e.yr};
+/* ---------- mira ----------
+   Enquanto o dedo segura o botão de uma habilidade (src/controles.js), a
+   mira mostra o que vai sair: a linha do tiro até o alcance (cortada pela
+   parede), o leque do golpe ou o ponto onde a bomba cai, com a área. */
+export const MIRA={i:-1,a:0,d:1,anula:false};
+function desenhaMira(p){
+  const id=p.c.slots[MIRA.i],s=id&&SPELLS[id],f=formaMira(s,p);if(!f)return;
+  const ux=Math.cos(MIRA.a),uy=Math.sin(MIRA.a),col=MIRA.anula?'#8a8478':EL_COR[s.el]||'#f3ead6';
+  const corta=max=>{let d=0;while(d<max){const n=Math.min(max,d+8);if(solid((p.x+ux*n)/T|0,(p.y+uy*n)/T|0))return d;d=n}return max};
+  ctx.save();ctx.globalAlpha=MIRA.anula?.35:.8;ctx.strokeStyle=col;ctx.fillStyle=rgba(col,.18);ctx.lineWidth=2;
+  if(f.k==='linha'){const c=corta(f.comp);ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(p.x+ux*12,p.y+uy*12);ctx.lineTo(p.x+ux*c,p.y+uy*c);ctx.stroke();ctx.setLineDash([]);circle(ctx,p.x+ux*c,p.y+uy*c,4)}
+  else if(f.k==='leque'){ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.arc(p.x,p.y,f.raio,MIRA.a-f.ab,MIRA.a+f.ab);ctx.closePath();ctx.fill();ctx.stroke()}
+  else{const c=corta(f.comp*Math.max(.15,MIRA.d)),x=p.x+ux*c,y=p.y+uy*c;
+    ctx.setLineDash([4,6]);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(x,y);ctx.stroke();ctx.setLineDash([]);
+    ctx.beginPath();ctx.arc(x,y,f.raio,0,TAU);ctx.fill();ctx.stroke()}
+  ctx.restore();
+}
 export function render(){
   if(!G)return cena();
   const a=G.alfa,tr=G.t;
@@ -430,6 +447,7 @@ function cena(){
   if(G.active&&!G.aberta&&RUN-G.t<=60&&!G.over){const a=.18+.1*Math.sin(G.t*4);const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);g.addColorStop(0,'rgba(216,72,63,0)');g.addColorStop(1,`rgba(216,72,63,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H)}
   // nomes, vida e números (por cima da escuridão)
   ctx.setTransform(DPR,0,0,DPR,-cx*DPR,-cy*DPR);
+  if(MIRA.i>=0&&!p.fora)desenhaMira(p);
   ctx.textAlign='center';ctx.textBaseline='alphabetic';
   ctx.font=FONTE_MAPA;
   for(const m of vis){
