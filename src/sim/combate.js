@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.20.1';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.20.1';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.20.1';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.20.1';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.21.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem} from './dados.js?v=0.21.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,desbloqueadas} from './progresso.js?v=0.21.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.21.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -176,7 +176,7 @@ function kill(m){
   /* um drop só, e quem causou mais dano tem a vez (ver update) */
   if(got.length)G.drops.push({x:m.x,y:m.y,items:got,rar,t:0,dono});
   saida.log(`Loot de ${m.t.nome}: ${got.length?got.map(fmtItem).join(', '):'nada'}.`,['loot','rare','epic'][rar]);
-  if(m.t.boss){saida.banner('Guardião derrotado');}
+  if(m.t.boss){saida.banner(m.t.nome+' caiu');}
 }
 function gainXp(x,p){
   const c=p.c;c.xp+=x;p.xpGain+=x;num(p.x,p.y-40,x+' xp','#f3ead6');

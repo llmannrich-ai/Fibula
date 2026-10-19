@@ -9,11 +9,11 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES,SLOTS_EQ} from './sim/dados.js?v=0.20.1';
-import {save,ch} from './sim/progresso.js?v=0.20.1';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.20.1';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.20.1';
-import {log} from './hud.js?v=0.20.1';
+import {CLASSES,SLOTS_EQ,cacaDe} from './sim/dados.js?v=0.21.0';
+import {save,ch} from './sim/progresso.js?v=0.21.0';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.21.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.21.0';
+import {log} from './hud.js?v=0.21.0';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
@@ -25,7 +25,7 @@ export const ID=Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toStri
    19/10/2026: 11 pessoas a 8/s passam, 13 perdem mensagens e são expulsas),
    então cabem ~30 andando ao mesmo tempo. ENVIO é só um piso contra rajada */
 const ENVIO=.1,BATIDA=25;
-/* rede.sala: a sala que este aparelho anuncia na presença, {n} quem está nela
+/* rede.sala: a sala que este aparelho anuncia na presença, {n, h} quem está nela e o mapa de caça
    (src/sala.js põe e tira). SALAS: as salas abertas de quem está na cidade,
    para o Guia de caça listar */
 export const rede={estado:'fora',n:0,sala:null,naSala:0,aoMudar(){}};
@@ -76,9 +76,10 @@ function conta(){rede.n=OUTROS.size;rede.aoMudar()}
 function chegou(id,meta,avisa){
   if(id===ID||!meta)return;
   const o=poeOutro(id,meta);
-  /* a sala anunciada: só o número de gente, o resto é o nome já conferido */
+  /* a sala anunciada: o número de gente e o mapa de caça (conferido em
+     cacaDe), o resto é o nome já conferido */
   const n=meta.sala&&meta.sala.n|0;
-  if(o&&n>=1&&n<=4)SALAS.set(id,{id,nome:o.nome,classe:o.classe,n});else SALAS.delete(id);
+  if(o&&n>=1&&n<=4)SALAS.set(id,{id,nome:o.nome,classe:o.classe,n,h:cacaDe(meta.sala.h)});else SALAS.delete(id);
   /* quem está na masmorra da sala dele não aparece andando na cidade */
   if(meta.longe){tiraOutro(id);return}
   if(o&&avisa&&!longe)log(`${o.nome} chegou à cidade.`,'info');

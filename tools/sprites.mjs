@@ -51,20 +51,34 @@ const ARTE = {
   /* monstros: as chaves de enemies no content.json */
   mon_rato: {o: 6}, mon_aranha: {o: 8}, mon_esqueleto: {o: 22}, mon_orc: {o: 7},
   mon_xama: {o: 4}, mon_guardiao: {o: 46},
+  /* monstros dos outros mapas de caça: Esgoto, Ilha da Enseada e Cripta */
+  mon_morcego: {o: 9}, mon_barata: {o: 24}, mon_lesma: {o: 29}, mon_centopeia: {o: 13},
+  mon_vespa: {o: 14}, mon_lagarta: {o: 30}, mon_leao: {o: 11}, mon_troll: {o: 12}, mon_dragao: {o: 25},
+  mon_fantasma: {o: 40}, mon_mumia: {o: 23, tom: 25}, mon_necromante: {o: 34}, mon_sombra: {o: 2},
   /* cadáveres: ficam no chão onde o monstro caiu */
   cad_rato: {i: 2228}, cad_aranha: {i: 2237}, cad_esqueleto: {i: 2233}, cad_orc: {i: 2234},
   cad_xama: {i: 2227}, cad_guardiao: {i: 2231},
+  cad_morcego: {i: 2228}, cad_barata: {i: 2237}, cad_lesma: {i: 2237}, cad_centopeia: {i: 2237},
+  cad_vespa: {i: 2237}, cad_lagarta: {i: 2237}, cad_leao: {i: 2228}, cad_troll: {i: 2234}, cad_dragao: {i: 2231},
+  cad_fantasma: {i: 2233}, cad_mumia: {i: 2233}, cad_necromante: {i: 2227}, cad_sombra: {i: 2231},
   cad_feiticeiro: {i: 2246}, cad_druida: {i: 2703}, cad_cacador: {i: 2227}, cad_cavaleiro: {i: 2227},
   /* masmorra: chão, pedrinhas e o conjunto de parede de pedra */
   chao: {i: 140}, cascalho: {i: 1614}, cascalho2: {i: 1617},
   par_v: {i: 534}, par_h: {i: 535}, par_poste: {i: 536}, par_canto: {i: 537},
   tocha: {i: 1253}, portal: {i: 1122},
+  /* chão e parede de cada mapa de caça (hunts.<k>.arte no content.json):
+     o Esgoto de laje e pedra com musgo, a Ilha de areia e arenito, a Cripta
+     de pedra escura e pedra rolada */
+  chao_esg: {i: 165}, esg_v: {i: 723}, esg_h: {i: 724}, esg_poste: {i: 725}, esg_canto: {i: 726},
+  chao_ilha: {i: 128}, ilha_v: {i: 552}, ilha_h: {i: 553}, ilha_poste: {i: 554}, ilha_canto: {i: 555},
+  chao_cripta: {i: 160}, cripta_v: {i: 542}, cripta_h: {i: 543}, cripta_poste: {i: 544}, cripta_canto: {i: 545},
   /* cidade: chão de grama, rua de pedra, assoalho das casas, água, árvores e
      os NPCs das casas (as chaves de city.npcs no content.json) */
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
   arvore: {i: 1507}, arvore2: {i: 1504},
   npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45}, npc_gordon: {o: 21},
   npc_quitandeira: {o: 17}, npc_boticaria: {o: 44}, npc_mago: {o: 10},
+  npc_vigia: {o: 20}, npc_capitao: {o: 36},
   /* cidade: chão da praça, ponte, terra da horta, o que cresce por cima
      (flores e horta, por onde se anda) e os objetos sólidos (OBJETOS em
      src/sim/dados.js, obj_<nome>) */
