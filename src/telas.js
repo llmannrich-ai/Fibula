@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.33.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.33.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.33.0';
-import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.33.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.33.0';
-import {persist,saveFalhou} from './salvar.js?v=0.33.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.33.0';
-import {rede,SALAS} from './rede.js?v=0.33.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.33.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.33.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.33.0';
-import {icone} from './arte.js?v=0.33.0';
-import {$,app} from './dom.js?v=0.33.0';
-import {retrato} from './desenho.js?v=0.33.0';
+import {clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.35.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.35.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.35.0';
+import {G,setG,newRun,nComida} from './sim/incursao.js?v=0.35.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.35.0';
+import {persist,saveFalhou} from './salvar.js?v=0.35.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.35.0';
+import {rede,SALAS} from './rede.js?v=0.35.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.35.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.35.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.35.0';
+import {icone} from './arte.js?v=0.35.0';
+import {$,app} from './dom.js?v=0.35.0';
+import {retrato} from './desenho.js?v=0.35.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -447,9 +447,9 @@ function drawEquip(){
     b1.setAttribute('aria-label',`Vestir ${it.nome}`+(atual?` no lugar de ${ITEMS[atual].nome}`:''));
     if(atual===k)b1.disabled=true;
     else b1.addEventListener('click',()=>{if(equipar(k)){persist();drawEquip()}});
-    const b2=document.createElement('button');b2.type='button';b2.className='rm';b2.textContent=`vender ${it.val}`;
-    b2.setAttribute('aria-label',`Vender ${it.nome} por ${it.val} de ouro`);
-    b2.addEventListener('click',()=>{if(vender(k)){lastroBanco(k,it.val);persist();drawEquip()}});
+    const b2=document.createElement('button');b2.type='button';b2.className='rm';b2.textContent=it.val?`vender ${it.val}`:'jogar fora';
+    b2.setAttribute('aria-label',it.val?`Vender ${it.nome} por ${it.val} de ouro`:`Jogar fora ${it.nome}`);
+    b2.addEventListener('click',()=>{if(vender(k)){if(it.val)lastroBanco(k,it.val);persist();drawEquip()}});
     /* levar: a peça volta para a mochila, e com ela para o risco */
     const b3=document.createElement('button');b3.type='button';b3.className='rm';b3.textContent='levar';
     b3.setAttribute('aria-label',`Pôr ${it.nome} na mochila`);
@@ -584,7 +584,7 @@ const MSG_MK={conta:'Para negociar com outros jogadores, entre com uma conta no 
 const origem=()=>(MK.livro&&MK.livro.lastro)||{ouro:0,itens:{}};
 const vendaveis=k=>Math.min(save.itens[k]|0,origem().itens[k]|0);
 const ouroUtil=()=>Math.min(save.cofre,origem().ouro|0);
-const pecasDaFeira=()=>Object.keys(ITEMS).filter(k=>ITEMS[k].slot).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a].slot)-SLOTS_EQ.indexOf(ITEMS[b].slot)||ITEMS[a].val-ITEMS[b].val);
+const pecasDaFeira=()=>Object.keys(ITEMS).filter(k=>ITEMS[k].slot&&ITEMS[k].val).sort((a,b)=>SLOTS_EQ.indexOf(ITEMS[a].slot)-SLOTS_EQ.indexOf(ITEMS[b].slot)||ITEMS[a].val-ITEMS[b].val);
 const livroDe=k=>(MK.livro&&MK.livro.itens[k])||{venda:[],compra:[],ultimo:null,dia:0};
 const taxaMk=()=>MK.livro?MK.livro.taxa:2;
 const taxaDe=t=>Math.ceil(t*taxaMk()/100);

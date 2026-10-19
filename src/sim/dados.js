@@ -92,6 +92,7 @@ export function validaConteudo(c){
     const l=M[q&&q.y],t=l&&typeof q.x==='number'?l[q.x]:undefined;
     if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
     if(!t||!',._@:=vh'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
+    if('respawn'in q&&!(typeof q.respawn==='number'&&q.respawn>0))throw new Error(`city.chao: o respawn de ${q.item} em ${q.x},${q.y} precisa ser um número de segundos maior que zero`);
   }
   const hs=Object.entries(c.hunts).filter(([k])=>k[0]!=='_');
   if(!hs.length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');

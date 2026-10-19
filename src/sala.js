@@ -20,16 +20,16 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha, e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
-import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.33.0';
-import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.33.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.33.0';
-import {novaSemente} from './sim/base.js?v=0.33.0';
-import {drinkPot,comer} from './sim/combate.js?v=0.33.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.33.0';
-import {rede,ID,anuncia} from './rede.js?v=0.33.0';
-import {persist} from './salvar.js?v=0.33.0';
-import {log} from './hud.js?v=0.33.0';
-import {recebeVoz,desligaVoz} from './voz.js?v=0.33.0';
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.35.0';
+import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.35.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.35.0';
+import {novaSemente} from './sim/base.js?v=0.35.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.35.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.35.0';
+import {rede,ID,anuncia} from './rede.js?v=0.35.0';
+import {persist} from './salvar.js?v=0.35.0';
+import {log} from './hud.js?v=0.35.0';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.35.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -151,6 +151,10 @@ function recebeAnf(ev,q,de){
     const i=IDX.get(q.id);if(!i)return;
     const e=ENTS[i]||(ENTS[i]={x:0,y:0,held:[false,false,false,false],pos:{x:0,y:0},f:0});
     const h=q.h|0;for(let k=0;k<4;k++)e.held[k]=!!(h&(1<<k));
+    /* a mira de cada espaço (sem ela, para onde ele olha) e quão longe */
+    e.mira=e.mira||[NaN,NaN,NaN,NaN];e.alc=e.alc||[1,1,1,1];
+    for(let k=0;k<4;k++){const a=Array.isArray(q.ma)?q.ma[k]:null,d=Array.isArray(q.md)?q.md[k]:100;
+      e.mira[k]=Number.isFinite(a)?a/100:NaN;e.alc[k]=Number.isFinite(d)?Math.max(0,Math.min(1,d/100)):1}
     /* o sqm em que o convidado diz estar; o anfitrião só anda até lá pela regra */
     if(Number.isInteger(q.x)&&Number.isInteger(q.y)){e.pos=e.pos||{x:0,y:0};e.pos.x=Math.max(0,Math.min(63,q.x));e.pos.y=Math.max(0,Math.min(63,q.y))}
     e.f=Number.isFinite(q.f)?q.f/100:e.f;
@@ -213,12 +217,13 @@ function aplicaFim(r){
   ganchos.fim(kind);
 }
 /* a entrada do convidado: o sqm em que está (ele anda no próprio aparelho), direção,
-   espaços segurados e quantas poções e comidas pediu */
+   espaços segurados, a mira de cada um e quantas poções e comidas pediu */
 export const pocao=()=>{potes++};
 export const comida=()=>{comidas++};
 function mandaEnt(ent){
   const p=G.p;let h=0;for(let k=0;k<4;k++)if(ent.held[k])h|=1<<k;
-  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,pot:potes,com:comidas});
+  const ma=[0,1,2,3].map(k=>ent.mira&&Number.isFinite(ent.mira[k])?Math.round(ent.mira[k]*100):null),md=(ent.alc||[1,1,1,1]).map(v=>Math.round(v*100));
+  bc('ent',{id:ID,x:p.tx,y:p.ty,f:Math.round(p.face*100),h,ma,md,pot:potes,com:comidas});
 }
 
 /* ---------- canal ---------- */

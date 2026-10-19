@@ -97,7 +97,7 @@ const ARTE = {
   /* sacos de loot por raridade e itens (as chaves de items no content.json) */
   saco0: {i: 2101}, saco1: {i: 2099}, saco2: {i: 2102},
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},
-  it_espada: {i: 1712}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
+  it_espada: {i: 1712}, it_faca: {i: 1750}, it_espadamadeira: {i: 1748}, it_machado: {i: 1830}, it_erva: {i: 1423}, it_amuleto: {i: 2139},
   it_gema: {i: 2211}, it_coroa: {i: 1984}, it_couraca: {i: 1998}, it_cota: {i: 2034}, pocao: {i: 2129},
   /* comida: item da mochila (as quatro da Quitanda com o desenho da loja) */
   it_frutas: {i: 2177}, it_queijo: {i: 2183}, it_presunto: {i: 2187}, it_ensopado: {i: 2701},

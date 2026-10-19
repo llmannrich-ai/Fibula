@@ -20,9 +20,9 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 10:51 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** a comida virou item (0.33.0), a pedido do Leonardo ("animais também devem ter loot de comidas para guardar na mochila ou no cofre"). `items` ganhou seis comidas com `comida` (segundos): frutas, queijo, presunto, ensopado, carne e presunto de dragão (720 s). Loot: rato → queijo; leão → carne e presunto; orc e troll → carne; dragão → presunto de dragão. As provisões de comida da Quitanda viraram `efeito.item`: a compra vai direto para a mochila do personagem (recusa com a mochila cheia). `comer()` tira da mochila (`p.bag`); saíram `p.com` e `devolveComida()`, porque a mochila já volta extraindo e cai morrendo. No Banco, a comida guardada fica como item no cofre (`save.mats`, como os tesouros da 0.32.0), com "levar" a pilha inteira e sem "vender"; `normaliza()` move a comida da 0.29.0 (em `prov`) para lá. Sprites `it_*` das comidas no atlas (`tools/sprites.mjs`; o presunto de dragão é o pernil do pacote com o matiz girado).
+**Item desenvolvido:** a comida virou item (0.35.0), a pedido do Leonardo ("animais também devem ter loot de comidas para guardar na mochila ou no cofre"). `items` ganhou seis comidas com `comida` (segundos): frutas, queijo, presunto, ensopado, carne e presunto de dragão (720 s). Loot: rato → queijo; leão → carne e presunto; orc e troll → carne; dragão → presunto de dragão. As provisões de comida da Quitanda viraram `efeito.item`: a compra vai direto para a mochila do personagem (recusa com a mochila cheia). `comer()` tira da mochila (`p.bag`); saíram `p.com` e `devolveComida()`, porque a mochila já volta extraindo e cai morrendo. No Banco, a comida guardada fica como item no cofre (`save.mats`, como os tesouros da 0.32.0), com "levar" a pilha inteira e sem "vender"; `normaliza()` move a comida da 0.29.0 (em `prov`) para lá. Sprites `it_*` das comidas no atlas (`tools/sprites.mjs`; o presunto de dragão é o pernil do pacote com o matiz girado).
 
-**Validação:** `node tools/testar.mjs` — 34/34 (simulação no Node refeita para comida-item: compra na mochila, mochila cheia, migração da 0.29.0, loot dos animais, comer da mochila, extrair/morrer, Banco guardar e levar; casos `lojas`, `sala-anfitriao` e `sala-convidado` ajustados). Capturas do Banco em 375×740.
+**Validação:** `node tools/testar.mjs` — 35/35 (simulação no Node refeita para comida-item: compra na mochila, mochila cheia, migração da 0.29.0, loot dos animais, comer da mochila, extrair/morrer, Banco guardar e levar; casos `lojas`, `sala-anfitriao` e `sala-convidado` ajustados). Capturas do Banco em 375×740.
 
 **Análise:** mesclado com a 0.32.0, que passou a guardar tudo o que não se veste em `save.mats`; o cofre de comida separado que eu tinha feito saiu, e a comida usa o mesmo lugar. `save.itens` (só peças) é o que a Feira e a origem conhecem, então **comida não se negocia na Feira**.
 
@@ -38,6 +38,35 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 21:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** mira manual das habilidades (0.34.0), teste pedido pelo Leonardo, fora da fila. O botão da habilidade virou joystick (`src/controles.js`: apertar mostra a mira, arrastar escolhe direção e, na bomba, distância; soltar lança; voltar ao botão cancela; tocar lança para onde se olha). Em `src/sim/combate.js` saíram `target()` e `miraEm()`: o tiro vai reto até o alcance e para no primeiro monstro ou na parede, mostrando o efeito onde se desfaz; o golpe sai sem alvo; a bomba cai no ponto escolhido (cortada pela parede); o feixe para na parede. `formaMira()` diz à tela o que desenhar (`desenhaMira()` em `src/desenho.js`). Na sala, o convidado manda `ma`/`md` com a entrada.
+
+**Validação:** `node tools/testar.mjs` — 35/35, depois de mesclar a main (0.32.0). Sonda nova na simulação no Node: tiro para o lado oposto não acerta, gasta a mana e mostra o efeito; tiro mirado acerta. Visto em 360×640 com o Chromium: mira tracejada cortada pela parede e efeito de fogo no ponto do erro.
+
+**Análise:** os testes que lutam (simulação no Node, `incursao-extracao`, `arte`) contavam com o alvo automático; agora o jogador do teste mira no monstro mais perto (`P.miraBot` na cópia; no Node, uma mira lida dentro de cada passo da regra, para não depender do quadro).
+
+**Roadmap:** sem mudança; é teste do dono.
+
+**Pendências e riscos:** contraria a regra do pilar 5 ("alvo escolhido pelo jogo"); registrado como P10 na Parte 6, sensível. Risco: com uma mão, mirar e andar ao mesmo tempo não dá; o Cavaleiro e o Paladino perdem mais. O Balanceamento não deve medir dano por caçada como se a mira acertasse sempre.
+
+**Próximo passo recomendado:** esperar o veredito do Leonardo; se a mira ficar, reescrever a regra do pilar 5 e pensar em mira automática só no ataque básico.
+
+## 2026-10-19 10:47 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** armas de quem começa (0.33.0), a pedido do Leonardo. Dois itens novos no `content.json`, `faca` (+2% de dano) e `espadamadeira` (+3%), `val` 0, com sprites do OTSP (ids 1750 e 1748, tabela `ARTE` do `tools/sprites.mjs`, atlas regerado). Ficam no chão da casa sem morador ao norte da praça (sqm 37,6 e 39,6). `city.chao` ganhou o campo `respawn` (segundos, 120 nelas): pisar leva à mochila se couber (`pegaPraMochila()`), cheia fica no chão com aviso, e a peça volta ao sqm depois do tempo, só se o jogador não estiver em cima. As peças de teste sem `respawn` seguem como antes (cofre, uma vez por conta). No Banco, peça de `val` 0 mostra "jogar fora" em vez de "vender 0" e não chama `lastro_banco`; a Feira não lista peça de `val` 0.
+
+**Validação:** `node tools/testar.mjs` — 36/36 (depois de mesclar a 0.32.0). Caso novo `armas-que-renascem` (pega para a mochila, não marca `save.chao`, não renasce com o jogador em cima, renasce ao sair, mochila cheia deixa no chão); `validaConteudo()` recusa `respawn` 0. Captura em 360×640 da casa com as duas armas e da coleta.
+
+**Análise:** pilar 6 — recurso infinito sem ralo seria ouro grátis, por isso `val` 0 (não vira ouro, não tem origem, não entra na Feira). O relógio do respawn é de cada aparelho e só corre com o jogador na cidade; recarregar a página zera e a peça volta na hora. Aceito porque a peça não vale nada; se um dia valer, o relógio precisa ir para o save ou para o servidor.
+
+**Roadmap:** item fora da fila (pedido do dono).
+
+**Pendências e riscos:** a peça renasce para quem está no aparelho, não é compartilhada na cidade do Realtime (cada um vê a sua). Ninguém perde nada com isso, mas não é "o mesmo mundo para todos" em sentido estrito; quando a cidade for do servidor (F3), o respawn vai junto.
+
+**Próximo passo recomendado:** seguir a fila do `ROADMAP.md`.
+
+---
 ## 2026-10-19 19:30 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** o cofre do Banco com tudo como item (0.32.0), a pedido do Leonardo ("tenho itens dos animais mas não aparece"; "o Banqueiro deve ter a lista completa do baú com todos os itens"). A mochila persistente já tinha entrado na `main` por outra sessão (`b3f8603`); faltava o baú: `guardaSaco()` mandava material para o depósito do Gordon (que o Banco não mostra) e transformava gema e coroa em ouro. Agora só a moeda vira ouro; peça vai para `save.itens` e todo o resto, como item, para `save.mats`. O Banco lista o cofre inteiro (`linhaObj()` em `src/telas.js`): tesouro se vende pelo valor, material não (só o Gordon compra), e os dois voltam à mochila com `leva()` (a pilha inteira). Uma primeira versão feita em paralelo, sobre a 0.19.0 (`claude/mochila-bau`), foi abandonada para não duplicar a mochila da `main`.
@@ -331,43 +360,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - Quem já pegou e quer testar de novo precisa de save novo (ou apagar `chao` do save).
 
 **Próximo passo recomendado:** o Leonardo testar o equipamento no corpo com as peças; depois tirar `city.chao`.
-
----
-
-## 2026-10-19 14:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** todo mundo uns 15% mais rápido (0.16.0), a pedido do Leonardo. Só dado: `progression.walk.ground` de 150 (o chão padrão do Tibia) para 130. Como o passo é proporcional ao chão e arredondado para cima em 50 ms, o ganho real vai de 9% a 17%: nível 1 de 550 para 500 ms (2 sqm/s), nível 50 de 400 para 350, nível 100 de 350 para 300; aranha 600→550, orc e esqueleto 800→700, xamã e Guardião 850→750, rato 900→800. Nível 200 fica em 250.
-
-**Validação:** `node tools/testar.mjs` — 28/28, com os valores esperados da fórmula ajustados na simulação no Node (nível 1 = 0,5 s, nível 200 = 0,25 s, velocidade 150 = 0,7 s, buff de 50% = 0,35 s, 1,8 s para leste = 4 sqm).
-
-**Análise:** trocar o chão mantém a proporção entre jogador e monstros e o arredondamento do Tibia; trocar o arredondamento para o mais próximo daria 20% a 40%, longe do pedido.
-
-**Roadmap:** sem mudança de fila.
-
-**Pendências e riscos:** a mesma de antes: medir mortes e XP por incursão com o ritmo novo.
-
-**Próximo passo recomendado:** o Leonardo jogar e dizer se o ritmo acertou.
-
----
-
-## 2026-10-19 14:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** origem na Feira e venda do saco (0.15.0), a pedido do Leonardo ("anunciar somente o que o player tem no cofre ou no saco"). Duas decisões dele: o saco vende **livre** na caçada, mesmo que depois morra; e o banco **registra a origem**. `tools/supabase/004_origem.sql`: `mercado_lastro` (segundo saldo, só o banco mexe), `cacadas`, `fibula_marcos` (anistia uma vez só), `caca_comecar`, `caca_fim`, `lastro_banco`, `mercado_anunciar` de 7 argumentos (o de 5 virou atalho, para cliente em cache) e `mercado_livro`/`mercado_cancelar` com a origem. Cliente: fila de origem em `nuvem.js` (`masmorra-runas-v2-fila`), `cacaComeca()` no `start()`, `cacaFim()` no `saida.fim`, `lastroBanco()` na venda ao Banco; na Feira, "N com origem" e o ouro com origem; na Mochila, "Vender 1 na Feira" para peça do saco (`tiraDoSaco`/`poeNoSaco` em `combate.js`).
-
-**Validação:** SQL num Postgres 16 local com uma conta "antiga" (anistia de cofre, peças guardadas e vestidas) e uma criada depois com save editado (99.999 de ouro, 5 cotas): tudo dela barrado com `sem_origem`; venda do saco antes de 20 s barrada; peça fora do saco barrada; venda do saco casando a 100 com 98 de origem; extração com menos de 85 s fecha sem crédito; extração válida credita só chaves válidas; fechar duas vezes recusado; venda ao Banco uma vez só por peça; cancelamento devolvendo a origem. `node tools/testar.mjs` — 26/26, com `feira` (31 asserções) e o caso novo `feira-saco` (14). Produção: migração aplicada em cinco partes, anistia nas 3 contas, auxiliares sem acesso de `anon`, API real respondendo `sessao` nos dois formatos de `mercado_anunciar`.
-
-**Análise:** com o save gravado pelo cliente, o saldo do save não prova nada; a origem só cresce por caminhos que o banco registra. É a mesma ideia do servidor autoritativo, mas sem rodar a masmorra: o banco não sabe se a cota do saco caiu de verdade, então põe teto (30 peças por caçada, 60 por dia, 20.000 de ouro por caçada, extração só depois de 85 s).
-
-**Roadmap:** item em `Concluído`; decisão no PRD 15.1.
-
-**Pendências e riscos:**
-- Na sala de caçar junto (0.14.0, que entrou em paralelo) a venda do saco fica desligada: no convidado o saco é retrato do anfitrião e vender dele duplicaria a peça. Liberar exige o anfitrião aplicar a venda pela regra.
-- **Vender do saco tira o peso da morte** para quem vende antes de morrer (escolha do Leonardo). Medir no playtest se a morte ainda dói; o pilar 1 do VISAO.md fala justamente disso.
-- **Não é anti-trapaça completo:** quem forjar chamadas à API tira até os tetos por dia. Fechar de vez é o servidor da F2.
-- Quem jogou sem conta e criou conta depois não negocia o que tinha antes (não há como provar a origem). Pode gerar reclamação; a saída seria uma anistia nova, decisão do Leonardo.
-- A venda do saco mexe no estado da regra fora do `update()` (como `drinkPot()`); na F2 vira entrada.
-- Gasto no Mercador não baixa a origem: ela pode passar do cofre, e vale o menor dos dois.
-
-**Próximo passo recomendado:** o Leonardo testar no celular: caçar com conta, vender uma peça do saco pela Mochila, extrair e ver a origem na Feira.
 
 ---

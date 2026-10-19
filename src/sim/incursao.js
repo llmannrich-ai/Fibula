@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.33.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.33.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.33.0';
-import {genMap,pecas} from './mapa.js?v=0.33.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.33.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.35.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.35.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.35.0';
+import {genMap,pecas} from './mapa.js?v=0.35.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito} from './combate.js?v=0.35.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -172,7 +172,9 @@ function guarda(){
 /* ---------- atualização ----------
    Um passo da regra; fora dos testes, quem chama é passo(), sempre com TICK.
    ent é a entrada do quadro, montada pelo cliente em src/controles.js:
-   {x,y} do movimento (comprimento até 1) e held[4] dos espaços seguros. Com
+   {x,y} do movimento (comprimento até 1), held[4] dos espaços seguros e,
+   opcionais, mira[4] (a direção de cada um; NaN é para onde o jogador olha)
+   e alc[4] (de 0 a 1, quão longe a bomba cai). Com
    mais de um jogador, ent é uma lista, uma entrada por jogador de G.ps. */
 const UM=[null],PARADO={x:0,y:0,held:[false,false,false,false]};
 export function update(dt,ent){
@@ -181,7 +183,7 @@ export function update(dt,ent){
   G.flowT-=dt;if(G.flowT<=0){buildFlow();G.flowT=.2}
   for(const p of G.ps)if(!p.fora)anda(p,dt,ents[p.id]||PARADO);
   for(let i=G.pend.length-1;i>=0;i--){const q=G.pend[i];q.t-=dt;if(q.t<=0){G.pend.splice(i,1);q.fn();if(G.over)return}}
-  for(const p of G.ps){if(p.fora)continue;const e=ents[p.id]||PARADO;for(let i=0;i<4;i++)if(e.held[i])lancarSlot(i,p)}
+  for(const p of G.ps){if(p.fora)continue;const e=ents[p.id]||PARADO;for(let i=0;i<4;i++)if(e.held[i])lancarSlot(i,p,e.mira?e.mira[i]:NaN,e.alc?e.alc[i]:1)}
   revela();
   updateMons(dt);if(G.over)return;
   updateProj(dt);if(G.over)return;
@@ -305,11 +307,12 @@ function updateProj(dt){
   for(let i=G.proj.length-1;i>=0;i--){
     const q=G.proj[i];q.life-=dt;let dead=q.life<=0;
     if(q.k==='b'){
-      if(q.tg&&q.tg.hp>0){
-        const dx=q.tg.x-q.x,dy=q.tg.y-q.y,d=hyp(dx,dy)||1;q.vx=dx/d*560;q.vy=dy/d*560;
-        if(d<q.tg.r+6){atingir(q.tg,q.s,1,q.p);spark(q.x,q.y,q.col);dead=true}
-      }else if(!q.vx&&!q.vy)dead=true;
+      /* o tiro do jogador vai reto: o primeiro monstro no caminho leva, a
+         parede para, e no fim do alcance ele se desfaz com o mesmo efeito */
       q.x+=q.vx*dt;q.y+=q.vy*dt;
+      let alvo=null;for(const m of G.mons)if(m.hp>0&&hyp(m.x-q.x,m.y-q.y)<m.r+6){alvo=m;break}
+      if(alvo){atingir(alvo,q.s,1,q.p);spark(q.x,q.y,q.col);dead=true}
+      else if(solid(q.x/T|0,q.y/T|0)||dead){efeito(q.x-q.vx*dt,q.y-q.vy*dt,q.s.el);spark(q.x,q.y,q.col);dead=true}
     }else if(q.k==='r'){
       const dx=q.tx-q.x,dy=q.ty-q.y,d=hyp(dx,dy),pa=430*dt;
       if(d<=pa){explode(q.tx,q.ty,q.s,q.p);dead=true}else{q.x+=dx/d*pa;q.y+=dy/d*pa}

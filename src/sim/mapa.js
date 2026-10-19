@@ -1,5 +1,5 @@
 /* ---------- mapa ---------- */
-import {MW,MH,rnd,ri,hyp,sorte} from './base.js?v=0.33.0';
+import {MW,MH,rnd,ri,hyp,sorte} from './base.js?v=0.35.0';
 
 function carve(g,x,y){if(x>0&&y>0&&x<MW-1&&y<MH-1)g[y*MW+x]=0}
 function corridor(g,a,b){

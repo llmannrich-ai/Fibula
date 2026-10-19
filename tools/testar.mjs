@@ -147,6 +147,11 @@ const P = {
      a sala do Guardião, e o que está sob teste é a extração, não a caminhada */
   portalNaEntrada: (h) => patch(h, ':{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false}',
     ':{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:false}', 'portal na entrada'),
+  /* a mira é do jogador e no headless não há dedo para mirar: o jogador do
+     teste mira no monstro mais perto quando aperta a tecla, como uma pessoa
+     faria. Só na cópia do caso; o jogo de verdade não tem alvo automático */
+  miraBot: (h) => patch(h, 'if(formaMira(s,p))p.face=Number.isFinite(ang)?ang:p.face;',
+    'if(formaMira(s,p)){let b=null,bd=1e9;for(const m of G.mons){const d=hyp(m.x-p.x,m.y-p.y);if(d<bd){bd=d;b=m}}p.face=Number.isFinite(ang)?ang:b?Math.atan2(b.y-p.y,b.x-p.x):p.face}', 'mira do jogador do teste'),
   /* deixa a sala de entrada receber monstros, para haver combate e morte */
   /* a voz (src/voz.js) sem STUN: nenhum caso sai para a rede, e os dois lados
      da conexão estão no mesmo navegador */
@@ -566,9 +571,13 @@ async function testaSimulacao() {
   const roda = (semente, extra, quadros = [0.05]) => {
     novoSave();
     let fim = null; saida.fim = (k) => { fim = k; };
-    I.newRun(semente); I.G.active = true;
+    /* alimentado a caçada inteira: o que se prova aqui é o relógio, não a fome */
+    I.newRun(semente); I.G.active = true; I.G.ps[0].ali = 1e9;
     const foto = retrato();
-    const ent = {x: 0, y: 0, held: [true, false, false, false]};
+    /* o jogador parado mira no monstro mais perto: a mira é lida dentro de
+       cada passo da regra, então o resultado não depende do quadro */
+    const maisPerto = () => { const p = I.G.ps[0]; let b = null, bd = 1e9; for (const m of I.G.mons) { const d = Math.hypot(m.x - p.x, m.y - p.y); if (d < bd) { bd = d; b = m; } } return b ? Math.atan2(b.y - p.y, b.x - p.x) : NaN; };
+    const ent = {x: 0, y: 0, held: [true, false, false, false], mira: {get 0() { return maisPerto(); }}, alc: [1, 1, 1, 1]};
     let q = 0;
     while (!I.G.over && q < 60000) { I.passo(quadros[q % quadros.length], ent); for (let i = 0; i < (extra || 0); i++) B.frr(0, 1); q++; }
     return {foto, r: {fim, t: I.G.t, passos: Math.round(I.G.t / B.TICK), kills: I.G.kills, xp: I.G.ps[0].xpGain, saco: I.G.ps[0].bagVal, mons: I.G.mons.length, semente: I.G.semente}};
@@ -907,6 +916,7 @@ async function testaSimulacao() {
     if (!ruim((c) => { delete c.supplies.pocao.max; })) falhas.push('provisão sem máximo por caçada foi aceita');
     if (!ruim((c) => { c.city.npcs.mago.letra = 'f'; })) falhas.push('NPC com a letra de um objeto foi aceito');
     if (!ruim((c) => { c.city.chao = [{x: 26, y: 17, item: 'espada'}]; })) falhas.push('peça do chão em cima da fonte foi aceita');
+    if (!ruim((c) => { c.city.chao = [{x: 37, y: 6, item: 'faca', respawn: 0}]; })) falhas.push('peça do chão com respawn zero foi aceita');
     if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
     if (!ruim((c) => { c.hunts.esgoto.npc = 'mercador'; })) falhas.push('mapa de caça levado por quem não abre cacadas foi aceito');
     if (!ruim((c) => { c.hunts.ilha.bands[0].weights = {grifo: 1}; })) falhas.push('mapa de caça com monstro inexistente foi aceito');
@@ -941,6 +951,30 @@ async function testaSimulacao() {
     novoSave(); I.newRun(51);
     if (I.G.caca !== 'runas' || retrato().split('|')[0] !== fotos.runas) falhas.push('newRun sem mapa de caça não deu a Masmorra de Runas');
   } catch (e) { falhas.push('a cidade quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  /* a mira é do jogador: o tiro vai para onde ele mira, não para o monstro
+     mais perto. Mirar para o lado errado erra, gasta a mana e a recarga, e o
+     efeito da magia aparece onde ela se desfaz */
+  try {
+    novoSave(); I.newRun(5); I.G.active = true;
+    const p = I.G.ps[0], B2 = await import(url('base.js'));
+    const dir = [[1, 0], [-1, 0], [0, 1], [0, -1]].find(([dx, dy]) => [1, 2, 3, 4].every((k) => !I.solid(p.tx + dx * k, p.ty + dy * k)));
+    if (!dir) falhas.push('a sonda da mira não achou corredor livre ao lado da entrada');
+    else {
+      const m = I.G.mons.find((o) => !o.t.boss); I.G.mons = [m]; m.hp = m.mhp = 99999;
+      B2.poeNoSqm(m, p.tx + dir[0] * 3, p.ty + dir[1] * 3);
+      const ang = Math.atan2(dir[1], dir[0]), solta = {x: 0, y: 0, held: [false, false, false, false]};
+      const tiro = (a) => ({x: 0, y: 0, held: [true, false, false, false], mira: [a, NaN, NaN, NaN], alc: [1, 1, 1, 1]});
+      const g0 = p.c.manaG; let viu = false;
+      I.passo(0.05, tiro(ang + Math.PI));
+      for (let i = 0; i < 20; i++) { I.passo(0.05, solta); if (I.G.fx.some((f) => f.k === 'ef' && f.n === 'ef_fogo')) viu = true; }
+      if (m.hp !== m.mhp) falhas.push(`o tiro mirado para o lado oposto acertou o monstro (vida ${m.hp}/${m.mhp})`);
+      if (p.c.manaG - g0 !== 5) falhas.push(`o tiro em vão não gastou a mana da Faísca (${p.c.manaG - g0})`);
+      if (!viu) falhas.push('o tiro em vão não mostrou o efeito da Faísca onde se desfez');
+      I.passo(0.05, tiro(Math.atan2(m.y - p.y, m.x - p.x)));
+      for (let i = 0; i < 20; i++) I.passo(0.05, solta);
+      if (m.hp >= m.mhp) falhas.push('o tiro mirado no monstro não acertou');
+    }
+  } catch (e) { falhas.push('a sonda da mira quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* vestir na caçada: a peça sai do saco e vale na hora, a do corpo vai para
      o saco; trocar não cura; a origem conta só o que veio desta caçada */
   try {
@@ -1805,6 +1839,41 @@ const CASOS = [
 `,
   },
   {
+    nome: 'armas-que-renascem',
+    o_que: 'a faca e a espada de madeira da casa vazia: pisar leva à mochila, a peça renasce no mesmo sqm e, com a mochila cheia, fica no chão',
+    semente: 7,
+    conteudo: [c => { c.city.chao = [{x: 27, y: 20, item: 'faca', respawn: 2}]; }],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    clica($('#play'));await quadros(2);
+    ok('a faca está no chão', Cd.C.chao.length===1&&Cd.C.chao[0].k==='faca', JSON.stringify(Cd.C.chao));
+    tecla('keydown','KeyD');
+    var pegou=await ate(function(){return Cd.C.chao.length===0},40);
+    tecla('keyup','KeyD');await quadros(60);
+    ok('pisou e pegou', pegou, Cd.C.chao.length);
+    ok('parado em cima, ela não renasce', Cd.C.p.tx===27&&Cd.C.chao.length===0, Cd.C.p.tx+' / '+Cd.C.chao.length);
+    tecla('keydown','KeyD');await ate(function(){return Cd.C.p.tx>=29},40);tecla('keyup','KeyD');
+    ok('foi para a mochila, não para o cofre', sv().chars.cavaleiro.mochila.faca===1&&!sv().itens.faca, JSON.stringify(sv().chars.cavaleiro.mochila)+' / '+JSON.stringify(sv().itens));
+    ok('o save não marca a peça como pega', !sv().chao['27,20'], JSON.stringify(sv().chao));
+    ok('o registro avisa', /Você pegou faca\. Está na mochila/.test(txt('#log')||''), txt('#log'));
+    var volta=await ate(function(){return Cd.C.chao.length===1},80);
+    ok('renasce no mesmo sqm', volta&&Cd.C.chao[0].x===27&&Cd.C.chao[0].y===20, JSON.stringify(Cd.C.chao));
+    Pg.ch().mochila={faca:1,espada:19};
+    ok('a mochila está cheia', Pg.cabe(Pg.ch().mochila,'faca')===0, Pg.cabe(Pg.ch().mochila,'faca'));
+    tecla('keydown','KeyA');
+    var pisou=await ate(function(){return Cd.C.p.tx===27},40);
+    tecla('keyup','KeyA');await quadros(4);
+    ok('chegou no sqm da faca', pisou, Cd.C.p.tx);
+    ok('mochila cheia: a faca fica no chão', Cd.C.chao.length===1&&Pg.ch().mochila.faca===1, Cd.C.chao.length+' / '+Pg.ch().mochila.faca);
+    ok('o registro diz que não coube', /A mochila está cheia\. Faca fica no chão/.test(txt('#log')||''), txt('#log'));
+`,
+  },
+  {
     nome: 'equipamento-no-corpo',
     o_que: 'o que o personagem veste aparece nele: retrato no Banco, cidade, incursão com golpe, e os outros jogadores veem pela presença',
     semente: 11,
@@ -1929,7 +1998,7 @@ const CASOS = [
     o_que: 'incursão de ponta a ponta: combate, portal, extração com a mochila, e o Banco guardando o ouro no cofre e o equipamento como peça',
     semente: 11,
     limite: 90000,
-    patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.spawnNaEntrada],
+    patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.spawnNaEntrada, P.miraBot],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
@@ -1984,7 +2053,7 @@ const CASOS = [
     o_que: 'os sprites do OTSP chegam e a incursão roda desenhada com eles: combate, cadáver, efeitos e ícones',
     semente: 11,
     limite: 90000,
-    patches: [P.tempo(20, 10), P.saco, P.portalNaEntrada, P.spawnNaEntrada],
+    patches: [P.tempo(20, 10), P.saco, P.portalNaEntrada, P.spawnNaEntrada, P.miraBot],
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},

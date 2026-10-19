@@ -153,6 +153,11 @@ perder nada que a regra não diga?**
   lugar de caça até uma saída (pendência P8 da Parte 6). Sem energia, sem
   vidas que recarregam, sem evento com hora marcada. Tempo morto — andar longe
   à toa na cidade, esperar sem nada a decidir — é defeito.
+- **Em teste (0.34.0, pedido do Leonardo em 19/10/2026):** a mira manual. O
+  botão da habilidade é um joystick (apertar mira, arrastar escolhe a direção,
+  soltar lança) e nada procura o monstro mais perto: o que sai pode errar.
+  Contraria a frase "alvo escolhido pelo jogo" desta regra, que fica até o
+  Leonardo decidir depois de jogar (pendência P10 da Parte 6).
 - **Estado hoje:** controle e telas cumprem. A única saída é a porta na sala de
   entrada; o mapa de caça tem 64×64 sqm, então do fundo até a porta pode levar
   mais de 60 s.
@@ -281,7 +286,7 @@ na mão.
   que o Banqueiro guarda no cofre está seguro.
 - **Cidade:** gastar, guardar, trocar, ver outros jogadores, formar a sala.
 
-### O que existe hoje (0.33.0)
+### O que existe hoje (0.35.0)
 
 | Área | Estado |
 |---|---|
@@ -531,7 +536,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
   `soProv()`); a **comida** (`ehComida()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
-  `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
+  `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`, `pegaPraMochila()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
   sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
@@ -539,7 +544,12 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
   vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
-  anda e devolve o NPC ao alcance (`C.perto`). É regra, não tela: na F3 é o
+  anda e devolve o NPC ao alcance (`C.perto`), e as **peças no chão**
+  (`C.chao`, de `city.chao`): sem `respawn`, vão ao cofre uma vez por conta
+  (`save.chao`); com `respawn` (segundos), vão à mochila se couber e voltam
+  ao sqm pelo relógio da cidade (`VOLTA`, `RELOGIO`, de cada aparelho e fora
+  do save) — a faca e a espada de madeira da casa vazia, com `val` 0 para
+  não virarem ouro nem entrarem na Feira. É regra, não tela: na F3 é o
   estado que o servidor da cidade compartilhada roda, e **os outros jogadores**
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
   e faz o boneco de cada um correr atrás da última posição recebida
@@ -559,6 +569,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   deste aparelho, para a tela. No solo a ficha aponta para o personagem do
   save, e o que é da conta (cofre, peças) só muda para a ficha local, em `sai()`
 - `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`, `comer()`), todas
+  com a mira do jogador (`ent.mira[i]`, a direção, NaN para onde ele olha, e
+  `ent.alc[i]`, quão longe a bomba cai; `formaMira()` diz à tela o que
+  desenhar; não há alvo automático, e o tiro vai reto até o alcance),
   recebendo o jogador que age,
   `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`, e o vestir na caçada (`vesteDoSaco()`, `tiraProSaco()`, `pecasDaCaca()`)
 
@@ -1504,3 +1517,4 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |
+| P10 | Mira manual das habilidades (em teste na 0.34.0) contra o "alvo escolhido pelo jogo" do pilar 5 (**sensível**) | Fica no ar como teste; o Leonardo decide depois de jogar se a regra do pilar 5 muda ou se a mira volta a ser automática | Depois do teste do Leonardo |

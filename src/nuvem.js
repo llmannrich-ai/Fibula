@@ -11,13 +11,13 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.33.0';
-import {ITEMS} from './sim/dados.js?v=0.33.0';
-import {G} from './sim/incursao.js?v=0.33.0';
-import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.33.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.33.0';
-import {menu,showMenu} from './telas.js?v=0.33.0';
-import {$} from './dom.js?v=0.33.0';
+import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.35.0';
+import {ITEMS} from './sim/dados.js?v=0.35.0';
+import {G} from './sim/incursao.js?v=0.35.0';
+import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.35.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.35.0';
+import {menu,showMenu} from './telas.js?v=0.35.0';
+import {$} from './dom.js?v=0.35.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';

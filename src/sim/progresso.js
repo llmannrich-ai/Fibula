@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.33.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.35.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -119,6 +119,8 @@ export function equipar(k){
 export function desequipar(sl){const e=ch().equip,k=e[sl];if(!k)return false;poeNoCofre(k);e[sl]=null;return true}
 /* peça do chão da cidade: vai para o cofre, uma vez por conta */
 export function pegaDoChao(id,k){if(!ITEMS[k]||save.chao[id])return false;save.chao[id]=1;poeNoCofre(k);return true}
+/* peça que renasce no chão da cidade: vai para a mochila, se couber */
+export function pegaPraMochila(k){const m=ch().mochila;if(!ITEMS[k]||!cabe(m,k))return false;m[k]=(m[k]|0)+1;return true}
 /* o Banco compra peça e tesouro pelo valor; material só o Gordon compra */
 export function vender(k){if(!ITEMS[k]||ehMat(k)||ITEMS[k].comida||!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
 /* ---------- mochila ----------
