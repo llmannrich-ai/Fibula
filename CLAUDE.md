@@ -138,11 +138,9 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   personagem entre as caçadas, então só o cofre do Banco é seguro (decisão do
   Leonardo, 0.27.0) — menos o que o Selo de resguardo guarda (até 60% no nível
   3), e 25% do XP do nível, nunca o nível; o equipamento vestido nunca cai. Não há proteção contra queda de conexão. A
-  ordem de implementação está no `ROADMAP.md`.
-- **Conflito aberto:** a venda de peça da mochila na Feira **durante** a caçada,
-  livre mesmo que o jogador morra depois, é decisão do Leonardo e está em
-  vigor, mas tira peso da morte. Está na Parte 6 como pendência **sensível**:
-  nenhum agente muda isso sem ele.
+  ordem de implementação está no `ROADMAP.md`. Desde a 0.43.2 a Mochila não
+  vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
+  está na mochila só fica a salvo saindo pela porta.
 
 #### Pilar 5 — Duas mãos, e pode parar a qualquer hora
 
@@ -460,7 +458,7 @@ confundidas com precedente:
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~780 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão) | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`assets/otsp/atlas.webp`](assets/otsp/atlas.webp) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, em WebP sem perda, ~420 KB (os itens dos mapas de caça entram sozinhos, com os padrões de chão). O [`atlas.png`](assets/otsp/atlas.png), com os mesmos pixels (~790 KB), só desce para o aparelho que não abre WebP | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs), que chama o `cwebp` | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -482,7 +480,10 @@ arte da seção "Arte e licenças" da Parte 2: só OTSP ou outra fonte com licen
 aberta, montado por script versionado, nunca à mão, com cada arquivo listado em
 [`assets/CREDITOS.md`](assets/CREDITOS.md). Para trocar o sprite de um monstro,
 edite a tabela `ARTE` do `tools/sprites.mjs` e rode `node tools/sprites.mjs`
-(o `--catalogo` grava folhas com o id de cada sprite do pacote).
+(o `--catalogo` grava folhas com o id de cada sprite do pacote). O script
+precisa do **`cwebp`** (libwebp do Google; no PATH ou em `FIBULA_CWEBP`) para
+gravar o `atlas.webp`, e para sem gravar nada se não o achar; o caso `arte`
+reprova se o WebP não tiver os mesmos pixels do PNG.
 
 **Não adicione dependência de terceiro nenhuma.** Para dado do próprio
 repositório, o teste é se ele serve para alguém ajustar o jogo sem programar —
@@ -620,7 +621,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   pelo laço e `VOZ`, que o botão `#bVoz` do HUD lê (`hudVoz()`)
 - `arte.js` — `ART`, `pede()` (o atlas começa a baixar quando o módulo
   carrega, em paralelo com o `content.json`, e a imagem não espera o
-  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`),
+  `atlas.json`: é o que põe a arte a tempo no 4G, caso `rede-4g`; pede o
+  `atlas.webp` e cai no `atlas.png` se o aparelho não abrir WebP, caso
+  `arte-sem-webp`; `ART.url` é o que chegou, e os ícones usam ele),
   `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
@@ -905,10 +908,11 @@ arquitetura (Parte 2). Hoje guarda:
   (`caca_comecar` ao entrar, `caca_fim` ao sair, em `public.cacadas`),
   negócio na Feira, venda ao Banco (`lastro_banco`) e a anistia de quem já
   tinha conta em 19/10/2026. Anunciar exige o save **e** a origem: peça de
-  save editado ou de antes da conta não se negocia (`'sem_origem'`). Na
-  caçada, a Mochila vende uma peça do saco na Feira (decisão do Leonardo:
-  livre, mesmo que depois morra), dentro de limites de plausibilidade (30
-  peças por caçada, 60 por dia, extração só depois de 85 s). Esquema em
+  save editado ou de antes da conta não se negocia (`'sem_origem'`). A
+  extração tem limites de plausibilidade (30 peças por caçada, 60 por dia,
+  só depois de 85 s). A venda do saco durante a caçada saiu do cliente na
+  0.43.2 (decisão do Leonardo); o `mercado_anunciar` ainda aceita `p_caca` e
+  `p_saco`, e fechar isso no banco é item do `ROADMAP.md`. Esquema em
   [tools/supabase/004_origem.sql](tools/supabase/004_origem.sql); na morte, a
   `caca_fim` dá origem às peças vestidas do saco que ficaram no corpo (até 3,
   [005_vestidas.sql](tools/supabase/005_vestidas.sql)). O cliente
@@ -1618,6 +1622,8 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
 | 19/10 | **Mapas de caça fixos, sem aleatoriedade no mapa** (forma, objetos e onde cada monstro nasce), desenhados no Remere's Map Editor com os sprites do OTSP e convertidos por `tools/otbm.mjs`; nenhum mapa da CipSoft, nem convertido | Pilar 2, Parte 3, [docs/rme.md](docs/rme.md) |
 | 19/10 | **Uma sala por lugar, com entrada automática:** pisa-se no portal do lugar na cidade; há servidor, entra-se nele; não há, abre-se aqui; cheio (4), cópia 2. O servidor fica com quem está lá dentro, e com o último que saiu quando não há ninguém. Aceito o risco de trapaça do anfitrião entre desconhecidos na fase de teste; voz opcional | Parte 3, Sala e Voz |
+| 19/10 | **Atlas em WebP sem perda**, gravado pelo `cwebp` do Google em `tools/sprites.mjs` (só na montagem; o jogador baixa um arquivo de imagem), com o PNG de reserva | Parte 3, "O que mais o jogador baixa" |
+| 19/10 | **Sem venda na Feira durante a caçada** (era a P7): na caçada a Mochila só veste e tira; vender é na cidade, com o que já saiu pela porta. O banco também deve recusar | Pilar 4; Parte 3, Supabase |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes
@@ -1632,6 +1638,5 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D5 | Modelo de cada agente | Opus no Desenvolvedor e no Revisor; Sonnet no Produto e no Balanceamento | Ao religar o ciclo |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |
-| P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |

@@ -262,16 +262,17 @@ const CONTEUDO = (() => {
   process.exit(2);
 })();
 
-/* A arte (assets/otsp) segue o mesmo caminho: atlas.json e atlas.png são
-   copiados para cada cópia. Caso com semArte:true não recebe nenhum dos dois e
-   exercita o desenho em código, que é o que o jogador vê se a arte não
-   carregar. */
+/* A arte (assets/otsp) segue o mesmo caminho: atlas.json, atlas.webp (o que
+   o jogador baixa) e atlas.png (a reserva de quem não abre WebP) são copiados
+   para cada cópia. Caso com semArte:true não recebe nenhum e exercita o
+   desenho em código, que é o que o jogador vê se a arte não carregar; com
+   semWebp:true não recebe o WebP e prova a volta para o PNG. */
 const ARTE = (() => {
   for (const base of [BASE, RAIZ]) {
-    const js = join(base, 'assets', 'otsp', 'atlas.json'), png = join(base, 'assets', 'otsp', 'atlas.png');
-    if (existsSync(js) && existsSync(png)) return {json: js, png};
+    const o = (n) => join(base, 'assets', 'otsp', n), js = o('atlas.json'), png = o('atlas.png'), webp = o('atlas.webp');
+    if (existsSync(js) && existsSync(png) && existsSync(webp)) return {json: js, png, webp};
   }
-  console.error('FALHA: não achei assets/otsp/atlas.json e atlas.png (rode node tools/sprites.mjs)');
+  console.error('FALHA: não achei assets/otsp/atlas.json, atlas.webp e atlas.png (rode node tools/sprites.mjs)');
   process.exit(2);
 })();
 
@@ -307,7 +308,7 @@ function orcamento(fontes) {
     [`src/ (${Object.keys(fontes).length - 1} módulos)`, Object.entries(fontes).filter(([k]) => k !== 'index.html').reduce((a, [, t]) => a + pesa(t), 0)],
     ['data/game/content.json', pesa(CONTEUDO)],
     ['assets/otsp/atlas.json', pesa(readFileSync(ARTE.json))],
-    ['assets/otsp/atlas.png', statSync(ARTE.png).size],
+    ['assets/otsp/atlas.webp', statSync(ARTE.webp).size],
   ];
   const total = partes.reduce((a, [, n]) => a + n, 0), R = ORCAMENTO.rede, nv = niveis(fontes);
   const voltas = (2 + nv + 1) * R.rtt, ate = (n) => Math.round(voltas + n * 8 / R.kbps);
@@ -415,6 +416,7 @@ import * as I from './src/sim/incursao.js?v=${VERSAO}';
 import * as Sa from './src/sala.js?v=${VERSAO}';
 import * as Pg from './src/sim/progresso.js?v=${VERSAO}';
 import * as Vz from './src/voz.js?v=${VERSAO}';
+import * as A from './src/arte.js?v=${VERSAO}';
 (async function(){
   var H=document.documentElement;
   var $=function(s){return document.querySelector(s)};
@@ -472,6 +474,7 @@ function monta(caso, fontes, dir, alvo) {
     mkdirSync(join(dir, 'assets', 'otsp'), {recursive: true});
     copyFileSync(ARTE.json, join(dir, 'assets', 'otsp', 'atlas.json'));
     copyFileSync(ARTE.png, join(dir, 'assets', 'otsp', 'atlas.png'));
+    if (!caso.semWebp) copyFileSync(ARTE.webp, join(dir, 'assets', 'otsp', 'atlas.webp'));
   }
 }
 
@@ -2270,6 +2273,16 @@ const CASOS = [
 `,
   },
   {
+    nome: 'arte-sem-webp',
+    o_que: 'aparelho que não abre WebP (ou WebP que não chegou): a arte vem do atlas.png',
+    semWebp: true,
+    roteiro: `
+    var chegou=await ate(function(){return $('#app').dataset.arte==='1'},400);
+    ok('o atlas carregou mesmo sem o WebP', chegou);
+    ok('o que chegou foi o PNG, e os ícones usam ele', /atlas\.png/.test(A.ART.url), A.ART.url);
+    `,
+  },
+  {
     nome: 'arte',
     o_que: 'os sprites do OTSP chegam e a incursão roda desenhada com eles: combate, cadáver, efeitos e ícones',
     semente: 11,
@@ -2284,6 +2297,13 @@ const CASOS = [
     roteiro: `
     var chegou=await ate(function(){return $('#app').dataset.arte==='1'},400);
     ok('o atlas carregou', chegou);
+    ok('o que chegou foi o WebP', /atlas\.webp/.test(A.ART.url), A.ART.url);
+    /* o WebP e o PNG têm de ter os mesmos pixels: um WebP velho ao lado de um
+       atlas.json novo recortaria os sprites errado */
+    var pix=async function(u){var im=new Image();im.src=u;await im.decode();var c=document.createElement('canvas');c.width=im.width;c.height=im.height;var x=c.getContext('2d');x.drawImage(im,0,0);return x.getImageData(0,0,c.width,c.height).data};
+    var pw=await pix('assets/otsp/atlas.webp'),pp=await pix('assets/otsp/atlas.png'),dif=pw.length!==pp.length?-1:0;
+    if(!dif)for(var i=0;i<pw.length;i+=4)if(pp[i+3]&&(pw[i]!==pp[i]||pw[i+1]!==pp[i+1]||pw[i+2]!==pp[i+2])||pw[i+3]!==pp[i+3])dif++;
+    ok('o atlas.webp tem os mesmos pixels do atlas.png (refaça com node tools/sprites.mjs)', dif===0, dif<0?'tamanhos diferentes':dif+' pixels diferentes');
     $('#play').click();
     ok('a escolha de personagem mostra o retrato de cada classe', todos('#pickList .cls .ico').length===4, todos('#pickList .cls .ico').length);
     clica($('#pickBack'));

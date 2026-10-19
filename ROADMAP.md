@@ -29,7 +29,21 @@ os 20 s.
 Ordem decidida em 19/10/2026 com os pilares novos: primeiro o que faz o mundo
 ser fixo e a morte ser justa, depois o que a endurece, depois o resto da F0.
 
-### 1. Saída segura perto
+### 1. O banco recusa venda durante a caçada
+
+**Pilar 4.** Decidido pelo Leonardo em 19/10/2026 (era a P7). A 0.43.2 tirou do
+cliente a venda do saco na Feira, mas o `mercado_anunciar` ainda aceita
+`p_caca` e `p_saco`: quem chama a função direto vende do saco. Migração nova
+`tools/supabase/NNN_sem_venda_na_caca.sql`, idempotente, que recusa o anúncio
+com caçada aberta (`'caca'`) e deixa de tirar a peça do saco; sem `delete` no
+corpo (o conector expira, ver Parte 3). **Sensível** só na execução: esquema
+de banco, já autorizado pelo dono.
+
+**Pronto quando:** a migração está aplicada e comitada; chamar
+`mercado_anunciar` com `p_caca` de uma caçada aberta devolve erro; o
+Supabase falso do harness (`P.nuvem`) imita a recusa e um caso confere.
+
+### 2. Saída segura perto
 
 **Pilar 5.** Depende da pendência P8 (padrão:
 60 s). Medir, em cada lugar fixo, o tempo de caminhada no nível recomendado do
@@ -39,7 +53,7 @@ ou porta) numa sala funda.
 **Pronto quando:** o tempo máximo até uma saída, por lugar, está no diário e
 nenhum passa do limite; caso no harness confere que a segunda saída extrai.
 
-### 2. Medir o ritmo até o nível 20 em horas
+### 3. Medir o ritmo até o nível 20 em horas
 
 **Pilar 3.** Alvo do Leonardo: nível 20 em ~3 h de caçada efetiva. Script em
 `tools/balanceamento/` que simula caçadas no lugar recomendado para cada nível
@@ -50,9 +64,9 @@ sensível.
 **Pronto quando:** a tabela "nível × horas" atual e a proposta estão no diário,
 e a issue existe.
 
-### 3. Morte da opção B
+### 4. Morte da opção B
 
-**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 2 e da pendência P9 (**sensível**: os
+**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 3 (o ritmo) e da pendência P9 (**sensível**: os
 números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
@@ -62,7 +76,7 @@ entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 4. PWA instalável
+### 5. PWA instalável
 
 **Pilar 5.** Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
@@ -71,7 +85,7 @@ sem rede com o último conteúdo baixado. Sem biblioteca.
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 5. Escada de lugares de caça
+### 6. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -81,7 +95,7 @@ ele, todos no `content.json`.
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
-### 6. Pincéis do Fibula no editor
+### 7. Pincéis do Fibula no editor
 
 **Pilar 2.** O OTSP traz para o Remere's Map Editor só um pincel (grama com
 borda); o resto se pinta item por item. `node tools/otbm.mjs rme` passa a
@@ -97,7 +111,7 @@ jogo como item da pilha, sem código novo no jogo
 harness confere que todo id citado existe no `items.otb`, e o
 [docs/rme.md](docs/rme.md) diz como usar.
 
-### 7. Redesenhar os lugares no editor
+### 8. Redesenhar os lugares no editor
 
 **Pilar 2.** Os quatro mapas de hoje são rascunhos do gerador antigo. Cada
 um é redesenhado no Remere's Map Editor com intenção do Tibia: o Esgoto com
@@ -115,14 +129,6 @@ pode desenhar pelo `.otbm` também.
 
 ## Depois
 
-- **Atlas em WebP sem perda** (pilar 5; **precisa de decisão do Leonardo**)
-  — medido em 19/10/2026: o mesmo atlas cai de 793 KB (PNG) para 422 KB
-  (WebP sem perda, os mesmos pixels), quase metade do download. O filtro de
-  linha do PNG não ajuda (794 KB). O Node não grava WebP: o `tools/sprites.mjs`
-  passaria a chamar o `cwebp` ou o Pillow, uma ferramenta de fora só na
-  montagem do atlas. **Pronto quando:** o atlas sai em WebP, o orçamento de
-  download cai e os casos `arte` e `rede-4g` passam.
-
 - **Monstro novo para variar a sala do Guardião** (pilar 2) — um acompanhante
   raro com loot próprio; entrada em `MT` e em `LOOT`.
 - **Log legível em tela estreita** (pilar 5) — o `#log` usa
@@ -137,12 +143,21 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
-- **2026-10-19 — Uma sala por lugar, com portal (0.44.0)** *(pedido do
+- **2026-10-19 — Uma sala por lugar, com portal (0.45.0)** *(pedido do
   Leonardo; pilares 2 e 5)*. Cada mapa de caça tem um portal na cidade;
   pisar nele entra no servidor de quem já caça lá ou abre a caçada aqui;
   cópia 2 quando lota; o servidor fica com quem está lá dentro, e com o
   último que saiu quando não há ninguém. Casos `mapas-de-caca`,
   `sala-anfitriao`, `sala-convidado` e `sala-lotada`.
+
+- **2026-10-19 — Atlas em WebP sem perda (0.44.0)** *(decisão do Leonardo:
+  "pode usar o cwebp"; pilar 5)*. `tools/sprites.mjs` grava o `atlas.webp`
+  pelo `cwebp` (420 KB contra 793 KB, os mesmos pixels); o jogo baixa o WebP
+  e cai no PNG se o aparelho não abrir. Download antes de jogar: 938 KB →
+  564 KB; arte no 4G calculado: 1,7 s → 1,35 s. O caso `arte` reprova WebP
+  com pixel diferente do PNG (sabotagem: 4.096 pixels, reprovado);
+  `arte-sem-webp` prova a volta para o PNG.
+
 - **2026-10-19 — Orçamento de download vigiado (0.43.1)** *(pedido do
   Leonardo; pilar 5)*. O harness imprime o que o jogador baixa, parte por
   parte, como a rede leva (hoje ~920 KB, 774 KB deles o atlas), avisa acima
