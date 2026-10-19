@@ -14,9 +14,12 @@ export function validaConteudo(c){
   for(const[k,s]of Object.entries(c.spells)){
     if(!tem(c.classes,s.c))throw new Error(`habilidade ${k} é de classe inexistente: ${s.c}`);
     if(typeof s.lvl!=='number')throw new Error(`habilidade ${k} sem lvl numérico`);
+    if(s.preco!==undefined&&!(Number.isInteger(s.preco)&&s.preco>=0))throw new Error(`habilidade ${k} com preço inválido: inteiro >= 0`);
   }
-  for(const k of c.classOrder)
+  for(const k of c.classOrder){
     if(!Object.values(c.spells).some(s=>s.c===k))throw new Error(`classe ${k} não tem nenhuma habilidade`);
+    if(!Object.values(c.spells).some(s=>s.c===k&&s.lvl<=1&&!s.preco))throw new Error(`classe ${k} sem habilidade grátis no nível 1: o personagem novo não teria como atacar`);
+  }
   for(const[k,u]of Object.entries(c.upgrades))
     if(typeof u.base!=='number'||typeof u.mult!=='number'||typeof u.max!=='number')
       throw new Error(`melhoria ${k} sem base/mult/max numéricos`);
@@ -76,13 +79,29 @@ export function validaConteudo(c){
   if(chegada!==1)throw new Error(`city.mapa precisa de exatamente um @ (tem ${chegada})`);
   for(const[k,n]of Object.entries(ci.npcs))if(letras[n.letra]!==1)throw new Error(`o NPC ${k} (${n.letra}) aparece ${letras[n.letra]} vezes no mapa, e não uma`);
   for(const a of ABRE)if(!Object.values(ci.npcs).some(n=>n.abre===a))throw new Error(`nenhum NPC da cidade abre ${a}`);
+  if(Object.values(c.spells).some(s=>s.preco)&&!Object.values(ci.npcs).some(n=>n.ensina===true&&n.abre==='loja'))throw new Error('há habilidade com preço e nenhuma loja da cidade com ensina: true');
   for(const q of ci.chao||[]){
     const l=M[q&&q.y],t=l&&typeof q.x==='number'?l[q.x]:undefined;
     if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
     if(!t||!',._@:=vh'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
   }
-  if(!Object.keys(c.hunts).length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
-  for(const[k,h]of Object.entries(c.hunts))if(typeof h.nome!=='string'||typeof h.nivel!=='number')throw new Error(`mapa de caça ${k} sem nome ou nível`);
+  const hs=Object.entries(c.hunts).filter(([k])=>k[0]!=='_');
+  if(!hs.length)throw new Error('hunts vazio: o Guia de caça não teria para onde levar');
+  for(const[k,h]of hs){
+    if(typeof h.nome!=='string'||typeof h.nivel!=='number')throw new Error(`mapa de caça ${k} sem nome ou nível`);
+    if(!ci.npcs[h.npc]||ci.npcs[h.npc].abre!=='cacadas')throw new Error(`mapa de caça ${k} precisa de npc, um NPC da cidade que abre cacadas`);
+    for(const b of h.bands||[]){
+      if(typeof b.untilDepth!=='number')throw new Error(`mapa de caça ${k}: banda sem untilDepth numérico`);
+      const soma=Object.values(b.weights||{}).reduce((a,v)=>a+v,0);
+      if(Math.abs(soma-1)>.001)throw new Error(`mapa de caça ${k}: pesos da banda ${b.untilDepth} somam ${soma}, não 1`);
+      for(const e of Object.keys(b.weights))if(!tem(c.enemies,e))throw new Error(`mapa de caça ${k} cita inimigo inexistente: ${e}`);
+    }
+    if(h.bands!==undefined&&(!Array.isArray(h.bands)||!h.bands.length))throw new Error(`mapa de caça ${k}: bands vazio`);
+    if(h.boss!==undefined)for(const e of [h.boss.type,...(h.boss.escort||[])])if(!tem(c.enemies,e))throw new Error(`mapa de caça ${k}: chefe cita inimigo inexistente: ${e}`);
+    const m=h.mapa,par=v=>Array.isArray(v)&&v.length===2&&v.every(Number.isInteger)&&v[0]>=2&&v[0]<=v[1];
+    if(m!==undefined&&!(m&&par(m.salas)&&par(m.w)&&par(m.h)&&m.w[1]<=16&&m.h[1]<=16&&Number.isInteger(m.atalhos)&&m.atalhos>=0))throw new Error(`mapa de caça ${k}: mapa precisa de salas, w e h ([mínimo, máximo], até 16) e atalhos`);
+  }
+  for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='cacadas'&&!hs.some(([,h])=>h.npc===k))throw new Error(`o NPC ${k} abre cacadas, mas nenhum mapa de caça é dele`);
   const f=c.forja,inteiro=v=>Number.isInteger(v)&&v>0;
   if(!f.compra||typeof f.compra!=='object'||!Array.isArray(f.missoes)||!Array.isArray(f.loja))throw new Error('forja precisa de compra, missoes e loja');
   for(const[k,v]of Object.entries(f.compra)){
@@ -106,11 +125,15 @@ export function validaConteudo(c){
    casa de lugar é editar dado. LEGENDA diz o que cada letra é (o número é o
    tipo de tile de src/sim/cidade.js); as letras dos NPCs vêm de city.npcs.
    ABRE é o que um NPC pode abrir. OBJETOS são as coisas sólidas que enfeitam
-   a cidade (o nome é o sprite obj_<nome>); ficam sobre o chão do vizinho. */
+   a cidade (o nome é o sprite obj_<nome>); ficam sobre o chão do vizinho.
+   HUNTS são os mapas de caça, cada um com o NPC que leva até ele (npc), a
+   tabela de spawn, o chefe, o jeito de cavar o mapa e a arte; caçaDe(k) dá o
+   mapa k, ou o primeiro se k não existe (o que vem da rede passa por aqui). */
 export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10};
 export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha'};
 export const ABRE=['mercador','banco','cacadas','mercado','forja','loja'];
 export let CITY,HUNTS;
+export const cacaDe=k=>typeof k==='string'&&Object.prototype.hasOwnProperty.call(HUNTS,k)?k:HUNTS.runas?'runas':Object.keys(HUNTS)[0];
 /* ---------- provisões ----------
    O que as lojas da cidade vendem (supplies no content.json): comida, poção
    e runa, que vão inteiras na próxima caçada. BUFFS são os buffs que uma
@@ -136,6 +159,8 @@ export let CLASSES,CL_ORDEM;
 export let SPELLS,SLOT_LVL;
 export const EL_COR={fogo:'#ff9a3c',energia:'#9db8ff',gelo:'#8fe3ff',terra:'#9fd36b',sagrado:'#ffe7a8',fisico:'#e8e0cf'};
 export const listaDaClasse=c=>Object.keys(SPELLS).filter(k=>SPELLS[k].c===c);
+/* o preço de aprender (0: vem sozinha ao chegar no nível) */
+export const precoHab=k=>SPELLS[k].preco||0;
 export const slotsIniciais=(c,lvl)=>{
   const n=SLOT_LVL.filter(l=>lvl>=l).length,libs=listaDaClasse(c).filter(k=>SPELLS[k].lvl<=lvl);
   return [0,1,2,3].map(i=>i<n?(libs[i]||null):null);
@@ -162,5 +187,5 @@ export const fmtBonus=it=>Object.entries(it.bonus||{}).map(([b,v])=>BONUS[b](v))
 export function carrega(c){
   validaConteudo(c);
   CLASSES=c.classes;CL_ORDEM=c.classOrder;SPELLS=c.spells;SLOT_LVL=c.slotLevels;
-  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=c.hunts;FORJA=c.forja;SUP=c.supplies;
+  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=Object.fromEntries(Object.entries(c.hunts).filter(([k])=>k[0]!=='_'));FORJA=c.forja;SUP=c.supplies;
 }

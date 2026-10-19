@@ -90,17 +90,6 @@ e transforma cada incursão numa decisão antes mesmo de começar.
 de loot, e a escolha some do caminho de quem só quer jogar (uma fica como
 padrão).
 
-### Lugares com nome em vez de uma masmorra genérica
-
-**Pilar 2.** Três mapas com tema, paleta e lista de monstros próprios — Esgoto,
-Cripta, Acampamento Orc — escolhidos no Guia de caça da cidade (0.7.0), que
-já lista os `hunts` do `content.json`; hoje há só a Masmorra de Runas.
-Reaproveita `genMap()` com parâmetros diferentes e troca a tabela de spawn. O
-jogador passa a dizer para onde vai.
-
-**Pronto quando:** os três lugares têm nome no menu, monstros distintos e paleta
-distinta.
-
 ### Monstro novo para variar a sala do Guardião
 
 **Pilar 2.** Hoje só orc e xamã acompanham o chefe, então a sala final é sempre
@@ -141,6 +130,29 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — A Mochila com o corpo do inventário do Tibia (0.23.0)**
+  *(pedido do Leonardo: "algo que se assemelha ao do Tibia, equipamentos em
+  posição de uso"; pilar 1)*. Três colunas como a janela do Tibia: amuleto,
+  arma e anel à esquerda; elmo, armadura, calça e botas no meio; o saco (onde o
+  Tibia põe a mochila), escudo e munição à direita. Casa vazia mostra a
+  silhueta do que vai nela; as que o jogo não tem ficam apagadas e sem toque.
+  Ao lado, o boneco vestido, que gira ao toque. Tela baixa esconde as duas
+  linhas de baixo (só casas apagadas).
+
+- **2026-10-19 — Lugares com nome: Esgoto, Ilha da Enseada e Cripta (0.22.0)**
+  *(pedido do Leonardo: "crie mais mapas de caça; esgoto, navio que leva para
+  ilha, outros; cada um acessado como a masmorra, criando ou entrando em
+  salas"; pilar 2)*. Cada mapa em `hunts` do `content.json` com o NPC que leva
+  até ele, tabela de spawn, chefe, jeito de cavar (`genMap(m)`) e arte (chão,
+  parede, escuridão, tochas). Dois NPCs novos: Vigia do esgoto (`V`) e Capitão
+  do porto (`N`); o Guia leva à Masmorra e à Cripta. Treze monstros novos, com
+  sprite do OTSP. A sala de caçar junto é de um mapa. O Acampamento Orc do
+  item original ficou de fora: os orcs já moram na Masmorra de Runas.
+
+- **2026-10-19 — Habilidades se aprendem com o Mestre de magias (0.21.0)**
+  *(decisão do Leonardo; pilares 2 e 5)*. `preco` em cada habilidade do
+  `content.json`; o nível libera, o ouro ensina; a de nível 1 é grátis; save
+  antigo fica com tudo que o nível liberava. Novo ralo grande do cofre.
 - **2026-10-19 — A cidade cinco vezes maior, com lojas de provisões (0.20.0)**
   *(pedido do Leonardo: "amplie o mapa da cidade para cerca de 5 vezes; insira
   NPCs que vendem itens como mercado de alimentos, poções e magias"; pilares 2

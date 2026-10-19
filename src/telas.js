@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.21.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP} from './sim/dados.js?v=0.21.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv} from './sim/progresso.js?v=0.21.0';
-import {G,setG,newRun} from './sim/incursao.js?v=0.21.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.21.0';
-import {persist,saveFalhou} from './salvar.js?v=0.21.0';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.21.0';
-import {rede,SALAS} from './rede.js?v=0.21.0';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.21.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.21.0';
-import {icone} from './arte.js?v=0.21.0';
-import {$,app} from './dom.js?v=0.21.0';
-import {retrato} from './desenho.js?v=0.21.0';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.24.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.24.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.24.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.24.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.24.0';
+import {persist,saveFalhou} from './salvar.js?v=0.24.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.24.0';
+import {rede,SALAS} from './rede.js?v=0.24.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.24.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.24.0';
+import {icone} from './arte.js?v=0.24.0';
+import {$,app} from './dom.js?v=0.24.0';
+import {retrato} from './desenho.js?v=0.24.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -50,19 +50,19 @@ const SEM_URL=(()=>{try{const v=new URLSearchParams(location.search).get('sement
 const nMasmorra=s=>'nº '+s.toLocaleString('pt-BR');
 /* a versão vem do endereço deste módulo (?v=, posto por tools/versao.mjs) */
 const VERSAO=(()=>{try{return new URL(import.meta.url).searchParams.get('v')||'dev'}catch(e){return 'dev'}})();
-/* por ora todos os mapas de caça do Guia levam à mesma masmorra gerada.
-   prepara monta a incursão (a da sala, src/sala.js); sem ele, a solo com
-   relógio, que o jogador não alcança mais (toda caçada é numa sala) e fica
-   para os testes e para a simulação */
-export function start(prepara){
+/* caca é o mapa de caça (hunts no content.json). prepara monta a incursão
+   (a da sala, src/sala.js); sem ele, a solo com relógio no mapa caca, que o
+   jogador não alcança mais (toda caçada é numa sala) e fica para os testes */
+export function start(prepara,caca){
   V.cidade=false;
-  if(prepara)prepara();else newRun(SEM_URL);
+  if(prepara)prepara();else newRun(SEM_URL,undefined,false,caca);
   /* as provisões que este jogador levou saem do estoque agora */
   const levou=G.p&&G.p.prov&&Object.keys(G.p.prov).length?listaProv(G.p.prov):'';
   if(levou)gastaProv(G.p.prov);
   G.active=true;save.runs++;persist();montaBotoes();cacaComeca();
   for(const t of TELAS)t.hidden=true;app.classList.remove('cidade');app.classList.add('playing');logEl.textContent='';fechaMochila();
-  log(G.aberta?'Você entrou pela porta da sala. A masmorra não tem tempo: volte à porta, na sala de entrada, para sair com o saco.':'Você entrou na masmorra. O portal abre em 1:30.','info');
+  const H=HUNTS[G.caca];
+  log(G.aberta?`${H.entrada||`Você entrou em ${H.nome}.`} Não há tempo: volte à porta, na sala de entrada, para sair com o saco.`:`${H.entrada||'Você entrou na masmorra.'} O portal abre em 1:30.`,'info');
   if(levou)log(`Você levou ${levou}.`,'info');
   if(SEM_URL!==undefined)log(`Masmorra ${nMasmorra(G.semente)}, escolhida pelo endereço.`,'info');
 }
@@ -70,17 +70,18 @@ export function start(prepara){
 /* ---------- cidade ----------
    O mapa e quem está perto são da simulação (src/sim/cidade.js); aqui ficam
    o que cada NPC abre e a chegada. como: 'chegada' (vindo do acampamento, no
-   @ do mapa), 'portao' (de volta de uma incursão, na frente do Guia) ou nada
+   @ do mapa), 'portao' (de volta de uma incursão, na frente do NPC que leva
+   ao mapa de caça de onde se volta) ou nada
    (voltando de uma tela aberta na cidade, no mesmo lugar). */
 export function showCidade(como){
   if(!save.classe)return showPick();
-  if(como||!C)entraCidade(como==='portao');
+  if(como||!C)entraCidade(como==='portao'&&(G&&HUNTS[G.caca]?HUNTS[G.caca].npc:true));
   V.cidade=true;soTela(null);app.classList.add('cidade');zeraCidade();
-  if(como){logEl.textContent='';banner(CITY.nome);log(como==='portao'?'Você voltou à cidade pelo portão.':`Você está na ${CITY.nome.toLowerCase()}. Para caçar, fale com o Guia no portão sul.`,'info')}
+  if(como){logEl.textContent='';banner(CITY.nome);log(como==='portao'?(G&&HUNTS[G.caca]&&HUNTS[G.caca].volta||'Você voltou à cidade pelo portão.'):`Você está na ${CITY.nome.toLowerCase()}. Para caçar, fale com o Guia no portão sul.`,'info')}
 }
 export function abreNpc(k){
   const a=CITY.npcs[k].abre;
-  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else if(a==='loja')showLoja(k);else showHunts();
+  if(a==='mercador')showShop();else if(a==='banco')drawEquip();else if(a==='mercado')showFeira();else if(a==='forja')showForja();else if(a==='loja')showLoja(k);else showHunts(k);
 }
 /* ---------- lojas de provisões ----------
    Uma tela para todas: o NPC diz o que vende (vende, no content.json). A
@@ -91,7 +92,9 @@ let lojaDe=null;
 function drawLoja(){
   const n=CITY.npcs[lojaDe];
   setT($('#ljCasa'),n.casa);setT($('#ljNome'),n.nome);setT($('#ljGold'),String(save.cofre));
-  setT($('#ljFala'),n.fala+' Provisão vale para uma caçada só.');setT($('#ljLeva'),leva());
+  setT($('#ljFala'),n.fala+(n.ensina?' Habilidade aprendida é para sempre; provisão vale para uma caçada só.':' Provisão vale para uma caçada só.'));setT($('#ljLeva'),leva());
+  for(const id of['#ljHabT','#ljHab','#ljProvT'])$(id).hidden=!n.ensina;
+  if(n.ensina)drawEnsina();
   const ul=$('#ljList');ul.textContent='';
   for(const k of n.vende){
     const s=SUP[k],por=podeComprar(k),tem=save.prov[k]||0;
@@ -112,69 +115,105 @@ function drawLoja(){
     li.append(info,b);ul.appendChild(li);
   }
 }
+/* o que o Mestre de magias ensina: as habilidades da classe do personagem,
+   pela ordem de nível; aprendida é para sempre e vai para um espaço livre */
+function drawEnsina(){
+  const ul=$('#ljHab'),c=ch();ul.textContent='';
+  for(const k of listaDaClasse(save.classe)){
+    const s=SPELLS[k],por=podeAprender(k),pr=precoHab(k);
+    const li=document.createElement('li');li.className='up';
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=s.n;
+    const d=document.createElement('p');d.textContent=s.d;
+    const m=document.createElement('p');m.className='meta';
+    m.textContent=por==='sabe'?'Aprendida. Equipe no Grimório.':`nível ${s.lvl}`+(por==='nivel'?` · você está no ${c.lvl}`:'');
+    info.append(h,d,m);
+    const b=document.createElement('button');b.type='button';b.disabled=!!por;
+    b.className=por==='sabe'?'buy max':'buy';
+    b.textContent=por==='sabe'?'sabe':por==='nivel'?'nível '+s.lvl:pr+' ouro';
+    b.setAttribute('aria-label',por==='sabe'?`${s.n}: já aprendida`:por==='nivel'?`${s.n}: pede o nível ${s.lvl}`:`Aprender ${s.n} por ${pr} de ouro`);
+    b.addEventListener('click',()=>{if(aprende(k)){persist();log(`Você aprendeu ${s.n}.`,'epic');drawLoja()}});
+    li.append(info,b);ul.appendChild(li);
+  }
+}
 function showLoja(k){lojaDe=k;drawLoja();soTela(lojaS)}
 /* a porta da sala: o anfitrião entra na masmorra que o aparelho dele já roda;
    o convidado pede, e a incursão começa quando a resposta chega (src/main.js) */
+const semPorta=()=>SALA.papel==='convidado'&&(SALA.estado!=='ligado'||!SALA.membros.length);
 const pelaPorta=()=>{if(SALA.papel==='anfitriao'){start(()=>{entraPorta()})}else if(entraPorta())showHunts()};
 const botao=(txt,rot,fn,off)=>{const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent=txt;b.setAttribute('aria-label',rot);b.disabled=!!off;b.addEventListener('click',fn);return b};
 /* ---------- sala no Guia de caça ----------
-   Criar sala, ver as abertas de quem está na cidade e entrar, ou, dentro de
-   uma, quem está nela. A sala fica aberta até o anfitrião fechar ou sair */
+   Ver as salas abertas de quem está na cidade e entrar, ou, dentro de uma,
+   quem está nela. Cada NPC que abre cacadas (o Guia, o Vigia do esgoto, o
+   Capitão) mostra só as salas dos mapas de caça dele; criar sala é na linha
+   do mapa. A sala fica aberta até o anfitrião fechar ou sair */
+let huntDe=null;
+const nomeCaca=k=>HUNTS[k]?HUNTS[k].nome:'';
+const meus=()=>Object.keys(HUNTS).filter(k=>!huntDe||HUNTS[k].npc===huntDe);
 function desenhaSala(){
   const box=$('#hSala');box.textContent='';
   const h=document.createElement('h3'),p=document.createElement('p'),ul=document.createElement('ul'),ac=document.createElement('div');ac.className='acoes';
-  const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})${dentro(m.id)?' na masmorra':''}`).join(', ');
+  const nomes=()=>SALA.membros.map(m=>`${m.nome} (${CLASSES[m.cl]?CLASSES[m.cl].nome:m.cl}, nv ${m.lvl})${dentro(m.id)?' lá dentro':''}`).join(', ');
+  /* a porta da sala fica com o NPC que leva ao mapa dela */
+  const aqui=!SALA.caca||meus().includes(SALA.caca),npc=SALA.caca&&HUNTS[SALA.caca]?CITY.npcs[HUNTS[SALA.caca].npc]:null;
+  const longe=aqui?'':` A porta fica com ${npc?npc.nome:'quem leva até lá'} (${npc?npc.casa:''}).`;
   /* o anfitrião roda a masmorra no próprio aparelho: entra mesmo sem o canal;
      o convidado depende dele para pedir a porta */
-  const porta=()=>botao('Entrar pela porta','Entrar na masmorra da sala pela porta',pelaPorta,SALA.papel==='convidado'&&(SALA.estado!=='ligado'||!SALA.membros.length));
+  const porta=()=>botao('Entrar pela porta',`Entrar em ${nomeCaca(SALA.caca)} pela porta da sala`,pelaPorta,!aqui||semPorta());
   const rede_=SALA.estado==='ligado'?'':SALA.estado==='sem rede'?' Sem conexão com a sala agora: tentando de novo.':' Conectando à sala…';
   if(SALA.papel==='anfitriao'){
     const n=SALA.membros.filter(m=>m.id!==SALA.id&&dentro(m.id)).length;
-    h.textContent=`Sua sala · ${SALA.membros.length}/${MAX}`;
-    p.textContent=`Na sala: ${nomes()}. A masmorra dela não tem tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+(n?` Fechar a sala tira quem está lá dentro, sem resultado.`:'')+(rede_?rede_+' Você já pode entrar; os outros só a veem quando ligar.':'');
-    ac.append(porta(),botao('Fechar sala','Fechar a sala e a masmorra dela',()=>{saiDaSala();showHunts()}));
+    h.textContent=`Sua sala · ${nomeCaca(SALA.caca)} · ${SALA.membros.length}/${MAX}`;
+    p.textContent=`Na sala: ${nomes()}. Não há tempo: cada um entra e sai pela porta, na sala de entrada, quando quiser.`+longe+(n?` Fechar a sala tira quem está lá dentro, sem resultado.`:'')+(rede_?rede_+' Você já pode entrar; os outros só a veem quando ligar.':'');
+    ac.append(porta(),botao('Fechar sala','Fechar a sala e a caçada dela',()=>{saiDaSala();showHunts()}));
   }else if(SALA.papel==='convidado'){
     const a=SALA.membros[0];
-    h.textContent=a?`Sala de ${a.nome} · ${SALA.membros.length}/${MAX}`:'Entrando na sala…';
-    p.textContent=(a?`Na sala: ${nomes()}. A masmorra não tem tempo: entre e saia pela porta quando quiser.`:'Esperando o anfitrião responder.')+rede_;
+    h.textContent=a?`Sala de ${a.nome} · ${nomeCaca(SALA.caca)} · ${SALA.membros.length}/${MAX}`:'Entrando na sala…';
+    p.textContent=(a?`Na sala: ${nomes()}. Não há tempo: entre e saia pela porta quando quiser.`+longe:'Esperando o anfitrião responder.')+rede_;
     ac.append(porta(),botao('Sair da sala','Sair da sala',()=>{saiDaSala();showHunts()}));
   }else{
     h.textContent='Caçar em grupo';
+    const salas=[...SALAS.values()].filter(x=>meus().includes(x.h));
     /* toda caçada é numa sala (decisão do Leonardo em 19/10/2026): sozinho é
        uma sala de um. Criar não depende da rede, porque a masmorra roda aqui */
     if(rede.estado!=='ligado'){p.textContent=rede.estado==='sem rede'?'Sem conexão com a cidade agora: sua sala abre assim mesmo, mas ninguém a vê até a conexão voltar.':'Conectando à cidade…'}
     else{
-      p.textContent=SALAS.size?'Salas abertas de quem está na cidade:':'Nenhuma sala aberta agora. Crie a sua e chame quem está na cidade.';
-      for(const s of SALAS.values()){
+      p.textContent=salas.length?'Salas abertas de quem está na cidade:':'Nenhuma sala aberta para estes lugares. Crie a sua no lugar escolhido e chame quem está na cidade.';
+      for(const x of salas){
         const li=document.createElement('li'),t=document.createElement('span');
-        t.textContent=`Sala de ${s.nome} (${CLASSES[s.classe]?CLASSES[s.classe].nome:''}) · ${s.n}/${MAX}`;
-        li.append(t,botao('entrar',`Entrar na sala de ${s.nome}`,()=>{entraSala(s.id);showHunts()},s.n>=MAX));ul.appendChild(li);
+        t.textContent=`Sala de ${x.nome} (${CLASSES[x.classe]?CLASSES[x.classe].nome:''}) · ${nomeCaca(x.h)} · ${x.n}/${MAX}`;
+        li.append(t,botao('entrar',`Entrar na sala de ${x.nome}, em ${nomeCaca(x.h)}`,()=>{entraSala(x.id,x.h);showHunts()},x.n>=MAX));ul.appendChild(li);
       }
     }
-    ac.append(botao('Criar sala','Criar uma sala para caçar, sozinho ou com quem entrar',()=>{criaSala();showHunts()}));
   }
-  box.append(h,p);if(ul.children.length)box.appendChild(ul);box.appendChild(ac);
+  box.append(h,p);if(ul.children.length)box.appendChild(ul);if(ac.children.length)box.appendChild(ac);
 }
 SALA.aoMudar=rede.aoMudar=()=>{if(!huntS.hidden)showHunts()};
-function showHunts(){
+/* k é o NPC que abriu a tela; sem ele, o mesmo de antes */
+function showHunts(k){
+  if(k)huntDe=k;
+  const n=CITY.npcs[huntDe];
+  if(n){setT($('#hunts .eyebrow'),n.casa);setT($('#hunts h2'),n.nome)}
   const ul=$('#huntList'),c=ch();ul.textContent='';
   $('#hRisco').textContent=risco();$('#hProv').textContent=leva();desenhaSala();
-  for(const[k,h]of Object.entries(HUNTS)){
-    const li=document.createElement('li');li.className='sp';
+  for(const k of meus()){
+    const h=HUNTS[k],li=document.createElement('li');li.className='sp';
     const info=document.createElement('div');info.className='info';
     const t=document.createElement('h3');t.textContent=h.nome;
     const p=document.createElement('p');p.textContent=h.desc||'';
     const meta=document.createElement('div');meta.className='meta'+(c.lvl<h.nivel?' alto':'');
-    meta.textContent=`nível recomendado ${h.nivel}`+(c.lvl<h.nivel?' · acima do seu':'');
+    /* pilar 2: o jogador sabe o que mora lá antes de entrar */
+    const mons=[...new Set([...(h.bands||PROG.bands).flatMap(b=>Object.keys(b.weights)),(h.boss||PROG.boss).type])].map(m=>MT[m].nome);
+    meta.textContent=`nível recomendado ${h.nivel}`+(c.lvl<h.nivel?' · acima do seu':'')+(mons.length?` · ${mons.join(', ')}`:'');
     info.append(t,p,meta);
-    const b=document.createElement('button');b.type='button';
+    const bts=document.createElement('div');bts.className='bts';
     /* só se caça numa sala: fora de uma, o lugar abre uma sala sua e já entra
        pela porta (os outros podem entrar depois); dentro, é a porta dela */
-    const naPorta=SALA.papel==='convidado'&&(SALA.estado!=='ligado'||!SALA.membros.length);
-    b.textContent=SALA.papel?'pela porta':'criar sala';b.disabled=naPorta;
-    b.addEventListener('click',()=>{if(!SALA.papel)criaSala();pelaPorta()});
-    b.setAttribute('aria-label',SALA.papel?`Entrar em ${h.nome} pela porta da sala`:`Criar uma sala em ${h.nome} e entrar`);
-    li.append(info,b);ul.appendChild(li);
+    const b=document.createElement('button');b.type='button';
+    if(!SALA.papel){b.textContent='criar sala';b.setAttribute('aria-label',`Criar uma sala em ${h.nome} e entrar`);b.addEventListener('click',()=>{criaSala(k);pelaPorta()})}
+    else if(SALA.caca===k){b.textContent='pela porta';b.disabled=semPorta();b.setAttribute('aria-label',`Entrar em ${h.nome} pela porta da sala`);b.addEventListener('click',pelaPorta)}
+    else{b.textContent='outra sala';b.disabled=true;b.setAttribute('aria-label',`Você está numa sala de outro lugar: saia dela para caçar em ${h.nome}`)}
+    bts.append(b);li.append(info,bts);ul.appendChild(li);
   }
   soTela(huntS);
 }
@@ -257,7 +296,7 @@ function drawGrim(){
   }
   const ul=$('#grimList');ul.textContent='';
   for(const k of listaDaClasse(save.classe)){
-    const s=SPELLS[k],liberada=c.lvl>=s.lvl,eq=c.slots.indexOf(k);
+    const s=SPELLS[k],liberada=c.lvl>=s.lvl&&c.sabe.includes(k),eq=c.slots.indexOf(k);
     const li=document.createElement('li');
     li.className='sp'+(eq>=0&&eq<nSlots()?' eq':'')+(liberada?'':' locked');
     li.style.borderLeftColor=s.t==='cura'?'#8ad872':s.t==='buff'?'#f2a33a':EL_COR[s.el];
@@ -267,10 +306,10 @@ function drawGrim(){
     const p=document.createElement('p');p.textContent=s.d;
     const meta=document.createElement('div');meta.className='meta';
     const esc=s.esc==='per'?'Perícia':s.esc==='mag'?'Magia':null;
-    meta.textContent=[`nível ${s.lvl}`,s.mana?`${s.mana} mana`:'sem mana',`${s.cd}s`,esc&&`escala em ${esc}`].filter(Boolean).join(' · ');
+    meta.textContent=[`nível ${s.lvl}`,!c.sabe.includes(k)&&precoHab(k)&&`${precoHab(k)} ouro no Mestre de magias`,s.mana?`${s.mana} mana`:'sem mana',`${s.cd}s`,esc&&`escala em ${esc}`].filter(Boolean).join(' · ');
     info.append(h,p,meta);
     const b=document.createElement('button');b.type='button';
-    if(!liberada){b.disabled=true;b.textContent='nível '+s.lvl}
+    if(!liberada){b.disabled=true;b.textContent=c.lvl>=s.lvl?'no Mestre':'nível '+s.lvl}
     else if(eq>=0&&eq<nSlots()){b.className='rm';b.textContent='guardar';b.addEventListener('click',()=>{c.slots[eq]=null;persist();drawGrim()})}
     else{
       const vago=c.slots.findIndex((v,i)=>i<nSlots()&&!v);

@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.21.0';
-import {CITY,CLASSES,ITEMS} from './sim/dados.js?v=0.21.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.21.0';
-import {G,solid} from './sim/incursao.js?v=0.21.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.21.0';
-import {bf} from './sim/combate.js?v=0.21.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.21.0';
-import {$,app,RM} from './dom.js?v=0.21.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.24.0';
+import {CITY,CLASSES,ITEMS,HUNTS} from './sim/dados.js?v=0.24.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.24.0';
+import {G,solid} from './sim/incursao.js?v=0.24.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.24.0';
+import {bf} from './sim/combate.js?v=0.24.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.24.0';
+import {$,app,RM} from './dom.js?v=0.24.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
@@ -33,6 +33,16 @@ function spr(n,d,f,x,y){
 function circle(c,x,y,r){c.beginPath();c.arc(x,y,r,0,TAU);c.fill()}
 const rgba=(h,a)=>{const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`};
 function nearFloor(x,y){for(let j=-1;j<=1;j++)for(let i=-1;i<=1;i++){const a=x+i,b=y+j;if(a>=0&&b>=0&&a<MW&&b<MH&&G.g[b*MW+a]===0)return true}return false}
+/* a arte de cada mapa de caça (hunts.<k>.arte no content.json): o sprite do
+   chão, o conjunto de parede, as cores do desenho sem sprites, quanto a
+   escuridão cobre e se há tochas. Montada uma vez por mapa, fora do laço */
+const ARTE_C={};
+function arteDe(k){
+  if(ARTE_C[k])return ARTE_C[k];
+  const a=(HUNTS[k]&&HUNTS[k].arte)||{},c=a.cor||{};
+  return ARTE_C[k]={chao:a.chao?'chao_'+a.chao:'chao',par:a.par?PECA.map(n=>n&&a.par+n.slice(3)):PECA,
+    c1:c.chao1||'#221e2b',c2:c.chao2||'#1e1a26',pa:c.par||'#3a3445',escuro:`rgba(6,5,10,${typeof a.escuro==='number'?a.escuro:.82})`,tochas:a.tochas!==false};
+}
 function outText(t,x,y,col){ctx.lineWidth=3;ctx.lineJoin='round';ctx.strokeStyle='#000';ctx.strokeText(t,x,y);ctx.fillStyle=col;ctx.fillText(t,x,y)}
 /* nome e barra de vida como no Tibia: Verdana em negrito e a cor da faixa de vida */
 const FONTE_MAPA='700 11px Verdana,Tahoma,sans-serif';
@@ -265,6 +275,12 @@ function drawMon(m){
       ctx.fillStyle=g;ctx.beginPath();ctx.moveTo(x-16,y+16);ctx.lineTo(x+16,y+16);ctx.lineTo(x+19,y-8);ctx.lineTo(x+8,y-20);ctx.lineTo(x-8,y-20);ctx.lineTo(x-19,y-8);ctx.closePath();ctx.fill();
       ctx.strokeStyle=d;ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x-6,y-14);ctx.lineTo(x-1,y-2);ctx.lineTo(x-7,y+9);ctx.moveTo(x+9,y-4);ctx.lineTo(x+4,y+8);ctx.stroke();
       const e=.6+.4*Math.sin(G.t*5);ctx.fillStyle=`rgba(255,184,77,${e})`;ctx.fillRect(x-9,y-13,6,3);ctx.fillRect(x+3,y-13,6,3);break}
+    /* os monstros dos outros mapas de caça, sem sprite: corpo do tamanho
+       dele, com a cor do tier, e os olhos para o lado do jogador */
+    default:{
+      const r=m.r,cor=['#7d6450','#6b7a4a','#7a5a8a','#8a3a3a','#4a4a6a'][Math.min(4,(m.t.tier||1)-1)];
+      ctx.fillStyle=c(cor);ctx.beginPath();ctx.ellipse(x,y,r,r*.85,0,0,TAU);ctx.fill();
+      ctx.fillStyle='#ffe066';circle(ctx,x+r*.35*s,y-r*.3,1.6);circle(ctx,x+r*.6*s,y-r*.3,1.6)}
   }
 }
 /* ---------- interpolação ----------
@@ -297,27 +313,27 @@ function cena(){
   const x0=Math.max(0,Math.floor(cx/T)-1),x1=Math.min(MW-1,Math.ceil((cx+W)/T)+1),y0=Math.max(0,Math.floor(cy/T)-1),y1=Math.min(MH-1,Math.ceil((cy+H)/T)+1);
   G.torches.length=0;
   /* cada jogador da sala com o equipamento dele, vestido no boneco */
-  const A=ART.ok,jogador=q=>drawPlayer(q,!!q.fora&&q.fora!=='extraiu',bf('arm',q),q.c&&q.c.equip);ctx.imageSmoothingEnabled=false;
+  const A=ART.ok,jogador=q=>drawPlayer(q,!!q.fora&&q.fora!=='extraiu',bf('arm',q),q.c&&q.c.equip),AR=arteDe(G.caca);ctx.imageSmoothingEnabled=false;
   if(A)for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     /* com os sprites: o chão aqui, as paredes depois, linha a linha junto com as criaturas */
     const h=hash(x,y),cx=x*T+T/2,cy=y*T+T/2;
-    if(G.g[y*MW+x]===0){spr('chao',0,0,cx,cy);if(h%23===0)spr(h&64?'cascalho':'cascalho2',0,0,cx,cy)}
-    else if(G.par[y*MW+x]===2&&h%19===0&&y+1<MH&&G.g[(y+1)*MW+x]===0)G.torches.push({x:cx-6,y:cy-14});
+    if(G.g[y*MW+x]===0){spr(AR.chao,0,0,cx,cy);if(h%23===0)spr(h&64?'cascalho':'cascalho2',0,0,cx,cy)}
+    else if(AR.tochas&&G.par[y*MW+x]===2&&h%19===0&&y+1<MH&&G.g[(y+1)*MW+x]===0)G.torches.push({x:cx-6,y:cy-14});
   }
   else for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){
     const px=x*T,py=y*T,h=hash(x,y);
     if(G.g[y*MW+x]===0){
-      ctx.fillStyle=h&1?'#221e2b':'#1e1a26';ctx.fillRect(px,py,T,T);
+      ctx.fillStyle=h&1?AR.c1:AR.c2;ctx.fillRect(px,py,T,T);
       ctx.fillStyle='#16131d';ctx.fillRect(px,py+T-2,T,2);ctx.fillRect(px+T-2,py,2,T);
       if(h%13===0){ctx.fillStyle='#2e2938';ctx.fillRect(px+4+(h>>5)%20,py+6+(h>>9)%18,3,2)}
       if(h%37===0){ctx.strokeStyle='#131118';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(px+6,py+8);ctx.lineTo(px+14,py+16);ctx.lineTo(px+12,py+25);ctx.stroke()}
     }else if(nearFloor(x,y)){
-      ctx.fillStyle='#3a3445';ctx.fillRect(px,py,T,T);
+      ctx.fillStyle=AR.pa;ctx.fillRect(px,py,T,T);
       ctx.fillStyle='#463f53';ctx.fillRect(px,py,T,3);
       ctx.fillStyle='#302b3a';ctx.fillRect(px,py+15,T,1);ctx.fillRect(px+((y&1)?8:22),py+3,1,12);ctx.fillRect(px+((y&1)?22:8),py+16,1,T-16);
       if(y+1<MH&&G.g[(y+1)*MW+x]===0){
         ctx.fillStyle='#262130';ctx.fillRect(px,py+T-12,T,12);ctx.fillStyle='#1a1621';ctx.fillRect(px,py+T-2,T,2);
-        if(h%19===0){
+        if(AR.tochas&&h%19===0){
           const tx=px+T/2,ty=py+T-12,fl=Math.sin(G.t*14+h)*1.5;
           ctx.fillStyle='#5a4128';ctx.fillRect(tx-2,ty,4,8);
           ctx.fillStyle='#f2a33a';ctx.beginPath();ctx.ellipse(tx,ty-3,3.5,6+fl,0,0,TAU);ctx.fill();
@@ -366,7 +382,7 @@ function cena(){
        criatura cobre a parede de cima */
     let k=0;
     for(let y=y0;y<=y1;y++){
-      for(let x=x0;x<=x1;x++){const q=G.par[y*MW+x];if(q)spr(PECA[q],0,0,x*T+T/2,y*T+T/2)}
+      for(let x=x0;x<=x1;x++){const q=G.par[y*MW+x];if(q)spr(AR.par[q],0,0,x*T+T/2,y*T+T/2)}
       for(const t of G.torches)if((t.y/T|0)===y)spr('tocha',0,0,t.x+6,t.y+14);
       while(k<ents.length&&ents[k].y<(y+1)*T){const e=ents[k++];e.pl?jogador(e.pl):drawMon(e.m)}
     }
@@ -397,7 +413,7 @@ function cena(){
   }
   // escuridão e luzes
   dctx.setTransform(DPR,0,0,DPR,0,0);dctx.globalCompositeOperation='source-over';dctx.clearRect(0,0,W,H);
-  dctx.fillStyle='rgba(6,5,10,.82)';dctx.fillRect(0,0,W,H);dctx.globalCompositeOperation='destination-out';
+  dctx.fillStyle=arteDe(G.caca).escuro;dctx.fillRect(0,0,W,H);dctx.globalCompositeOperation='destination-out';
   const light=(x,y,r,a)=>{x-=cx;y-=cy;if(x<-r||y<-r||x>W+r||y>H+r)return;const g=dctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,`rgba(0,0,0,${a})`);g.addColorStop(.5,`rgba(0,0,0,${a*.75})`);g.addColorStop(1,'rgba(0,0,0,0)');dctx.fillStyle=g;dctx.fillRect(x-r,y-r,r*2,r*2)};
   light(p.x,p.y,250+(RM?0:Math.sin(G.t*9)*5),1);
   for(const q of G.ps)if(q!==p&&!q.fora)light(q.x,q.y,170,.9);
@@ -418,7 +434,7 @@ function cena(){
   ctx.font=FONTE_MAPA;
   for(const m of vis){
     if(hyp(m.x-p.x,m.y-p.y)>265)continue;
-    const pct=Math.max(0,m.hp/m.mhp),col=corVida(pct),bw=m.t.boss?46:27,top=A?m.y-(m.t.boss?44:30):m.y-m.r-(m.k==='guardiao'?14:18),mx=m.x-(A?desl('mon_'+m.k):0);
+    const pct=Math.max(0,m.hp/m.mhp),col=corVida(pct),bw=m.t.boss?46:27,top=A?m.y-(m.t.boss?44:30):m.y-m.r-(m.t.boss?14:18),mx=m.x-(A?desl('mon_'+m.k):0);
     outText(m.t.nome,mx,top-6,col);
     ctx.fillStyle='#000';ctx.fillRect(mx-bw/2-1,top-2,bw+2,5);ctx.fillStyle=col;ctx.fillRect(mx-bw/2,top-1,bw*pct,3);
   }

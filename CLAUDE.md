@@ -68,7 +68,7 @@ confundidas com precedente:
 | O quê | De onde | Se não carregar |
 |---|---|---|
 | [`data/game/content.json`](data/game/content.json) — classes, habilidades, melhorias, inimigos, itens, loot, progressão, provisões e a cidade | mesma origem, deste repositório | o menu diz o motivo e o jogo não começa |
-| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~340 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
+| [`assets/otsp/atlas.png`](assets/otsp/atlas.png) e [`atlas.json`](assets/otsp/atlas.json) — os sprites do OpenTibia Sprite Pack que o jogo usa, ~510 KB | mesma origem, gerados por [`tools/sprites.mjs`](tools/sprites.mjs) | o jogo segue com o desenho em código de antes (`ART.ok` falso) |
 
 Nenhuma é de terceiro: **o jogo não fala com nenhum outro servidor** além do
 Supabase: o banco só quando há conta, e o Realtime (a cidade compartilhada e
@@ -129,7 +129,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   e dados**: `validaConteudo()`, `carrega()` e as tabelas `CLASSES`,
   `CL_ORDEM`, `SPELLS`, `SLOT_LVL`, `UP`, `MT`, `ITEMS`, `LOOT`, `PROG`,
   `EL_COR`, mais `listaDaClasse()`, `slotsIniciais()`, `fmtItem()` e, do equipamento, `SLOTS_EQ`, `SLOT_NOME`, `fmtBonus()`; da cidade,
-  `CITY`, `HUNTS`, `LEGENDA` (o que cada letra de chão ou obstáculo de
+  `CITY`, `HUNTS` (os mapas de caça, cada um com o NPC que leva até ele, a
+  tabela de spawn, o chefe, o `mapa` e a `arte`; `cacaDe(k)` confere a chave
+  que vem da rede e cai na Masmorra de Runas), `LEGENDA` (o que cada letra de chão ou obstáculo de
   `city.mapa` é), `OBJETOS` (as letras dos enfeites sólidos: fonte, barril,
   árvores…) e `ABRE` (o que um NPC pode abrir); das lojas de provisões, `SUP`
   e `BUFFS`; da forja do Gordon, `FORJA` (`compra`, `missoes`,
@@ -145,7 +147,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
   `soProv()`)
-- `mapa.js` — `genMap()`, `carveRooms()`, `corridor()`, `carve()`, `pecas()`
+- `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
+  que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
+  sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
   (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
@@ -163,7 +167,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `updateProj()`, `finish()`). **Solo é um grupo de um** (etapa M1 do
   [plano do multiplayer](docs/plano-multiplayer.md)): a incursão tem sempre
   uma lista de jogadores, `G.ps`, cada um com a ficha dele (`p.cl`, `p.c`,
-  `p.up`) e o próprio saco, e `newRun(semente, fichas)` aceita várias. A regra
+  `p.up`) e o próprio saco, e `newRun(semente, fichas, aberta, caca)` aceita várias; `caca` é o mapa de
+  caça (`G.caca`), de onde saem a tabela de spawn, o chefe e o jeito de cavar
+  o mapa. A regra
   nunca lê `G.p` nem o `save` para saber quem joga: `G.p` é só o jogador
   deste aparelho, para a tela. No solo a ficha aponta para o personagem do
   save, e o que é da conta (cofre, peças) só muda para a ficha local, em `sai()`
@@ -227,7 +233,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   materiais), **lojas de provisões** (`showLoja(k)`, uma tela para todo NPC
   com `abre: "loja"`; o `start()` gasta o que o jogador levou), **personagens** (`showPick()`), **grimório**, **equipamento** (`drawEquip()`, aberto pelo Banco), **mercador** (`drawShop()`,
   `buy()`, `showShop()`) e `conteudoFalhou()`. O fluxo é acampamento →
-  cidade → Guia de caça → incursão → tela final → cidade; as telas abertas na
+  cidade → quem leva à caçada (o Guia, o Vigia do esgoto, o Capitão do porto,
+  cada um com os mapas dele, `showHunts(npc)`) → incursão → tela final → a
+  cidade, ao lado de quem levou; as telas abertas na
   cidade voltam para ela (`volta()`)
 - `controles.js` — joystick por ponteiro, `bindHold()`, teclado, `held` e
   `leEntrada()`
@@ -262,7 +270,11 @@ crescimento.** As mesmas coisas custam preços diferentes para cada classe.
 - **Nível** (`ch().lvl`, `xp`) — sobe matando, custo em `xpNeed()` (curva e
   perda na morte em `progression.xp` do `content.json`; a morte leva uma fatia
   do `xp` do nível, nunca o nível). Define vida,
-  mana e quais habilidades e slots estão liberados.
+  mana, os slots e quais habilidades **podem** ser aprendidas: a de preço 0
+  vem sozinha; as outras (`preco` em `spells`) se aprendem com o Mestre de
+  magias, por ouro do cofre, e ficam em `ch().sabe` (`podeAprender()`,
+  `aprende()`, `desbloqueadas()`). Save de antes da 0.21.0, sem `sabe`, fica
+  com tudo que o nível dele liberava (`normaliza()`).
 - **Magia** (`mag`, `manaG`) — sobe **gastando mana**, custo exponencial em
   `manaPraMag()` com o `mMult` da classe.
 - **Perícia** (`per`, `golpes`) — sobe **acertando golpes**, custo em
@@ -349,7 +361,7 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto}}}}`.
 O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
 próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento
@@ -509,7 +521,7 @@ passar pelo canal da cidade**: isso é o servidor autoritativo da F2
 ### Sala — caçar junto, com o anfitrião calculando
 
 Decisão do Leonardo em 19/10/2026 (opção C do plano do multiplayer): testar o
-co-op na masmorra **sem servidor próprio**. No Guia de caça, qualquer um cria
+co-op na masmorra **sem servidor próprio**. Em quem leva à caçada, qualquer um cria
 uma sala; quem está na cidade a vê e entra (até 4).
 **Toda caçada é numa sala** (decisão do Leonardo em 19/10/2026): o lugar de
 caça do Guia cria uma sala e entra pela porta, e sozinho é uma sala de um. A
@@ -517,6 +529,9 @@ incursão solo com relógio (`start()` sem `prepara`) continua no código só pa
 os testes e a simulação; o jogador não a alcança. O anfitrião entra pela porta
 mesmo com o canal da sala caído: a masmorra roda no aparelho dele.
 
+- **A sala é de um mapa de caça** (`SALA.caca`), escolhido ao criar ("criar
+  sala" na linha do lugar). Vai no anúncio da cidade (`rede.sala.h`), na lista
+  de membros e na porta; a porta só abre no NPC que leva a esse mapa.
 - **A masmorra da sala não tem tempo** (decisão do Leonardo em 19/10/2026):
   nasce com a sala, no aparelho do anfitrião, e fica aberta até ele fechar a
   sala (só na cidade) ou sair do jogo. Ninguém é soterrado. É o modo
