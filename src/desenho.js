@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.8.2';
-import {CITY,CLASSES} from './sim/dados.js?v=0.8.2';
-import {save,KL} from './sim/progresso.js?v=0.8.2';
-import {G,solid} from './sim/incursao.js?v=0.8.2';
-import {C} from './sim/cidade.js?v=0.8.2';
-import {bf} from './sim/combate.js?v=0.8.2';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.8.2';
-import {$,app,RM} from './dom.js?v=0.8.2';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.9.0';
+import {CITY,CLASSES} from './sim/dados.js?v=0.9.0';
+import {save,KL} from './sim/progresso.js?v=0.9.0';
+import {G,solid} from './sim/incursao.js?v=0.9.0';
+import {C} from './sim/cidade.js?v=0.9.0';
+import {bf} from './sim/combate.js?v=0.9.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.9.0';
+import {$,app,RM} from './dom.js?v=0.9.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d');
@@ -310,7 +310,7 @@ function cena(){
    ordem de desenho da masmorra (chão, depois linha a linha as paredes, as
    árvores e quem está na linha). Sem a arte, cores chapadas. */
 const CHAO_C=['grama','','rua','assoalho','grama','agua','rua'],COR_C=['#3e6b2b','#5a5650','#6d675d','#6b4a2a','#3e6b2b','#2b5f93','#6d675d'];
-const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33'};
+const NPC_COR={mercador:'#7a5a36',banqueiro:'#c9c2ae',guia:'#4f6b33',corretor:'#8a3f2c'};
 function drawNpc(n,p){
   /* o NPC vira para quem chega perto, como no Tibia */
   const perto=hyp(p.x-n.x,p.y-n.y)<T*3,face=perto?Math.atan2(p.y-n.y,p.x-n.x):Math.PI/2;

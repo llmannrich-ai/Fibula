@@ -1011,7 +1011,7 @@
     }
   },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) ou cacadas (mapas de caca). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) cacadas (mapas de caca) ou mercado (a feira entre jogadores, no banco da nuvem). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
     "nome": "Cidade",
     "mapa": [
       "AAAAAAAAAAAAAAAAAAAAAAAA",
@@ -1023,7 +1023,7 @@
       "A,###_###,,,,,,###_###,A",
       "A,,,,.,,,,,,,,,,,,.,,,,A",
       "A,,,,..............,,,,A",
-      "A,A,,.,,,,,~~,,,,,.,,A,A",
+      "A,A,,.,,,,,~~,T,,,.,,A,A",
       "A,,,,.,,,,,~~,,,,,.,,,,A",
       "A,,,,......@.......,,,,A",
       "A,,,,,,,,,,.,,,,,,,,,,,A",
@@ -1053,6 +1053,13 @@
         "casa": "Portão da cidade",
         "abre": "cacadas",
         "fala": "Escolha onde caçar. O portal abre em 1:30."
+      },
+      "corretor": {
+        "letra": "T",
+        "nome": "Corretor",
+        "casa": "Feira",
+        "abre": "mercado",
+        "fala": "Aqui se compra e se vende entre jogadores. Diga o preço; se alguém aceitar, o negócio fecha na hora."
       }
     }
   },

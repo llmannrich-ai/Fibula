@@ -8,19 +8,21 @@
    Conflito entre aparelhos: no aparelho já ligado à conta vence o save gravado
    por último (save.em); no primeiro login de um aparelho vence o que tem mais
    incursões, para um save novo nunca apagar um antigo; num aparelho que era de
-   outra conta vence sempre a nuvem, para uma conta não herdar a outra. */
-import {normaliza,save,setSave} from './sim/progresso.js?v=0.8.2';
-import {G} from './sim/incursao.js?v=0.8.2';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.8.2';
-import {menu,showMenu} from './telas.js?v=0.8.2';
-import {$} from './dom.js?v=0.8.2';
+   outra conta vence sempre a nuvem, para uma conta não herdar a outra.
+   Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
+   velho que ela ('mercado'), e este aparelho adota o da nuvem. */
+import {normaliza,soPecas,save,setSave} from './sim/progresso.js?v=0.9.0';
+import {G} from './sim/incursao.js?v=0.9.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.9.0';
+import {menu,showMenu} from './telas.js?v=0.9.0';
+import {$} from './dom.js?v=0.9.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
 let sessao=null;try{sessao=JSON.parse(localStorage.getItem(KEYS)||'null')}catch(e){}
 /* sessão do login por e-mail, que saiu: some do aparelho */
 if(sessao&&!sessao.tk){sessao=null;try{localStorage.removeItem(KEYS)}catch(e){}}
-const nuvem={pronto:false,msg:'',erro:false,timer:0,sujo:false};
+const nuvem={pronto:false,msg:'',erro:false,timer:0,sujo:false,voo:null};
 const guardaSessao=v=>{sessao=v;try{v?localStorage.setItem(KEYS,JSON.stringify(v)):localStorage.removeItem(KEYS)}catch(e){}};
 const rpc=(fn,corpo,keepalive)=>fetch(SB_URL+'/rest/v1/rpc/'+fn,{method:'POST',keepalive:!!keepalive,
   headers:{apikey:SB_KEY,'Content-Type':'application/json'},body:JSON.stringify(corpo)});
@@ -29,12 +31,17 @@ const erroRpc=async r=>{try{return(await r.json()).message||''}catch(e){return''
 const MSG_CONTA={credenciais:'Usuário ou senha incorretos.',usuario_existe:'Esse nome de usuário já existe. Escolha outro ou entre com a senha dele.',
   usuario_invalido:'O nome de usuário precisa ter de 1 a 24 caracteres.',senha_invalida:'A senha não pode ficar vazia.'};
 const sessaoMorta=()=>{guardaSessao(null);nuvem.pronto=false;nuvem.erro=false;nuvem.msg='Sua sessão expirou. Entre de novo.';desenhaConta()};
-async function empurra(keepalive){
+/* a gravação em voo fica em nuvem.voo, para o mercado esperar por ela */
+const empurra=keepalive=>nuvem.voo=sobe(keepalive);
+async function sobe(keepalive){
   if(!sessao||!nuvem.pronto)return;
   nuvem.sujo=false;
   try{
     const r=await rpc('save_gravar',{p_token:sessao.tk,p_dados:save},keepalive);
-    if(!r.ok){if(await erroRpc(r)==='sessao')return sessaoMorta();throw new Error('HTTP '+r.status)}
+    if(!r.ok){const m=await erroRpc(r);if(m==='sessao')return sessaoMorta();
+      /* outro aparelho (ou uma resposta perdida) mexeu no mercado depois deste save */
+      if(m==='mercado')return puxa(true);
+      throw new Error('HTTP '+r.status)}
     if(nuvem.erro){nuvem.erro=false;desenhaConta()}
   }catch(e){nuvem.sujo=true;if(!nuvem.erro){nuvem.erro=true;desenhaConta()}}
 }
@@ -43,24 +50,42 @@ function agendaNuvem(){
   nuvem.sujo=true;clearTimeout(nuvem.timer);nuvem.timer=setTimeout(empurra,1500);
 }
 aoGravar(agendaNuvem);
-export async function puxa(){
+export async function puxa(forca){
   if(!SB_KEY||!sessao)return;
   /* não troca o save no meio de uma incursão: espera ela acabar */
-  if(G&&G.active)return void setTimeout(puxa,3000);
+  if(G&&G.active)return void setTimeout(()=>puxa(forca),3000);
   try{
     const r=await rpc('save_ler',{p_token:sessao.tk});
     if(!r.ok){if(await erroRpc(r)==='sessao')return sessaoMorta();throw new Error('HTTP '+r.status)}
     const d=await r.json();
     if(!sessao)return;
-    if(G&&G.active)return void setTimeout(puxa,3000);
+    if(G&&G.active)return void setTimeout(()=>puxa(forca),3000);
     /* aparelho que era de outra conta: o save local é dela, nunca vai para esta */
     const ligado=save.dono===sessao.uid,outro=!!save.dono&&!ligado;
-    const adota=!!d&&(ligado?(d.em||0)>(save.em||0):outro||(d.runs|0)>=(save.runs|0));
+    const adota=!!d&&(forca||(ligado?(d.em||0)>(save.em||0):outro||(d.runs|0)>=(save.runs|0)));
     if(adota){setSave(normaliza(d));save.dono=sessao.uid;try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){marcaFalha()}}
     nuvem.pronto=true;nuvem.erro=false;
     if(!adota){save.dono=sessao.uid;persist()}
     if(!menu.hidden)showMenu();else desenhaConta();
-  }catch(e){nuvem.erro=true;desenhaConta();setTimeout(puxa,30000)}
+  }catch(e){nuvem.erro=true;desenhaConta();setTimeout(()=>puxa(forca),30000)}
+}
+/* ---------- mercado entre jogadores ----------
+   O livro de ofertas e o match moram no banco (tools/supabase/003_mercado.sql),
+   que confere o que se oferece contra o save da nuvem e o altera na mesma
+   transação. Por isso o save deste aparelho sobe antes de cada operação, e o
+   cofre e as peças que o banco devolve substituem os daqui. O erro sai como a
+   palavra-chave do banco ('sem_ouro', 'limite'…) ou 'conta', 'nuvem', 'rede'. */
+export const temConta=()=>!!sessao;
+export async function mercado(fn,args){
+  if(!sessao)throw new Error('conta');
+  if(!nuvem.pronto)throw new Error('nuvem');
+  const muda=fn!=='mercado_livro';
+  if(muda){clearTimeout(nuvem.timer);await nuvem.voo;if(nuvem.sujo)await empurra();if(nuvem.sujo)throw new Error('rede')}
+  let r;try{r=await rpc(fn,Object.assign({p_token:sessao.tk},args))}catch(e){throw new Error('rede')}
+  if(!r.ok){const m=await erroRpc(r);if(m==='sessao')sessaoMorta();throw new Error(m||'rede')}
+  const d=await r.json();
+  if(muda){save.cofre=Math.max(0,d.cofre|0);save.itens=soPecas(d.itens);save.mkt=d.mkt|0;persist()}
+  return d;
 }
 /* o nome de usuário da conta ligada, ou null: é o nome que os outros veem na cidade */
 export const quemSou=()=>sessao?sessao.usuario||null:null;

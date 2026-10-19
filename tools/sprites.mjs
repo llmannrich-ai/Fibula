@@ -63,7 +63,7 @@ const ARTE = {
      os NPCs das casas (as chaves de city.npcs no content.json) */
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
   arvore: {i: 1507}, arvore2: {i: 1504},
-  npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16},
+  npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45},
   /* sacos de loot por raridade e itens (as chaves de items no content.json) */
   saco0: {i: 2101}, saco1: {i: 2099}, saco2: {i: 2102},
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},

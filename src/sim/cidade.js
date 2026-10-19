@@ -1,13 +1,13 @@
 /* ---------- cidade ----------
    O lugar entre incursões: um mapa fixo (city.mapa no content.json) por onde o
-   jogador anda até as casas dos NPCs — Mercador, Banco e o Guia de caça, que
+   jogador anda até as casas dos NPCs — Mercador, Banco, a Feira e o Guia de caça, que
    leva às masmorras. É regra e não tela, como a incursão: quando a cidade
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp} from './base.js?v=0.8.2';
-import {CITY,LEGENDA,CLASSES} from './dados.js?v=0.8.2';
-import {pecas} from './mapa.js?v=0.8.2';
+import {T,hyp} from './base.js?v=0.9.0';
+import {CITY,LEGENDA,CLASSES} from './dados.js?v=0.9.0';
+import {pecas} from './mapa.js?v=0.9.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho) ou obstáculo (1 parede, 4 árvore, 5 água, 6 portão). @ é onde se

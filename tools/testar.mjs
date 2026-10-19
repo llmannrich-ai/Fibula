@@ -152,16 +152,40 @@ const P = {
      (tools/supabase/002_login_simples.sql): window.__nuvem.dados é o save do
      jogador (null = sem save), contas guarda usuário → senha, e cada leitura,
      gravação e login fica contado para o roteiro conferir. O token válido é
-     sempre 'tk1', do jogador 'u1'. */
-  nuvem: (remoto, contas) => (h) => patch(h,
+     sempre 'tk1', do jogador 'u1'.
+     mk imita as funções do mercado (tools/supabase/003_mercado.sql): mk.itens
+     é o livro ({item:{venda:[[preço,qtd]],compra:[…]}}), mk.minhas as ofertas
+     do jogador, mk.caixa o que espera para entrar no cofre. O match é o do
+     primeiro nível do outro lado, que basta para a tela; o algoritmo de
+     verdade é testado no SQL. N.forcaErro faz a próxima operação falhar com
+     a palavra-chave dada, e save_gravar recusa save com mkt mais velho. */
+  nuvem: (remoto, contas, mk) => (h) => patch(h,
     MODULO,
     `<script>
-window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0};
+window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(contas || {})},gets:0,posts:0,token:'',login:'',saiu:0,
+  mk:${JSON.stringify(Object.assign({itens: {}, minhas: [], caixa: null, seq: 100}, mk || {}))},chamadas:[],forcaErro:''};
 {const f0=window.fetch;window.fetch=function(u,o){u=String(u);o=o||{};if(u.indexOf('supabase.co')<0)return f0(u,o);
   const N=window.__nuvem,b=JSON.parse(o.body||'{}'),r=(st,x)=>Promise.resolve({ok:st<300,status:st,json:()=>Promise.resolve(x)}),
     erro=m=>r(400,{code:'P0001',message:m}),fn=u.split('/rpc/')[1];
   if(fn==='save_ler'){N.gets++;N.token=b.p_token;return b.p_token==='tk1'?r(200,N.dados):erro('sessao')}
-  if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');N.posts++;N.dados=b.p_dados;return r(204,null)}
+  if(fn==='save_gravar'){N.token=b.p_token;if(b.p_token!=='tk1')return erro('sessao');
+    if(N.dados&&(b.p_dados.mkt|0)<(N.dados.mkt|0))return erro('mercado');N.posts++;N.dados=b.p_dados;return r(204,null)}
+  if(fn.indexOf('mercado_')===0){if(b.p_token!=='tk1')return erro('sessao');N.chamadas.push(fn);const M=N.mk;
+    if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa});
+    if(!N.dados)return erro('sem_save');
+    if(N.forcaErro){const m=N.forcaErro;N.forcaErro='';return erro(m)}
+    const D=N.dados,it=D.itens||(D.itens={}),poe=(k,q)=>{it[k]=(it[k]|0)+q;if(it[k]<=0)delete it[k]},rec={ouro:0,itens:{}};
+    if(M.caixa){rec.ouro=M.caixa.ouro;rec.itens=M.caixa.itens;D.cofre+=M.caixa.ouro;for(const k in M.caixa.itens)poe(k,M.caixa.itens[k]);M.caixa=null}
+    const fim=x=>{D.mkt=(D.mkt|0)+1;D.em=Date.now();return r(200,Object.assign({cofre:D.cofre,itens:JSON.parse(JSON.stringify(it)),mkt:D.mkt,recebido:rec},x||{}))};
+    if(fn==='mercado_coletar')return fim();
+    if(fn==='mercado_cancelar'){const i=M.minhas.findIndex(o=>o.id===b.p_id);if(i<0)return erro('ordem');const o=M.minhas.splice(i,1)[0];
+      if(o.lado==='compra')D.cofre+=o.preco*o.resta;else poe(o.item,o.resta);return fim()}
+    if(fn==='mercado_anunciar'){const k=b.p_item,pr=b.p_preco,q=b.p_qtd,compra=b.p_lado==='compra',L=M.itens[k]||{venda:[],compra:[]};
+      if(compra){if(D.cofre<pr*q)return erro('sem_ouro');D.cofre-=pr*q}else{if((it[k]|0)<q)return erro('sem_peca');poe(k,-q)}
+      const op=compra?L.venda:L.compra,n0=op[0],f=n0&&(compra?n0[0]<=pr:n0[0]>=pr)?Math.min(q,n0[1]):0,tot=f?f*n0[0]:0,tx=compra?0:Math.ceil(tot*2/100);
+      if(f){if(compra){poe(k,f);D.cofre+=(pr-n0[0])*f}else D.cofre+=tot-tx;n0[1]-=f;if(!n0[1])op.shift()}
+      const resta=q-f;if(resta)M.minhas.unshift({id:++M.seq,lado:b.p_lado,item:k,preco:pr,qtd:q,resta:resta});
+      return fim({feitos:f,resta:resta,ouro:tot-tx,taxa:tx,ordem:resta?M.seq:null})}}
   if(fn==='conta_entrar'){N.login=b.p_usuario;return N.contas[b.p_usuario.toLowerCase()]===b.p_senha?r(200,{token:'tk1',id:'u1',usuario:b.p_usuario}):erro('credenciais')}
   if(fn==='conta_criar'){N.login=b.p_usuario;if(b.p_usuario.toLowerCase() in N.contas)return erro('usuario_existe');
     N.contas[b.p_usuario.toLowerCase()]=b.p_senha;return r(200,{token:'tk1',id:'u1',usuario:b.p_usuario})}
@@ -671,7 +695,7 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,corretor,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
     for (let i = 0; i < 30; i++) Cd.updateCidade(0.05, oeste);
@@ -785,6 +809,10 @@ const CASOS = [
     Tl.abreNpc('banqueiro');
     ok('o Banqueiro abre o Banco', visivel('#equip')&&txt('#equip h2')==='Banco', txt('#equip h2'));
     clica($('#eqBack'));
+    Tl.abreNpc('corretor');
+    ok('o Corretor abre a Feira', visivel('#mkt')&&txt('#mkt h2')==='Feira', txt('#mkt h2'));
+    ok('sem conta, a Feira pede para entrar e não negocia', /entre com uma conta/.test(txt('#mktMsg')||'')&&todos('#mktItens button').every(function(b){return b.disabled}), txt('#mktMsg'));
+    clica($('#mktBack'));
     Tl.abreNpc('guia');
     ok('o Guia mostra os mapas de caça', visivel('#hunts')&&todos('#huntList li').length>=1, todos('#huntList li').length);
     ok('o mapa de caça diz o nível recomendado', /nível recomendado 1/.test(txt('#huntList .meta')||''), txt('#huntList .meta'));
@@ -1383,6 +1411,78 @@ const CASOS = [
     ok('a mana soma classe, nível e Foco: 95+64+10', txt('#mpT')==='169/169', txt('#mpT'));
     ok('a Bolsa de poções migrada vale na incursão', txt('#potN')==='×4', txt('#potN'));
     ok('a incursão nova contou sobre as sete antigas', sv()&&sv().runs===8, sv()&&sv().runs);
+`,
+  },
+  {
+    nome: 'feira',
+    o_que: 'mercado entre jogadores: a caixa entra no cofre ao abrir, vender e comprar casam com o livro, o resto fica anunciado, cancelar devolve, erro do banco vira aviso, e save mais velho que o mercado é trocado pelo da nuvem',
+    semente: 43,
+    patches: [P.nuvem(null, {}, {
+      itens: {espada: {venda: [[25, 1]], compra: [[18, 3]], ultimo: 22, dia: 4}, cota: {venda: [[70, 2]], compra: [], ultimo: null, dia: 0}, bogus: {venda: [[1, 1]], compra: [], ultimo: null, dia: 0}},
+      minhas: [{id: 7, lado: 'compra', item: 'cota', preco: 50, qtd: 1, resta: 1}],
+      caixa: {ouro: 40, itens: {}},
+    })],
+    save: {'masmorra-runas-v2': {
+      cofre: 300, itens: {espada: 2}, runs: 1, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    },
+    'masmorra-runas-v2-sessao': {tk: 'tk1', uid: 'u1', usuario: 'ana'}},
+    roteiro: `
+    var pronto=await ate(function(){return /salvo na nuvem · ana/.test(txt('#contaT')||'')},300);
+    ok('a sessão guardada liga a nuvem', pronto, txt('#contaT'));
+    clica($('#play'));await quadros(2);
+    Tl.abreNpc('corretor');
+    var abriu=await ate(function(){return /Da feira/.test(txt('#mktMsg')||'')},300);
+    ok('a Feira abre e avisa o que entrou da caixa', abriu&&/40 de ouro/.test(txt('#mktMsg')), txt('#mktMsg'));
+    ok('a caixa entrou no cofre e no save', sv().cofre===340&&txt('#mktGold')==='340', sv().cofre+' / '+txt('#mktGold'));
+    ok('o save guarda a marca do mercado', sv().mkt===window.__nuvem.dados.mkt&&sv().mkt>=1, sv().mkt);
+    var lis=todos('#mktItens li');
+    ok('a lista tem só as peças de equipamento do jogo (item desconhecido do livro fica fora)', lis.length===5&&!/bogus/.test(txt('#mktItens')), lis.length);
+    ok('a espada mostra os dois lados do livro e o cofre', /2 no cofre/.test(lis[0].textContent)&&/vendem a partir de 25/.test(lis[0].textContent)&&/compram até 18/.test(lis[0].textContent), lis[0].textContent);
+    ok('suas ofertas listam a compra de cota', /Compra: cota de malha a 50/.test(txt('#mktMinhas')||''), txt('#mktMinhas'));
+    clica(lis[0].querySelector('button'));
+    ok('quem tem a peça abre vendendo, pelo melhor preço de compra', visivel('#mktPeca')&&$('#mpLadoV').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='18', $('#mpPreco').value);
+    ok('o resumo diz o que recebe, já com a taxa', /recebe 17 de ouro \\(taxa de 1\\)/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpQtd+'));
+    ok('o + soma uma peça e o resumo acompanha', $('#mpQtd').value==='2'&&/recebe 35/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpOk'));
+    var vendeu=await ate(function(){return /Vendeu/.test(txt('#mktMsg')||'')},300);
+    ok('vender casa com a compra do livro', vendeu&&/Vendeu 2 × espada enferrujada: entraram 35 de ouro/.test(txt('#mktMsg')), txt('#mktMsg'));
+    ok('o cofre e as peças vêm do banco', sv().cofre===375&&!sv().itens.espada, JSON.stringify([sv().cofre,sv().itens]));
+    ok('a volta é para a lista', visivel('#mktLista')&&!visivel('#mktPeca'));
+    clica(todos('#mktItens li button')[0]);
+    ok('sem a peça, abre comprando, pelo melhor preço de venda', $('#mpLadoC').getAttribute('aria-pressed')==='true'&&$('#mpPreco').value==='25', $('#mpPreco').value);
+    $('#mpQtd').value='3';$('#mpQtd').dispatchEvent(new Event('input'));
+    ok('o resumo da compra diz quanto fica reservado', /Reserva 75 de ouro/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpOk'));
+    var comprou=await ate(function(){return /Comprou/.test(txt('#mktMsg')||'')},300);
+    ok('comprar leva o que há e anuncia o resto', comprou&&/Comprou espada enferrujada por 25 de ouro\\. 2 ficaram anunciadas no livro a 25/.test(txt('#mktMsg')), txt('#mktMsg'));
+    ok('a peça veio e o ouro do resto ficou preso', sv().cofre===300&&sv().itens.espada===1, JSON.stringify([sv().cofre,sv().itens]));
+    ok('a oferta nova aparece nas suas', todos('#mktMinhas li').length===2&&/Compra: 3 × espada enferrujada a 25/.test(txt('#mktMinhas')), txt('#mktMinhas'));
+    clica(todos('#mktMinhas li button')[0]);
+    var cancelou=await ate(function(){return /voltaram ao cofre/.test(txt('#mktMsg')||'')},300);
+    ok('cancelar devolve o ouro preso', cancelou&&/50 de ouro voltaram/.test(txt('#mktMsg'))&&sv().cofre===350, txt('#mktMsg')+' / '+sv().cofre);
+    clica(todos('#mktItens li button')[3]);
+    ok('a cota abre', txt('#mpNome')==='cota de malha', txt('#mpNome'));
+    $('#mpQtd').value='100';$('#mpQtd').dispatchEvent(new Event('input'));
+    ok('sem ouro, o botão não anuncia e o resumo diz quanto falta', $('#mpOk').disabled&&/Faltam/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpLadoV'));
+    ok('vender o que não tem fica bloqueado', $('#mpOk').disabled&&/Você tem 0/.test(txt('#mpRes')||''), txt('#mpRes'));
+    clica($('#mpLadoC'));$('#mpQtd').value='1';$('#mpQtd').dispatchEvent(new Event('input'));
+    window.__nuvem.forcaErro='limite';
+    clica($('#mpOk'));
+    var recusou=await ate(function(){return /10 ofertas abertas/.test(txt('#mktMsg')||'')},300);
+    ok('o erro do banco vira aviso legível e nada muda no cofre', recusou&&$('#mktMsg').classList.contains('ruim')&&sv().cofre===350, txt('#mktMsg'));
+    clica($('#mktBack'));
+    /* outro aparelho negociou: a nuvem tem mkt maior, e a próxima gravação daqui é recusada */
+    window.__nuvem.dados.mkt+=5;window.__nuvem.dados.cofre=999;
+    Tl.abreNpc('banqueiro');
+    clica(todos('#eqList button.rm')[0]);
+    ${espera(2500)}
+    var trocou=await ate(function(){return sv()&&sv().cofre===999},300);
+    ok('save mais velho que o mercado é recusado e o da nuvem entra', trocou&&sv().mkt===window.__nuvem.dados.mkt, sv()&&JSON.stringify([sv().cofre,sv().mkt,window.__nuvem.dados.mkt]));
 `,
   },
   {

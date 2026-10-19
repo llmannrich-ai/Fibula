@@ -69,7 +69,7 @@ export function validaConteudo(c){
    tipo de tile de src/sim/cidade.js); as letras dos NPCs vêm de city.npcs.
    ABRE é o que um NPC pode abrir. */
 export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2};
-export const ABRE=['mercador','banco','cacadas'];
+export const ABRE=['mercador','banco','cacadas','mercado'];
 export let CITY,HUNTS;
 
 /* ---------- classes ----------
