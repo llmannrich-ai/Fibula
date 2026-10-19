@@ -18,6 +18,23 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 02:45 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** habilidades se aprendem com o Mestre de magias (0.21.0), decisão do Leonardo com três escolhas: quem já jogava mantém o que o nível liberou, a de nível 1 continua grátis e as runas continuam à venda. `preco` em cada habilidade do `content.json` (0 no nível 1; 100 a 3.500 até o nível 32); `ch().sabe` no save; `podeAprender()` e `aprende()` em `src/sim/progresso.js` (a aprendida vai para o espaço livre); subir de nível não ensina mais a habilidade com preço, o registro diz quem ensina e quanto custa; o Mestre ganhou a seção "Habilidades da sua classe" (`ensina: true` em `city.npcs`), e o Grimório mostra "no Mestre" e o preço. `confereFicha()` e o resultado da sala só aceitam habilidade sabida.
+
+**Validação:** `node tools/testar.mjs` — 31/31. No Node: personagem novo só sabe a de nível 1, aprender pede nível e ouro, vai para o espaço livre, save antigo (sem `sabe`) fica com tudo do nível, ficha de fora não usa habilidade que não sabe, e o conteúdo sem habilidade grátis no nível 1 ou sem quem ensine é recusado. Navegador: `lojas` compra a Golpe Brutal no Mestre; `nivel-na-incursao` reescrito (o nível 9 não traz mais a Onda de Fogo sozinha). Telas do Mestre e do Grimório conferidas em 390×844.
+
+**Análise:** a decisão muda o ritmo de quem começa agora: o personagem novo chega ao nível 4 sem a segunda habilidade até juntar 150 de ouro. Quem já tinha save não sente nada.
+
+**Roadmap:** item novo em `Concluído`, fora da fila (decisão do dono, PRD 15.1). `Agora` continua "sair cedo".
+
+**Pendências e riscos:**
+- **Preços são chute** (tabela por nível: 3→100, 4→150, 9→500, 15→1.100, 22→2.000, 32→3.500). Concorrem com as melhorias do Mercador, a Forja e as provisões pelo mesmo cofre; medir com o agente de Balanceamento quanto ouro uma caçada típica traz em cada faixa de nível.
+- A morte não leva habilidade; perder o nível não existe, então o que se aprende nunca volta atrás.
+- O convidado da sala que aprende no meio da sala manda a ficha nova só na próxima entrada pela porta (é o fluxo da 0.19).
+
+**Próximo passo recomendado:** o Leonardo criar um personagem novo e jogar até o nível 4–5 para sentir se o ouro chega a tempo da segunda habilidade.
+
 ## 2026-10-19 02:40 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** a cidade cinco vezes maior e as lojas de provisões (0.20.0), a pedido do Leonardo ("amplie o mapa da cidade para cerca de 5 vezes; insira NPCs que vendem itens como mercado de alimentos, poções e magias"). Mapa de 54×38 (2.052 sqm, era 408): praça com fonte e canteiros, templo com estátuas, rio com duas pontes, Torre dos magos do outro lado, pomar, horta, poço, casas de moradores, Quitanda e Feira a céu aberto. Chãos novos (`:` praça, `=` ponte, `v` flores, `h` horta) e objetos sólidos (`OBJETOS` em `src/sim/dados.js`: fonte, poço, barril, caixote, estátua, arbusto, cerejeira, frutífera, forno, estante, banca, lenha), que ficam sobre o chão do vizinho como os NPCs. Mapa da cidade no canto (`drawMiniCidade()`). Três NPCs com `abre: "loja"` e uma tela só (`showLoja()`): Quitandeira (refeição: regenera vida e/ou mana a caçada toda, uma por vez), Boticária (poção a mais, até 5; elixir de pressa no primeiro minuto) e Mestre de magias (runas de pele de pedra, fúria e olho de águia nos primeiros 90 s). Provisões em `supplies` no `content.json`, guardadas em `save.prov`, levadas pela ficha (`prov`) e gastas no `start()`. O buff da provisão mora em `p.sup` e soma ao das habilidades em vez de ser trocado. 15 sprites novos do OTSP no atlas.
@@ -385,28 +402,6 @@ execução precisa saber e não vai descobrir lendo o código.
 - Um commit paralelo (`c0bda09`, `docs/plano-multiplayer.md`) entrou na `main` durante esta sessão, sem conflito.
 
 **Próximo passo recomendado:** playtest do Leonardo na 0.6.0 (sentir a perda e o ritmo do nível 1 ao 3); depois "Sair cedo", medindo de novo com o robô, já que a morte agora custa mais.
-
----
-
-## 2026-10-18 23:45 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** versão 0.5.0 e deploy seguro, a pedido do Leonardo ("atualize as versões e faça o deploy"). `tools/versao.mjs` novo; `?v=0.5.0` no `index.html`, nos 58 imports de `src/` e no `atlas.png`; menu mostra "Protótipo · v0.5.0 · <classe>" (antes "Etapa 3"); tabela "Versões" no README; seção "Versão e deploy" no `CLAUDE.md`.
-
-**Validação:** `node tools/testar.mjs` — 20/20, com `VERSAO_OK` novo e asserção da versão no menu. Sabotagem: um import sem `?v=` em `src/arte.js` → `VERSÃO FALHOU` com o comando que conserta, saída 1. Node conferido antes: o mesmo arquivo com e sem `?v=` vira dois módulos com estados separados — é por isso que o portão exige a mesma versão em tudo.
-
-**Análise:**
-- **O risco era real:** o Pages responde `cache-control: max-age=600` em todo arquivo. Com o jogo em módulos, quem recarregasse até 10 min depois de um deploy podia receber o `index.html` novo e módulos velhos (o recarregar revalida a página, não os módulos), e um import ausente deixa a tela preta. Versão no endereço resolve sem build.
-- `content.json` e `atlas.json` já iam com `cache:'no-cache'`; o `atlas.png` não, e um atlas velho com o JSON novo recortaria os sprites errado — também levou a versão.
-- Deploy continua sendo o push na `main` (Pages publica sozinho). Não há passo extra.
-- Branches antigos no GitHub (`docs/prd`, `teste-ci-quebrada`, `auto/bussola-portal`, `claude/…`) não têm nada que falte na `main`; ficaram, apagar é com o Leonardo.
-
-**Roadmap:** versão 0.5.0 em `Concluído`. `Agora` segue a morte custar XP.
-
-**Pendências e riscos:**
-- **Toda mudança em `src/` ou no `index.html` precisa subir a versão** (`node tools/versao.mjs`). O harness barra import sem versão, mas não percebe versão esquecida num commit que mudou código; um agente que esquecer reabre o risco do cache por 10 minutos.
-- O PWA (item 5) vai trazer service worker; ele passa a controlar o cache e precisa respeitar a mesma versão.
-
-**Próximo passo recomendado:** a morte custar XP (`Agora`), em 0.6.0.
 
 ---
 

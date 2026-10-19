@@ -896,6 +896,19 @@ async function testaSimulacao() {
     if (Object.keys(sv.prov).length) falhas.push(`depois da caçada sobrou no estoque: ${JSON.stringify(sv.prov)}`);
     const f = P.confereFicha({cl: 'feiticeiro', c: {lvl: 3}, up: {}, prov: {pocao: 50, nada: 1}});
     if (!f || f.prov.pocao !== C0.pocao.max || 'nada' in f.prov) falhas.push(`a ficha de fora não aparou as provisões: ${f && JSON.stringify(f.prov)}`);
+    /* aprender com o Mestre de magias: nível e ouro; save de antes fica com o que o nível liberava */
+    novoSave(); const s2 = P.save; P.ch().lvl = 9; s2.cofre = 600;
+    if (JSON.stringify(P.ch().sabe) !== '["faisca"]') falhas.push(`personagem novo devia saber só a Faísca: ${JSON.stringify(P.ch().sabe)}`);
+    if (P.podeAprender('bolaenergia') !== 'nivel' || P.podeAprender('faisca') !== 'sabe' || P.podeAprender('gelo') !== 'sabe') falhas.push('aprender ignora nível, o que já sabe ou a classe');
+    if (!P.aprende('ondafogo') || s2.cofre !== 100 || !P.ch().sabe.includes('ondafogo') || P.ch().slots[1] !== 'ondafogo') falhas.push(`aprender Onda de Fogo: cofre ${s2.cofre}, sabe ${JSON.stringify(P.ch().sabe)}, espaços ${JSON.stringify(P.ch().slots)}`);
+    if (P.aprende('flam') || P.podeAprender('flam') !== 'ouro') falhas.push('aprendeu sem ouro');
+    const velho = P.normaliza({classe: 'druida', chars: {druida: {lvl: 13, xp: 0, slots: ['gelo', 'exura', null, null]}}});
+    if (velho.chars.druida.sabe.join() !== 'gelo,exura,tera,avalanche') falhas.push(`save de antes perdeu habilidade: ${velho.chars.druida.sabe}`);
+    const f2 = P.confereFicha({cl: 'feiticeiro', c: {lvl: 9, slots: ['faisca', 'ondafogo', 'flam', null], sabe: ['faisca', 'flam', 'nucleo']}, up: {}});
+    if (!f2 || f2.c.slots[1] !== null || f2.c.slots[2] !== 'flam' || f2.c.sabe.includes('nucleo')) falhas.push(`a ficha de fora usou habilidade que não sabe: ${f2 && JSON.stringify(f2.c)}`);
+    const ruim2 = (f) => { const c = JSON.parse(CONTEUDO); f(c); try { carrega(c); return null; } catch (e) { return e.message; } finally { carrega(JSON.parse(CONTEUDO)); } };
+    if (!ruim2((c) => { c.spells.faisca.preco = 10; })) falhas.push('classe sem habilidade grátis no nível 1 foi aceita');
+    if (!ruim2((c) => { delete c.city.npcs.mago.ensina; })) falhas.push('habilidade com preço sem ninguém que ensine foi aceita');
   } catch (e) { falhas.push('as provisões quebraram no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   return {falhas, a: a && a.r};
 }
@@ -1169,13 +1182,13 @@ const CASOS = [
   },
   {
     nome: 'lojas',
-    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, só uma refeição por vez, o Guia mostra o que se leva e a caçada gasta tudo',
+    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, só uma refeição por vez, o Guia mostra o que se leva e a caçada gasta tudo; o Mestre ensina a habilidade do nível por ouro, e ela vai para o espaço livre',
     semente: 11,
     save: {'masmorra-runas-v2': {
       cofre: 300, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'cavaleiro',
-      chars: {cavaleiro: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+      chars: {cavaleiro: {lvl: 4, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null], sabe: ['golpe']}},
     }},
     roteiro: `
     clica($('#play'));
@@ -1198,6 +1211,16 @@ const CASOS = [
     ok('o Mestre de magias vende runas', txt('#ljNome')==='Mestre de magias'&&todos('#ljList li').length===3, txt('#ljList'));
     clica(todos('#ljList .buy')[0]);
     ok('a runa da pele de pedra fica guardada', sv().prov.runa_pedra===1&&todos('#ljList .buy')[0].disabled, JSON.stringify(sv().prov));
+    ok('o Mestre lista as habilidades da classe', visivel('#ljHab')&&todos('#ljHab li').length===6, todos('#ljHab li').length);
+    var hb=todos('#ljHab .buy');
+    ok('a de nível 1 já é sabida, a do nível 4 tem preço, a do 10 pede nível', hb[0].textContent==='sabe'&&hb[1].textContent==='150 ouro'&&!hb[1].disabled&&hb[2].disabled&&hb[2].textContent==='nível 10', hb.map(function(b){return b.textContent}).join(' | '));
+    Tl.abreNpc('quitandeira');
+    ok('a loja que não ensina não mostra habilidades', $('#ljHab').hidden&&$('#ljHabT').hidden);
+    Tl.abreNpc('mago');
+    clica(todos('#ljHab .buy')[1]);
+    var cv=sv().chars.cavaleiro;
+    ok('aprender tira do cofre e é para sempre', sv().cofre===5&&cv.sabe.indexOf('brutal')>=0&&todos('#ljHab .buy')[1].textContent==='sabe', sv().cofre+' / '+JSON.stringify(cv.sabe));
+    ok('a habilidade aprendida vai para o espaço livre', cv.slots[1]==='brutal', JSON.stringify(cv.slots));
     clica($('#ljBack'));
     Tl.abreNpc('guia');
     ok('o Guia diz o que vai na caçada', /Presunto defumado/.test(txt('#hProv'))&&/2 × Poção de vida/.test(txt('#hProv')), txt('#hProv'));
@@ -1798,18 +1821,18 @@ const CASOS = [
   },
   {
     nome: 'nivel-na-incursao',
-    o_que: 'subir de nível no meio da incursão: espaço novo e habilidade aprendida precisam virar botão na hora',
+    o_que: 'subir de nível no meio da incursão: a habilidade com preço do nível novo não vem sozinha, o registro diz que o Mestre de magias ensina e por quanto',
     semente: 23,
     limite: 90000,
     patches: [P.tempo(30, 25), P.spawnNaEntrada],
     /* xpNeed(8) é 3379 (progression.xp do content.json): a primeira morte de
-       rato estoura o nível 9, que é onde o Feiticeiro aprende Onda de Fogo e
-       ganha o terceiro espaço */
+       rato estoura o nível 9, que é onde o Feiticeiro pode aprender Onda de
+       Fogo com o Mestre de magias (o terceiro espaço, aberto no 8, fica vago) */
     save: {'masmorra-runas-v2': {
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'feiticeiro',
-      chars: {feiticeiro: {lvl: 8, xp: 3378, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null]}},
+      chars: {feiticeiro: {lvl: 8, xp: 3378, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', 'flam', null, null], sabe: ['faisca', 'flam']}},
     }},
     roteiro: `
     cacar();
@@ -1822,10 +1845,9 @@ const CASOS = [
     ok('subiu de nível matando no meio da incursão', subiu, txt('#lvlT'));
     await quadros(4);
     var c=sv().chars.feiticeiro;
-    ok('a habilidade nova foi para um espaço', c.slots[2]==='ondafogo', JSON.stringify(c.slots));
-    ok('o terceiro botão de ação apareceu na hora', !$('#s2').hidden, 'visíveis: '+[0,1,2,3].filter(function(i){return !$('#s'+i).hidden}).join(','));
-    ok('o terceiro botão mostra a habilidade nova', $('#s2').querySelector('.nm').textContent==='Onda', $('#s2').querySelector('.nm').textContent);
-    ok('o terceiro botão mostra o custo de mana', $('#s2').querySelector('.ct').textContent==='42 mana', $('#s2').querySelector('.ct').textContent);
+    ok('a habilidade com preço não vem sozinha', c.slots[2]===null&&c.sabe.indexOf('ondafogo')<0, JSON.stringify(c.slots)+' / '+JSON.stringify(c.sabe));
+    ok('o registro diz quem ensina e quanto custa', /Onda de Fogo já pode ser aprendida com o Mestre de magias, por 500 de ouro/.test(txt('#log')||''), txt('#log'));
+    ok('sem habilidade nova, o terceiro botão continua escondido', $('#s2').hidden, 'visíveis: '+[0,1,2,3].filter(function(i){return !$('#s'+i).hidden}).join(','));
 `,
   },
   {

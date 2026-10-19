@@ -2,24 +2,29 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais} from './dados.js?v=0.20.1';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.21.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
+/* sabe: as habilidades que o personagem aprendeu (no nível certo e, se têm
+   preço, pagas ao Mestre de magias). Personagem de antes disso (sem sabe) fica
+   com tudo que o nível dele já liberava: ninguém perde o que usava */
+const daClasse=(cl,lvl)=>listaDaClasse(cl).filter(k=>SPELLS[k].lvl<=lvl);
+const confereSabe=(sabe,cl,lvl)=>Array.isArray(sabe)?daClasse(cl,lvl).filter(k=>sabe.includes(k)):daClasse(cl,lvl);
 /* a ficha que um convidado manda ao anfitrião da sala é dado de fora: só
    passa classe que existe, números inteiros no intervalo, habilidades da
-   classe já liberadas no nível e equipamento do espaço certo. Devolve a ficha
-   limpa ou null */
+   classe aprendidas e já liberadas no nível e equipamento do espaço certo.
+   Devolve a ficha limpa ou null */
 export function confereFicha(f){
   if(!f||typeof f!=='object'||!CLASSES[f.cl]||!f.c||typeof f.c!=='object')return null;
   const n=(v,a,b)=>Number.isFinite(v)?Math.max(a,Math.min(b,Math.floor(v))):a,c=f.c,lvl=n(c.lvl,1,200);
-  const slots=[0,1,2,3].map(i=>{const k=Array.isArray(c.slots)&&c.slots[i];return SPELLS[k]&&SPELLS[k].c===f.cl&&SPELLS[k].lvl<=lvl?k:null});
+  const sabe=confereSabe(c.sabe,f.cl,lvl),slots=[0,1,2,3].map(i=>{const k=Array.isArray(c.slots)&&c.slots[i];return sabe.includes(k)?k:null});
   const equip=EQ0();for(const sl of SLOTS_EQ){const k=c.equip&&c.equip[sl];if(ITEMS[k]&&ITEMS[k].slot===sl)equip[sl]=k}
   const up={};for(const k in UP0)up[k]=n(f.up&&f.up[k],0,UP[k]?UP[k].max:0);
   return{cl:f.cl,nome:String(f.nome||CLASSES[f.cl].nome).replace(/[\u0000-\u001f]/g,'').slice(0,20),
-    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,equip},up,prov:soProv(f.prov)};
+    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,sabe,equip},up,prov:soProv(f.prov)};
 }
-export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),equip:EQ0()});
+export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),sabe:daClasse(c,lvl),equip:EQ0()});
 /* cofre (ouro), itens (equipamento guardado), prov (provisões para a próxima
    caçada), mats (materiais para o Gordon) e forja (encomendas entregues) são
    da conta; equip é de cada personagem */
@@ -38,9 +43,9 @@ export const normaliza=s=>{const n=Object.assign(SAVE0(),s);n.up=Object.assign({
   n.itens=soPecas(s.itens);n.prov=soProv(s.prov);n.mats=soMats(s.mats);
   n.forja=Math.max(0,Math.min(FORJA.missoes.length,s.forja|0));
   n.chao=s.chao&&typeof s.chao==='object'&&!Array.isArray(s.chao)?s.chao:{};
-  for(const c of Object.values(n.chars)){const e=EQ0();
+  for(const[cl,c]of Object.entries(n.chars)){const e=EQ0();
     for(const sl of SLOTS_EQ){const id=c.equip&&c.equip[sl];if(id&&ITEMS[id]&&ITEMS[id].slot===sl)e[sl]=id}
-    c.equip=e}
+    c.equip=e;c.sabe=confereSabe(c.sabe,cl,c.lvl|0)}
   return n};
 export let save=SAVE0();
 export const setSave=s=>{save=s};
@@ -70,7 +75,20 @@ export const perdaXp=(c=ch())=>Math.floor(Math.max(0,c.xp)*PROG.xp.deathLoss);
 export const manaPraMag=(n,K=KL())=>Math.round(240*Math.pow(K.mMult,n));
 export const golpesPraPer=(n,K=KL())=>Math.round(12*Math.pow(K.pMult,n-10));
 export const nSlots=(c=ch())=>SLOT_LVL.filter(l=>c.lvl>=l).length;
-export const desbloqueadas=(c=ch(),cl=save.classe)=>listaDaClasse(cl).filter(k=>c.lvl>=SPELLS[k].lvl);
+export const desbloqueadas=(c=ch(),cl=save.classe)=>listaDaClasse(cl).filter(k=>c.lvl>=SPELLS[k].lvl&&(!c.sabe||c.sabe.includes(k)));
+/* ---------- aprender com o Mestre de magias ----------
+   Como no Tibia: a habilidade pede o nível e o ouro. '' se dá para aprender;
+   senão o motivo: 'sabe', 'nivel' ou 'ouro'. Aprendida, vai para um espaço
+   livre, se houver */
+export function podeAprender(k,c=ch()){
+  const s=SPELLS[k];if(!s||s.c!==save.classe||c.sabe.includes(k))return 'sabe';
+  if(c.lvl<s.lvl)return 'nivel';return save.cofre<precoHab(k)?'ouro':'';
+}
+export function aprende(k){
+  const c=ch();if(podeAprender(k,c))return false;
+  save.cofre-=precoHab(k);c.sabe.push(k);
+  const vago=c.slots.findIndex((v,i)=>i<nSlots(c)&&!v);if(vago>=0)c.slots[vago]=k;
+  return true}
 
 export const stats=(c=ch(),cl=save.classe,u=save.up)=>{const K=CLASSES[cl],l=c.lvl;return{
   mhp:Math.round(K.hp+K.ghp*(l-1)+15*u.vigor+eqBonus('vida',c)),

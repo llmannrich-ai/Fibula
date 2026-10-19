@@ -141,6 +141,10 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Habilidades se aprendem com o Mestre de magias (0.21.0)**
+  *(decisão do Leonardo; pilares 2 e 5)*. `preco` em cada habilidade do
+  `content.json`; o nível libera, o ouro ensina; a de nível 1 é grátis; save
+  antigo fica com tudo que o nível liberava. Novo ralo grande do cofre.
 - **2026-10-19 — A cidade cinco vezes maior, com lojas de provisões (0.20.0)**
   *(pedido do Leonardo: "amplie o mapa da cidade para cerca de 5 vezes; insira
   NPCs que vendem itens como mercado de alimentos, poções e magias"; pilares 2

@@ -262,7 +262,11 @@ crescimento.** As mesmas coisas custam preços diferentes para cada classe.
 - **Nível** (`ch().lvl`, `xp`) — sobe matando, custo em `xpNeed()` (curva e
   perda na morte em `progression.xp` do `content.json`; a morte leva uma fatia
   do `xp` do nível, nunca o nível). Define vida,
-  mana e quais habilidades e slots estão liberados.
+  mana, os slots e quais habilidades **podem** ser aprendidas: a de preço 0
+  vem sozinha; as outras (`preco` em `spells`) se aprendem com o Mestre de
+  magias, por ouro do cofre, e ficam em `ch().sabe` (`podeAprender()`,
+  `aprende()`, `desbloqueadas()`). Save de antes da 0.21.0, sem `sabe`, fica
+  com tudo que o nível dele liberava (`normaliza()`).
 - **Magia** (`mag`, `manaG`) — sobe **gastando mana**, custo exponencial em
   `manaPraMag()` com o `mMult` da classe.
 - **Perícia** (`per`, `golpes`) — sobe **acertando golpes**, custo em
@@ -349,7 +353,7 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,equip:{arma,armadura,amuleto}}}}`.
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto}}}}`.
 O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
 próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento

@@ -2,19 +2,19 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.20.1';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP} from './sim/dados.js?v=0.20.1';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv} from './sim/progresso.js?v=0.20.1';
-import {G,setG,newRun} from './sim/incursao.js?v=0.20.1';
-import {C,entraCidade} from './sim/cidade.js?v=0.20.1';
-import {persist,saveFalhou} from './salvar.js?v=0.20.1';
-import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.20.1';
-import {rede,SALAS} from './rede.js?v=0.20.1';
-import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.20.1';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.20.1';
-import {icone} from './arte.js?v=0.20.1';
-import {$,app} from './dom.js?v=0.20.1';
-import {retrato} from './desenho.js?v=0.20.1';
+import {clamp,fmtEl,sementeDe,novaSemente} from './sim/base.js?v=0.21.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,FORJA,SUP} from './sim/dados.js?v=0.21.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.21.0';
+import {G,setG,newRun} from './sim/incursao.js?v=0.21.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.21.0';
+import {persist,saveFalhou} from './salvar.js?v=0.21.0';
+import {desenhaConta,temConta,mercado,cacaComeca,lastroBanco} from './nuvem.js?v=0.21.0';
+import {rede,SALAS} from './rede.js?v=0.21.0';
+import {SALA,MAX,criaSala,entraSala,saiDaSala,entraPorta,dentro} from './sala.js?v=0.21.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.21.0';
+import {icone} from './arte.js?v=0.21.0';
+import {$,app} from './dom.js?v=0.21.0';
+import {retrato} from './desenho.js?v=0.21.0';
 
 export const menu=$('#menu'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja');
 const TELAS=[menu,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS];
@@ -89,7 +89,9 @@ let lojaDe=null;
 function drawLoja(){
   const n=CITY.npcs[lojaDe];
   setT($('#ljCasa'),n.casa);setT($('#ljNome'),n.nome);setT($('#ljGold'),String(save.cofre));
-  setT($('#ljFala'),n.fala+' Provisão vale para uma caçada só.');setT($('#ljLeva'),leva());
+  setT($('#ljFala'),n.fala+(n.ensina?' Habilidade aprendida é para sempre; provisão vale para uma caçada só.':' Provisão vale para uma caçada só.'));setT($('#ljLeva'),leva());
+  for(const id of['#ljHabT','#ljHab','#ljProvT'])$(id).hidden=!n.ensina;
+  if(n.ensina)drawEnsina();
   const ul=$('#ljList');ul.textContent='';
   for(const k of n.vende){
     const s=SUP[k],por=podeComprar(k),tem=save.prov[k]||0;
@@ -107,6 +109,27 @@ function drawLoja(){
     b.textContent=cheio?(s.max>1?'cheio':'guardada'):s.preco+' ouro';b.disabled=!!por;
     b.setAttribute('aria-label',cheio?`${s.nome}: já guardou o máximo para a próxima caçada`:`Comprar ${s.nome} por ${s.preco} de ouro`);
     b.addEventListener('click',()=>{if(compra(k)){persist();drawLoja()}});
+    li.append(info,b);ul.appendChild(li);
+  }
+}
+/* o que o Mestre de magias ensina: as habilidades da classe do personagem,
+   pela ordem de nível; aprendida é para sempre e vai para um espaço livre */
+function drawEnsina(){
+  const ul=$('#ljHab'),c=ch();ul.textContent='';
+  for(const k of listaDaClasse(save.classe)){
+    const s=SPELLS[k],por=podeAprender(k),pr=precoHab(k);
+    const li=document.createElement('li');li.className='up';
+    const info=document.createElement('div');info.className='info';
+    const h=document.createElement('h3');h.textContent=s.n;
+    const d=document.createElement('p');d.textContent=s.d;
+    const m=document.createElement('p');m.className='meta';
+    m.textContent=por==='sabe'?'Aprendida. Equipe no Grimório.':`nível ${s.lvl}`+(por==='nivel'?` · você está no ${c.lvl}`:'');
+    info.append(h,d,m);
+    const b=document.createElement('button');b.type='button';b.disabled=!!por;
+    b.className=por==='sabe'?'buy max':'buy';
+    b.textContent=por==='sabe'?'sabe':por==='nivel'?'nível '+s.lvl:pr+' ouro';
+    b.setAttribute('aria-label',por==='sabe'?`${s.n}: já aprendida`:por==='nivel'?`${s.n}: pede o nível ${s.lvl}`:`Aprender ${s.n} por ${pr} de ouro`);
+    b.addEventListener('click',()=>{if(aprende(k)){persist();log(`Você aprendeu ${s.n}.`,'epic');drawLoja()}});
     li.append(info,b);ul.appendChild(li);
   }
 }
@@ -248,7 +271,7 @@ function drawGrim(){
   }
   const ul=$('#grimList');ul.textContent='';
   for(const k of listaDaClasse(save.classe)){
-    const s=SPELLS[k],liberada=c.lvl>=s.lvl,eq=c.slots.indexOf(k);
+    const s=SPELLS[k],liberada=c.lvl>=s.lvl&&c.sabe.includes(k),eq=c.slots.indexOf(k);
     const li=document.createElement('li');
     li.className='sp'+(eq>=0&&eq<nSlots()?' eq':'')+(liberada?'':' locked');
     li.style.borderLeftColor=s.t==='cura'?'#8ad872':s.t==='buff'?'#f2a33a':EL_COR[s.el];
@@ -258,10 +281,10 @@ function drawGrim(){
     const p=document.createElement('p');p.textContent=s.d;
     const meta=document.createElement('div');meta.className='meta';
     const esc=s.esc==='per'?'Perícia':s.esc==='mag'?'Magia':null;
-    meta.textContent=[`nível ${s.lvl}`,s.mana?`${s.mana} mana`:'sem mana',`${s.cd}s`,esc&&`escala em ${esc}`].filter(Boolean).join(' · ');
+    meta.textContent=[`nível ${s.lvl}`,!c.sabe.includes(k)&&precoHab(k)&&`${precoHab(k)} ouro no Mestre de magias`,s.mana?`${s.mana} mana`:'sem mana',`${s.cd}s`,esc&&`escala em ${esc}`].filter(Boolean).join(' · ');
     info.append(h,p,meta);
     const b=document.createElement('button');b.type='button';
-    if(!liberada){b.disabled=true;b.textContent='nível '+s.lvl}
+    if(!liberada){b.disabled=true;b.textContent=c.lvl>=s.lvl?'no Mestre':'nível '+s.lvl}
     else if(eq>=0&&eq<nSlots()){b.className='rm';b.textContent='guardar';b.addEventListener('click',()=>{c.slots[eq]=null;persist();drawGrim()})}
     else{
       const vago=c.slots.findIndex((v,i)=>i<nSlots()&&!v);
