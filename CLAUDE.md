@@ -140,26 +140,28 @@ jogador hesitar antes do próximo corredor é ter algo a perder.
   vigor, mas tira peso da morte. Está na Parte 6 como pendência **sensível**:
   nenhum agente muda isso sem ele.
 
-#### Pilar 5 — Uma mão, e pode parar a qualquer hora
+#### Pilar 5 — Duas mãos, e pode parar a qualquer hora
 
 O jogo nasce para o toque. O teste é brutal e simples: **dá para jogar bem, em
-pé, no ônibus, com uma mão?** E, quando o ônibus chega, **dá para parar sem
-perder nada que a regra não diga?**
+pé, no ônibus, com o celular nas duas mãos** — o polegar esquerdo anda, o
+direito mira? E, quando o ônibus chega, **dá para parar sem perder nada que a
+regra não diga?** (Até 19/10/2026 era "com uma mão"; o Leonardo trocou por
+duas ao aprovar a mira manual: o jogo sempre se joga com duas.)
 
-- **Regra:** alvo escolhido pelo jogo, não apontado pelo jogador. Poucos
-  botões, grandes (≥ 48 px), na zona do polegar. Toda tela funciona em 360×640
+- **Regra:** o alvo é apontado pelo jogador, como a direção de andar: o botão
+  da habilidade é um joystick (apertar mostra a mira, arrastar escolhe a
+  direção, soltar lança; tocar lança para onde se olha), nada procura o
+  monstro sozinho e o que sai pode errar, gastando mana e recarga. Poucos
+  botões, grandes (≥ 48 px), na zona dos polegares: andar à esquerda,
+  habilidades à direita. Toda tela funciona em 360×640
   retrato. Nada de arrastar e soltar em inventário minúsculo, menu com seis
   níveis ou efeito de passar o mouse; o teclado existe só para desenvolver.
   Sempre há uma saída segura perto: padrão de **60 s** de qualquer ponto de um
   lugar de caça até uma saída (pendência P8 da Parte 6). Sem energia, sem
   vidas que recarregam, sem evento com hora marcada. Tempo morto — andar longe
   à toa na cidade, esperar sem nada a decidir — é defeito.
-- **Em teste (0.34.0, pedido do Leonardo em 19/10/2026):** a mira manual. O
-  botão da habilidade é um joystick (apertar mira, arrastar escolhe a direção,
-  soltar lança) e nada procura o monstro mais perto: o que sai pode errar.
-  Contraria a frase "alvo escolhido pelo jogo" desta regra, que fica até o
-  Leonardo decidir depois de jogar (pendência P10 da Parte 6).
-- **Estado hoje:** controle e telas cumprem. A única saída é a porta na sala de
+- **Estado hoje:** controle e telas cumprem; a mira manual está no ar desde a
+  0.34.0. A única saída é a porta na sala de
   entrada; o mapa de caça tem 64×64 sqm, então do fundo até a porta pode levar
   mais de 60 s.
 
@@ -219,7 +221,7 @@ Cinco perguntas, nesta ordem. Reprovou em uma, está fora.
 1. Isso existiria num mundo que não sabe que você está jogando?
 2. Qual pilar isso serve? Se nenhum, está fora, mesmo que seja boa.
 3. Bate em algum não-objetivo? Se sim, está fora, mesmo que seja ótima.
-4. Dá para fazer com uma mão, em pé, no ônibus?
+4. Dá para fazer com as duas mãos no celular, em pé, no ônibus?
 5. Dá para parar no meio sem perder nada que a regra não diga?
 
 Se a ideia for boa e o pilar parecer errado, diga isso numa issue
@@ -1512,6 +1514,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Mapas de caça fixos**, que se aprendem | Pilar 2 |
 | 19/10 | **Nível 20 em ~3 h de caçada**; evolução lenta | Pilar 3 |
 | 19/10 | **Morte da opção B:** mochila, XP que pode derrubar o nível, chance de perder peça vestida, seguro em ouro; proteção contra queda de conexão antes | Pilar 4 |
+| 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o pilar 5 deixa de exigir uma mão só | Pilar 5; Parte 3, `combate.js` |
 
 ### Pendentes
 
@@ -1528,4 +1531,3 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |
-| P10 | Mira manual das habilidades (em teste na 0.34.0) contra o "alvo escolhido pelo jogo" do pilar 5 (**sensível**) | Fica no ar como teste; o Leonardo decide depois de jogar se a regra do pilar 5 muda ou se a mira volta a ser automática | Depois do teste do Leonardo |

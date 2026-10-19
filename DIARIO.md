@@ -18,6 +18,14 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 22:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** decisão do Leonardo registrada no guia, sem código. Ele testou a mira manual (0.34.0) no celular e aprovou "por agora": o jogo se joga sempre com duas mãos. O pilar 5 virou "Duas mãos, e pode parar a qualquer hora", a regra passou a dizer que o alvo é apontado pelo jogador, a pergunta 4 do teste das ideias fala em duas mãos, a P10 saiu das pendências e entrou em "Em vigor".
+
+**Validação:** só texto; nenhum arquivo de `src/` tocado.
+
+**Pendências e riscos:** "por agora": se testadores reclamarem do esforço de mirar o ataque básico, o meio-termo conversado é alvo automático só no ataque básico e mira nas magias fortes. O Balanceamento não deve supor que todo tiro acerta.
+
 ## 2026-10-19 10:42 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** mapas vestidos (0.37.0), a pedido do Leonardo ("o mapa está pobre para a arte do Tibia que temos"). Objetos sólidos por lugar em `hunts.<k>.mapa.objetos` (pilar, barril, caixote, rocha, sarcófago, gárgula, estátua, palmeira, cacto), postos por `objetos()` em `src/sim/mapa.js` com um hash da semente — não com o sorteio da regra, para a sequência de monstros, dano e loot não mudar — e recusados se fecharem caminho. Ficam em `G.g` com o valor 2: `solid()` passou a ser `g!==0`, o campo de fluxo e o projétil já paravam neles, `pecas()` só monta parede no valor 1 e o spawn pula o sqm de objeto. No desenho, `vesteMapa()` monta uma vez por masmorra a variante do chão, o detalhe (`arte.detalhes`: teias, pedrinhas, sangue, ossadas, grade, lodo, tufos, velas) e o sprite de cada objeto; a Ilha trocou o muro por mata (`arte.borda`). 54 sprites novos do OTSP (atlas de 502 KB para 584 KB). Plano das fases seguintes e pesquisa de fontes legais de mapa em `docs/plano-mapas.md`.
@@ -333,23 +341,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - A arte do OTSP não tem pão nem lampião de rua: a cesta de frutas é uma maçã e os cantos da praça viraram arbustos floridos.
 
 **Próximo passo recomendado:** o Leonardo andar pela cidade no celular e dizer se o tamanho e as distâncias estão bons; depois, "Sair cedo" (`Agora`).
-
-## 2026-10-19 01:55 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a masmorra da sala sem tempo, com porta (0.19.0), a pedido do Leonardo ("entrada e saída por uma porta acessível por qualquer usuário; fecha quando quem criou fecha na cidade ou sai do programa"), com as três escolhas dele: sem tempo, monstros renascem, porta na sala de entrada. Modo "masmorra aberta" em `src/sim/incursao.js` (`newRun(s,fichas,true)`, `entra()`, `repovoa()`, `progression.respawn` no `content.json`); `src/sala.js` troca o "começar com o grupo" por `entraPorta()`/`porta`; o Guia de caça mostra quem está na masmorra e o botão "Entrar pela porta"; a presença da cidade segue com `longe` enquanto o anfitrião caça, para a sala não sumir da lista.
-
-**Validação:** `node tools/testar.mjs` — 27/27; os dois casos da sala reescritos para o fluxo novo (entrar, sair, voltar a entrar, anfitrião entrando depois, masmorra que não desaba, fechar com gente dentro). No Node: não desaba depois do tempo da solo, quem entra não sai sem querer pela porta, a sala repovoa em 60 s e não repovoa com jogador perto, sair pela porta guarda o saco e entrar de novo dá jogador novo. Quatro sabotagens barradas. Dois Chromium no Realtime de verdade, duas rodadas verdes: B entra sozinho com o anfitrião na cidade, anda e é visto, o anfitrião entra depois, B sai com o saco e volta, o anfitrião sai e fecha a sala, B volta à cidade. Tela conferida em 360×640.
-
-**Análise:** a masmorra da sala nasce com o grupo de um (o anfitrião), então tem menos monstros que antes na largada (~40 contra ~66 com dois); o respawn sobe o normal de cada sala com quem está dentro. Com a porta na entrada e sem tempo, o risco da sala é só o caminho de volta com o saco cheio.
-
-**Roadmap:** item em `Concluído`, fora da fila (pedido do dono, PRD 15.1). `Agora` continua "sair cedo", que agora vale só para o solo.
-
-**Pendências e riscos:**
-- **Conflito com o pilar das partidas curtas**, aceito pelo Leonardo: na sala não há pressão de tempo; o solo continua com 6 minutos. Medir no playtest se a sala virou farm sem risco.
-- O anfitrião continua não podendo deixar o jogo em segundo plano: a masmorra congela para quem está dentro, e em 12 s eles voltam sem resultado.
-- O anfitrião não troca de personagem com a sala aberta (trocar fecha a sala).
-- A masmorra do anfitrião roda sem parar enquanto a sala existir; com a aba aberta horas, `G.t` cresce sem limite (inofensivo) e os cadáveres ficam capados em 60.
-- O Guardião renasce também: matar o chefe e esperar 60 s longe dele é farm. Se pesar, `progression.respawn` ganha um tempo próprio para o chefe.
-- Mesclado com a Forja, as peças no chão e o registro de caçada (0.18.0): cada entrada pela porta abre um registro de caçada na nuvem e cada saída fecha o dele. A **Mochila do convidado** mostra o saco local, que o retrato não sincroniza (só o valor): o saco de verdade é o do anfitrião e chega inteiro no resultado.
-
-**Próximo passo recomendado:** o Leonardo testar com um amigo: entrar em momentos diferentes, sair e voltar, e dizer se a sala sem tempo ficou boa; depois, "Sair cedo" (`Agora`).
