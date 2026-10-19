@@ -332,6 +332,7 @@ h2.lost{color:var(--hp)}
 .minfo{margin:0;min-height:2.8em;font:11px/1.4 var(--f-body);color:var(--muted)}
 .minfo b{color:var(--bone)} .minfo b.r1{color:var(--rare)} .minfo b.r2{color:var(--epic)}
 .mochila .risco{font-size:11px}
+.macoes{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px} .macoes[hidden]{display:none} .macoes .cta{padding:10px;font-size:13px}
 .mvenda{display:grid;gap:6px} .mvenda[hidden]{display:none} .mvenda .cta{padding:10px;font-size:13px} .mvenda .passo{grid-template-columns:44px 1fr 44px} .mvenda .passo input{padding:6px}
 .mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
 /* tela baixa: a janela sobe por cima do minimapa, o boneco encolhe e o corpo fica só com as duas linhas de cima
@@ -378,15 +379,16 @@ h2.lost{color:var(--hp)}
       <div class="mbar"><span id="moEye">Mochila</span><button class="mx" id="moX" type="button" aria-label="Fechar a mochila">✕</button></div>
       <div class="doll"><div class="tib" id="moDoll"></div><button class="fig" id="moFig" type="button" aria-label="Girar o personagem para ver o que ele veste"><canvas width="256" height="256"></canvas><b></b></button></div>
       <p class="eqtot" id="moTot"></p>
-      <div class="mtit"><span id="moTit">Saco</span> <span id="moVal"></span></div>
-      <p class="risco" id="moRisco"></p>
-      <div class="grade" id="moGrade"></div>
       <p class="minfo" id="moInfo" role="status"></p>
+      <div class="macoes" id="moAcoes" hidden></div>
       <div class="mvenda" id="moVenda" hidden>
         <div class="passo"><button class="ghost" type="button" id="mvMenos" aria-label="Baixar o preço">−</button><input id="mvPreco" type="number" inputmode="numeric" min="1" max="1000000" step="1" aria-label="Preço na Feira, por peça"><button class="ghost" type="button" id="mvMais" aria-label="Subir o preço">+</button></div>
         <button class="cta" type="button" id="mvOk">Vender 1 na Feira</button>
         <p class="minfo" id="mvMsg" role="status"></p>
       </div>
+      <div class="mtit"><span id="moTit">Saco</span> <span id="moVal"></span></div>
+      <p class="risco" id="moRisco"></p>
+      <div class="grade" id="moGrade"></div>
     </div>
   </section>
 
@@ -593,7 +595,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.23.0"></script>
+<script type="module" src="src/main.js?v=0.24.0"></script>
 
 </body>
 </html>

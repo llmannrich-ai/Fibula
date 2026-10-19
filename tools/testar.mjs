@@ -897,6 +897,19 @@ async function testaSimulacao() {
     novoSave(); I.newRun(51);
     if (I.G.caca !== 'runas' || retrato().split('|')[0] !== fotos.runas) falhas.push('newRun sem mapa de caça não deu a Masmorra de Runas');
   } catch (e) { falhas.push('a cidade quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  /* vestir na caçada: a peça sai do saco e vale na hora, a do corpo vai para
+     o saco; trocar não cura; a origem conta só o que veio desta caçada */
+  try {
+    novoSave(); P.ch().equip.amuleto = 'amuleto'; I.newRun(37); const p = I.G.p, vida = p.mhp;
+    p.bag = {machado: 1, amuleto: 1}; p.bagVal = 0; p.hp = 40;
+    if (!Cb.vesteDoSaco(p, 'machado') || P.ch().equip.arma !== 'machado' || p.bag.machado) falhas.push(`vestir o machado do saco: ${JSON.stringify(P.ch().equip)} saco ${JSON.stringify(p.bag)}`);
+    if (!Cb.tiraProSaco(p, 'amuleto') || P.ch().equip.amuleto || p.bag.amuleto !== 2 || p.mhp !== vida - 15) falhas.push(`tirar o amuleto: saco ${JSON.stringify(p.bag)}, vida ${p.mhp} de ${vida}`);
+    if (!Cb.vesteDoSaco(p, 'amuleto') || p.mhp !== vida || p.hp !== 40) falhas.push(`vestir de novo mudou a vida atual: ${p.hp}/${p.mhp}`);
+    if (JSON.stringify(Cb.pecasDaCaca(p)) !== '{"amuleto":1,"machado":1}') falhas.push(`origem das peças da caçada: ${JSON.stringify(Cb.pecasDaCaca(p))}`);
+    Cb.tiraProSaco(p, 'amuleto');
+    if (JSON.stringify(Cb.pecasDaCaca(p)) !== '{"amuleto":1,"machado":1}') falhas.push(`o amuleto que já era do corpo ganhou origem: ${JSON.stringify(Cb.pecasDaCaca(p))}`);
+    p.fora = 'morreu'; if (Cb.vesteDoSaco(p, 'amuleto')) falhas.push('vestiu depois de sair da caçada');
+  } catch (e) { falhas.push('vestir na caçada quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* provisões das lojas: comprar tira do cofre e respeita o máximo e o grupo
      (uma refeição); a caçada aplica poções, regeneração e buffs do começo,
      o buff da provisão soma ao da habilidade e acaba no tempo; e só start()
@@ -1472,6 +1485,15 @@ const CASOS = [
     ok('o boneco vestido aparece ao lado do corpo', visivel('#moFig'));
     ok('o total vestido aparece', txt('#moTot')==='Vestido: +10% de dano. Vida 85 · Mana 95', txt('#moTot'));
     ok('na cidade o saco está vazio, em grade', cheias().length===0&&todos('#moGrade .cel').length===12, todos('#moGrade .cel').length);
+    clica($('#moDoll .s-arma'));
+    var acao=function(){return $('#moAcoes button')};
+    ok('a arma vestida oferece guardar no cofre', visivel('#moAcoes')&&txt('#moAcoes button')==='Guardar no cofre', txt('#moAcoes'));
+    clica(acao());
+    ok('guardar tira a arma do corpo e põe no cofre', !sv().chars.feiticeiro.equip.arma&&sv().itens.machado===1&&cheias().length===1, JSON.stringify(sv().itens));
+    clica(cheias()[0]);
+    ok('a peça do cofre oferece vestir', txt('#moAcoes button')==='Vestir', txt('#moAcoes'));
+    clica(acao());
+    ok('vestir do cofre volta a arma ao corpo', sv().chars.feiticeiro.equip.arma==='machado'&&!sv().itens.machado&&cheias().length===0, JSON.stringify(sv().chars.feiticeiro.equip));
     tecla('keydown','KeyB');tecla('keyup','KeyB');
     ok('B fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
     clica(bt);
@@ -1486,6 +1508,9 @@ const CASOS = [
     clica(cheias()[1]);
     ok('tocar numa peça diz o que ela é', txt('#moInfo')==='espada enferrujada · vale 20 de ouro · Arma, +6% de dano. Ao extrair, vai para o Banco.', txt('#moInfo'));
     ok('a peça tocada fica marcada', $('#moGrade .cel.on')&&$('#moGrade .cel.on').dataset.k==='espada');
+    ok('a peça do saco oferece trocar pela vestida', txt('#moAcoes button')==='Trocar', txt('#moAcoes'));
+    clica($('#moAcoes button'));
+    ok('trocar na caçada veste a espada e põe o machado no saco', /^Arma: espada/.test($('#moDoll .s-arma').getAttribute('aria-label')||'')&&txt('#moVal')==='228 ouro'&&txt('#moTot').indexOf('+6% de dano')>0, txt('#moVal')+' · '+txt('#moTot'));
     var t0=txt('#timeT');
     await quadros(40);
     ok('o jogo não pausa com a mochila aberta', txt('#timeT')!==t0&&aberta(), t0+' → '+txt('#timeT'));
@@ -1495,6 +1520,7 @@ const CASOS = [
     var acabou=await ate(function(){return visivel('#end')},1500);
     ok('a incursão acabou', acabou);
     ok('a tela final fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
+    ok('a espada vestida na caçada ficou no corpo depois do fim', sv().chars.feiticeiro.equip.arma==='espada', JSON.stringify(sv().chars.feiticeiro.equip));
 `,
   },
   {

@@ -6,10 +6,10 @@
    for compartilhada (F3 do PRD), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.23.0';
-import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.23.0';
-import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.23.0';
-import {pecas} from './mapa.js?v=0.23.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.24.0';
+import {ch,durPasso,save,pegaDoChao} from './progresso.js?v=0.24.0';
+import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.24.0';
+import {pecas} from './mapa.js?v=0.24.0';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho, 7 praça, 8 ponte, 9 flores, 10 horta) ou obstáculo (1 parede,

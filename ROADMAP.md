@@ -130,6 +130,14 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Vestir e tirar pela Mochila, também na caçada (0.24.0)**
+  *(pedido e decisão do Leonardo: "como o personagem vai equipar?"; vestir na
+  caçada como no Tibia; pilares 1 e 3)*. Toque na peça, botão grande. Na
+  cidade troca com o cofre; na caçada com o saco (`vesteDoSaco()`,
+  `tiraProSaco()` em `src/sim/combate.js`): a vestida não cai na morte, a que
+  sai vai para o saco. Trocar não cura. A extração dá origem na nuvem só ao que
+  veio da caçada (`pecasDaCaca()`). Fora da sala de caçar junto.
+
 - **2026-10-19 — A Mochila com o corpo do inventário do Tibia (0.23.0)**
   *(pedido do Leonardo: "algo que se assemelha ao do Tibia, equipamentos em
   posição de uso"; pilar 1)*. Três colunas como a janela do Tibia: amuleto,
