@@ -8,8 +8,8 @@ Protótipo jogável de um RPG de extração para celular.
 
 - Arraste o lado esquerdo da tela para andar.
 - Segure um botão de habilidade para repeti-la assim que ela sair da recarga. **Poção** cura.
-- O portal de saída abre aos 1:30. Fique 2,5 s nele para extrair. Se morrer, perde o loot do saco.
-- Com o portal aberto, uma bússola aparece ao lado do minimapa apontando a direção dele.
+- Não há relógio: saia pela porta da sala de entrada quando quiser, parado nela por 2,5 s. Se morrer, perde a mochila.
+- As regras completas estão no botão **Regras**, na tela inicial.
 - Teclado: WASD anda, **J K L I** são os quatro espaços de habilidade, **P** bebe poção.
 - Cada masmorra tem um número, mostrado na tela final. Para jogar a mesma de
   novo — ou a mesma que um amigo —, abra o jogo com `?semente=` e o número no
@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.29.0 (19/10/2026) | Tela inicial nova: o personagem, o preço da morte em uma linha, Jogar e a conta, tudo sem rolar. As regras e os créditos da arte foram para o botão **Regras**; os números da conta, para Personagens. Quem ainda não tem personagem vê o login antes de criar um |
 | 0.28.0 (19/10/2026) | O mundo é igual para todos: os monstros e os chefes têm a mesma força para qualquer nível e qualquer tamanho de grupo. A dificuldade vem do lugar que você escolhe; cada lugar mostra o nível recomendado |
 | 0.27.0 (19/10/2026) | Inventário como no Tibia: o saco saiu e ficaram a mochila e o cofre. O loot fica na mochila do personagem depois da caçada, vai junto na próxima e cai inteiro se ele morrer. Só o cofre do Banco é seguro: o Banqueiro guarda uma coisa ou tudo e devolve peças e ouro à mochila. Vestir e tirar pela Mochila, na cidade, agora troca com a mochila. A mochila tem 20 espaços; cheia, o loot fica no chão |
 | 0.26.0 (19/10/2026) | Vestir e tirar pela Mochila, sem ir ao Banco: toque numa peça e no botão. Na cidade, a troca é com o cofre do Banco; na caçada, como no Tibia, com o saco: a peça que você acabou de pegar vale na hora e passa a não cair na morte, e a que sai do corpo vai para o saco e corre o risco dele |

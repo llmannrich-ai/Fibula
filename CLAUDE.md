@@ -302,7 +302,7 @@ fase.
 
 | Fase | Entrega | Estado | Pronto quando |
 |---|---|---|---|
-| **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: tela de créditos e PWA instalável | Créditos no jogo e PWA instalável |
+| **F0 · Fundação** | Código em módulos com a simulação sem DOM; sorteio com semente e passo fixo; testes e CI; aviso de save e migração testada; sprites do OTSP; fontes do sistema | ✅ Falta: PWA instalável (os créditos estão nas Regras desde a 0.29.0) | PWA instalável |
 | **F1 · Personagem e mundo** | Contas e save na nuvem ✅, 4 classes ✅, equipamento ✅, lugares de caça com nome ✅; **os pilares desta guia**: mapas fixos, morte da opção B com proteção contra queda, curva de 3 h até o nível 20, saída a ≤ 60 s; telemetria mínima | Em andamento | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op autoritativo** | Servidor próprio rodando `src/sim/`, salas de 1 a 4 para desconhecidos, convite por link, reconexão | Só a sala entre amigos (anfitrião calcula) | 4 celulares completam uma caçada juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Cidade compartilhada ✅ (Realtime), Feira ✅; chat com filtro, grupos, amigos, guildas | Parcial | 100 simultâneos estáveis; moderação básica (denunciar, silenciar, banir) |
@@ -341,7 +341,7 @@ modificação permitidos, crédito aos autores obrigatório.
    tabela `ARTE` do script e rode `node tools/sprites.mjs` (o `--catalogo`
    grava folhas com o id de cada sprite).
 2. `assets/CREDITOS.md` lista origem, licença e alterações de cada arquivo; a
-   tela de créditos do jogo mostra esse conteúdo (pendente, F0).
+   seção "Créditos" da tela de Regras mostra esse conteúdo no jogo.
 3. Um atlas por lugar quando o atlas único passar do orçamento de download.
 4. **Proibido:** arte de `Tibia.spr`/`Tibia.dat`, do site oficial, da TibiaWiki
    ou de pacote sem licença explícita. Na dúvida, não use e abra issue. Arte de
@@ -604,7 +604,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
-- `telas.js` — **telas** (`showMenu()`, `start()`, `showEnd()`), **cidade**
+- `telas.js` — **telas** (`showMenu()`, a tela inicial: o personagem, o preço
+  da morte em uma linha (`riscoCurto()`), Jogar, a conta e o rodapé Regras ·
+  Personagens · Grimório; sem personagem, Jogar vira Criar personagem;
+  `showRegras()`, cujos números saem do `content.json`; `start()`,
+  `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),
   **feira** (`showFeira()`, a tela do mercado entre jogadores, aberta pelo
   Corretor),
