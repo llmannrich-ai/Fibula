@@ -736,19 +736,19 @@ async function testaSimulacao() {
     novoSave();
     const W = JSON.parse(CONTEUDO).progression.walk, c = P.ch();
     c.lvl = 1; const d1 = P.durPasso(c); c.lvl = 200; const dmax = P.durPasso(c); c.lvl = 1;
-    /* a fórmula do Tibia: nível 1 (220) = 550 ms; nível 200 (618) = 250 ms; 150 (orc) = 800 ms */
-    if (d1 !== 0.55 || dmax !== 0.25 || P.passoDaVel(150) !== 0.8) falhas.push(`passo do nível 1 = ${d1} s, nível 200 = ${dmax} s, velocidade 150 = ${P.passoDaVel(150)} s (esperado 0,55, 0,25 e 0,8 como no Tibia)`);
-    if (P.durPasso(c, 0.5) !== 0.4) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)} (esperado 0,4)`);
+    /* a fórmula do Tibia com chão 130: nível 1 (220) = 500 ms; nível 200 (618) = 250 ms; 150 (orc) = 700 ms */
+    if (d1 !== 0.5 || dmax !== 0.25 || P.passoDaVel(150) !== 0.7) falhas.push(`passo do nível 1 = ${d1} s, nível 200 = ${dmax} s, velocidade 150 = ${P.passoDaVel(150)} s (esperado 0,5, 0,25 e 0,7 com chão ${W.ground})`);
+    if (P.durPasso(c, 0.5) !== 0.35) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)} (esperado 0,35)`);
     I.newRun(7); I.G.active = true;
     const p = I.G.ps[0], cx = (t) => (t + 0.5) * 32;
     if (p.x !== cx(p.tx) || p.y !== cx(p.ty)) falhas.push(`o jogador não nasce no centro de um sqm (${p.x},${p.y})`);
-    /* leste por 2,2 s: 4 passos de 0,55 s, e para no centro do sqm */
+    /* leste por 1,8 s: 4 passos de 0,5 s começam, e ele para no centro do sqm */
     const leste = {x: 1, y: 0, held: [false, false, false, false]}, nada = {x: 0, y: 0, held: [false, false, false, false]};
     let livres = 0; while (!I.solid(p.tx + livres + 1, p.ty) && livres < 8) livres++;
     const x0 = p.tx, alvo = Math.min(4, livres);
-    for (let i = 0; i < 44; i++) I.passo(0.05, leste);
+    for (let i = 0; i < 36; i++) I.passo(0.05, leste);
     for (let i = 0; i < 12; i++) I.passo(0.05, nada);
-    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 2,2 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
+    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 1,8 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
     /* um monstro por sqm, nenhum no sqm de um jogador, em toda uma incursão com o jogador andando */
     I.newRun(11); I.G.active = true;
     const roteiro = [{x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 1, y: 1}];

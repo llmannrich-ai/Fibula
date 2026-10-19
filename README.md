@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.16.0 (19/10/2026) | Todo mundo anda uns 15% mais rápido: o personagem do nível 1 dá um passo a cada 0,5 s (2 sqm/s), e os monstros aceleram na mesma proporção |
 | 0.6.0 (18/10/2026) | Morrer custa 25% da experiência do nível (nunca o nível), com aviso no menu e linha própria na tela final; curva de nível mais lenta, ajustável no `content.json` |
 | 0.15.0 (19/10/2026) | A Feira só aceita o que tem origem registrada no banco: o que foi extraído, comprado, recebido na Feira ou vendido ao Banco com a conta ligada. Na caçada, a Mochila vende uma peça do saco direto na Feira |
 | 0.14.0 (19/10/2026) | Caçar junto: no Guia de caça, crie uma sala ou entre na de quem está na cidade (até 4). O aparelho de quem criou calcula a caçada de todos; loot disputado, mais monstros, e cada um sai pelo portal quando quiser. A sala fica aberta até quem criou fechar ou sair do jogo |

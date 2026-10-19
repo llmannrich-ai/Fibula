@@ -313,9 +313,10 @@ começo do passo**. Regras:
 
 - **Velocidade do Tibia** (`progression.walk`): jogador `220 + 2·(nível−1)`,
   vezes o buff `velo`; monstro, o `spd` dele na mesma unidade, vezes a
-  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`
-  (nível 1 = 550 ms, 1,8 sqm/s; nível 100 = 350 ms; `spd` 150 = 800 ms),
-  arredondado para múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
+  lentidão. O passo sai da fórmula do Forgotten Server em `passoDaVel()`,
+  com o chão `ground` 130 (o do Tibia é 150; ~15% mais rápido, pedido do
+  Leonardo): nível 1 = 500 ms, 2 sqm/s; nível 100 = 300 ms; `spd` 150 =
+  700 ms; arredondado para cima em múltiplos de 50 ms. Diagonal dura `diagonal` vezes mais e
   não corta quina (`passoPara()` escorrega pelo eixo livre).
 - **Bloqueio de corpo.** `G.ocu` marca os sqm com monstro, refeito a cada
   passo da regra: monstro não entra em sqm de monstro nem de jogador, jogador
