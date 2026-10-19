@@ -752,9 +752,9 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<item>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
 O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
-próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
+próxima caçada em `prov`, o resto do que se guarda no Banco como item — materiais do Gordon e tesouros — em `mats`; só a moeda vira ouro no cofre, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento
 vestido e a mochila) fica em `chars`, um por classe.
 

@@ -512,7 +512,7 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
       <h2>Banco</h2>
-      <p class="lede">O que está na mochila vai com você para a caçada e cai se você morrer. O que está no cofre fica guardado e serve a qualquer personagem da conta. O que este personagem veste é só dele e não cai na morte.</p>
+      <p class="lede">O que está na mochila vai com você para a caçada e cai se você morrer. O que está no cofre fica guardado, item por item, e serve a qualquer personagem da conta. O que este personagem veste é só dele e não cai na morte.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="eqGold">0</b></div>
       <h3 class="sub">Levar ouro do cofre na mochila</h3>
       <div class="retira"><div class="passo"><button class="ghost" type="button" id="eqMenos" aria-label="Menos ouro">−</button><input id="eqQtd" type="number" inputmode="numeric" min="1" step="1" value="100" aria-label="Quanto ouro levar na mochila"><button class="ghost" type="button" id="eqMais" aria-label="Mais ouro">+</button></div><button class="ghost" type="button" id="eqRetira">Retirar</button></div>
@@ -525,7 +525,7 @@ h2.lost{color:var(--hp)}
       <button type="button" class="boneco" id="eqBoneco" aria-label="Girar o personagem para ver o que ele veste" hidden><canvas width="256" height="256"></canvas></button>
       <div class="slots eqs" id="eqSlots"></div>
       <p class="eqtot" id="eqTot"></p>
-      <h3 class="sub">Peças no cofre</h3>
+      <h3 class="sub" id="eqCofreT">No cofre</h3>
       <ul id="eqList" class="eql"></ul>
       <button class="ghost voltar" id="eqBack">Voltar ao acampamento</button>
     </div>
@@ -535,14 +535,14 @@ h2.lost{color:var(--hp)}
     <div class="panel">
       <p class="eyebrow">Forja</p>
       <h2>Gordon</h2>
-      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Materiais guardados no Banco ficam aqui no depósito, que é da conta; morrer com eles na mochila perde, como o resto.</p>
+      <p class="lede">Gordon compra os materiais que os monstros deixam, a preço baixo. Cada encomenda que você entrega libera peças melhores na loja dele. Os materiais guardados no cofre do Banco aparecem aqui; morrer com eles na mochila perde, como o resto.</p>
       <div class="vault"><span>Ouro no cofre</span><b id="fgGold">0</b></div>
       <p class="mmsg" id="fgMsg" role="status"></p>
       <h3 class="sub">Encomenda</h3>
       <ul class="fg" id="fgMissao"></ul>
       <h3 class="sub">À venda</h3>
       <ul class="fg" id="fgLoja"></ul>
-      <h3 class="sub">Materiais no depósito</h3>
+      <h3 class="sub">Materiais no cofre</h3>
       <ul class="fg" id="fgMats"></ul>
       <button class="ghost voltar" id="fgBack">Voltar ao acampamento</button>
     </div>
@@ -614,7 +614,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.29.0"></script>
+<script type="module" src="src/main.js?v=0.30.0"></script>
 
 </body>
 </html>

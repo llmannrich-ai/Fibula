@@ -612,9 +612,10 @@ async function testaSimulacao() {
   finally { for (const k of Object.keys(saida)) saida[k] = () => {}; }
   try {
     const sv = P.SAVE0(); sv.classe = 'cavaleiro'; sv.chars.cavaleiro = P.novoChar('cavaleiro'); P.setSave(sv);
-    /* gema vira ouro, cota vai para o Banco, dente vai para o depósito do Gordon */
+    /* a moeda vira ouro no cofre; cota, gema e dente ficam guardados como item */
     const r = P.guardaSaco({ouro: 50, dente: 2, gema: 1, cota: 1});
-    if (r.ouro !== 170 || r.pecas !== 1 || r.mats !== 2 || sv.cofre !== 170 || sv.itens.cota !== 1 || sv.mats.dente !== 2) falhas.push(`guardaSaco: ${JSON.stringify(r)} / ${JSON.stringify(sv)}`);
+    if (r.ouro !== 50 || r.pecas !== 1 || r.mats !== 3 || sv.cofre !== 50 || sv.itens.cota !== 1 || sv.mats.dente !== 2 || sv.mats.gema !== 1) falhas.push(`guardaSaco: ${JSON.stringify(r)} / ${JSON.stringify(sv)}`);
+    if (P.vender('dente') || !P.vender('gema') || sv.cofre !== 170 || sv.mats.gema) falhas.push(`o Banco vende tesouro e não material: cofre ${sv.cofre}`);
     const red0 = P.eqBonus('red');
     if (!P.equipar('cota') || sv.chars.cavaleiro.equip.armadura !== 'cota' || sv.itens.cota || P.eqBonus('red') - red0 !== 0.08) falhas.push('equipar a cota não vestiu nem somou a defesa');
     if (P.vender('cota')) falhas.push('vendeu uma peça que não estava no cofre');
@@ -639,8 +640,9 @@ async function testaSimulacao() {
     const g1 = P.guardaUm('espada');
     if (!g1 || g1.pecas !== 1 || c.mochila.espada !== 1 || sv.itens.espada !== 1) falhas.push(`guardar uma espada: ${JSON.stringify(c.mochila)} / ${JSON.stringify(sv.itens)}`);
     const g2 = P.guardaMochila();
-    if (g2.ouro !== 150 || g2.mats !== 3 || sv.cofre !== 150 || sv.itens.espada !== 2 || sv.mats.seda !== 3 || Object.keys(c.mochila).length) falhas.push(`guardar tudo: ${JSON.stringify(g2)}, cofre ${sv.cofre}, mochila ${JSON.stringify(c.mochila)}`);
-    if (!P.leva('espada') || c.mochila.espada !== 1 || sv.itens.espada !== 1 || !P.retira(50) || c.mochila.ouro !== 50 || sv.cofre !== 100) falhas.push(`levar do cofre: mochila ${JSON.stringify(c.mochila)}, cofre ${sv.cofre}`);
+    if (g2.ouro !== 30 || g2.mats !== 4 || sv.cofre !== 30 || sv.itens.espada !== 2 || sv.mats.seda !== 3 || sv.mats.gema !== 1 || Object.keys(c.mochila).length) falhas.push(`guardar tudo: ${JSON.stringify(g2)}, cofre ${sv.cofre}, mochila ${JSON.stringify(c.mochila)}`);
+    if (!P.leva('espada') || c.mochila.espada !== 1 || sv.itens.espada !== 1 || !P.retira(20) || c.mochila.ouro !== 20 || sv.cofre !== 10) falhas.push(`levar do cofre: mochila ${JSON.stringify(c.mochila)}, cofre ${sv.cofre}`);
+    if (!P.leva('seda') || c.mochila.seda !== 3 || sv.mats.seda) falhas.push(`levar a pilha de seda: mochila ${JSON.stringify(c.mochila)}, cofre ${JSON.stringify(sv.mats)}`);
     /* cheia: peça de equipamento ocupa um espaço cada, o resto empilha */
     c.mochila = {espada: cap - 1, ouro: 5};
     if (P.cabe(c.mochila, 'espada') || !P.cabe(c.mochila, 'ouro') || P.cabe(c.mochila, 'gema') || P.leva('espada')) falhas.push('a mochila cheia ainda aceitou peça nova');
@@ -671,7 +673,7 @@ async function testaSimulacao() {
     sv.cofre = lib1.preco;
     if (!P.comprarForja(lib1.item) || sv.cofre !== 0 || sv.itens[lib1.item] !== 1) falhas.push('comprar na forja não pôs a peça no cofre');
     const n = P.normaliza({classe: 'cavaleiro', chars: {}, mats: {seda: 3, gema: 2, cota: 1, sumiu: 4, osso: -1}, forja: 99});
-    if (JSON.stringify(n.mats) !== '{"seda":3}' || n.forja !== F.missoes.length) falhas.push(`normaliza da forja: ${JSON.stringify(n.mats)} / ${n.forja}`);
+    if (JSON.stringify(n.mats) !== '{"seda":3,"gema":2}' || n.forja !== F.missoes.length) falhas.push(`normaliza da forja: ${JSON.stringify(n.mats)} / ${n.forja}`);
     for (const o of F.loja) if (o.preco <= JSON.parse(CONTEUDO).items[o.item].val) falhas.push(`a forja vende ${o.item} abaixo do Banco`);
   } catch (e) { falhas.push('a forja quebrou no Node: ' + e.message); }
   if (a) {
@@ -1608,7 +1610,7 @@ const CASOS = [
   },
   {
     nome: 'banco-mochila',
-    o_que: 'a mochila fica com o personagem entre as caçadas: o Banqueiro guarda uma peça ou tudo no cofre (gema vira ouro, material vai ao Gordon), devolve peça e ouro à mochila, o Guia avisa o que ela arrisca e ela entra inteira na caçada',
+    o_que: 'a mochila fica com o personagem entre as caçadas: o Banqueiro guarda uma peça ou tudo no cofre e lista o cofre inteiro (peça, tesouro e material, como item), devolve peça, pilha e ouro à mochila, o Guia avisa o que ela arrisca e ela entra inteira na caçada',
     semente: 7,
     save: {'masmorra-runas-v2': {
       cofre: 10, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0,
@@ -1631,9 +1633,17 @@ const CASOS = [
     clica(linhaMo('espada').querySelector('button'));
     ok('guardar uma espada leva uma só para o cofre', mo().espada===1&&sv().itens.espada===1&&/1 peça de equipamento/.test(txt('#eqMsg')), JSON.stringify(mo())+' / '+txt('#eqMsg'));
     clica($('#eqGuarda'));
-    ok('guardar tudo: ouro e gema viram ouro no cofre, a espada vira peça, a seda vai ao Gordon', sv().cofre===180&&sv().itens.espada===2&&sv().mats.seda===2&&JSON.stringify(mo())==='{}', sv().cofre+' / '+JSON.stringify(sv().itens)+' / '+JSON.stringify(sv().mats));
-    ok('o Banco diz o que foi para onde', /170 de ouro e 1 peça de equipamento/.test(txt('#eqMsg'))&&/2 materiais foram para o depósito do Gordon/.test(txt('#eqMsg')), txt('#eqMsg'));
-    ok('com a mochila vazia, guardar tudo fica apagado', $('#eqGuarda').disabled&&txt('#eqGold')==='180');
+    ok('guardar tudo: a moeda vira ouro, espada, gema e seda ficam no cofre como item', sv().cofre===60&&sv().itens.espada===2&&sv().mats.seda===2&&sv().mats.gema===1&&JSON.stringify(mo())==='{}', sv().cofre+' / '+JSON.stringify(sv().itens)+' / '+JSON.stringify(sv().mats));
+    ok('o Banco diz o que foi para o cofre', txt('#eqMsg')==='Foram para o cofre: 50 de ouro, 1 peça de equipamento, 3 outros itens.', txt('#eqMsg'));
+    ok('com a mochila vazia, guardar tudo fica apagado', $('#eqGuarda').disabled&&txt('#eqGold')==='60');
+    var linhaC=function(nome){return todos('#eqList li.sp').filter(function(li){return li.querySelector('h3').textContent.indexOf(nome)>=0})[0]};
+    ok('o cofre lista tudo: a espada, a gema e a seda', !!linhaC('espada')&&!!linhaC('gema rubra')&&!!linhaC('seda de aranha')&&/3 tipos de item/.test(txt('#eqCofreT')), txt('#eqCofreT')+' / '+todos('#eqList li.sp h3').map(function(h){return h.textContent}).join(' | '));
+    ok('material não se vende no Banco, só leva', linhaC('seda de aranha').querySelectorAll('.btns button').length===1, linhaC('seda de aranha').textContent);
+    clica(linhaC('gema rubra').querySelector('.btns button'));
+    ok('vender a gema no Banco paga o valor dela', sv().cofre===180&&!sv().mats.gema&&txt('#eqGold')==='180', sv().cofre+' / '+JSON.stringify(sv().mats));
+    clica(linhaC('seda de aranha').querySelector('.btns button'));
+    ok('levar a seda devolve a pilha inteira à mochila', mo().seda===2&&!sv().mats.seda, JSON.stringify(mo()));
+    clica($('#eqGuarda'));
     var levar=todos('#eqList li.sp')[0].querySelectorAll('.btns button')[2];
     ok('a peça do cofre tem o botão de levar', levar&&levar.textContent==='levar', levar&&levar.textContent);
     clica(levar);
@@ -1744,7 +1754,7 @@ const CASOS = [
   },
   {
     nome: 'forja',
-    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e mostra o que a encomenda usa; o material extraído volta na mochila e o Banco leva ao depósito',
+    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e mostra o que a encomenda usa; o material extraído volta na mochila e o Banco guarda no cofre, onde o Gordon vê',
     semente: 11,
     limite: 90000,
     patches: [P.tempo(20, 10), P.sacoMat, P.portalNaEntrada],
@@ -1784,7 +1794,7 @@ const CASOS = [
     clica($('#bMochila'));
     var sd=todos('#moGrade .cel:not(:disabled)').filter(function(b){return b.dataset.k==='seda'})[0];
     clica(sd);
-    ok('a mochila diz que a seda vai para o Gordon', /depósito do Gordon/.test(txt('#moInfo')||''), txt('#moInfo'));
+    ok('a mochila diz que a seda, guardada, o Gordon vê', /fica no cofre e o Gordon vê na Forja/.test(txt('#moInfo')||''), txt('#moInfo'));
     clica($('#bMochila'));
     tecla('keydown','KeyJ');
     var acabou=await ate(function(){return visivel('#end')},1500);
@@ -1794,7 +1804,7 @@ const CASOS = [
     ok('a seda saiu na mochila, sem ir sozinha para lugar nenhum', sv().chars.cavaleiro.mochila.seda>=2&&sv().cofre===c0, JSON.stringify(sv().chars.cavaleiro.mochila));
     clica($('#toMenu'));Tl.abreNpc('banqueiro');clica($('#eqGuarda'));
     ok('guardada no Banco, a seda vai para o depósito, não para o ouro', (sv().mats.seda|0)>=m0+2&&!sv().chars.cavaleiro.mochila.seda, JSON.stringify(sv().mats)+' / '+sv().cofre);
-    ok('o Banco avisa do material', /para o depósito do Gordon/.test(txt('#eqMsg')||''), txt('#eqMsg'));
+    ok('o Banco avisa o que foi para o cofre', /2 outros itens/.test(txt('#eqMsg')||''), txt('#eqMsg'));
 `,
   },
   {
