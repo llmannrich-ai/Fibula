@@ -24,7 +24,7 @@
   --f-body:Verdana,Tahoma,Geneva,"DejaVu Sans",sans-serif;
   color-scheme:dark;
 }
-html{box-sizing:border-box;height:100%;background:var(--void)}
+html{box-sizing:border-box;touch-action:manipulation;height:100%;background:var(--void)}
 *,*::before,*::after{box-sizing:inherit}
 [hidden]{display:none!important}
 body{height:100%;margin:0;overflow:hidden;background:var(--void);color:var(--bone);font-family:var(--f-body);-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
@@ -256,7 +256,47 @@ h2.lost{color:var(--hp)}
 #mkt.peca .lede{display:none}
 .mpRes{margin:0;font:12px/1.45 var(--f-body);color:var(--muted)}
 #huntList .sp .meta.alto{color:var(--warn)}
-@media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}}
+/* Mochila: janela sobre o jogo, que não pausa. Fica entre o HUD de cima e os botões de baixo, e fora
+   dela o toque continua sendo joystick: dá para fugir com ela aberta. */
+#bMochila{width:50px;height:50px;right:max(206px,calc(env(safe-area-inset-right,0px) + 206px));bottom:94px;--el:var(--torch-deep)}
+#bMochila .nm{font-size:8px;align-self:end}
+#app[data-arte] #bMochila .nm{position:absolute;bottom:2px;left:0;right:0}
+#bMochila[aria-expanded="true"]{--el:var(--torch)}
+#app.cidade .hud #bMochila{display:grid}
+.mochila{position:absolute;z-index:4;top:150px;bottom:196px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
+.mwin{pointer-events:auto;width:min(100%,340px);max-height:100%;overflow:auto;display:grid;gap:8px;padding:0 10px 10px;box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.65);animation:sobe .16s ease-out}
+@keyframes sobe{from{opacity:0;transform:translateY(10px)}}
+.mbar{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;margin:0 -10px;padding:0 0 0 10px;background:linear-gradient(#24221f,#1a1916);border-bottom:1px solid #000;box-shadow:0 1px 0 var(--hi);font:700 11px var(--f-body);color:var(--muted)}
+.mbar b{color:var(--torch)}
+.mx{width:44px;height:30px;border:0;border-left:1px solid #000;background:none;color:var(--bone);font:700 14px var(--f-body);cursor:pointer}
+.mx:focus-visible{outline:2px solid var(--bone);outline-offset:-3px}
+.mtit{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font:700 12px var(--f-body);color:var(--bone)}
+.mtit span{font-weight:400;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.mtit span b{color:var(--torch);font-weight:700}
+/* o boneco: amuleto e arma à esquerda, armadura e saco à direita, como a janela de inventário do Tibia */
+.doll{display:grid;grid-template-columns:auto 1fr auto;grid-template-rows:auto auto;gap:4px 10px;align-items:center;justify-items:center;padding:6px 10px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+.doll .fig{grid-row:1/3;grid-column:2;width:84px;height:76px;display:grid;place-items:center;background:radial-gradient(circle at 50% 70%,rgba(232,194,90,.16),transparent 62%)}
+.doll .fig .ico{transform:scale(1.3)}
+.doll .fig b{font:700 30px var(--f-display);color:var(--torch)}
+.cel{position:relative;width:48px;height:48px;display:grid;place-items:center;padding:0;background:#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);color:var(--muted);font:9px var(--f-body);cursor:pointer}
+.cel:focus-visible{outline:2px solid var(--bone);outline-offset:1px}
+.cel.on{outline:2px solid var(--torch);outline-offset:1px}
+.cel.r1{box-shadow:inset 0 0 0 2px var(--rare)} .cel.r2{box-shadow:inset 0 0 0 2px var(--epic)}
+.cel.cheia{box-shadow:inset 0 0 0 2px var(--torch-deep)}
+.cel q{position:absolute;right:2px;bottom:1px;quotes:none;font:700 10px var(--f-body);color:var(--bone);font-variant-numeric:tabular-nums;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+.cel i{font-style:normal;font-weight:700;color:var(--bone)}
+.doll .eq{display:grid;gap:2px;justify-items:center}
+.doll .eq small{font:9px var(--f-body);color:var(--muted)}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,44px);justify-content:center;gap:4px;padding:6px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+.grade .cel{width:44px;height:44px}
+.grade .cel:disabled{cursor:default;opacity:.55}
+.minfo{margin:0;min-height:2.8em;font:11px/1.4 var(--f-body);color:var(--muted)}
+.minfo b{color:var(--bone)} .minfo b.r1{color:var(--rare)} .minfo b.r2{color:var(--epic)}
+.mochila .risco{font-size:11px}
+.mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
+/* tela baixa: a janela sobe por cima do minimapa e o boneco encolhe, para o saco caber sem rolar */
+@media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{grid-template-columns:repeat(5,auto);grid-template-rows:auto;justify-content:space-between}.doll .fig{grid-row:auto;grid-column:auto;order:2;width:52px;height:52px}.doll .fig .ico{transform:scale(.8)}.s-arma{order:1}.s-armadura{order:3}.s-saco{order:4}.minfo{min-height:0}}
+@media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}.mwin{animation:none}}
 </style>
 
 </head>
@@ -289,7 +329,20 @@ h2.lost{color:var(--hp)}
     <button class="act sl" id="s2" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl" id="s1" hidden><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
     <button class="act sl main" id="s0"><span class="cd"></span><span class="nm out"></span><span class="ct"></span></button>
+    <button class="act" id="bMochila" aria-controls="mochila" aria-expanded="false" aria-label="Abrir a mochila (B)"><span class="nm out">Mochila</span></button>
   </div>
+
+  <section class="mochila" id="mochila" role="dialog" aria-label="Mochila" hidden>
+    <div class="mwin stone">
+      <div class="mbar"><span id="moEye">Mochila</span><button class="mx" id="moX" type="button" aria-label="Fechar a mochila">✕</button></div>
+      <div class="doll" id="moDoll"></div>
+      <p class="eqtot" id="moTot"></p>
+      <div class="mtit">Saco <span id="moVal"></span></div>
+      <p class="risco" id="moRisco"></p>
+      <div class="grade" id="moGrade"></div>
+      <p class="minfo" id="moInfo" role="status"></p>
+    </div>
+  </section>
 
   <div class="chud" id="chud">
     <div class="top">
@@ -453,7 +506,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.10.0"></script>
+<script type="module" src="src/main.js?v=0.11.0"></script>
 
 </body>
 </html>

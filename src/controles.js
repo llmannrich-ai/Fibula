@@ -2,12 +2,12 @@
    Joystick por ponteiro, botões seguráveis e teclado. A simulação não lê
    nada daqui direto: o laço pede leEntrada() e passa o resultado a update(),
    ou a updateCidade() quando se anda na cidade. */
-import {hyp} from './sim/base.js?v=0.10.0';
-import {G} from './sim/incursao.js?v=0.10.0';
-import {drinkPot} from './sim/combate.js?v=0.10.0';
-import {W,H} from './desenho.js?v=0.10.0';
-import {E} from './hud.js?v=0.10.0';
-import {$,app} from './dom.js?v=0.10.0';
+import {hyp} from './sim/base.js?v=0.11.0';
+import {G} from './sim/incursao.js?v=0.11.0';
+import {drinkPot} from './sim/combate.js?v=0.11.0';
+import {W,H} from './desenho.js?v=0.11.0';
+import {E} from './hud.js?v=0.11.0';
+import {$,app} from './dom.js?v=0.11.0';
 
 export const held=[false,false,false,false];
 export const soltaTudo=()=>{for(let i=0;i<4;i++)held[i]=false};
@@ -25,7 +25,7 @@ const joyEl=$('#joy'),knob=$('#knob');
 export function joyIdle(){joyEl.classList.add('idle');joyEl.style.left='80px';joyEl.style.top=(H-96)+'px';knob.style.transform=''}
 app.addEventListener('pointerdown',e=>{
   if(!(G&&G.active&&!G.over)&&!app.classList.contains('cidade')||joy.id!==null)return;
-  if(e.target.closest('button,.screen'))return;
+  if(e.target.closest('button,.screen,.mwin'))return;
   const r=app.getBoundingClientRect(),x=e.clientX-r.left,y=e.clientY-r.top;
   if(x>W*.6)return;
   joy.id=e.pointerId;joy.ox=x;joy.oy=y;joy.x=joy.y=0;
@@ -40,6 +40,15 @@ app.addEventListener('pointermove',e=>{
 const joyEnd=e=>{if(e.pointerId!==joy.id)return;joy.id=null;joy.x=joy.y=0;joyIdle()};
 app.addEventListener('pointerup',joyEnd);app.addEventListener('pointercancel',joyEnd);
 app.addEventListener('contextmenu',e=>e.preventDefault());
+/* zoom do iPhone: o Safari ignora o user-scalable=no, e polegar no joystick
+   mais dedo numa habilidade é uma pinça. Barra o gesto e, se o zoom entrar
+   mesmo assim, reescreve o viewport, que é o que faz o Safari voltar a 1. */
+const nope=e=>e.preventDefault();
+for(const ev of['gesturestart','gesturechange','gestureend'])document.addEventListener(ev,nope,{passive:false});
+document.addEventListener('touchmove',e=>{if(e.touches.length>1)e.preventDefault()},{passive:false});
+document.addEventListener('dblclick',nope,{passive:false});
+const vp=document.querySelector('meta[name=viewport]'),vv=window.visualViewport;
+if(vp&&vv)vv.addEventListener('resize',()=>{if(vv.scale>1.01){const c=vp.content;vp.content=c+',minimum-scale=1';setTimeout(()=>vp.content=c,300)}});
 function bindHold(el,down,up){
   el.addEventListener('pointerdown',e=>{e.preventDefault();e.stopPropagation();try{el.setPointerCapture(e.pointerId)}catch(_){}down()});
   for(const ev of['pointerup','pointercancel','lostpointercapture'])el.addEventListener(ev,()=>{if(up)up()});

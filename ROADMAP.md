@@ -141,7 +141,7 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
-- **2026-10-19 — A Feira: mercado entre jogadores (0.10.0)** *(pedido do
+- **2026-10-19 — A Feira: mercado entre jogadores (0.11.0)** *(pedido do
   Leonardo, antecipado da F3; pilares 2 e 5)*. O Corretor, na praça, abre o
   livro de ofertas das peças de equipamento. Compra e venda com preço por
   peça, match automático no banco (melhor preço, depois ordem de chegada,
