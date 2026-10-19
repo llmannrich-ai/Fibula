@@ -1,6 +1,6 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.20.0';
-import {EL_COR,MT,PROG,CLASSES} from './dados.js?v=0.20.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.20.0';
+import {EL_COR,MT,PROG,CLASSES,SPELLS} from './dados.js?v=0.20.0';
 import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha} from './progresso.js?v=0.20.0';
 import {genMap,pecas} from './mapa.js?v=0.20.0';
 import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.20.0';
@@ -59,7 +59,7 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false){
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
-  G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
+  G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),fsrc:[],ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
      lvl:Math.max(...fichas.map(f=>f.c.lvl)),nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
      t:0,kills:0,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
@@ -100,9 +100,16 @@ const Q=new Int32Array(MW*MH);
    tempo: G.flow é a distância até o mais perto, e G.fdono diz qual é ele —
    é o alvo do monstro naquele tile. Mesmo custo de uma origem só */
 function buildFlow(){
+  /* de onde o campo partiu fica em G.fsrc: a herança da sala leva isto, para
+     quem assume refazer o mesmo campo */
+  const fs=G.fsrc;fs.length=0;
+  for(let i=0;i<G.ps.length;i++){const p=G.ps[i];fs.push(p.fora?-1:p.ty*MW+p.tx)}
+  fluxo(fs);
+}
+function fluxo(fs){
   const f=G.flow,o=G.fdono,g=G.g;f.fill(-1);let h=0,t=0;
-  for(let i=0;i<G.ps.length;i++){const p=G.ps[i];if(p.fora)continue;
-    const s=p.ty*MW+p.tx;if(f[s]<0){f[s]=0;o[s]=i;Q[t++]=s}}
+  for(let i=0;i<fs.length;i++){const s=fs[i];if(s<0||s>=MW*MH)continue;
+    if(f[s]<0){f[s]=0;o[s]=i;Q[t++]=s}}
   while(h<t){
     const c=Q[h++],v=f[c],w=o[c];if(v>=22)continue;
     const x=c%MW,y=(c/MW)|0;
@@ -440,4 +447,58 @@ export function assiste(dt,eu,ent){
   const p=G.ps[eu];
   if(!p.fora){movimenta(p,dt,ent);p.x0=p.x;p.y0=p.y;p.w0=p.walk;reveal(p)}
   G.rT=(G.rT||0)+dt;G.alfa=Math.min(1,G.rT/.1);efeitos(dt);
+}
+/* ---------- herança da sala ----------
+   O retrato só serve para desenhar. A herança é o estado inteiro da regra,
+   que o anfitrião manda a cada segundo e na hora de passar a sala adiante:
+   se ele sai, quem assume (src/sala.js) refaz a masmorra pela semente,
+   põe a herança por cima e segue rodando, sem ninguém sair dela; no pior
+   caso a caçada volta um segundo. Referências viram números: o jogador pelo
+   lugar em G.ps, o monstro pelo id, a habilidade pela chave. Os golpes
+   atrasados de G.pend (funções) não vão: no máximo se perde o segundo golpe
+   de um ataque múltiplo. */
+const copia=(o,sem)=>{const r={};for(const k in o)if(!sem.includes(k))r[k]=o[k];return r};
+const SEM_M=['t','x0','y0','a0','dot'],SEM_Q=['x0','y0','s','p','tg'],SEM_P=['x0','y0','w0','desv','c','up','local'];
+const chaveSp=s=>{for(const k in SPELLS)if(SPELLS[k]===s)return k;return null};
+export function heranca(){
+  const ocu=[];for(let i=0;i<MW*MH;i++)if(G.ocu[i])ocu.push(i);
+  return{v:1,semente:G.semente,sorte:sorteAgora(),t:G.t,kills:G.kills,nid:G.nid,lvl:G.lvl,respT:G.respT,flowT:G.flowT,fsrc:G.fsrc.slice(),ocu,
+    rooms:G.rooms.map(r=>[r.base===undefined?-1:r.base,r.prof||0,r.esp||0,r.chefe?1:0]),
+    mons:G.mons.map(m=>Object.assign(copia(m,SEM_M),{dot:m.dot&&Object.assign({},m.dot,{p:m.dot.p?m.dot.p.id:-1})})),
+    proj:G.proj.map(q=>Object.assign(copia(q,SEM_Q),{s:q.s?chaveSp(q.s):null,p:q.p?q.p.id:-1,tg:q.tg?q.tg.id:-1})),
+    drops:G.drops.map(d=>Object.assign({},d)),
+    ps:G.ps.map(p=>Object.assign(copia(p,SEM_P),{c:p.c,up:p.up}))};
+}
+/* quem assume a sala: eu é o lugar deste aparelho em G.ps (-1 se ele não
+   está lá dentro) e meu, a ficha local (fichaLocal()), cujo personagem recebe o que o
+   jogador eu já ganhou nesta caçada e passa a ganhar o resto, como no solo.
+   A ficha dos outros passa por confereFicha() */
+export function adota(h,eu,meu){
+  if(!h||h.v!==1||!Array.isArray(h.ps)||!Array.isArray(h.mons)||!h.ps.length||h.ps.length>8)return false;
+  const fichas=h.ps.map((q,i)=>q&&confereFicha({cl:q.cl,nome:q.nome,c:q.c,up:q.up}));
+  if(fichas.some(f=>!f))return false;
+  if(eu>=0){
+    if(!fichas[eu]||fichas[eu].cl!==meu.cl)return false;
+    const c=fichas[eu].c;for(const k of['lvl','xp','mag','manaG','per','golpes'])meu.c[k]=c[k];
+    fichas[eu]=Object.assign({},meu,{nome:fichas[eu].nome});
+  }
+  newRun(h.semente>>>0,fichas,true);
+  if(Array.isArray(h.sorte))poeSorte(h.sorte[0]|0,h.sorte[1]|0);
+  G.t=num0(h.t);G.kills=num0(h.kills);G.nid=num0(h.nid);G.lvl=num0(h.lvl)||G.lvl;G.respT=num0(h.respT);
+  if(Array.isArray(h.rooms))h.rooms.forEach((r,i)=>{const o=G.rooms[i];if(!o||!Array.isArray(r))return;
+    if(r[0]>=0)o.base=num0(r[0]);else delete o.base;o.prof=num0(r[1]);o.esp=num0(r[2]);o.chefe=!!r[3]});
+  G.ps.forEach((p,i)=>{const c=p.c,up=p.up;Object.assign(p,copia(h.ps[i],SEM_P));p.c=c;p.up=up;p.id=i;p.local=i===eu;p.x0=p.x;p.y0=p.y});
+  G.mons=h.mons.filter(m=>m&&MT[m.k]).map(m=>{const o=Object.assign({},m,{t:MT[m.k]});
+    o.dot=m.dot?Object.assign({},m.dot,{p:G.ps[m.dot.p]||null}):null;o.x0=o.x;o.y0=o.y;o.a0=o.anim;return o});
+  G.ocu.fill(0);
+  if(Array.isArray(h.ocu))for(const i of h.ocu){if(i>=0&&i<MW*MH)G.ocu[i]=1}else for(const m of G.mons)G.ocu[m.ty*MW+m.tx]=1;
+  const porId=new Map(G.mons.map(m=>[m.id,m]));
+  G.proj=(Array.isArray(h.proj)?h.proj:[]).map(q=>Object.assign({},q,{s:q.s?SPELLS[q.s]:undefined,p:G.ps[q.p],tg:porId.get(q.tg)||null})).filter(q=>q.k==='m'||(q.s&&q.p));
+  G.drops=(Array.isArray(h.drops)?h.drops:[]).map(d=>Object.assign({},d));
+  /* o campo de fluxo é o mesmo que o anfitrião tinha: refeito de onde ele
+     partiu, e refeito de novo quando chegar a hora dele */
+  if(Array.isArray(h.fsrc)){G.fsrc=h.fsrc.map(v=>v|0);fluxo(G.fsrc);G.flowT=num0(h.flowT)}else G.flowT=0;
+  G.pend=[];G.active=true;G.p=G.ps[eu]||G.ps[0];
+  revela();
+  return true;
 }

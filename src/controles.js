@@ -7,7 +7,7 @@ import {G} from './sim/incursao.js?v=0.20.0';
 import {drinkPot} from './sim/combate.js?v=0.20.0';
 import {pocao} from './sala.js?v=0.20.0';
 /* na sala, o convidado pede a poção ao anfitrião, que é quem a bebe */
-const bebe=()=>{if(G&&G.convidado)pocao();else drinkPot()};
+const bebe=()=>{if(G&&G.convidado)pocao();else drinkPot(G&&G.p)};
 import {W,H} from './desenho.js?v=0.20.0';
 import {E} from './hud.js?v=0.20.0';
 import {$,app} from './dom.js?v=0.20.0';

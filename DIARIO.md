@@ -18,22 +18,23 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
-## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala
+## 2026-10-19 — sessão manual (nuvem): sucessão do anfitrião da sala, com a masmorra
 
-**Item desenvolvido:** a pedido do Leonardo ("caso o anfitrião feche o servidor, o usuário mais antigo dentro do servidor passa a ser o servidor"), 0.20.0. `src/sala.js` separa o canal da sala (`SALA.id`, id de quem criou + contador) do anfitrião de agora (`SALA.anf`) e conta as trocas em `SALA.gen`. O anfitrião que sai com gente na sala manda `passa` com o próximo; sem `passa` (fechou o jogo, caiu a rede), o convidado vê a saída pela presença do canal da sala ou por 12 s sem notícia (`sucede()`), e o primeiro da lista depois do anfitrião assume (`assume()`, masmorra nova). Dois anfitriões ao mesmo tempo: fica o de `gen` maior, empate pelo id menor (`cede()`). `src/rede.js` anuncia e lê `sala.id` na presença da cidade; o Guia troca "Fechar sala" por "Sair da sala" quando há gente.
+**Item desenvolvido:** a pedido do Leonardo ("caso o anfitrião feche o servidor, o usuário mais antigo dentro do servidor passa a ser o servidor" e, depois, "o novo anfitrião recebe todos os dados do mapa e mantém o servidor com ele"), 0.20.0. `src/sala.js` separa o canal da sala (`SALA.id`, id de quem criou + contador) do anfitrião de agora (`SALA.anf`) e conta as trocas em `SALA.gen`. O anfitrião manda a **herança** a cada segundo (com alguém dentro; 5 s sem ninguém) e no `passa`: `heranca()`/`adota()` em `src/sim/incursao.js`, o estado inteiro da regra (monstros, jogadores com ficha e saco, projéteis, sacos no chão, salas, sorteio, fonte do campo de fluxo, sqm ocupados), ~20 KB. Quem assume adota a última herança e segue rodando; quem estava dentro continua (`G.convidado` cai e o laço passa a rodar `passo()` aqui). Sem `passa` (fechou o jogo, caiu a rede), a saída é vista pela presença do canal da sala ou por 12 s sem notícia (`sucede()`). Dois anfitriões: `gen` maior, empate pelo id menor (`cede()`). `src/sim/base.js` ganhou `sorteAgora()`/`poeSorte()` (mesma sequência do mulberry32); `buildFlow()` guarda a origem em `G.fsrc`. O lugar do anfitrião em `G.ps` deixou de ser sempre 0 (`meuI()`), e a poção do anfitrião é a de `G.p` (`src/controles.js`).
 
-**Validação:** `node tools/testar.mjs` inteiro verde; `sala-anfitriao` e `sala-convidado` ganharam os casos: canal novo para sala nova, `passa` para o mais antigo com `gen` 1, convidado que vira convidado do novo anfitrião e volta à cidade sem resultado, lista do anfitrião velho ignorada, novo anfitrião some e o último vira anfitrião no mesmo canal, anúncio na cidade com o canal de sempre, anfitrião de geração maior leva a sala e de mesma geração e id maior não leva. Não testado com dois Chromium no Realtime de verdade.
+**Validação:** `node tools/testar.mjs` inteiro verde (30/30). Na simulação no Node: com 3 jogadores em combate, quem adota a herança e recebe as mesmas entradas fica **idêntico** ao anfitrião por 400 passos (monstros, abates, sacos, vida, XP); herança com classe inexistente é recusada; tamanho abaixo de 60 KB. Sabotagem (adotar sem o sorteio) barrada. Nos casos `sala-*`: `passa` com a herança, convidado que continua na masmorra quando outro assume, convidado que vira anfitrião sem sair dela (mesma semente, abates e monstros da herança, mesmo sqm) e passa a rodar a regra, recebe gente nova pela porta e manda a própria herança, lista do anfitrião velho ignorada, geração maior leva a sala. Não testado com dois Chromium no Realtime de verdade.
 
-**Análise:** a masmorra em andamento não migra: a regra (sorteio, monstros, campo de fluxo) só existe no aparelho de quem calculava, e o convidado só tem o retrato. Migrar exigiria o anfitrião mandar o estado inteiro periodicamente, o que custa banda e só vale perto da F2.
+**Análise:** a herança custa uma mensagem por segundo por sala (a cota mensal conta cada entrega: com 4 na sala, +3 por segundo sobre os ~40 do retrato), ~20 KB cada, bem abaixo do limite de tamanho do broadcast.
 
 **Roadmap:** sem mudança de seção (pedido do dono fora da fila).
 
 **Pendências e riscos:**
-- Quem estava na masmorra quando o anfitrião saiu perde o saco daquela entrada (volta sem resultado), como antes; só a sala sobrevive.
-- Uma queda curta de rede do anfitrião (sai e volta à presença) já dispara a sucessão; ao voltar, ele vê a geração maior e vira convidado, e quem estava na masmorra dele volta à cidade.
-- Nenhuma mensagem do canal tem remetente conferido: um terceiro com a chave pode mandar `passa` ou `membros` com geração alta e tomar a sala. Mesmo risco de antes (`fecha` falso), agora com mais um jeito.
+- A volta de até 1 s na troca: o que aconteceu nesse segundo no aparelho do anfitrião velho (um abate, um saco pego) se desfaz, e acontece de novo ou não. Não duplica nada, porque o resultado de cada um só sai do anfitrião de agora.
+- Uma queda curta de rede do anfitrião já dispara a troca; ao voltar ele vê a geração maior e vira convidado. A masmorra dele (que seguiu rodando sozinha) é descartada; quem estava dentro dela, nele, volta à cidade.
+- Nenhuma mensagem do canal tem remetente conferido: um terceiro com a chave pode mandar `passa`/`membros` com geração alta, ou uma herança falsa, e tomar a sala. É o mesmo nível de confiança do anfitrião (que já calcula tudo), agora ao alcance de quem conhece o canal.
+- `G.pend` não vai na herança (perde-se no máximo o segundo golpe de um ataque múltiplo).
 
-**Próximo passo recomendado:** testar com dois ou três aparelhos de verdade: anfitrião fecha a aba com convidado na masmorra, e anfitrião sai pelo Guia.
+**Próximo passo recomendado:** testar com dois ou três aparelhos de verdade: anfitrião fecha a aba com convidados na masmorra e eles continuam caçando; anfitrião sai pelo Guia.
 
 ---
 

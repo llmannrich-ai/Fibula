@@ -22,11 +22,15 @@ export const TICK=.05;
    O gerador é o mulberry32: 32 bits de estado, rápido, sem alocação. Trocar
    o algoritmo muda todas as masmorras de todas as sementes; o tools/testar.mjs
    prende a sequência para isso não acontecer sem querer. */
-const gerador=s=>{let a=s>>>0;return()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}};
+const gerador=s=>{let a=s>>>0;const f=()=>{a=(a+0x6D2B79F5)|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};f.le=()=>a;f.poe=v=>{a=v|0};return f};
 let regra=gerador(1),enfeite=gerador(1^0x9E3779B9);
 export let semente=1;
 /* reinicia os dois sorteios; newRun() chama no começo de cada incursão */
 export function semeia(s){semente=s>>>0;regra=gerador(semente);enfeite=gerador(semente^0x9E3779B9)}
+/* onde os dois sorteios estão: a herança da sala (src/sim/incursao.js) leva
+   isto, para quem assume a masmorra sortear dali em diante */
+export const sorteAgora=()=>[regra.le(),enfeite.le()];
+export const poeSorte=(r,e)=>{regra.poe(r);enfeite.poe(e)};
 /* a única sorte que não vem de semente: escolher a semente de uma incursão nova */
 export const novaSemente=()=>Math.floor(Math.random()*4294967296)>>>0;
 /* "12345" vale 12345; qualquer outro texto vira número pelo FNV-1a, então

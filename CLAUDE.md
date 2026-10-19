@@ -187,7 +187,7 @@ principal, o markup das telas e do HUD, e a linha que carrega
   regra nenhuma. Anuncia na presença a sala aberta deste aparelho
   (`rede.sala`) e lista as dos outros em `SALAS`, para o Guia de caça
 - `sala.js` — **caçar junto** (ver "Sala" na seção do Realtime): um canal
-  `realtime:sala-<x.y>-<id do anfitrião>` por sala. O anfitrião roda a
+  `realtime:sala-<x.y>-<id da sala>` por sala (o id de quem a criou; não muda quando o anfitrião muda). O anfitrião roda a
   incursão de todos (`comecaGrupo()`, `entradas()`) e manda `retrato()` a 10
   por segundo; o convidado manda a entrada (o sqm em que está, espaços
   segurados, poção) e aplica o retrato. `criaSala()`, `entraSala()`,
@@ -521,11 +521,22 @@ uma sala; quem está na cidade a vê e entra (até 4).
   sem notícia, e cada um elege o primeiro da lista depois do anfitrião. A
   sala é o **canal** (`SALA.id`, o id de quem a criou mais um contador),
   separado do **anfitrião** (`SALA.anf`); a presença da cidade anuncia o
-  canal em `sala.id`. A masmorra **não** passa adiante: a regra dela morava
-  no aparelho de quem saiu, então quem estava dentro volta à cidade sem
-  resultado e o novo anfitrião abre uma masmorra nova. Cada troca sobe
-  `SALA.gen`; se dois aparelhos se acharem anfitrião (a rede voltou no meio
-  da troca), fica o de geração maior e, empatados, o de id menor.
+  canal em `sala.id`. **A masmorra passa junto**: o anfitrião manda a
+  **herança** (`heranca()` em `src/sim/incursao.js`, o estado inteiro da
+  regra, ~20 KB) a cada segundo com alguém lá dentro e no `passa`; quem
+  assume refaz a masmorra pela semente, aplica `adota()` e segue rodando,
+  com cada um no mesmo lugar de `G.ps`. Ninguém sai dela; no pior caso a
+  caçada volta um segundo. A herança leva o sorteio (`sorteAgora()` e
+  `poeSorte()` em `base.js`), de onde partiu o campo de fluxo (`G.fsrc`) e
+  os sqm ocupados, e a simulação no Node confere que quem adota segue
+  **exatamente** como o anfitrião seguiria. Não leva `G.pend` (funções): no
+  máximo se perde o segundo golpe de um ataque múltiplo. Sem herança (o novo
+  anfitrião acabou de entrar), ele abre outra masmorra, anuncia a semente
+  nova em `membros.s`, e quem estava dentro volta à cidade sem resultado.
+  Cada troca sobe `SALA.gen`; se dois aparelhos se acharem anfitrião (a rede
+  voltou no meio da troca), fica o de geração maior e, empatados, o de id
+  menor. O lugar do anfitrião em `G.ps` não é mais sempre 0 (`meuI()` em
+  `src/sala.js`).
 - **Os monstros renascem** como no Tibia (`progression.respawn`): sala da
   masmorra com menos que o normal repovoa depois de 60 s, se ninguém estiver
   a menos de 10 sqm dela. O normal cresce com quem está dentro.
@@ -554,7 +565,8 @@ uma sala; quem está na cidade a vê e entra (até 4).
   dezenas de horas de caçada a dois por mês.
 - **O anfitrião não pode deixar o jogo em segundo plano**: o navegador para o
   laço, a incursão congela para todos, e depois de 12 s sem notícia os
-  convidados voltam à cidade sem resultado e o mais antigo assume a sala.
+  convidados elegem o mais antigo, que assume a sala e a masmorra pela
+  última herança.
 
 ## Convenções de código
 
