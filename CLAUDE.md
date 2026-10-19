@@ -171,7 +171,10 @@ motivo. A vida é assim.** Saber onde ir, com quem andar e de quem desconfiar
   vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
   está na mochila só fica a salvo saindo pela porta. Ainda não há PvP: ele
   entra com o servidor autoritativo da F2, porque hoje o resultado da sala é
-  calculado no aparelho de um jogador, que poderia forjar a morte de outro.
+  calculado no aparelho de um jogador, que poderia forjar a morte de outro. A
+  regra da cidade neutra já está na simulação (`protegido()` e `podeAtacar()`
+  em `src/sim/cidade.js`, desde a 0.46.1), com teste na simulação no Node,
+  à espera do PvP.
 
 #### Pilar 5 — Todo recurso tem ralo
 
@@ -613,7 +616,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
   não virarem ouro nem entrarem na Feira. É regra, não tela: na F3 é o
   estado que o servidor da cidade compartilhada roda, e **os outros jogadores**
   (`OUTROS`, `poeOutro()`, `tiraOutro()`), que confere o dado que vem da rede
-  e faz o boneco de cada um correr atrás da última posição recebida
+  e faz o boneco de cada um correr atrás da última posição recebida. E a
+  **zona neutra do PvP**: `protegido(x,y)` diz se o sqm está dentro dos muros
+  (`city.mundo.cidade`, que o `validaConteudo()` exige) e `podeAtacar(a,b)`,
+  que todo dano de jogador em jogador vai consultar no servidor da F2, recusa
+  se um dos dois estiver dentro
 - `incursao.js` — **estado da incursão** (`G`, `setG()`, `newRun()`,
   `spawn()`: cada ponto de spawn do mapa fixo é uma "sala" de um monstro em
   `G.rooms`, e `G.rooms[0]` é a porta), **jogadores** (`G.ps`, `fichaLocal()`,

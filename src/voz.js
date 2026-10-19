@@ -14,9 +14,9 @@
    teclado). Mensagens ('voz' no canal da sala): oi (estou com a voz ligada,
    a cada 5 s), tchau, oferta e resposta (o SDP já com os candidatos). Quem
    tem o id menor oferece, para os dois não oferecerem ao mesmo tempo. */
-import {SALA,sinal} from './sala.js?v=0.46.0';
-import {ID} from './rede.js?v=0.46.0';
-import {log} from './hud.js?v=0.46.0';
+import {SALA,sinal} from './sala.js?v=0.46.1';
+import {ID} from './rede.js?v=0.46.1';
+import {log} from './hud.js?v=0.46.1';
 
 export const STUN=[{urls:['stun:stun.cloudflare.com:3478','stun:stun.l.google.com:19302']}];
 /* pode: há sala ligada para falar. quem: o nome de quem fala agora. n: com

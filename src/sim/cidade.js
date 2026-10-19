@@ -7,10 +7,10 @@
    for compartilhada (F3, Parte 2 do CLAUDE.md), é este estado que o servidor vai rodar, com
    os outros jogadores ao lado de C.p. Aqui só se anda e se descobre quem está
    perto; o que cada NPC abre é do cliente (src/telas.js). */
-import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.46.0';
-import {ch,durPasso,save,pegaDoChao,pegaPraMochila} from './progresso.js?v=0.46.0';
-import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.46.0';
-import {pecas} from './mapa.js?v=0.46.0';
+import {T,hyp,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,saida} from './base.js?v=0.46.1';
+import {ch,durPasso,save,pegaDoChao,pegaPraMochila} from './progresso.js?v=0.46.1';
+import {CITY,LEGENDA,OBJETOS,CLASSES,PROG,ITEMS,SLOTS_EQ,HUNTS,cacaDe} from './dados.js?v=0.46.1';
+import {pecas} from './mapa.js?v=0.46.1';
 
 /* tipo de tile (LEGENDA, em src/sim/dados.js): chão (0 grama, 2 rua,
    3 assoalho, 7 praça, 8 ponte, 9 flores, 10 horta) ou obstáculo (1 parede,
@@ -78,6 +78,20 @@ export function regiao(x,y){
   for(let i=0;i<R.length;i++){const q=R[i];if(x>=q.x&&y>=q.y&&x<q.x+q.w&&y<q.y+q.h&&q.w*q.h<a){a=q.w*q.h;r=i}}
   return r;
 }
+/* ---------- PvP ----------
+   A cidade é neutra (pilar 4, decisão do Leonardo em 19/10/2026): dentro dos
+   muros (o retângulo city.mundo.cidade, muralha e portões inclusive) ninguém
+   ataca nem é atacado por outro jogador; fora deles vale o PvP aberto. Ainda
+   não há PvP: ele entra com o servidor autoritativo da F2, e todo dano de
+   jogador em jogador passa por podeAtacar(), no servidor, nunca no aparelho.
+   a e b são quem ataca e quem apanha, pelo sqm (tx, ty). A borda (quem está
+   em combate pode entrar? vale atacar de fora para dentro?) é a pendência D1:
+   por agora, basta um dos dois estar dentro para o ataque não valer */
+export function protegido(x,y){
+  const q=CITY.mundo.cidade;
+  return x>=q.x&&y>=q.y&&x<q.x+q.w&&y<q.y+q.h;
+}
+export const podeAtacar=(a,b)=>!!a&&!!b&&a!==b&&!protegido(a.tx,a.ty)&&!protegido(b.tx,b.ty);
 export const npcDaLetra=c=>{for(const k in CITY.npcs)if(CITY.npcs[k].letra===c)return k;return null};
 /* física da cidade: o mesmo andar por sqm da incursão (base.js), na grade da
    cidade; jogadores não se bloqueiam */

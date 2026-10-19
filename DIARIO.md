@@ -18,6 +18,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 16:55 UTC — sessão manual (nuvem): a cidade neutra no código (0.46.1)
+
+**Item desenvolvido:** pedido do Leonardo, a regra da cidade neutra no código. `protegido(x,y)` e `podeAtacar(a,b)` em `src/sim/cidade.js`: dentro do retângulo `city.mundo.cidade` (muralha e portões inclusive) ninguém ataca nem é atacado; basta um dos dois estar dentro. O `validaConteudo()` passou a exigir esse retângulo, para a zona neutra não sumir calada. Nada muda para o jogador: o PvP ainda não existe e vai consultar `podeAtacar()` no servidor da F2. Pilar 4.
+
+**Validação:** `node tools/testar.mjs`, 40/40, com `PRINCIPIOS_OK`. A simulação no Node confere oito situações (dentro, fora, muralha, portão, logo fora do portão), o ataque a si mesmo, a borda exata do retângulo e o conteúdo sem a cidade. Prova negativa: tirar a checagem de quem apanha reprova três delas.
+
+**Análise:** a regra mora na simulação porque o servidor da F2 roda `src/sim/`; no aparelho ela não protegeria nada contra quem trapaceia.
+
+**Roadmap:** sem mudança na fila.
+
+**Pendências e riscos:** a borda (quem está em combate pode entrar nos muros) continua na D1; hoje quem foge para dentro fica protegido na hora. Quando o PvP entrar, todo dano de jogador em jogador tem de passar por `podeAtacar()`, inclusive o de área.
+
+**Próximo passo recomendado:** nenhum de código até a D1 e a F2.
+
 ## 2026-10-19 16:45 UTC — sessão manual (nuvem): cidade neutra no PvP
 
 **Item desenvolvido:** decisão do Leonardo registrada: dentro dos muros da cidade nenhum jogador ataca nem é atacado por outro; fora deles vale o PvP aberto. Entrou no pilar 4, na Parte 6 (Em vigor), no `ROADMAP.md` e no `docs/plano-multiplayer.md`. Princípios assinados de novo a pedido dele. Sem mudança de código: o PvP ainda não existe.

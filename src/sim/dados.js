@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.46.0';
-import {ALFA} from './mapa.js?v=0.46.0';
+import {MW,MH} from './base.js?v=0.46.1';
+import {ALFA} from './mapa.js?v=0.46.1';
 export function validaConteudo(c){
   for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts','forja'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
@@ -96,6 +96,10 @@ export function validaConteudo(c){
     if(!t||!',._@:=vh'.includes(t))throw new Error(`city.chao põe ${q.item} em ${q.x},${q.y}, que não é chão da cidade`);
     if('respawn'in q&&!(typeof q.respawn==='number'&&q.respawn>0))throw new Error(`city.chao: o respawn de ${q.item} em ${q.x},${q.y} precisa ser um número de segundos maior que zero`);
   }
+  /* a cidade murada (city.mundo.cidade): é a zona neutra do PvP (podeAtacar()
+     em cidade.js); sem ela o jogo não abre, para a proteção nunca sumir calada */
+  const cz=ci.mundo&&ci.mundo.cidade;
+  if(!cz||![cz.x,cz.y,cz.w,cz.h].every(Number.isInteger)||cz.x<0||cz.y<0||cz.w<3||cz.h<3||cz.x+cz.w>M[0].length||cz.y+cz.h>M.length)throw new Error('city.mundo.cidade precisa de x, y, w, h inteiros dentro do mapa: é a cidade murada, onde não há PvP');
   /* as regiões do mundo (tools/mundo.mjs): retângulos com nome dentro do mapa;
      a primeira é a cidade murada */
   if(ci.regioes!==undefined){

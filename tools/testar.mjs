@@ -1062,6 +1062,17 @@ async function testaSimulacao() {
       for (let i = 0; i < 200 && (C4.p.ty > gy - 1 || C4.p.mv); i++) Cd.updateCidade(0.05, C4.p.ty > gy - 1 ? {x: 0, y: -1} : parado);
       if (!saiu || ban !== R[0].nome) falhas.push(`sair pelo portão sul e voltar não anunciou a cidade (saiu: ${saiu}, anúncio: ${ban})`);
       saida.banner = () => {};
+      /* a cidade é neutra no PvP (pilar 4): dentro dos muros, muralha e
+         portões inclusive, ninguém ataca nem é atacado; fora, vale */
+      const z = JSON.parse(CONTEUDO).city.mundo.cidade, j = (tx, ty) => ({tx, ty});
+      const dentro = j(z.x + 10, z.y + 10), muro = j(z.x, z.y + 5), porta = j(gx, gy), fora1 = j(z.x - 3, z.y + 5), fora2 = j(z.x + z.w + 2, z.y), fora3 = j(gx, gy + 1);
+      const casos = [['dentro × dentro', dentro, dentro, false], ['dentro → fora', dentro, fora1, false], ['fora → dentro', fora1, dentro, false],
+        ['fora → em cima da muralha', fora1, muro, false], ['fora → no portão', fora3, porta, false], ['no portão → fora', porta, fora3, false],
+        ['fora × fora', fora1, fora2, true], ['logo fora do portão', fora3, fora1, true]];
+      for (const [nome, a, b, deve] of casos) if (Cd.podeAtacar(a, b) !== deve) falhas.push(`PvP ${nome}: podeAtacar deu ${!deve}, devia ${deve}`);
+      if (Cd.podeAtacar(fora1, fora1)) falhas.push('PvP: um jogador pode atacar a si mesmo');
+      if (!Cd.protegido(z.x + z.w - 1, z.y + z.h - 1) || Cd.protegido(z.x + z.w, z.y)) falhas.push('a zona neutra não é exatamente o retângulo da cidade');
+      if (!ruim((c) => { delete c.city.mundo.cidade; })) falhas.push('conteúdo sem a cidade murada (city.mundo.cidade) foi aceito: a zona neutra sumiria calada');
     }
     /* os mapas de caça: cada um com os monstros e o chefe dele, a mesma
        semente no mesmo mapa dá a mesma masmorra, e mapas diferentes dão
