@@ -152,6 +152,10 @@ pode desenhar pelo `.otbm` também.
   ser batido.
 - **Som** (requisito de acessibilidade: jogável sem som, melhor com) — efeitos curtos por WebAudio,
   sem arquivo grande nem biblioteca.
+- **Primeiro bem de patrimônio** (pilares 6 e 5) — algo que valha ter além
+  de ouro e peças (casa, montaria, título ou outro, a escolher pelo
+  Leonardo numa issue `decisao-do-dono`), comprado com ouro do cofre: é o
+  patrimônio do pilar 6 e um ralo novo. Muda o save (**sensível**).
 - **Primeira missão que abre um lugar especial** (pilar 6) — um NPC com
   pedido fixo (um feito, não um nível) e, cumprido, a chave de um lugar de
   caça especial, igual para todos. Pede antes a decisão de como o save guarda
