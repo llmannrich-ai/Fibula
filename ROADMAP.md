@@ -162,6 +162,15 @@ pode desenhar pelo `.otbm` também.
   de ouro e peças (casa, montaria, título ou outro, a escolher pelo
   Leonardo numa issue `decisao-do-dono`), comprado com ouro do cofre: é o
   patrimônio do pilar 6 e um ralo novo. Muda o save (**sensível**).
+- **Estudar a monetização** (pilar 6; meta O1) — decisão do Leonardo em
+  19/10/2026: monetizar com impacto no jogo, não só estética, inspirado no
+  Tibia. Estudo curto, sem código: o que o Tibia vende (conta premium, Tibia
+  Coins trocáveis por ouro, loja, bazar de personagens), o que cabe no
+  não-objetivo "Pagar para pular o mundo", custo e receita estimados, e 2 ou
+  3 opções numa issue `decisao-do-dono` (pendência D7, **sensível**). O
+  mercado com saque em dinheiro real já foi analisado e ficou de lado
+  (regulação, fraude, escala). Nada se cobra antes do servidor autoritativo
+  da F2. **Pronto quando:** a issue com as opções existe.
 - **Primeira missão que abre um lugar especial** (pilar 6) — um NPC com
   pedido fixo (um feito, não um nível) e, cumprido, a chave de um lugar de
   caça especial, igual para todos. Pede antes a decisão de como o save guarda

@@ -202,10 +202,11 @@ item que não se compra, a chave de um lugar de caça especial.
   - **Mais de um caminho.** Todo sistema novo oferece uma escolha real (onde
     caçar, o que treinar, vender ou guardar, fazer a missão ou não), e nenhum
     caminho é o único jeito de progredir.
-  - **O esforço é o que paga.** Poder e patrimônio vêm de tempo de jogo bem
-    usado, nunca de dinheiro real (não-objetivo "Compra que vira poder"). O
-    ralo (pilar 5) transforma ouro parado em poder ou patrimônio; não tira o
-    que o esforço já comprou.
+  - **O esforço é o caminho principal.** Poder e patrimônio vêm, antes de
+    tudo, de tempo de jogo bem usado. O dinheiro real pode ajudar, como no
+    Tibia (não-objetivo "Pagar para pular o mundo"), mas quem só joga alcança
+    tudo o que quem paga alcança. O ralo (pilar 5) transforma ouro parado em
+    poder ou patrimônio; não tira o que o esforço já comprou.
   - **Missão é opcional.** A rotina (caçar nos lugares comuns, subir de nível,
     equipar-se) funciona sem missão nenhuma. A missão encurta e abre o
     especial; não é a porta do comum.
@@ -230,9 +231,12 @@ Nada daqui entra sem o Leonardo mudar esta parte primeiro.
   dinâmica; lugar que bloqueia por nível. Contraria o princípio-mãe.
 - **Facilitar a morte para reter jogador.** Modo sem penalidade, revive por
   anúncio, checkpoint no meio da caçada. Contraria o pilar 4.
-- **Compra que vira poder.** O Fibula será comercial, mas dinheiro só compra
-  estética e conveniência — nunca dano, vida, loot, XP ou proteção contra a
-  morte. (O seguro do pilar 4 se compra com ouro do jogo, nunca com dinheiro.)
+- **Pagar para pular o mundo.** O Fibula será comercial, e o dinheiro real
+  pode ter impacto no jogo, não só na estética, inspirado no Tibia (conta
+  premium, moeda da loja que se troca por ouro com outros jogadores). Fica
+  fora o que quebra os pilares: monstro, lugar ou loot diferente para quem
+  paga (pilar 1), morte sem custo (pilar 4) e o que só o dinheiro alcança
+  (pilar 6). A forma é a pendência D7 da Parte 6.
 - **Portão de tempo real.** Energia, vidas, evento que só acontece às oito da
   noite. Contraria o princípio-mãe: o mundo não raciona o tempo de ninguém.
 - **O tempo morto do Tibia.** Copia-se do Tibia o que aumenta **peso e
@@ -363,7 +367,7 @@ fase.
 | **F1 · Personagem e mundo** | Contas e save na nuvem ✅, 4 classes ✅, equipamento ✅, lugares de caça com nome ✅; **os pilares desta guia**: mapas fixos, morte da opção B com proteção contra queda, curva de 3 h até o nível 20; telemetria mínima | Em andamento | 20 testadores jogam 7 dias sem perda de progresso; D7 dos testadores ≥ 25% |
 | **F2 · Co-op autoritativo** | Servidor próprio rodando `src/sim/`, salas de 1 a 4 para desconhecidos, convite por link, reconexão | Só a sala entre amigos (anfitrião calcula) | 4 celulares completam uma caçada juntos com < 150 ms; nenhuma regra decidida no cliente; teste de carga com 50 salas |
 | **F3 · Cidade social** | Cidade compartilhada ✅ (Realtime), Feira ✅; chat com filtro, grupos, amigos, guildas | Parcial | 100 simultâneos estáveis; moderação básica (denunciar, silenciar, banir) |
-| **F4 · Lançamento** | Monetização (só estética e conveniência), temporadas, LGPD, login por e-mail ou Google com SMTP próprio, beta aberto | — | Pagamento real processado; custo por jogador dentro da meta; O2 medido |
+| **F4 · Lançamento** | Monetização (com impacto no jogo, inspirada no Tibia; D7), temporadas, LGPD, login por e-mail ou Google com SMTP próprio, beta aberto | — | Pagamento real processado; custo por jogador dentro da meta; O2 medido |
 
 ### Requisitos que não são funcionalidade
 
@@ -1772,6 +1776,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Cidade neutra no PvP:** dentro dos muros da cidade nenhum jogador ataca nem é atacado por outro; o PvP aberto vale fora deles. A regra é conferida no servidor da F2, nunca no aparelho | Pilar 4 |
 | 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
+| 19/10 | **Monetização com impacto no jogo**, não só estética, inspirada no Tibia; substitui o não-objetivo "Compra que vira poder" por "Pagar para pular o mundo" (o mundo segue igual, a morte segue custando, e quem só joga alcança o que quem paga alcança). O mercado de itens com saque em dinheiro real foi analisado e deixado de lado por ora (regulação, fraude e escala) | Pilar 6; não-objetivos; Parte 2, F4; `ROADMAP.md`, Depois |
 
 ### Pendentes
 
@@ -1784,4 +1789,5 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | D3 | Grupo de testadores da F1 | Comunidade de ex-jogadores (Discord, Reddit); o Leonardo convida | Fim da F0 |
 | D4 | Nome comercial (**sensível**) | Manter "Fibula" até verificar no INPI | Início da F4 |
 | D6 | Quando religar o ciclo (**sensível**) | Fica `pausado` até o Leonardo trocar o `modo.txt` | — |
+| D7 | Forma da monetização: o que se vende por dinheiro real (conta premium, moeda da loja trocável por ouro na Feira, itens da loja), a partir do modelo do Tibia (**sensível**: pagamentos) | Nada entra sem o Leonardo; o Auditor pode preparar o estudo | Início da F4 |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Auditor propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |

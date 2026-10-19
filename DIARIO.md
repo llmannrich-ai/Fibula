@@ -32,6 +32,20 @@ execução precisa saber e não vai descobrir lendo o código.
 
 **Próximo passo recomendado:** com os testadores jogando, o item "Medir o ritmo até o nível 20 em horas" passa a ler `tel_niveis` em vez de só simular.
 
+## 2026-10-19 17:30 UTC — sessão manual (nuvem): monetização com impacto no jogo
+
+**Item desenvolvido:** pedido do Leonardo. Princípios atualizados e assinados (`node tools/principios.mjs --assina`, a pedido dele): o não-objetivo "Compra que vira poder" virou "Pagar para pular o mundo" (dinheiro real pode ter impacto no jogo, como no Tibia, sem quebrar os pilares 1, 4 e 6), e a regra do pilar 6 virou "O esforço é o caminho principal" (quem só joga alcança o que quem paga alcança). Parte 2 (F4), Parte 6 (decisão e pendência D7) e `ROADMAP.md` (item "Estudar a monetização" em `Depois`) no mesmo commit. Sem código.
+
+**Validação:** `PRINCIPIOS_OK`; `node tools/testar.mjs`.
+
+**Análise:** o mercado de itens com saque em dinheiro real foi analisado na conversa: depende do servidor autoritativo da F2 (hoje o save é do cliente e o item se forja), traz intermediação de pagamento, KYC e risco de bots, e só paga o custo fixo com dezenas de milhares de jogadores ativos. Ficou de lado; o estudo parte do modelo do Tibia (premium, moeda trocável por ouro).
+
+**Roadmap:** novo item em `Depois`, "Estudar a monetização".
+
+**Pendências e riscos:** a D7 é sensível (pagamentos): nenhum agente cobra nada sem o Leonardo. O seguro do pilar 4 continua só em ouro do jogo; se a monetização quiser vendê-lo, é mudança de princípio.
+
+**Próximo passo recomendado:** seguir a fila; o estudo da monetização só depois da F2 andar.
+
 ## 2026-10-19 16:55 UTC — sessão manual (nuvem): a cidade neutra no código (0.46.1)
 
 **Item desenvolvido:** pedido do Leonardo, a regra da cidade neutra no código. `protegido(x,y)` e `podeAtacar(a,b)` em `src/sim/cidade.js`: dentro do retângulo `city.mundo.cidade` (muralha e portões inclusive) ninguém ataca nem é atacado; basta um dos dois estar dentro. O `validaConteudo()` passou a exigir esse retângulo, para a zona neutra não sumir calada. Nada muda para o jogador: o PvP ainda não existe e vai consultar `podeAtacar()` no servidor da F2. Pilar 4.
