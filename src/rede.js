@@ -9,31 +9,33 @@
    não vale para a incursão, que é o servidor da F2 (docs/plano-multiplayer.md).
    O laço chama quadro() a cada quadro: liga ao entrar na cidade, desliga ao
    sair dela ou com a aba no fundo, e religa sozinho se a conexão cair. */
-import {CLASSES} from './sim/dados.js?v=0.8.2';
-import {save,ch} from './sim/progresso.js?v=0.8.2';
-import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.8.2';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.8.2';
-import {log} from './hud.js?v=0.8.2';
+import {CLASSES} from './sim/dados.js?v=0.9.0';
+import {save,ch} from './sim/progresso.js?v=0.9.0';
+import {C,OUTROS,poeOutro,tiraOutro} from './sim/cidade.js?v=0.9.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.9.0';
+import {log} from './hud.js?v=0.9.0';
 
 /* versões diferentes não se misturam: cada x.y tem a sua cidade */
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 const TOPICO='realtime:cidade-'+VER;
 /* identidade desta aba, não da conta: duas abas da mesma conta são dois bonecos */
 const ID=Array.from(crypto.getRandomValues(new Uint8Array(6)),b=>b.toString(16).padStart(2,'0')).join('');
-/* o Realtime do plano Free aceita ~100 envios por segundo por canal (medido em
-   19/10/2026: 11 pessoas a 8/s passam, 13 perdem mensagens e são expulsas).
-   A 5 por segundo, e só de quem está andando, cabem 20 andando ao mesmo tempo */
-const ENVIO=.2,BATIDA=25;
+/* uma mensagem por passo de sqm (~3 por segundo andando, nada parado). O
+   Realtime do plano Free aceita ~100 envios por segundo por canal (medido em
+   19/10/2026: 11 pessoas a 8/s passam, 13 perdem mensagens e são expulsas),
+   então cabem ~30 andando ao mesmo tempo. ENVIO é só um piso contra rajada */
+const ENVIO=.1,BATIDA=25;
 export const rede={estado:'fora',n:0};
-let ws=null,ref=0,pronto=false,quer=false,espera=0,tenta=0,batida=0,envio=0,mandou={x:NaN,y:NaN,mv:false},primeiro=true;
+let ws=null,ref=0,pronto=false,quer=false,espera=0,tenta=0,batida=0,envio=0,mandou={x:-1,y:-1},primeiro=true;
 
 const manda=(event,payload,topic=TOPICO)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic,event,payload,ref:String(++ref),join_ref:'1'}))};
 const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
 /* sem conta, o nome é o da classe: "Cavaleiro" diz mais que "Visitante" */
 const eu=()=>({nome:quemSou()||CLASSES[save.classe].nome,classe:save.classe,lvl:ch().lvl});
 function minhaPos(){
-  const p=C.p;mandou.x=p.x;mandou.y=p.y;mandou.mv=p.mv;
-  bc('pos',{id:ID,x:Math.round(p.x),y:Math.round(p.y),f:Math.round(p.face*100)/100});
+  /* o passo: o sqm para onde vou e quanto levo (0 se já estou parado nele) */
+  const p=C.p;mandou.x=p.tx;mandou.y=p.ty;
+  bc('pos',{id:ID,x:p.tx,y:p.ty,d:Math.round(p.sd*1000)});
 }
 function liga(){
   pronto=false;primeiro=true;ref=0;rede.estado='ligando';
@@ -80,7 +82,7 @@ function recebe(d){
     for(const id in p.joins||{}){if(id===ID)continue;const ja=OUTROS.has(id);chegou(id,p.joins[id].metas&&p.joins[id].metas[0],!primeiro&&!ja);novo=true}
     for(const id in p.leaves||{}){if(id===ID||(p.joins&&p.joins[id]))continue;const o=OUTROS.get(id);if(o&&o.vis)log(`${o.nome} saiu da cidade.`,'info');tiraOutro(id)}
     /* quem chegou ainda não sabe onde estou */
-    if(novo&&pronto)minhaPos();
+    if(novo&&pronto){const p=C.p,sd=p.sd;p.sd=0;minhaPos();p.sd=sd}
     conta();
   }else if(d.event==='broadcast'&&p.event==='pos'){
     /* a posição pode chegar antes da presença: o nome vem depois */
@@ -97,6 +99,6 @@ export function quadro(dt,naCidade){
   if(!pronto)return;
   batida-=dt;if(batida<=0){batida=BATIDA;manda('heartbeat',{},'phoenix')}
   envio-=dt;
-  const p=C.p,mexeu=Math.abs(p.x-mandou.x)>1||Math.abs(p.y-mandou.y)>1||p.mv!==mandou.mv;
-  if(mexeu&&envio<=0){envio=ENVIO;minhaPos()}
+  const p=C.p;
+  if((p.tx!==mandou.x||p.ty!==mandou.y)&&envio<=0){envio=ENVIO;minhaPos()}
 }

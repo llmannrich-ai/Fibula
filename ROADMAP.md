@@ -141,6 +141,18 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Andar por sqm (0.9.0)** *(decisão do Leonardo: "faça para
+  tudo"; pilares 2 e 3, base do servidor da F2)*. Jogador, monstros e os outros
+  jogadores da cidade andam um sqm por vez, em 8 direções, como no Tibia. A
+  velocidade cresce com o nível (`progression.walk`: 3,3 sqm/s no nível 1, até
+  4,5; passo arredondado para 50 ms); a diagonal dura 1,4× e não corta quina.
+  Monstros ocupam o sqm deles (bloqueio de corpo), atacam do sqm vizinho e
+  cercam pelo campo de fluxo; o empurrão entre círculos saiu. Na cidade, uma
+  mensagem por passo (sqm e duração), e o outro jogador anda o mesmo passo.
+  Simulação no Node: velocidade por nível, buff, parada no centro do sqm,
+  quina, e um monstro por sqm em 2.400 passos de regra (sabotagem que deixa
+  monstros se sobreporem reprova). Dois navegadores no Realtime de verdade:
+  o B viu o A no mesmo sqm e pixel.
 - **2026-10-19 — Multiplayer M1: a simulação com N jogadores (0.8.2)**
   *(antecipada da F2 pelo Leonardo, D-M1; regras de grupo D-M2; pilar 2)*.
   Solo é um grupo de um: a incursão tem sempre a lista `G.ps`, cada jogador

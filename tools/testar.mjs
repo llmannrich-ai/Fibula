@@ -289,7 +289,8 @@ function prelude(caso) {
   RT.todos=function(m){RT.vivos.forEach(function(w){if(w.readyState===1)w.diz(JSON.parse(JSON.stringify(m)))})};
   RT.entra=function(id,meta){RT.outros[id]=meta;var j={};j[id]={metas:[meta]};RT.todos({event:'presence_diff',payload:{joins:j,leaves:{}}})};
   RT.sai=function(id){var m=RT.outros[id];delete RT.outros[id];var l={};l[id]={metas:[m]};RT.todos({event:'presence_diff',payload:{joins:{},leaves:l}})};
-  RT.pos=function(id,x,y){RT.todos({event:'broadcast',payload:{type:'broadcast',event:'pos',payload:{id:id,x:x,y:y,f:0}}})};
+  /* x, y em sqm; d é a duração do passo em ms (0: aparece parado lá) */
+  RT.pos=function(id,x,y,d){RT.todos({event:'broadcast',payload:{type:'broadcast',event:'pos',payload:{id:id,x:x,y:y,d:d||0}}})};
   RT.posMandadas=function(){return RT.enviadas.filter(function(d){return d.event==='broadcast'&&d.payload.event==='pos'})};
   window.WebSocket=FakeWS;
 })();
@@ -664,6 +665,50 @@ async function testaSimulacao() {
     if (!I.G.over || sv.cofre !== cofre0 + 25 || sv.ext !== ext0 + 1) falhas.push(`o último a extrair não fechou a sala ou não guardou o saco (cofre ${cofre0} → ${sv.cofre})`);
   } catch (e) { falhas.push('o grupo quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   finally { Math.random = rnd0; for (const k of Object.keys(saida)) saida[k] = () => {}; }
+  /* andar por sqm, como no Tibia: passo pela velocidade do nível, diagonal
+     mais lenta, sem cortar quina, um monstro por sqm e bloqueio de corpo */
+  try {
+    novoSave();
+    const W = JSON.parse(CONTEUDO).progression.walk, c = P.ch();
+    c.lvl = 1; const d1 = P.durPasso(c); c.lvl = 200; const dmax = P.durPasso(c); c.lvl = 1;
+    if (d1 !== 0.3 || dmax !== 0.2) falhas.push(`passo do nível 1 = ${d1} s e no teto = ${dmax} s (esperado 0,3 e 0,2 com base ${W.base} e max ${W.max})`);
+    if (Math.abs(P.durPasso(c, 0.5) - 0.2) > 1e-9) falhas.push(`o buff de velocidade não encurta o passo: ${P.durPasso(c, 0.5)}`);
+    I.newRun(7); I.G.active = true;
+    const p = I.G.ps[0], cx = (t) => (t + 0.5) * 32;
+    if (p.x !== cx(p.tx) || p.y !== cx(p.ty)) falhas.push(`o jogador não nasce no centro de um sqm (${p.x},${p.y})`);
+    /* leste por 1,5 s: 5 passos de 0,3 s, e para no centro do sqm */
+    const leste = {x: 1, y: 0, held: [false, false, false, false]}, nada = {x: 0, y: 0, held: [false, false, false, false]};
+    let livres = 0; while (!I.solid(p.tx + livres + 1, p.ty) && livres < 8) livres++;
+    const x0 = p.tx, alvo = Math.min(5, livres);
+    for (let i = 0; i < 30; i++) I.passo(0.05, leste);
+    for (let i = 0; i < 10; i++) I.passo(0.05, nada);
+    if (p.tx - x0 !== alvo || p.x !== cx(p.tx) || p.mv) falhas.push(`em 1,5 s andou ${p.tx - x0} sqm (esperado ${alvo}) e parou em x=${p.x}`);
+    /* um monstro por sqm, nenhum no sqm de um jogador, em toda uma incursão com o jogador andando */
+    I.newRun(11); I.G.active = true;
+    const roteiro = [{x: 1, y: 0}, {x: 0, y: 1}, {x: -1, y: 0}, {x: 0, y: -1}, {x: 1, y: 1}];
+    let choque = null;
+    for (let q = 0; q < 2400 && !I.G.over && !choque; q++) {
+      const r = roteiro[(q / 40 | 0) % roteiro.length];
+      I.passo(0.05, {x: r.x, y: r.y, held: [true, false, false, false]});
+      const vistos = new Set();
+      for (const m of I.G.mons) { if (m.hp <= 0) continue; const k = m.ty * 64 + m.tx;
+        if (vistos.has(k)) choque = `dois monstros no sqm ${m.tx},${m.ty}`; vistos.add(k);
+        for (const j of I.G.ps) if (!j.fora && j.tx === m.tx && j.ty === m.ty) choque = `monstro no sqm do jogador (${m.tx},${m.ty})`;
+        if (!m.mv && (m.x !== cx(m.tx) || m.y !== cx(m.ty))) choque = `monstro parado fora do centro do sqm (${m.x},${m.y})`; }
+    }
+    if (choque) falhas.push('ocupação de sqm: ' + choque);
+    /* quina: na diagonal com um lado de parede, escorrega pelo eixo livre */
+    I.newRun(7); I.G.active = true;
+    const q = I.G.ps[0], B8 = B.DIR8;
+    let canto = null;
+    for (let y = 1; y < 63 && !canto; y++) for (let x = 1; x < 63 && !canto; x++)
+      if (!I.solid(x, y) && I.solid(x + 1, y) && !I.solid(x, y + 1) && !I.solid(x + 1, y + 1)) canto = [x, y];
+    if (canto) {
+      B.poeNoSqm(q, canto[0], canto[1]);
+      const j = B.passoPara(q, 1, (x, y) => !I.solid(x, y), 0.7, 0.7);
+      if (j !== 2) falhas.push(`diagonal com parede a leste devia escorregar para o sul (índice 2), deu ${j}`);
+    }
+  } catch (e) { falhas.push('o andar por sqm quebrou: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* a cidade: mapa do conteúdo, paredes, NPCs sólidos, quem está perto e a
      chegada pelo portão; e o conteúdo com mapa torto é recusado */
   try {
@@ -674,7 +719,8 @@ async function testaSimulacao() {
     if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
-    for (let i = 0; i < 30; i++) Cd.updateCidade(0.05, oeste);
+    /* anda por sqm: oeste até a coluna da porta (5), parando no centro dela */
+    for (let i = 0; i < 200 && (C.p.tx > 5 || C.p.mv); i++) Cd.updateCidade(0.05, C.p.tx > 5 ? oeste : parado);
     for (let i = 0; i < 40; i++) Cd.updateCidade(0.05, norte);
     if (C.perto !== 'mercador') falhas.push(`andar até a casa do Mercador não o deixou ao alcance (${C.perto} em ${C.p.x},${C.p.y})`);
     const m = C.npcs.find((n) => n.k === 'mercador');
@@ -762,8 +808,9 @@ const CASOS = [
     /* do @ da praça até o Mercador: oeste pela rua, norte pela porta da casa */
     var x0=Cd.C.p.x;
     tecla('keydown','KeyA');
-    var oeste=await ate(function(){return Cd.C.p.x<180},200);
-    tecla('keyup','KeyA');
+    /* por sqm: o passo para a coluna da porta (5) começa, solta a tecla e ele termina lá */
+    var oeste=await ate(function(){return Cd.C.p.tx<=5},200);
+    tecla('keyup','KeyA');await ate(function(){return !Cd.C.p.mv},30);
     ok('anda para oeste pela rua', oeste&&Cd.C.p.x<x0, x0+' → '+Cd.C.p.x);
     tecla('keydown','KeyW');
     var chegou=await ate(function(){return !$('#bFalar').hidden},200);
@@ -822,44 +869,45 @@ const CASOS = [
     var tr=RT.enviadas.filter(function(d){return d.event==='presence'})[0];
     ok('anuncia nome, classe e nível (sem conta, o nome da classe)', tr&&tr.payload.payload.nome==='Feiticeiro'&&tr.payload.payload.classe==='feiticeiro'&&tr.payload.payload.lvl===3, tr&&JSON.stringify(tr.payload.payload));
     ok('conta onde está ao chegar', RT.posMandadas().length===1, RT.posMandadas().length);
-    RT.entra('ana1',{nome:'Ana',classe:'cavaleiro',lvl:7});RT.pos('ana1',300,300);
+    RT.entra('ana1',{nome:'Ana',classe:'cavaleiro',lvl:7});RT.pos('ana1',9,9);
     await quadros(4);
     var a=Cd.OUTROS.get('ana1');
-    ok('quem chega aparece, com o nome e a classe dela', a&&a.vis&&a.nome==='Ana'&&a.classe==='cavaleiro'&&a.x===300, a&&JSON.stringify({n:a.nome,c:a.classe,x:a.x,v:a.vis}));
+    ok('quem chega aparece, com o nome e a classe dela', a&&a.vis&&a.nome==='Ana'&&a.classe==='cavaleiro'&&a.tx===9&&a.x===9.5*32, a&&JSON.stringify({n:a.nome,c:a.classe,x:a.x,v:a.vis}));
     ok('o HUD conta duas pessoas', txt('#cRede')==='2 na cidade', txt('#cRede'));
     ok('o registro avisa a chegada', /Ana chegou à cidade/.test(txt('#log')||''), txt('#log'));
     ok('quem chega fica sabendo onde estou', RT.posMandadas().length===2, RT.posMandadas().length);
-    RT.pos('ana1',360,300);await ate(function(){return a.ax===360},10);await quadros(1);
+    RT.pos('ana1',10,9,400);await ate(function(){return a.tx===10},10);await quadros(2);
     var meio=a.x;await quadros(16);
-    ok('o boneco dela anda até a posição nova, sem saltar', meio>300&&meio<360&&Math.abs(a.x-360)<1, meio+' → '+a.x);
+    ok('o boneco dela anda o passo inteiro, um sqm, sem saltar', meio>9.5*32&&meio<10.5*32&&a.x===10.5*32&&!a.mv, meio+' → '+a.x);
+    RT.pos('ana1',30,9,400);await quadros(2);
+    ok('passo de mais de 3 sqm (mensagem perdida) salta direto', a.tx===Cd.C.w-1&&a.x===(Cd.C.w-.5)*32, a.tx+' / '+a.x);
     /* dado de fora: posição fora do mapa, classe que não existe, nome comprido com controle */
-    RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50);
+    RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50,1e9);
     await quadros(3);
     var m=Cd.OUTROS.get('mal');
-    ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.x===Cd.C.w*32&&m.y===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
+    ok('dado de fora é conferido: posição presa ao mapa, classe válida, nome curto', m&&m.tx===Cd.C.w-1&&m.ty===0&&m.classe==='feiticeiro'&&m.nome.length===16&&m.nome.charCodeAt(0)===120, m&&JSON.stringify({x:m.x,y:m.y,c:m.classe,n:m.nome}));
     RT.sai('mal');
-    var n0=RT.posMandadas().length,t0=Cd.C.t0;
-    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await quadros(2);
-    /* o laço do roteiro e o do jogo dividem o relógio sintético: o tempo de
-       jogo que passou é o da cidade (C.t0), não o número de quadros */
-    var n1=RT.posMandadas().length-n0,dtj=Cd.C.t0-t0;
-    ok('andando, manda a posição no máximo 5 vezes por segundo', n1>=2&&n1<=Math.floor(dtj/0.2)+1, n1+' em '+dtj.toFixed(2)+' s');
+    var n0=RT.posMandadas().length,x0=Cd.C.p.tx;
+    tecla('keydown','KeyD');await quadros(10);tecla('keyup','KeyD');await ate(function(){return !Cd.C.p.mv},30);await quadros(2);
+    var n1=RT.posMandadas().length-n0,andou=Cd.C.p.tx-x0;
+    ok('andando, manda uma mensagem por passo e nada parado', andou>=2&&n1===andou, n1+' mensagens, '+andou+' sqm');
     var ult=RT.posMandadas()[RT.posMandadas().length-1].payload.payload;
-    ok('a última posição mandada é onde parei', Math.abs(ult.x-Math.round(Cd.C.p.x))<=1, ult.x+' / '+Cd.C.p.x);
+    ok('a última posição mandada é o sqm onde parei', ult.x===Cd.C.p.tx&&ult.y===Cd.C.p.ty&&!Cd.C.p.mv, JSON.stringify(ult)+' / '+Cd.C.p.tx+','+Cd.C.p.ty);
+    ok('cada mensagem é um passo de um sqm, com a duração dele', RT.posMandadas().slice(n0).every(function(q){return q.payload.payload.d>=150&&q.payload.payload.d<=700}), JSON.stringify(RT.posMandadas().slice(n0).map(function(q){return q.payload.payload})));
     RT.sai('ana1');await quadros(3);
     ok('quem sai some, e o registro avisa', !Cd.OUTROS.has('ana1')&&/Ana saiu da cidade/.test(txt('#log')||''), Cd.OUTROS.size);
     ok('sem ninguém, o HUD volta a só você', txt('#cRede')==='Só você na cidade', txt('#cRede'));
     Tl.abreNpc('mercador');await quadros(3);
     ok('numa loja da cidade continua conectado', RT.fechados===0, RT.fechados);
     clica($('#shopBack'));
-    RT.entra('bia',{nome:'Bia',classe:'druida',lvl:2});RT.pos('bia',200,200);await quadros(3);
+    RT.entra('bia',{nome:'Bia',classe:'druida',lvl:2});RT.pos('bia',6,6);await quadros(3);
     Tl.abreNpc('guia');clica($('#huntList button'));await quadros(4);
     ok('ir caçar sai da cidade: desliga e esquece os outros', RT.fechados===1&&Cd.OUTROS.size===0, RT.fechados+' / '+Cd.OUTROS.size);
     ok('a caçada é sozinha: nada de rede na masmorra', RT.vivos.length===0, RT.vivos.length);
     clica($('#toMenu'));
     var religou=await ate(function(){return RT.abertos===2&&Cd.OUTROS.has('bia')},40);
     ok('voltar à cidade religa e recebe quem já estava lá', religou, RT.abertos+' / '+Cd.OUTROS.size);
-    RT.pos('bia',210,200);await quadros(2);
+    RT.pos('bia',7,6,300);await quadros(2);
     RT.vivos[0].close();await quadros(2);
     ok('se a conexão cai, avisa e esquece os outros', txt('#cRede')==='Sem rede: só você'&&Cd.OUTROS.size===0, txt('#cRede'));
     var voltou=await ate(function(){return RT.abertos===3&&txt('#cRede')==='2 na cidade'},60);
