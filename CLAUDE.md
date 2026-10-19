@@ -11,7 +11,7 @@ resto: se uma regra nova muda uma antiga, a antiga sai no mesmo commit.
 
 | Parte | Responde | Quem muda |
 |---|---|---|
-| [1. O jogo](#1-o-jogo-os-princípios) | Por quê: o princípio-mãe, os cinco pilares, os não-objetivos, o tom | Só o Leonardo |
+| [1. O jogo](#1-o-jogo-os-princípios) | Por quê: o princípio-mãe, os seis pilares, os não-objetivos, o tom | Só o Leonardo |
 | [2. O produto](#2-o-produto) | O quê, para quem e em que ordem; arte e licenças; riscos | Só o Leonardo |
 | [3. O código](#3-o-código) | Como: arquitetura, simulação, save, Supabase, convenções | Qualquer sessão, junto do código |
 | [4. Testar, versionar, publicar](#4-testar-versionar-publicar) | Os portões antes de qualquer commit | Qualquer sessão, junto do código |
@@ -72,7 +72,7 @@ sabe que você está jogando?"** Monstro que fica mais forte porque você subiu 
 nível, loot que melhora porque você perdeu muito, modo fácil depois de morrer
 três vezes — tudo isso reprova, e não entra.
 
-### Os cinco pilares
+### Os seis pilares
 
 Cada pilar tem uma **regra verificável**, que é o que um agente confere antes
 de mudar o jogo, e o **estado hoje**, que diz o que ainda falta. O estado muda;
@@ -88,7 +88,9 @@ antes matava passa a ser seguro e a render pouco.
 - **Regra:** nada escala com o nível, a classe ou o tamanho do grupo de quem
   entra — nem a vida, nem o dano, nem a quantidade de monstros, nem o respawn.
   A força do monstro vem só do lugar e da profundidade dentro dele. O lugar
-  mostra o nível recomendado e **nunca bloqueia** a entrada. O preço pode
+  mostra o nível recomendado e **nunca bloqueia** a entrada por nível, classe
+  ou grupo; só um lugar especial pode pedir uma missão cumprida, igual para
+  todos (pilar 6). O preço pode
   variar por classe (classe é taxa de crescimento), nunca por jogador.
 - **Estado hoje (0.28.0):** cumprido. O carregamento do `content.json` recusa
   `hpPerCharLevel`, `bossLevelFactor`, `party.monsters` e `party.bossHp`, e a
@@ -164,6 +166,41 @@ acumulado precisa de ralo**: ouro parado é progresso morto.
   provisões, a Forja do Gordon, a taxa de 2% da Feira; o seguro do pilar 4
   será mais um.
 - **Estado hoje:** cumprido.
+
+#### Pilar 6 — A vida é sua: escolher, se esforçar, enriquecer
+
+O Fibula não tem fim a alcançar. O objetivo é o que a vida dá a quem a leva a
+sério: **liberdade para escolher o que fazer com o próprio tempo, e a certeza
+de que o esforço vira algo seu.** Caçar, treinar, juntar itens, negociar,
+enriquecer, acumular patrimônio: cada hora bem empregada deixa o personagem
+mais forte e mais rico, e ninguém escolhe o caminho por ele. Por cima da
+rotina há **missões**: tarefas fixas, com nome e com quem as dá, que não são
+necessárias para viver no mundo, mas facilitam a vida de quem as cumpre — um
+item que não se compra, a chave de um lugar de caça especial.
+
+- **Regra:**
+  - **Mais de um caminho.** Todo sistema novo oferece uma escolha real (onde
+    caçar, o que treinar, vender ou guardar, fazer a missão ou não), e nenhum
+    caminho é o único jeito de progredir.
+  - **O esforço é o que paga.** Poder e patrimônio vêm de tempo de jogo bem
+    usado, nunca de dinheiro real (não-objetivo "Compra que vira poder"). O
+    ralo (pilar 5) transforma ouro parado em poder ou patrimônio; não tira o
+    que o esforço já comprou.
+  - **Missão é opcional.** A rotina (caçar nos lugares comuns, subir de nível,
+    equipar-se) funciona sem missão nenhuma. A missão encurta e abre o
+    especial; não é a porta do comum.
+  - **Missão é igual para todos e fixa** (pilares 1 e 2): o mesmo pedido, a
+    mesma recompensa e o mesmo NPC para qualquer jogador, sem escalar com o
+    nível de quem a faz. Pede um feito (item entregue, chefe morto, lugar
+    alcançado), não um nível.
+  - **Lugar especial pode pedir missão cumprida.** É a única porta fechada do
+    jogo, e abre por feito, igual para todos, nunca por nível, classe ou grupo.
+  - **A recompensa nasce com o ralo e com a regra da Feira definidos** (se
+    pode ser vendida, e com que origem).
+- **Estado hoje:** em parte. Há escolha de lugar, de classe, de vender na
+  Feira ou guardar no cofre. As encomendas do Gordon (`forja.missoes`) são as
+  primeiras missões: materiais em troca de peças da forja. Nenhuma missão
+  libera lugar, e patrimônio é só ouro e peças (não há casa nem outro bem).
 
 ### Não-objetivos
 
@@ -1685,6 +1722,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Só o servidor da sala manda na sala**, antes de a morte endurecer: mensagens de resultado, morte, troca de servidor e herança passam a ser conferidas pela autorização do Realtime do Supabase (canal privado, só com conta), mais conferência de plausibilidade do resultado; a trapaça de quem roda o servidor continua até a F2 | `ROADMAP.md`, Próximo 2; Parte 3, Sala |
 | 19/10 | **Mira manual, jogo com duas mãos** (aprovada depois de testar a 0.34.0, "por agora"): o jogador aponta cada habilidade e pode errar; o jogo deixa de exigir uma mão só | Parte 2, "Controle e tela"; Parte 3, `combate.js` |
 | 19/10 | **Sai o pilar "Duas mãos, e pode parar a qualquer hora"**: os pilares passam a ser cinco (o do ralo vira o 5). Sai a regra da saída segura a ≤ 60 s (era a P8) e a pergunta "dá para parar no meio" do teste de ideias; a regra para sair do jogo durante a luta virá depois. O controle e a tela de celular ficam como requisito da Parte 2 | Parte 1; Parte 2, "Controle e tela" |
+| 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível) | Pilar 6; Pilar 1 |
 
 ### Pendentes
 

@@ -63,9 +63,23 @@ servidor atual é ignorada (`fim`, `passa`, `membros`, `heranca`), resultado
 implausível é recusado, e o canal da sala recusa quem não tem conta; o
 esquema novo está em `tools/supabase/NNN_*.sql`, aplicado.
 
-### 3. Morte da opção B
+### 3. Regra de saída durante a luta
 
-**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 1 (o ritmo), do item 2 (só o servidor manda na sala) e da pendência P9 (**sensível**: os
+**Pilar 4** (a perda é sempre dita antes e só vem da regra). Com a saída a
+≤ 60 s fora dos pilares (19/10/2026), falta dizer o que acontece com quem
+quer ir embora no meio da caçada, principalmente em combate, antes de a
+morte endurecer. Primeiro uma issue `decisao-do-dono` com as opções (por
+exemplo: só pela porta, como hoje; saída por item consumível comprado na
+cidade, que é ralo; logout que deixa o personagem no mapa por N segundos,
+como no Tibia). **Sensível:** mexe no custo da morte. Depois da decisão,
+implementar e mostrar a regra na tela de Regras.
+
+**Pronto quando:** a regra está decidida na Parte 6 do `CLAUDE.md`, um caso
+no harness cobre a saída fora e dentro de combate, e a tela de Regras a diz.
+
+### 4. Morte da opção B
+
+**Pilar 4.** Depende de "Queda de conexão não mata" (`Agora`), do item 1 (o ritmo), do item 2 (só o servidor manda na sala), do item 3 (a regra de saída) e da pendência P9 (**sensível**: os
 números são do Leonardo). Morrer leva a mochila e uma fatia do XP que pode
 derrubar o nível; cada peça vestida tem uma chance de cair; um seguro comprado
 com ouro reduz as perdas e substitui o Selo de resguardo. A tela antes de
@@ -75,7 +89,7 @@ entrar diz o que está em jogo; a tela final, o que caiu. Muda o save
 **Pronto quando:** o caso `morte` do harness cobre a queda de nível, a peça
 perdida e o seguro, e a tela de entrada mostra a perda possível.
 
-### 4. PWA instalável
+### 5. PWA instalável
 
 **Requisito "Controle e tela"** (Parte 2) e desempenho. Manifesto e service worker para instalar na tela inicial e abrir
 sem rede com o último conteúdo baixado. Sem biblioteca.
@@ -84,7 +98,7 @@ sem rede com o último conteúdo baixado. Sem biblioteca.
 abre sem rede depois da primeira visita, e um caso no harness confere que o
 manifesto e o service worker carregam.
 
-### 5. Escada de lugares de caça
+### 6. Escada de lugares de caça
 
 **Pilar 1.** Com o mundo igual para todos, cada faixa de nível precisa de um
 lugar à altura; hoje os lugares param no nível 15 (Cripta). Um lugar novo por
@@ -96,7 +110,7 @@ portal no chão (`abre: "portal"`, igual aos da cidade).
 **Pronto quando:** o lugar novo está no Guia (ou noutro NPC), com nível
 recomendado acima de 15, e o caso da cidade entra nele.
 
-### 6. Pincéis do Fibula no editor
+### 7. Pincéis do Fibula no editor
 
 **Pilar 2.** O OTSP traz para o Remere's Map Editor só um pincel (grama com
 borda); o resto se pinta item por item. `node tools/otbm.mjs rme` passa a
@@ -112,7 +126,7 @@ jogo como item da pilha, sem código novo no jogo
 harness confere que todo id citado existe no `items.otb`, e o
 [docs/rme.md](docs/rme.md) diz como usar.
 
-### 7. Redesenhar os lugares no editor
+### 8. Redesenhar os lugares no editor
 
 **Pilar 2.** Os quatro mapas de hoje são rascunhos do gerador antigo. Cada
 um é redesenhado no Remere's Map Editor com intenção do Tibia: o Esgoto com
@@ -138,6 +152,10 @@ pode desenhar pelo `.otbm` também.
   ser batido.
 - **Som** (requisito de acessibilidade: jogável sem som, melhor com) — efeitos curtos por WebAudio,
   sem arquivo grande nem biblioteca.
+- **Primeira missão que abre um lugar especial** (pilar 6) — um NPC com
+  pedido fixo (um feito, não um nível) e, cumprido, a chave de um lugar de
+  caça especial, igual para todos. Pede antes a decisão de como o save guarda
+  as missões cumpridas (**sensível**: formato do save).
 - **Telemetria mínima** (F1) — os eventos da Parte 2; dado pessoal é sensível.
 
 ---
