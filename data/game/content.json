@@ -128,7 +128,7 @@
       "b1": 6,
       "b2": 10,
       "alc": 7,
-      "d": "Dardo de fogo que persegue o alvo mais próximo."
+      "d": "Dardo de fogo que voa reto na direção da mira."
     },
     "flam": {
       "c": "feiticeiro",
@@ -175,7 +175,7 @@
       "b2": 12,
       "raio": 118,
       "ang": 1.15,
-      "d": "Leque de chamas na direção em que você olha."
+      "d": "Leque de chamas na direção da mira."
     },
     "bolaenergia": {
       "c": "feiticeiro",

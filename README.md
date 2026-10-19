@@ -93,7 +93,8 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
-| 0.34.0 (19/10/2026) | O Grimório saiu da tela inicial e fica na cidade, no botão de sempre. Trocar de personagem só pela tela inicial: o botão Personagens saiu da cidade |
+| 0.35.0 (19/10/2026) | O Grimório saiu da tela inicial e fica na cidade, no botão de sempre. Trocar de personagem só pela tela inicial: o botão Personagens saiu da cidade |
+| 0.34.0 (19/10/2026) | Teste: as habilidades são miradas. O botão da habilidade virou um joystick: aperte para ver a mira, arraste para escolher a direção (na bomba, também a distância) e solte para lançar; volte o dedo ao botão para cancelar. Tocar sem arrastar lança para onde você olha. Nada procura o monstro sozinho: o tiro vai reto e para no primeiro monstro ou na parede, o golpe sai mesmo sem ninguém na frente, e errar gasta a mana como acertar |
 | 0.33.0 (19/10/2026) | Armas de quem começa: numa casa vazia ao norte da praça, uma faca e uma espada de madeira ficam no chão. Pise para pegar: vão para a mochila, e outra aparece no mesmo lugar dois minutos depois. Não valem ouro no Banco nem entram na Feira |
 | 0.32.0 (19/10/2026) | O cofre do Banco guarda tudo como item: guardar a mochila não transforma mais gema e coroa em ouro nem manda material para um depósito escondido. O Banqueiro lista o cofre inteiro (peças, tesouros e materiais) e cada item pode voltar à mochila; tesouro se vende no Banco, material continua com o Gordon, que vê o que está no cofre |
 | 0.31.0 (19/10/2026) | Tela inicial nova: o personagem, o preço da morte em uma linha, Jogar e a conta, tudo sem rolar. As regras e os créditos da arte foram para o botão **Regras**; os números da conta, para Personagens. Quem ainda não tem personagem vê o login antes de criar um |

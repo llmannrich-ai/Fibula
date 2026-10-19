@@ -20,7 +20,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 10:52 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** Grimório só na cidade e troca de personagem só na tela inicial (0.34.0), a pedido do Leonardo. Saíram o `#toGrim` do rodapé da tela inicial e o `#cPick` da cidade. O Grimório continua no botão `#cGrim` da cidade, e Personagens, no rodapé e na linha do personagem da tela inicial.
+**Item desenvolvido:** Grimório só na cidade e troca de personagem só na tela inicial (0.35.0), a pedido do Leonardo. Saíram o `#toGrim` do rodapé da tela inicial e o `#cPick` da cidade. O Grimório continua no botão `#cGrim` da cidade, e Personagens, no rodapé e na linha do personagem da tela inicial.
 
 **Validação:** `node tools/testar.mjs` — 36/36. Asserções novas: sem Grimório na tela inicial e sem Personagens na cidade. Os casos `equipamento` (trocar para o Cavaleiro passa pelo Menu), `classes` e `grimorio` (o Grimório abre na cidade e volta a ela) foram ajustados.
 
@@ -33,6 +33,19 @@ execução precisa saber e não vai descobrir lendo o código.
 **Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).
 
 ---
+## 2026-10-19 21:00 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** mira manual das habilidades (0.34.0), teste pedido pelo Leonardo, fora da fila. O botão da habilidade virou joystick (`src/controles.js`: apertar mostra a mira, arrastar escolhe direção e, na bomba, distância; soltar lança; voltar ao botão cancela; tocar lança para onde se olha). Em `src/sim/combate.js` saíram `target()` e `miraEm()`: o tiro vai reto até o alcance e para no primeiro monstro ou na parede, mostrando o efeito onde se desfaz; o golpe sai sem alvo; a bomba cai no ponto escolhido (cortada pela parede); o feixe para na parede. `formaMira()` diz à tela o que desenhar (`desenhaMira()` em `src/desenho.js`). Na sala, o convidado manda `ma`/`md` com a entrada.
+
+**Validação:** `node tools/testar.mjs` — 35/35, depois de mesclar a main (0.32.0). Sonda nova na simulação no Node: tiro para o lado oposto não acerta, gasta a mana e mostra o efeito; tiro mirado acerta. Visto em 360×640 com o Chromium: mira tracejada cortada pela parede e efeito de fogo no ponto do erro.
+
+**Análise:** os testes que lutam (simulação no Node, `incursao-extracao`, `arte`) contavam com o alvo automático; agora o jogador do teste mira no monstro mais perto (`P.miraBot` na cópia; no Node, uma mira lida dentro de cada passo da regra, para não depender do quadro).
+
+**Roadmap:** sem mudança; é teste do dono.
+
+**Pendências e riscos:** contraria a regra do pilar 5 ("alvo escolhido pelo jogo"); registrado como P10 na Parte 6, sensível. Risco: com uma mão, mirar e andar ao mesmo tempo não dá; o Cavaleiro e o Paladino perdem mais. O Balanceamento não deve medir dano por caçada como se a mira acertasse sempre.
+
+**Próximo passo recomendado:** esperar o veredito do Leonardo; se a mira ficar, reescrever a regra do pilar 5 e pensar em mira automática só no ataque básico.
 
 ## 2026-10-19 10:47 UTC — sessão manual (nuvem)
 
@@ -340,21 +353,5 @@ execução precisa saber e não vai descobrir lendo o código.
 - Quem já pegou e quer testar de novo precisa de save novo (ou apagar `chao` do save).
 
 **Próximo passo recomendado:** o Leonardo testar o equipamento no corpo com as peças; depois tirar `city.chao`.
-
----
-
-## 2026-10-19 14:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** todo mundo uns 15% mais rápido (0.16.0), a pedido do Leonardo. Só dado: `progression.walk.ground` de 150 (o chão padrão do Tibia) para 130. Como o passo é proporcional ao chão e arredondado para cima em 50 ms, o ganho real vai de 9% a 17%: nível 1 de 550 para 500 ms (2 sqm/s), nível 50 de 400 para 350, nível 100 de 350 para 300; aranha 600→550, orc e esqueleto 800→700, xamã e Guardião 850→750, rato 900→800. Nível 200 fica em 250.
-
-**Validação:** `node tools/testar.mjs` — 28/28, com os valores esperados da fórmula ajustados na simulação no Node (nível 1 = 0,5 s, nível 200 = 0,25 s, velocidade 150 = 0,7 s, buff de 50% = 0,35 s, 1,8 s para leste = 4 sqm).
-
-**Análise:** trocar o chão mantém a proporção entre jogador e monstros e o arredondamento do Tibia; trocar o arredondamento para o mais próximo daria 20% a 40%, longe do pedido.
-
-**Roadmap:** sem mudança de fila.
-
-**Pendências e riscos:** a mesma de antes: medir mortes e XP por incursão com o ritmo novo.
-
-**Próximo passo recomendado:** o Leonardo jogar e dizer se o ritmo acertou.
 
 ---

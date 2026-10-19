@@ -111,7 +111,7 @@ recomendado acima de 15, e o caso da cidade entra nele.
 
 ## Concluído
 
-- **2026-10-19 — Grimório só na cidade, troca de personagem só na tela inicial (0.34.0)**
+- **2026-10-19 — Grimório só na cidade, troca de personagem só na tela inicial (0.35.0)**
   *(pedido do Leonardo; pilar 5)*. O rodapé da tela inicial ficou Regras ·
   Personagens; o botão Personagens saiu da cidade. Os casos `equipamento`,
   `classes` e `grimorio` seguem o caminho novo.

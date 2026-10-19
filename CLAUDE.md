@@ -153,6 +153,11 @@ perder nada que a regra não diga?**
   lugar de caça até uma saída (pendência P8 da Parte 6). Sem energia, sem
   vidas que recarregam, sem evento com hora marcada. Tempo morto — andar longe
   à toa na cidade, esperar sem nada a decidir — é defeito.
+- **Em teste (0.34.0, pedido do Leonardo em 19/10/2026):** a mira manual. O
+  botão da habilidade é um joystick (apertar mira, arrastar escolhe a direção,
+  soltar lança) e nada procura o monstro mais perto: o que sai pode errar.
+  Contraria a frase "alvo escolhido pelo jogo" desta regra, que fica até o
+  Leonardo decidir depois de jogar (pendência P10 da Parte 6).
 - **Estado hoje:** controle e telas cumprem. A única saída é a porta na sala de
   entrada; o mapa de caça tem 64×64 sqm, então do fundo até a porta pode levar
   mais de 60 s.
@@ -564,6 +569,9 @@ principal, o markup das telas e do HUD, e a linha que carrega
   deste aparelho, para a tela. No solo a ficha aponta para o personagem do
   save, e o que é da conta (cofre, peças) só muda para a ficha local, em `sai()`
 - `combate.js` — conjuração (`lancar()`, `lancarSlot()`, `drinkPot()`, `comer()`), todas
+  com a mira do jogador (`ent.mira[i]`, a direção, NaN para onde ele olha, e
+  `ent.alc[i]`, quão longe a bomba cai; `formaMira()` diz à tela o que
+  desenhar; não há alvo automático, e o tiro vai reto até o alcance),
   recebendo o jogador que age,
   `hitMon()`, `kill()`, `gainXp()`, `hurtPlayer()`, `pickup()`, e o vestir na caçada (`vesteDoSaco()`, `tiraProSaco()`, `pecasDaCaca()`)
 
@@ -1505,3 +1513,4 @@ Sem resposta em 72 h, o agente aplica o padrão — exceto nas **sensíveis**.
 | P7 | Venda de peça da mochila na Feira durante a caçada, livre mesmo que o jogador morra depois (**sensível**) | Fica como está; conflita com o pilar 4. Opções: vender só fora da caçada, ou vender na caçada com taxa alta | Antes de endurecer a morte |
 | P8 | Distância máxima até uma saída segura num lugar de caça | 60 s de caminhada no nível recomendado, com saídas a mais quando o mapa passar disso | Antes de fixar os mapas |
 | P9 | Números da morte da opção B: fatia de XP, chance por peça e preço do seguro (**sensível**) | O Balanceamento propõe em issue; nada entra sem o Leonardo | Antes de implementar a morte B |
+| P10 | Mira manual das habilidades (em teste na 0.34.0) contra o "alvo escolhido pelo jogo" do pilar 5 (**sensível**) | Fica no ar como teste; o Leonardo decide depois de jogar se a regra do pilar 5 muda ou se a mira volta a ser automática | Depois do teste do Leonardo |
