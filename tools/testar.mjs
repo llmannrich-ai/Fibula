@@ -904,6 +904,8 @@ async function testaSimulacao() {
     if (!ruim((c) => { c.hunts.ilha.bands[0].weights = {grifo: 1}; })) falhas.push('mapa de caça com monstro inexistente foi aceito');
     if (!ruim((c) => { c.hunts.cripta.mapa.w = [5, 40]; })) falhas.push('mapa de caça com sala maior que o mapa foi aceito');
     if (!ruim((c) => { c.hunts.ilha.npc = 'guia'; })) falhas.push('NPC que abre cacadas sem mapa de caça nenhum foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.mapa.objetos = [{k: 'pilar', onde: 'teto', p: 0.1}]; })) falhas.push('objeto de mapa com onde desconhecido foi aceito');
+    if (!ruim((c) => { c.hunts.cripta.arte.detalhes = [{s: [], onde: 'livre', p: 0.1}]; })) falhas.push('detalhe de mapa sem sprite foi aceito');
     const C3 = Cd.entraCidade('capitao'); Cd.updateCidade(0.05, parado);
     if (C3.perto !== 'capitao') falhas.push(`voltar da ilha não pôs o jogador ao lado do Capitão (${C3.perto})`);
     /* os mapas de caça: cada um com os monstros e o chefe dele, a mesma
@@ -921,6 +923,25 @@ async function testaSimulacao() {
       novoSave(); I.newRun(51, undefined, false, k);
       if (retrato() !== a) falhas.push(`mesma semente no mapa ${k}, masmorras diferentes`);
       fotos[k] = a.split('|')[0];
+      /* os objetos do lugar (mapa.objetos): existem, são os mesmos para a
+         mesma semente, ninguém nasce em cima deles e nenhum fecha caminho:
+         todo chão continua alcançável a partir da entrada */
+      {
+        const G = I.G, objs = [], chao = [];
+        for (let i = 0; i < G.g.length; i++) { if (G.g[i] === 2) objs.push(i + ':' + G.obj[i]); if (G.g[i] === 0) chao.push(i); }
+        if (h.mapa && h.mapa.objetos && !objs.length) falhas.push(`o mapa ${k} tem objetos no content.json e nenhum na masmorra`);
+        if (objs.some((o) => !+o.split(':')[1])) falhas.push(`o mapa ${k} tem sqm sólido de objeto sem objeto`);
+        const em = G.mons.filter((m) => G.g[m.ty * 64 + m.tx] !== 0).map((m) => m.k);
+        if (em.length) falhas.push(`no mapa ${k}, monstro nascido em cima de parede ou objeto: ${em}`);
+        if (G.ps.some((q) => G.g[q.ty * 64 + q.tx] !== 0)) falhas.push(`no mapa ${k}, o jogador começou em cima de um objeto`);
+        const vis = new Uint8Array(G.g.length), fila = [G.ps[0].ty * 64 + G.ps[0].tx]; vis[fila[0]] = 1;
+        while (fila.length) { const c = fila.pop(), x = c % 64; for (const d of [x > 0 ? -1 : 0, x < 63 ? 1 : 0, -64, 64]) { const n = c + d; if (d && n >= 0 && n < G.g.length && !vis[n] && G.g[n] === 0) { vis[n] = 1; fila.push(n); } } }
+        const preso = chao.filter((i) => !vis[i]).length;
+        if (preso) falhas.push(`no mapa ${k}, os objetos isolaram ${preso} sqm de chão`);
+        novoSave(); I.newRun(51, undefined, false, k);
+        const objs2 = []; for (let i = 0; i < I.G.g.length; i++) if (I.G.g[i] === 2) objs2.push(i + ':' + I.G.obj[i]);
+        if (objs2.join() !== objs.join()) falhas.push(`mesma semente no mapa ${k}, objetos diferentes`);
+      }
       I.G.active = true; let fim = null; saida.fim = (x) => { fim = x; };
       for (let i = 0; i < 40; i++) I.passo(0.05, {x: 0, y: 0, held: [true, true, false, false]});
       I.finish('desabou');

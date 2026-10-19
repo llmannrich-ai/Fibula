@@ -105,6 +105,15 @@ export function validaConteudo(c){
     if(h.boss!==undefined)for(const e of [h.boss.type,...(h.boss.escort||[])])if(!tem(c.enemies,e))throw new Error(`mapa de caça ${k}: chefe cita inimigo inexistente: ${e}`);
     const m=h.mapa,par=v=>Array.isArray(v)&&v.length===2&&v.every(Number.isInteger)&&v[0]>=2&&v[0]<=v[1];
     if(m!==undefined&&!(m&&par(m.salas)&&par(m.w)&&par(m.h)&&m.w[1]<=16&&m.h[1]<=16&&Number.isInteger(m.atalhos)&&m.atalhos>=0))throw new Error(`mapa de caça ${k}: mapa precisa de salas, w e h ([mínimo, máximo], até 16) e atalhos`);
+    if(m&&m.objetos!==undefined){
+      if(!Array.isArray(m.objetos)||m.objetos.length>200)throw new Error(`mapa de caça ${k}: objetos precisa ser uma lista`);
+      for(const o of m.objetos)if(!o||typeof o.k!=='string'||!['parede','canto','meio'].includes(o.onde)||!(typeof o.p==='number'&&o.p>0&&o.p<=1))
+        throw new Error(`mapa de caça ${k}: cada objeto precisa de k, onde (parede, canto ou meio) e p (de 0 a 1)`);
+    }
+    const ar=h.arte||{};
+    for(const[n,v]of Object.entries(ar.objetos||{}))if(!Array.isArray(v)||!v.length||v.some(x=>typeof x!=='string'))throw new Error(`mapa de caça ${k}: arte.objetos.${n} precisa ser uma lista de sprites`);
+    for(const d of ar.detalhes||[])if(!d||!Array.isArray(d.s)||!d.s.length||!['parede','canto','livre'].includes(d.onde)||!(typeof d.p==='number'&&d.p>0&&d.p<=1))
+      throw new Error(`mapa de caça ${k}: cada detalhe precisa de s (sprites), onde (parede, canto ou livre) e p (de 0 a 1)`);
   }
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='cacadas'&&!hs.some(([,h])=>h.npc===k))throw new Error(`o NPC ${k} abre cacadas, mas nenhum mapa de caça é dele`);
   const f=c.forja,inteiro=v=>Number.isInteger(v)&&v>0;

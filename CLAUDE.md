@@ -21,8 +21,9 @@ resto: se uma regra nova muda uma antiga, a antiga sai no mesmo commit.
 Fora deste arquivo há só **contratos de trabalho**, que cedem a ele: o
 [ROADMAP.md](ROADMAP.md) (a fila) e o [DIARIO.md](DIARIO.md) (o registro). As
 análises em `docs/` ([analise-tibia-habilidades.md](docs/analise-tibia-habilidades.md),
-[plano-multiplayer.md](docs/plano-multiplayer.md)) são **referência**: dizem
-como o Tibia fazia a conta e como chegar ao servidor, e quando discordarem
+[plano-multiplayer.md](docs/plano-multiplayer.md), [plano-mapas.md](docs/plano-mapas.md))
+são **referência**: dizem como o Tibia fazia a conta, como chegar ao servidor
+e como enriquecer os mapas, e quando discordarem
 daqui, vale este arquivo. O `AGENTS.md` só aponta para cá, e o `README.md` é
 para quem joga.
 
@@ -528,8 +529,14 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
-  sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
-  (qual peça de parede cada bloco sólido recebe; a cidade usa com a grade dela)
+  sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, **objetos**
+  (`objetos()`: os sólidos do lugar, de `mapa.objetos` — pilar, rocha,
+  sarcófago, palmeira —, postos com um hash da semente e não com o sorteio da
+  regra, e recusados se fecharem caminho; ficam em `g` com o valor 2, sólido
+  com chão debaixo, e em `obj`, o número do objeto mais 1) e `pecas()` (qual
+  peça de parede cada bloco de valor 1 recebe; a cidade usa com a grade dela).
+  O plano do que vem depois (mapa fixo, forma por lugar, bordas de chão, mapa
+  desenhado no editor) está em [docs/plano-mapas.md](docs/plano-mapas.md)
 - `cidade.js` — **cidade**: `C`, `entraCidade(dePortao)` (lê `city.mapa` do
   `content.json`: `C.t` o chão, `C.obj` os objetos, que ficam sobre o chão do
   vizinho, como os NPCs; `LISTA_OBJ`), a física da grade da cidade e `updateCidade(dt,ent)`, que
@@ -586,7 +593,10 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `arte.js` — `ART`, `carregaArte()` (sem `await`: não segura o jogo),
   `icone()` (sprite como fundo de elemento da interface), `dir4()`, `dir8()`,
   `PECA`
-- `desenho.js` — canvas, `resize()`, **interpolação** (`render()` desenha
+- `desenho.js` — canvas, `resize()`, **o mapa vestido** (`vesteMapa()`:
+  variante do chão, detalhe e sprite de cada objeto por sqm, de
+  `hunts.<k>.arte`, montado uma vez por masmorra com um hash da semente; na
+  Ilha, `arte.borda` troca a parede por mato), **interpolação** (`render()` desenha
   entre o passo anterior e o atual e chama `cena()`), `spr()` (desenha com o canto inferior
   direito no tile, como o Tibia), `render()`, `drawPlayer()`, `drawMon()`,
   `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`, o

@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.29.0 (19/10/2026) | Os lugares de caça ganharam cara própria: pilares, barris e rochas na Masmorra de Runas; teias, grades e lodo no Esgoto; a Ilha virou clareira cercada de mata, com palmeiras e pedras; sarcófagos, gárgulas e ossadas na Cripta. Os objetos ocupam o sqm, como no Tibia: servem de cobertura e de gargalo |
 | 0.28.0 (19/10/2026) | O mundo é igual para todos: os monstros e os chefes têm a mesma força para qualquer nível e qualquer tamanho de grupo. A dificuldade vem do lugar que você escolhe; cada lugar mostra o nível recomendado |
 | 0.27.0 (19/10/2026) | Inventário como no Tibia: o saco saiu e ficaram a mochila e o cofre. O loot fica na mochila do personagem depois da caçada, vai junto na próxima e cai inteiro se ele morrer. Só o cofre do Banco é seguro: o Banqueiro guarda uma coisa ou tudo e devolve peças e ouro à mochila. Vestir e tirar pela Mochila, na cidade, agora troca com a mochila. A mochila tem 20 espaços; cheia, o loot fica no chão |
 | 0.26.0 (19/10/2026) | Vestir e tirar pela Mochila, sem ir ao Banco: toque numa peça e no botão. Na cidade, a troca é com o cofre do Banco; na caçada, como no Tibia, com o saco: a peça que você acabou de pegar vale na hora e passa a não cair na morte, e a que sai do corpo vai para o saco e corre o risco dele |

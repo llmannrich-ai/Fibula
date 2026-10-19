@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.28.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.28.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila} from './progresso.js?v=0.28.0';
-import {genMap,pecas} from './mapa.js?v=0.28.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.28.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.29.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.29.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila} from './progresso.js?v=0.29.0';
+import {genMap,pecas} from './mapa.js?v=0.29.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.29.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -27,9 +27,10 @@ function spawn0(k,r,d,boss){
      chefe nasce sempre: com o sqm dele ocupado, vai para o livre mais perto
      do centro da sala (sem sorteio, para não mudar a masmorra de ninguém) */
   let tx=boss?r.cx:r.x+1+rnd(r.w-2),ty=boss?r.cy-1:r.y+1+rnd(r.h-2);
-  if(boss&&G.ocu[ty*MW+tx]){let bd=1e9;
-    for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++){const d=(i-r.cx)**2+(j-r.cy+1)**2;if(!G.ocu[j*MW+i]&&d<bd){bd=d;tx=i;ty=j}}}
-  if(G.ocu[ty*MW+tx])return;G.ocu[ty*MW+tx]=1;
+  if(boss&&(G.ocu[ty*MW+tx]||G.g[ty*MW+tx])){let bd=1e9;
+    for(let j=r.y;j<r.y+r.h;j++)for(let i=r.x;i<r.x+r.w;i++){const d=(i-r.cx)**2+(j-r.cy+1)**2;if(!G.ocu[j*MW+i]&&!G.g[j*MW+i]&&d<bd){bd=d;tx=i;ty=j}}}
+  /* nem em cima de um objeto do lugar (pilar, rocha) */
+  if(G.ocu[ty*MW+tx]||G.g[ty*MW+tx])return;G.ocu[ty*MW+tx]=1;
   const hp=Math.round(t.hp*hpm);
   G.mons.push({id:G.nid++,k,t,x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,hp,mhp:hp,r:t.r,spd:t.spd,dmg:Math.round(t.dmg*(1+sc.dmgPerDepth*d)),xpm:1+sc.xpPerDepth*d,atkCd:rr(0,1),flash:0,aggro:false,wt:0,anim:frr(0,9),mv:0,face:frr(0,TAU),slow:0,slowF:1,dot:null,dn:G.ps.map(()=>0)});
   poeNoSqm(G.mons[G.mons.length-1],tx,ty);
@@ -69,12 +70,12 @@ function novoJogador(f,i,s){
    mapa de caça dá a mesma masmorra */
 export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false,caca){
   semeia(s0);caca=cacaDe(caca);
-  const {g,rooms}=genMap(HUNTS[caca].mapa),s=rooms[0];
+  const {g,rooms,obj}=genMap(HUNTS[caca].mapa),s=rooms[0];
   let pr=s,md=1;
   for(const r of rooms){r.d=hyp(r.cx-s.cx,r.cy-s.cy);if(r.d>md){md=r.d;pr=r}}
   const ps=fichas.map((f,i)=>novoJogador(f,i,s));
   /* G.p é o jogador deste aparelho, para a tela; a regra só usa G.ps */
-  G={g,rooms,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
+  G={g,rooms,obj,par:pecas(g),cad:[],seen:new Uint8Array(MW*MH),flow:new Int16Array(MW*MH).fill(-1),fdono:new Uint8Array(MW*MH),ocu:new Uint8Array(MW*MH),flowT:0,ps,p:ps[0],
      nid:0,mons:[],proj:[],drops:[],fx:[],torches:[],pend:[],
      t:0,kills:0,caca,portal:aberta?{x:(s.cx+.5)*T,y:(s.cy+.5)*T,open:true}:{x:(pr.cx+.5)*T,y:(pr.cy+.5)*T,open:false},aberta,respT:0,over:false,active:false,shake:0,warned:false,miniT:0,end:null,dur:0,acc:0,alfa:1,semente};
   for(const p of ps)G.ocu[p.ty*MW+p.tx]=1;
@@ -99,7 +100,8 @@ export function newRun(s0=novaSemente(),fichas=[fichaLocal()],aberta=false,caca)
    monstro não entra em sqm de monstro nem de jogador, e jogador não entra em
    sqm de monstro — é o bloqueio de corpo do Tibia, que deixa o cavaleiro
    segurar o corredor. Jogadores não se bloqueiam entre si. */
-export const solid=(x,y)=>x<0||y<0||x>=MW||y>=MH||G.g[y*MW+x]===1;
+/* parede (1) e objeto do lugar (2, ver mapa.js) são sólidos */
+export const solid=(x,y)=>x<0||y<0||x>=MW||y>=MH||G.g[y*MW+x]!==0;
 const temJogador=(x,y)=>{for(const p of G.ps)if(!p.fora&&p.tx===x&&p.ty===y)return true;return false};
 const livreP=(x,y)=>!solid(x,y)&&!G.ocu[y*MW+x];
 const livreM=(x,y)=>livreP(x,y)&&!temJogador(x,y);

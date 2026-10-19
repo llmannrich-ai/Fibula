@@ -1813,7 +1813,7 @@
     }
   },
   "hunts": {
-    "_note": "Os mapas de caca (pedido do Leonardo, 19/10/2026). npc: a chave de city.npcs que leva ate ele (um NPC com abre cacadas pode levar a varios). bands e boss: a tabela de spawn e o chefe, no formato de progression.bands e progression.boss; sem elas, valem as de progression. mapa: como genMap() cava (salas: minimo e maximo de salas; w e h: largura e altura de cada uma; atalhos: corredores a mais), sem ele os numeros da masmorra de sempre. arte: chao e par sao prefixos de sprite (chao, chao_<x>; par_v..par_canto, <par>_v..); cor e o desenho sem sprites (chao1, chao2, par); escuro e quanto a noite cobre a tela (0 a 1); tochas: se as paredes tem tochas. entrada e volta: as frases do registro ao chegar e ao voltar à cidade. nivel e so recomendacao: o mundo nao se ajusta ao jogador.",
+    "_note": "Os mapas de caca (pedido do Leonardo, 19/10/2026). npc: a chave de city.npcs que leva ate ele (um NPC com abre cacadas pode levar a varios). bands e boss: a tabela de spawn e o chefe, no formato de progression.bands e progression.boss; sem elas, valem as de progression. mapa: como genMap() cava (salas: minimo e maximo de salas; w e h: largura e altura de cada uma; atalhos: corredores a mais), sem ele os numeros da masmorra de sempre. arte: chao e par sao prefixos de sprite (chao, chao_<x>; par_v..par_canto, <par>_v..); cor e o desenho sem sprites (chao1, chao2, par); escuro e quanto a noite cobre a tela (0 a 1); tochas: se as paredes tem tochas. entrada e volta: as frases do registro ao chegar e ao voltar à cidade. nivel e so recomendacao: o mundo nao se ajusta ao jogador. mapa.objetos: os objetos solidos do lugar (k, onde: parede, canto ou meio, p: a chance de cada sqm que serve), postos por src/sim/mapa.js sem fechar passagem; arte.objetos diz o sprite de cada k (varios = variantes). arte.variantes: outros chaos misturados ao principal ([sprite, fatia]). arte.detalhes: enfeites do chao, por onde se anda (s: sprites, onde: parede, canto ou livre, p). arte.borda: lugar aberto, sem parede; a rocha vira fundo (chao) com arvores.",
     "esgoto": {
       "nome": "Esgoto",
       "desc": "Galerias úmidas sob a cidade. Morcegos e ratos perto da grade, baratas e lesmas lá embaixo, e a Centopeia-rainha no ninho.",
@@ -1867,7 +1867,19 @@
           4,
           6
         ],
-        "atalhos": 6
+        "atalhos": 6,
+        "objetos": [
+          {
+            "k": "caixa",
+            "onde": "canto",
+            "p": 0.4
+          },
+          {
+            "k": "rocha",
+            "onde": "parede",
+            "p": 0.04
+          }
+        ]
       },
       "arte": {
         "chao": "esg",
@@ -1878,7 +1890,68 @@
           "par": "#34403a"
         },
         "escuro": 0.86,
-        "tochas": true
+        "tochas": true,
+        "objetos": {
+          "caixa": [
+            "obj_barril",
+            "obj_caixote",
+            "obj_barril"
+          ],
+          "rocha": [
+            "obj_musgo",
+            "obj_musgo2"
+          ]
+        },
+        "detalhes": [
+          {
+            "s": [
+              "det_teia1",
+              "det_teia2"
+            ],
+            "onde": "canto",
+            "p": 0.55
+          },
+          {
+            "s": [
+              "det_grade"
+            ],
+            "onde": "parede",
+            "p": 0.03
+          },
+          {
+            "s": [
+              "det_lodo"
+            ],
+            "onde": "livre",
+            "p": 0.012
+          },
+          {
+            "s": [
+              "det_musgo",
+              "det_pedra4",
+              "det_pedra5"
+            ],
+            "onde": "livre",
+            "p": 0.05
+          },
+          {
+            "s": [
+              "det_cogu1",
+              "det_cogu2",
+              "det_cogu3"
+            ],
+            "onde": "parede",
+            "p": 0.05
+          },
+          {
+            "s": [
+              "det_resto1",
+              "det_resto2"
+            ],
+            "onde": "livre",
+            "p": 0.01
+          }
+        ]
       },
       "volta": "Você subiu pela grade do esgoto."
     },
@@ -1886,7 +1959,90 @@
       "nome": "Masmorra de Runas",
       "desc": "Corredores de pedra sob a cidade. Ratos e aranhas na entrada, orcs e o Guardião do Portal no fundo.",
       "nivel": 1,
-      "npc": "guia"
+      "npc": "guia",
+      "mapa": {
+        "salas": [
+          9,
+          15
+        ],
+        "w": [
+          5,
+          10
+        ],
+        "h": [
+          5,
+          9
+        ],
+        "atalhos": 3,
+        "objetos": [
+          {
+            "k": "pilar",
+            "onde": "meio",
+            "p": 0.05
+          },
+          {
+            "k": "caixa",
+            "onde": "canto",
+            "p": 0.35
+          },
+          {
+            "k": "rocha",
+            "onde": "parede",
+            "p": 0.05
+          }
+        ]
+      },
+      "arte": {
+        "variantes": [
+          [
+            "chao2",
+            0.07
+          ]
+        ],
+        "objetos": {
+          "pilar": [
+            "obj_pilar"
+          ],
+          "caixa": [
+            "obj_barril",
+            "obj_caixote"
+          ],
+          "rocha": [
+            "obj_rocha",
+            "obj_rocha2",
+            "obj_rocha3"
+          ]
+        },
+        "detalhes": [
+          {
+            "s": [
+              "det_teia1",
+              "det_teia2"
+            ],
+            "onde": "canto",
+            "p": 0.55
+          },
+          {
+            "s": [
+              "det_pedra1",
+              "det_pedra2",
+              "cascalho",
+              "cascalho2"
+            ],
+            "onde": "livre",
+            "p": 0.05
+          },
+          {
+            "s": [
+              "det_resto1",
+              "det_resto2",
+              "det_sangue1"
+            ],
+            "onde": "parede",
+            "p": 0.03
+          }
+        ]
+      }
     },
     "ilha": {
       "nome": "Ilha da Enseada",
@@ -1942,7 +2098,24 @@
           7,
           11
         ],
-        "atalhos": 2
+        "atalhos": 2,
+        "objetos": [
+          {
+            "k": "palmeira",
+            "onde": "parede",
+            "p": 0.16
+          },
+          {
+            "k": "rocha",
+            "onde": "meio",
+            "p": 0.03
+          },
+          {
+            "k": "cacto",
+            "onde": "meio",
+            "p": 0.02
+          }
+        ]
       },
       "arte": {
         "chao": "ilha",
@@ -1953,7 +2126,70 @@
           "par": "#7a6646"
         },
         "escuro": 0.45,
-        "tochas": false
+        "tochas": false,
+        "objetos": {
+          "palmeira": [
+            "obj_palmeira"
+          ],
+          "rocha": [
+            "obj_pedrao",
+            "obj_pedrao2",
+            "obj_musgo"
+          ],
+          "cacto": [
+            "obj_cacto",
+            "obj_cacto2"
+          ]
+        },
+        "detalhes": [
+          {
+            "s": [
+              "det_tufo1",
+              "det_tufo2",
+              "det_tufo3",
+              "det_tufo4"
+            ],
+            "onde": "parede",
+            "p": 0.35
+          },
+          {
+            "s": [
+              "det_tufo1",
+              "det_tufo3",
+              "det_planta1",
+              "det_planta2",
+              "det_planta3",
+              "det_planta4"
+            ],
+            "onde": "livre",
+            "p": 0.06
+          },
+          {
+            "s": [
+              "det_pedra1",
+              "det_pedra3",
+              "det_graveto1",
+              "det_graveto2",
+              "det_graveto3"
+            ],
+            "onde": "livre",
+            "p": 0.04
+          }
+        ],
+        "borda": {
+          "fundo": [
+            "grama",
+            "grama2"
+          ],
+          "arvores": [
+            "arv_1",
+            "arv_2",
+            "arv_3",
+            "obj_palmeira",
+            "arvore",
+            "arvore2"
+          ]
+        }
       },
       "volta": "O navio trouxe você de volta ao porto."
     },
@@ -2011,7 +2247,24 @@
           5,
           8
         ],
-        "atalhos": 4
+        "atalhos": 4,
+        "objetos": [
+          {
+            "k": "sarcofago",
+            "onde": "parede",
+            "p": 0.08
+          },
+          {
+            "k": "estatua",
+            "onde": "canto",
+            "p": 0.45
+          },
+          {
+            "k": "pilar",
+            "onde": "meio",
+            "p": 0.05
+          }
+        ]
       },
       "arte": {
         "chao": "cripta",
@@ -2022,7 +2275,62 @@
           "par": "#33333c"
         },
         "escuro": 0.9,
-        "tochas": true
+        "tochas": true,
+        "variantes": [
+          [
+            "chao_cripta2",
+            0.2
+          ]
+        ],
+        "objetos": {
+          "sarcofago": [
+            "obj_sarcofago"
+          ],
+          "estatua": [
+            "obj_gargula",
+            "obj_estatua2",
+            "obj_estatua"
+          ],
+          "pilar": [
+            "obj_pilar"
+          ]
+        },
+        "detalhes": [
+          {
+            "s": [
+              "det_teia1",
+              "det_teia2"
+            ],
+            "onde": "canto",
+            "p": 0.55
+          },
+          {
+            "s": [
+              "det_ossada",
+              "det_ossada2",
+              "det_resto1",
+              "det_resto2"
+            ],
+            "onde": "livre",
+            "p": 0.03
+          },
+          {
+            "s": [
+              "det_vela"
+            ],
+            "onde": "parede",
+            "p": 0.03
+          },
+          {
+            "s": [
+              "det_sangue1",
+              "det_sangue2",
+              "det_pedra1"
+            ],
+            "onde": "livre",
+            "p": 0.02
+          }
+        ]
       }
     }
   },
