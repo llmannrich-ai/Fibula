@@ -7,7 +7,8 @@
     "lootFormat": "[chaveDoItem, probabilidade, quantidadeMin, quantidadeMax]",
     "spellFormula": "dano = nivel/2 + poder*a + b, com a1/b1 para o minimo e a2/b2 para o maximo; esc diz se poder e Magia (mag) ou Pericia (per)",
     "equipFormat": "item com slot (arma, armadura ou amuleto) vai para o cofre da conta na extracao em vez de virar ouro; bonus: dano (fracao somada ao poder), red (fracao de dano sofrido a menos), vida e mana (pontos)",
-    "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)"
+    "vesteFormat": "como a peca aparece no boneco: cor (#rrggbb) e a da armadura sobre a roupa do tronco ou a pedra do amuleto; malha: true alterna claro e escuro, como cota de malha. Arma nao precisa: aparece pelo proprio sprite (it_<chave> do atlas)",
+    "supplyFormat": "supplies: o que as lojas da cidade vendem (o NPC lista as chaves em vende). preco em ouro do cofre. Com peca, a compra e a peca (chave de items, com slot) e vai para o cofre. Com efeito, e uma provisao: fica guardada (ate max por cacada) e vai inteira na proxima cacada que comecar, extraindo ou morrendo. efeito: pot (pocoes a mais), rhp e rmp (vida e mana por segundo a mais durante a cacada), buff ({velo|dano|arm|alc: valor, dur: segundos a partir da entrada}, os mesmos buffs das habilidades). grupo: so uma provisao do mesmo grupo por cacada (uma refeicao). Icone: sup_<chave> no atlas; a peca usa o it_<peca>."
   },
   "classes": {
     "feiticeiro": {
@@ -1031,27 +1032,166 @@
       "shareTiles": 9
     }
   },
+  "supplies": {
+    "frutas": {
+      "nome": "Cesta de frutas",
+      "desc": "+1,5 de vida por segundo na próxima caçada.",
+      "preco": 15,
+      "max": 1,
+      "grupo": "refeição",
+      "efeito": {
+        "rhp": 1.5
+      }
+    },
+    "queijo": {
+      "nome": "Queijo curado",
+      "desc": "+3 de mana por segundo na próxima caçada.",
+      "preco": 20,
+      "max": 1,
+      "grupo": "refeição",
+      "efeito": {
+        "rmp": 3
+      }
+    },
+    "presunto": {
+      "nome": "Presunto defumado",
+      "desc": "+3 de vida por segundo na próxima caçada.",
+      "preco": 35,
+      "max": 1,
+      "grupo": "refeição",
+      "efeito": {
+        "rhp": 3
+      }
+    },
+    "ensopado": {
+      "nome": "Ensopado do caçador",
+      "desc": "+2 de vida e +3 de mana por segundo na próxima caçada.",
+      "preco": 50,
+      "max": 1,
+      "grupo": "refeição",
+      "efeito": {
+        "rhp": 2,
+        "rmp": 3
+      }
+    },
+    "pocao": {
+      "nome": "Poção de vida",
+      "desc": "+1 poção no cinto na próxima caçada.",
+      "preco": 25,
+      "max": 5,
+      "efeito": {
+        "pot": 1
+      }
+    },
+    "pressa": {
+      "nome": "Elixir de pressa",
+      "desc": "+30% de velocidade no primeiro minuto da caçada.",
+      "preco": 40,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "velo": 0.3,
+          "dur": 60
+        }
+      }
+    },
+    "runa_pedra": {
+      "nome": "Runa da pele de pedra",
+      "desc": "−15% de dano sofrido nos primeiros 90 s da caçada.",
+      "preco": 60,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "arm": 0.15,
+          "dur": 90
+        }
+      }
+    },
+    "runa_furia": {
+      "nome": "Runa da fúria",
+      "desc": "+20% de dano nos primeiros 90 s da caçada.",
+      "preco": 80,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "dano": 0.2,
+          "dur": 90
+        }
+      }
+    },
+    "runa_aguia": {
+      "nome": "Runa do olho de águia",
+      "desc": "+2 sqm de alcance nas habilidades nos primeiros 90 s.",
+      "preco": 50,
+      "max": 1,
+      "efeito": {
+        "buff": {
+          "alc": 2,
+          "dur": 90
+        }
+      }
+    },
+    "f_espada": {
+      "nome": "Espada forjada",
+      "desc": "Vai para o cofre.",
+      "preco": 90,
+      "peca": "espada"
+    },
+    "f_machado": {
+      "nome": "Machado forjado",
+      "desc": "Vai para o cofre.",
+      "preco": 130,
+      "peca": "machado"
+    },
+    "f_couraca": {
+      "nome": "Couraça nova",
+      "desc": "Vai para o cofre.",
+      "preco": 140,
+      "peca": "couraca"
+    }
+  },
   "city": {
-    "_note": "A cidade entre incursoes. mapa: uma letra por tile — , grama, . rua, _ assoalho, # parede, A arvore, ~ agua, P portao, @ onde se chega. Cada NPC tem a letra dele no mapa; abre: mercador (melhorias), banco (cofre e equipamento) cacadas (mapas de caca) ou mercado (a feira entre jogadores, no banco da nuvem). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
+    "_note": "A cidade entre incursoes. mapa: uma letra por tile. Chao: , grama, . rua, _ assoalho, : praca de pedra, = ponte, v flores, h horta, @ onde se chega. Obstaculo: # parede, A arvore, ~ agua, P portao. Objetos (solidos, sobre o chao vizinho): f fonte, p poco, b barril, c caixote, e estatua, y arbusto florido, r cerejeira, q arvore de frutas, n forno, s estante, k banca, w lenha. Cada NPC tem a letra dele no mapa (maiuscula, fora das listas acima); abre: mercador (melhorias), banco (cofre e equipamento), cacadas (mapas de caca), mercado (a feira entre jogadores, no banco da nuvem) ou loja (vende o que esta em vende, chaves de supplies). hunts (abaixo) sao os mapas de caca que o Guia oferece; nivel e so recomendacao, o mundo nao se ajusta ao jogador. Por enquanto todos usam a mesma masmorra gerada (progression).",
     "nome": "Cidade",
     "mapa": [
-      "AAAAAAAAAAAAAAAAAAAAAAAA",
-      "A,,,,,,,,,,,,,,,,,,,,,,A",
-      "A,#######,,,,,,#######,A",
-      "A,#_____#,,A,,,#_____#,A",
-      "A,#__M__#,,,,,,#__B__#,A",
-      "A,#_____#,,,,,,#_____#,A",
-      "A,###_###,,,,,,###_###,A",
-      "A,,,,.,,,,,,,,,,,,.,,,,A",
-      "A,,,,..............,,,,A",
-      "A,A,,.,,,,,~~,T,,,.,,A,A",
-      "A,,,,.,,,,,~~,,,,,.,,,,A",
-      "A,,,,......@.......,,,,A",
-      "A,,,,,,,,,,.,,,,,,,,,,,A",
-      "A,,A,,,,,,,.,,,,,,,A,,,A",
-      "A,,,,,,,,,,.,,,,,,,,,,,A",
-      "A,,,,,,,,,,.G,,,,,,,,,,A",
-      "A##########P###########A"
+      "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA~~AAAAAAAA",
+      "AAAAAAA,,,A,AAAA,,,,AA,,,,A,,,A,A,,,A,,,,,A,~~A,AA,A,A",
+      "A,,,,,,,,,,,,,,,,,,,#############,,#######,,~~,,,,,,,A",
+      "AA,########,#######,#:::::::::::#,,#s___n#,,~~,,,,,,,A",
+      "A,,#c____c#,#s___n#,#:e:::f:::e:#,,#_____#,,~~######,A",
+      "AA,#__B___#,#_____#,#:::::::::::#,,#_____#r,~~#s__s#,A",
+      "A,,#______#,#_____#,#:::::::::::#A,#_____#,,~~#_S__#,A",
+      "AA,#______#,#___b_#,#:e:::::::e:#,,#_____#,,~~#____#,A",
+      "A,,#______#,#_____#,#:::::::::::#,,#_____#,,~~#____#,A",
+      "AA,###_####,###_###,######_######,,###_###,~~,#____#,A",
+      "A,,,vv.vv,,,,vv.vv,,,,,,,,.,,,,,,,,,vv.vv,,~~,##_###,A",
+      "A,........................................,==....,,,,A",
+      "AA,,.,,,,,,,,,,,,,,,,,,,y,.,y,,,,,,,,,,,,,,~~,,,,,,,,A",
+      "A,,,.,,,,,########,,,,,,,,.,,,,,,,,######,,~~,,,,,,,,A",
+      "A,,,.,,,,,#b____c#,y:::::::::::::y,#s__s#,,~~,,q,,q,,A",
+      "AA,,.,,,,,#___M__#,::vv:::::::vv::,#_O__#r,~~,hhhhhh,A",
+      "AA,,.,,,,,#______#,:::::::::::::::,#____#,,~~,hhhhhh,A",
+      "AA,,.,,,,,#c_____#,:::::::f:::::::,#___b#,,~~,,q,,q,,A",
+      "A,,,.,,,,,####_###,:::::::::::::::,##_###,,~~,hhhhhh,A",
+      "A,,,.,,,,,,,,,.,,,,:::::::::::::::,,,.,,,,~~,,hhhhhh,A",
+      "AA.................:::::::@:::::::........==.....,,r,A",
+      "AA,,.,,,,,,,,,,,,,,:::::::::::::::,,,,,,,,~~,,r,,,,,,A",
+      "AA,,.,............,:::::::::::::::,,A,,,,,~~,,,,p,,,,A",
+      "A,,,.,.kk.kk.kk.k.,::vv:::::::vv::,,,,,,A,~~,,,,,,,,,A",
+      "AA,,.,............,y:::::::::::::y,,,,,,,,~~,,,,q,,q,A",
+      "A,,,.,......Q.....,,,,,,y,.,y,,,,,,,,,,,,,~~,,,,,,,,,A",
+      "A,,r.,............A,,,,,,,.,.............,~~,r,,,,,,,A",
+      "A,,,.,.bc......wb.,,,,,,,,.,.kk.......kk.,~~,,,,,,,,,A",
+      "A,,,.,............,,,,A,,,.,......T......,~~~~~~~~~~~~",
+      "A,,,.,,,,,,,,,,,,,,,,,,,,,.,...c.....b...,~~~~~~~~~~~~",
+      "AAy,.,vvv,vvv,,A,,r,,,,,,,.,.k.........k.,,,,,,,,,,,,A",
+      "AA,,.,,,,p,,,,,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,,,,,,,A",
+      "A,,,..................................,,,,,,,,,,,,,,,A",
+      "A,,,,,,,,,,,,,,,,,,,,,,,,,.,##_######,,,,,,,,,,,,,,,,A",
+      "A,y,,,,,,r,,,,y,,,,r,,,A,,.,#____F_n#,,,,,,,,,,,,,,,,A",
+      "A,,,,,,,,,,,,,,,,,,,,,,,,,.,#w______#,,,,,,,,,,,,,,,,A",
+      "A,,,,,,,,,,,,,,,,,,,,,,,,,.G#########,,,,,,,,,,,,,,,,A",
+      "A#########################P##########################A"
     ],
     "npcs": {
       "mercador": {
@@ -1059,7 +1199,7 @@
         "nome": "Mercador",
         "casa": "Mercado",
         "abre": "mercador",
-        "fala": "Melhorias permanentes, pagas com o ouro do cofre."
+        "fala": "Melhorias permanentes, pagas com o ouro do cofre. A casa fica bem do lado da praça."
       },
       "banqueiro": {
         "letra": "B",
@@ -1073,7 +1213,7 @@
         "nome": "Guia de caça",
         "casa": "Portão da cidade",
         "abre": "cacadas",
-        "fala": "Escolha onde caçar. O portal abre em 1:30."
+        "fala": "Escolha onde caçar. O portal abre em 1:30. Quem leva provisões, leva para uma caçada só."
       },
       "corretor": {
         "letra": "T",
@@ -1081,6 +1221,54 @@
         "casa": "Feira",
         "abre": "mercado",
         "fala": "Aqui se compra e se vende entre jogadores. Diga o preço; se alguém aceitar, o negócio fecha na hora."
+      },
+      "quitandeira": {
+        "letra": "Q",
+        "nome": "Quitandeira",
+        "casa": "Quitanda",
+        "abre": "loja",
+        "fala": "Barriga cheia regenera mais rápido. Uma refeição por caçada, e ela vale até o portal.",
+        "vende": [
+          "frutas",
+          "queijo",
+          "presunto",
+          "ensopado"
+        ]
+      },
+      "boticaria": {
+        "letra": "O",
+        "nome": "Boticária",
+        "casa": "Botica",
+        "abre": "loja",
+        "fala": "Poção a mais no cinto já salvou muito caçador teimoso. E o elixir faz as pernas voarem.",
+        "vende": [
+          "pocao",
+          "pressa"
+        ]
+      },
+      "mago": {
+        "letra": "S",
+        "nome": "Mestre de magias",
+        "casa": "Torre dos magos",
+        "abre": "loja",
+        "fala": "Uma runa lida no portão protege por um minuto e meio. Atravesse a ponte quando quiser aprender.",
+        "vende": [
+          "runa_pedra",
+          "runa_furia",
+          "runa_aguia"
+        ]
+      },
+      "ferreiro": {
+        "letra": "F",
+        "nome": "Ferreiro",
+        "casa": "Forja",
+        "abre": "loja",
+        "fala": "Ferro novo, sem ferrugem de masmorra. O que eu forjo vai direto para o seu cofre.",
+        "vende": [
+          "f_espada",
+          "f_machado",
+          "f_couraca"
+        ]
       }
     }
   },

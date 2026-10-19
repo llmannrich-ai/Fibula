@@ -13,14 +13,14 @@
    Mensagens (broadcast): quero (convidado pede para entrar, com a ficha),
    membros (a lista), comeca (semente e fichas), ent (entrada do convidado),
    estado (o retrato), fim (o resultado de um convidado), log, fecha. */
-import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.14.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.14.0';
-import {G,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.14.0';
-import {drinkPot} from './sim/combate.js?v=0.14.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.14.0';
-import {rede,ID,anuncia} from './rede.js?v=0.14.0';
-import {persist} from './salvar.js?v=0.14.0';
-import {log} from './hud.js?v=0.14.0';
+import {CLASSES,ITEMS,SPELLS} from './sim/dados.js?v=0.15.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.15.0';
+import {G,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.15.0';
+import {drinkPot} from './sim/combate.js?v=0.15.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.15.0';
+import {rede,ID,anuncia} from './rede.js?v=0.15.0';
+import {persist} from './salvar.js?v=0.15.0';
+import {log} from './hud.js?v=0.15.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -38,7 +38,7 @@ const topico=()=>'realtime:sala-'+VER+'-'+SALA.id;
 const manda=(event,payload,topic=topico())=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic,event,payload,ref:String(++ref),join_ref:'1'}))};
 const bc=(event,payload)=>manda('broadcast',{type:'broadcast',event,payload});
 const nomeMeu=()=>quemSou()||CLASSES[save.classe].nome;
-const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up)});
+const minhaFicha=()=>({nome:nomeMeu(),cl:save.classe,c:JSON.parse(JSON.stringify(ch())),up:Object.assign({},save.up),prov:Object.assign({},save.prov)});
 const avisa=()=>{rede.sala=SALA.papel==='anfitriao'?{n:SALA.membros.length}:null;rede.naSala=SALA.papel?Math.max(1,SALA.membros.length):0;anuncia();SALA.aoMudar()};
 
 function liga(){
@@ -73,6 +73,8 @@ export function saiDaSala(){
   if(era==='anfitriao')bc('fecha',{});else bc('saio',{id:ID});
   solta();log(era==='anfitriao'?'Você fechou a sala.':'Você saiu da sala.','info');
 }
+/* o convidado comprou provisão depois de entrar: o anfitrião precisa da ficha nova */
+export const refazFicha=()=>{if(SALA.papel==='convidado'&&pronto)bc('quero',{id:ID,ficha:minhaFicha()})};
 export const correndo=()=>!!(G&&G.sala&&G.active&&!G.over);
 
 /* ---------- anfitrião ---------- */
@@ -81,7 +83,7 @@ export const correndo=()=>!!(G&&G.sala&&G.active&&!G.over);
 export function comecaGrupo(semente,hunt){
   const fichas=[fichaLocal()],ids=[ID];IDX.clear();ENTS.length=0;IDX.set(ID,0);ritmo=0;
   for(const m of SALA.membros.slice(1)){if(!m.ficha)continue;IDX.set(m.id,fichas.length);ids.push(m.id);fichas.push(Object.assign({},m.ficha,{c:JSON.parse(JSON.stringify(m.ficha.c))}))}
-  bc('comeca',{semente,hunt,ids,fichas:fichas.map(f=>({nome:f.nome||nomeMeu(),cl:f.cl,c:f.c,up:f.up}))});
+  bc('comeca',{semente,hunt,ids,fichas:fichas.map(f=>({nome:f.nome||nomeMeu(),cl:f.cl,c:f.c,up:f.up,prov:f.prov}))});
   return fichas;
 }
 /* a entrada de cada jogador para passo(): a deste aparelho e a última de

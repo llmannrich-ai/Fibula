@@ -1,11 +1,11 @@
 /* ---------- conteúdo do jogo (data/game/content.json) ----------
-   Classes, habilidades, melhorias, inimigos, itens, loot, progressão, a
-   cidade e os mapas de caça moram
+   Classes, habilidades, melhorias, inimigos, itens, loot, progressão, as
+   provisões, a cidade e os mapas de caça moram
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
 export function validaConteudo(c){
-  for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','city','hunts'])
+  for(const k of ['classes','classOrder','slotLevels','spells','upgrades','enemies','items','loot','progression','supplies','city','hunts'])
     if(!c[k]||typeof c[k]!=='object')throw new Error(`conteúdo sem a seção "${k}"`);
   const tem=(o,k)=>Object.prototype.hasOwnProperty.call(o,k);
   if(!Array.isArray(c.classOrder)||!c.classOrder.length)throw new Error('classOrder vazio');
@@ -55,13 +55,24 @@ export function validaConteudo(c){
   if(!Array.isArray(M)||M.length<3||typeof M[0]!=='string'||M[0].length<3)throw new Error('city.mapa precisa de ao menos 3 linhas de texto');
   if(M.some(l=>typeof l!=='string'||l.length!==M[0].length))throw new Error(`city.mapa tem linhas de tamanhos diferentes (a primeira tem ${M[0].length})`);
   const letras={};
+  for(const[k,s]of Object.entries(c.supplies)){
+    if(typeof s.nome!=='string'||!(Number.isInteger(s.preco)&&s.preco>0))throw new Error(`provisão ${k} sem nome ou preço inteiro positivo`);
+    if(s.peca!==undefined){if(!tem(c.items,s.peca)||!c.items[s.peca].slot)throw new Error(`provisão ${k} vende peça que não existe ou não se veste: ${s.peca}`);continue}
+    const e=s.efeito;
+    if(!e||typeof e!=='object'||!Object.keys(e).length||!(Number.isInteger(s.max)&&s.max>=1))throw new Error(`provisão ${k} precisa de peca, ou de efeito e max inteiro >= 1`);
+    for(const[a,v]of Object.entries(e)){
+      if(a==='buff'){if(!v||!(v.dur>0)||!Object.keys(v).every(b=>b==='dur'||(BUFFS.includes(b)&&typeof v[b]==='number')))throw new Error(`provisão ${k} com buff inválido: ${BUFFS.join(', ')} e dur positivo`)}
+      else if(!['pot','rhp','rmp'].includes(a)||!(typeof v==='number'&&v>0))throw new Error(`provisão ${k} com efeito inválido: ${a}`);
+    }
+  }
   for(const[k,n]of Object.entries(ci.npcs||{})){
-    if(typeof n.letra!=='string'||n.letra.length!==1||n.letra in LEGENDA)throw new Error(`NPC ${k} sem letra própria no mapa`);
+    if(typeof n.letra!=='string'||n.letra.length!==1||n.letra in LEGENDA||n.letra in OBJETOS)throw new Error(`NPC ${k} sem letra própria no mapa`);
     if(!ABRE.includes(n.abre))throw new Error(`NPC ${k} abre algo que não existe: ${n.abre}`);
+    if(n.abre==='loja'&&(!Array.isArray(n.vende)||!n.vende.length||n.vende.some(v=>!tem(c.supplies,v))))throw new Error(`a loja de ${k} precisa de vende com chaves de supplies`);
     letras[n.letra]=0;
   }
   let chegada=0;
-  for(const l of M)for(const ch of l){if(ch==='@')chegada++;if(ch in letras)letras[ch]++;else if(!(ch in LEGENDA))throw new Error(`city.mapa tem um caractere desconhecido: "${ch}"`)}
+  for(const l of M)for(const ch of l){if(ch==='@')chegada++;if(ch in letras)letras[ch]++;else if(!(ch in LEGENDA)&&!(ch in OBJETOS))throw new Error(`city.mapa tem um caractere desconhecido: "${ch}"`)}
   if(chegada!==1)throw new Error(`city.mapa precisa de exatamente um @ (tem ${chegada})`);
   for(const[k,n]of Object.entries(ci.npcs))if(letras[n.letra]!==1)throw new Error(`o NPC ${k} (${n.letra}) aparece ${letras[n.letra]} vezes no mapa, e não uma`);
   for(const a of ABRE)if(!Object.values(ci.npcs).some(n=>n.abre===a))throw new Error(`nenhum NPC da cidade abre ${a}`);
@@ -73,10 +84,18 @@ export function validaConteudo(c){
    O mapa da cidade é texto no content.json, uma letra por tile: mudar uma
    casa de lugar é editar dado. LEGENDA diz o que cada letra é (o número é o
    tipo de tile de src/sim/cidade.js); as letras dos NPCs vêm de city.npcs.
-   ABRE é o que um NPC pode abrir. */
-export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2};
-export const ABRE=['mercador','banco','cacadas','mercado'];
+   ABRE é o que um NPC pode abrir. OBJETOS são as coisas sólidas que enfeitam
+   a cidade (o nome é o sprite obj_<nome>); ficam sobre o chão do vizinho. */
+export const LEGENDA={',':0,'#':1,'.':2,'_':3,'A':4,'~':5,'P':6,'@':2,':':7,'=':8,'v':9,'h':10};
+export const OBJETOS={f:'fonte',p:'poco',b:'barril',c:'caixote',e:'estatua',y:'arbusto',r:'cerejeira',q:'frutifera',n:'forno',s:'estante',k:'banca',w:'lenha'};
+export const ABRE=['mercador','banco','cacadas','mercado','loja'];
 export let CITY,HUNTS;
+/* ---------- provisões ----------
+   O que as lojas da cidade vendem (supplies no content.json): peça, que vai
+   para o cofre, ou provisão, que vai inteira na próxima caçada. BUFFS são os
+   buffs que uma provisão pode dar, os mesmos das habilidades */
+export let SUP;
+export const BUFFS=['velo','dano','arm','alc'];
 
 /* ---------- classes ----------
    Adaptação das vocações do Tibia: a identidade não vem de poderes exclusivos,
@@ -117,5 +136,5 @@ export const fmtBonus=it=>Object.entries(it.bonus||{}).map(([b,v])=>BONUS[b](v))
 export function carrega(c){
   validaConteudo(c);
   CLASSES=c.classes;CL_ORDEM=c.classOrder;SPELLS=c.spells;SLOT_LVL=c.slotLevels;
-  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=c.hunts;
+  UP=c.upgrades;MT=c.enemies;ITEMS=c.items;LOOT=c.loot;PROG=c.progression;CITY=c.city;HUNTS=c.hunts;SUP=c.supplies;
 }

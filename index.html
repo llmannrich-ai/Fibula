@@ -56,6 +56,7 @@ canvas{image-rendering:pixelated}
 .clock.warn strong{color:var(--hp);animation:pulse 1s infinite}
 @keyframes pulse{50%{opacity:.55}}
 .map{display:grid;gap:4px;justify-items:end}
+#cmini{width:108px;height:76px;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);box-shadow:0 0 0 1px #000;background:#000}
 #mini{width:96px;height:96px;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);box-shadow:0 0 0 1px #000;background:#000}
 .map span{font:700 11px var(--f-body);color:var(--muted);font-variant-numeric:tabular-nums}
 .map span.open{color:var(--torch)}
@@ -150,12 +151,13 @@ h2.lost{color:var(--hp)}
 .vault{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:10px 12px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
 .vault span{font:12px var(--f-body);color:var(--muted)}
 .vault b{font:700 22px/1 var(--f-body);color:var(--torch);font-variant-numeric:tabular-nums}
-#shopList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
+#shopList,#ljList{list-style:none;margin:0;padding:0;display:grid;gap:8px;max-height:46vh;overflow:auto}
 .up{display:flex;align-items:center;gap:12px;background:#1c1b18;border:1px solid #000;box-shadow:inset 1px 1px 0 #2e2c28;padding:10px 12px}
 .up.maxed{border-color:rgba(138,216,114,.38)}
 .up .info{flex:1;min-width:0;display:grid;gap:3px}
 .up h3{margin:0;font:700 13px/1.2 var(--f-body);color:var(--bone)}
 .up p{margin:0;font:11px/1.4 var(--f-body);color:var(--muted)}
+.up p.meta{font-size:10px;color:var(--torch)}
 .pips{display:flex;gap:3px;margin-top:1px}
 .pips i{width:10px;height:5px;background:#000;border:1px solid #3a3833}
 .pips i.on{background:var(--torch);border-color:#000}
@@ -231,7 +233,7 @@ h2.lost{color:var(--hp)}
 #app.cidade .hud .top,#app.cidade .hud .act{display:none}
 .chud{position:absolute;inset:0;pointer-events:none;display:none}
 #app.cidade .chud{display:block}
-.chud .top{align-items:center}
+.chud .top{align-items:flex-start}
 .chud .vitals{width:auto;flex:0 0 auto}
 .chud .who{gap:8px;white-space:nowrap}
 .cbts{display:flex;gap:4px;pointer-events:auto}
@@ -362,7 +364,10 @@ h2.lost{color:var(--hp)}
         <div class="bag out">Cofre: <span id="cCofre">0</span> <small>ouro</small></div>
         <div class="bag out" id="cRede" role="status">Conectando…</div>
       </div>
-      <div class="cbts"><button class="ghost" id="cGrim">Grimório</button><button class="ghost" id="cPick">Personagens</button><button class="ghost" id="cMenu">Menu</button></div>
+      <div class="map">
+        <div class="cbts"><button class="ghost" id="cGrim">Grimório</button><button class="ghost" id="cPick">Personagens</button><button class="ghost" id="cMenu">Menu</button></div>
+        <canvas id="cmini" role="img" aria-label="Mapa da cidade: você é o ponto branco, os NPCs são os amarelos"></canvas>
+      </div>
     </div>
     <button class="act" id="bFalar" hidden><span class="nm out">Falar</span><span class="ct" id="falarT"></span></button>
   </div>
@@ -440,6 +445,18 @@ h2.lost{color:var(--hp)}
     </div>
   </div>
 
+  <div class="screen" id="loja" hidden>
+    <div class="panel">
+      <p class="eyebrow" id="ljCasa">Quitanda</p>
+      <h2 id="ljNome">Quitandeira</h2>
+      <p class="lede" id="ljFala"></p>
+      <div class="vault"><span>No cofre</span><b id="ljGold">0</b></div>
+      <p class="risco" id="ljLeva"></p>
+      <ul id="ljList"></ul>
+      <button class="ghost voltar" id="ljBack">Voltar à cidade</button>
+    </div>
+  </div>
+
   <div class="screen" id="equip" hidden>
     <div class="panel">
       <p class="eyebrow" id="eqEye">Feiticeiro · Nível 1</p>
@@ -490,6 +507,7 @@ h2.lost{color:var(--hp)}
       <h2>Guia de caça</h2>
       <p class="lede">Cada lugar tem o perigo dele, e ele não muda para você. Entrar acima do seu nível é permitido.</p>
       <p class="risco" id="hRisco"></p>
+      <p class="risco" id="hProv"></p>
       <div class="sala" id="hSala"></div>
       <ul id="huntList"></ul>
       <button class="ghost voltar" id="huntBack">Voltar à cidade</button>
@@ -519,7 +537,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.14.0"></script>
+<script type="module" src="src/main.js?v=0.15.0"></script>
 
 </body>
 </html>

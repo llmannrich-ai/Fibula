@@ -64,6 +64,20 @@ const ARTE = {
   grama: {i: 107}, grama2: {i: 108}, rua: {i: 154}, assoalho: {i: 172}, agua: {i: 2260},
   arvore: {i: 1507}, arvore2: {i: 1504},
   npc_mercador: {o: 26}, npc_banqueiro: {o: 18}, npc_guia: {o: 16}, npc_corretor: {o: 45},
+  npc_quitandeira: {o: 17}, npc_boticaria: {o: 21}, npc_mago: {o: 10}, npc_ferreiro: {o: 44},
+  /* cidade: chão da praça, ponte, terra da horta, o que cresce por cima
+     (flores e horta, por onde se anda) e os objetos sólidos (OBJETOS em
+     src/sim/dados.js, obj_<nome>) */
+  praca: {i: 155}, ponte: {i: 173}, terra: {i: 135},
+  flor1: {i: 1386}, flor2: {i: 1387}, flor3: {i: 1400}, flor4: {i: 1406}, horta: {i: 1381}, horta2: {i: 1384},
+  obj_fonte: {i: 1151}, obj_poco: {i: 1154}, obj_barril: {i: 1186}, obj_caixote: {i: 1115},
+  obj_estatua: {i: 1155}, obj_arbusto: {i: 1479}, obj_arbusto2: {i: 1480},
+  obj_cerejeira: {i: 1530}, obj_frutifera: {i: 1561}, obj_forno: {i: 1207}, obj_estante: {i: 1209},
+  obj_banca: {i: 1197}, obj_lenha: {i: 1140},
+  /* o que as lojas da cidade vendem: as chaves de supplies no content.json */
+  sup_frutas: {i: 2177}, sup_queijo: {i: 2183}, sup_presunto: {i: 2187}, sup_ensopado: {i: 2701},
+  sup_pocao: {i: 2129}, sup_pressa: {i: 2124},
+  sup_runa_pedra: {i: 2696}, sup_runa_furia: {i: 2697}, sup_runa_aguia: {i: 2698},
   /* sacos de loot por raridade e itens (as chaves de items no content.json) */
   saco0: {i: 2101}, saco1: {i: 2099}, saco2: {i: 2102},
   it_ouro: {i: 2196}, it_dente: {i: 2175}, it_seda: {i: 2170}, it_osso: {i: 2166},

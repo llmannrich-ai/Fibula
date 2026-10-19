@@ -527,6 +527,7 @@ async function testaSimulacao() {
   const {carrega} = await import(url('dados.js'));
   const P = await import(url('progresso.js'));
   const I = await import(url('incursao.js'));
+  const Cb = await import(url('combate.js'));
   carrega(JSON.parse(CONTEUDO));
 
   /* sequência presa do mulberry32 (confere com a implementação de referência) */
@@ -773,25 +774,67 @@ async function testaSimulacao() {
     const Cd = await import(url('cidade.js'));
     const C = Cd.entraCidade(false), M = JSON.parse(CONTEUDO).city.mapa;
     if (C.w !== M[0].length || C.h !== M.length) falhas.push(`a cidade tem ${C.w}×${C.h}, o mapa tem ${M[0].length}×${M.length}`);
-    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,corretor,guia,mercador') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    if (C.npcs.map((n) => n.k).sort().join() !== 'banqueiro,boticaria,corretor,ferreiro,guia,mago,mercador,quitandeira') falhas.push(`NPCs da cidade: ${C.npcs.map((n) => n.k)}`);
+    /* objetos (fonte, barril…) são sólidos e ficam sobre o chão do vizinho; a ponte atravessa o rio */
+    const iObj = M.join('').indexOf('f'), iPonte = M.join('').indexOf('=');
+    if (!(iObj >= 0 && C.obj[iObj] && C.sol[iObj] && C.t[iObj] !== 1)) falhas.push(`a fonte não virou objeto sólido sobre chão (obj ${C.obj[iObj]}, sol ${C.sol[iObj]}, chão ${C.t[iObj]})`);
+    if (!(iPonte >= 0 && !C.sol[iPonte])) falhas.push('a ponte não deixa atravessar o rio');
     const parado = {x: 0, y: 0}, oeste = {x: -1, y: 0}, norte = {x: 0, y: -1};
     if (Cd.updateCidade(0.05, parado) !== null) falhas.push(`há NPC ao alcance já na chegada: ${C.perto}`);
-    /* anda por sqm: oeste até a coluna da porta (5), parando no centro dela */
-    for (let i = 0; i < 200 && (C.p.tx > 5 || C.p.mv); i++) Cd.updateCidade(0.05, C.p.tx > 5 ? oeste : parado);
+    /* anda por sqm: oeste pela rua principal até a coluna do Mercador, parando no centro dela */
+    const m = C.npcs.find((n) => n.k === 'mercador'), mx = m.x / 32 | 0;
+    for (let i = 0; i < 400 && (C.p.tx > mx || C.p.mv); i++) Cd.updateCidade(0.05, C.p.tx > mx ? oeste : parado);
     /* norte pela porta até o Mercador ficar ao alcance (no ritmo do Tibia, ~0,55 s por sqm) */
     for (let i = 0; i < 200 && C.perto !== 'mercador'; i++) Cd.updateCidade(0.05, norte);
     if (C.perto !== 'mercador') falhas.push(`andar até a casa do Mercador não o deixou ao alcance (${C.perto} em ${C.p.x},${C.p.y})`);
-    const m = C.npcs.find((n) => n.k === 'mercador');
     if (!(C.p.y > m.y + 10)) falhas.push('o jogador atravessou o Mercador');
     const C2 = Cd.entraCidade(true); Cd.updateCidade(0.05, parado);
     if (C2.perto !== 'guia') falhas.push(`voltar pelo portão não pôs o jogador ao lado do Guia (${C2.perto})`);
     const ruim = (f) => { const c = JSON.parse(CONTEUDO); f(c); try { carrega(c); return null; } catch (e) { return e.message; } finally { carrega(JSON.parse(CONTEUDO)); } };
     if (!ruim((c) => { c.city.mapa[3] += ','; })) falhas.push('mapa da cidade com linha torta foi aceito');
     if (!ruim((c) => { c.city.mapa[1] = c.city.mapa[1].replace(',', '?'); })) falhas.push('mapa da cidade com letra desconhecida foi aceito');
-    if (!ruim((c) => { c.city.mapa[11] = c.city.mapa[11].replace('@', '.'); })) falhas.push('mapa da cidade sem @ foi aceito');
+    if (!ruim((c) => { c.city.mapa = c.city.mapa.map((l) => l.replace('@', '.')); })) falhas.push('mapa da cidade sem @ foi aceito');
     if (!ruim((c) => { delete c.city.npcs.guia; })) falhas.push('cidade sem quem abra os mapas de caça foi aceita');
+    if (!ruim((c) => { c.city.npcs.quitandeira.vende.push('nada'); })) falhas.push('loja que vende provisão inexistente foi aceita');
+    if (!ruim((c) => { c.supplies.pocao.efeito = {voar: 1}; })) falhas.push('provisão com efeito desconhecido foi aceita');
+    if (!ruim((c) => { c.supplies.f_espada.peca = 'dente'; })) falhas.push('o Ferreiro vendendo peça que não se veste foi aceito');
+    if (!ruim((c) => { c.city.npcs.mago.letra = 'f'; })) falhas.push('NPC com a letra de um objeto foi aceito');
     if (!ruim((c) => { c.hunts = {}; })) falhas.push('conteúdo sem mapa de caça foi aceito');
   } catch (e) { falhas.push('a cidade quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
+  /* provisões das lojas: comprar tira do cofre e respeita o máximo e o grupo
+     (uma refeição); a caçada aplica poções, regeneração e buffs do começo,
+     o buff da provisão soma ao da habilidade e acaba no tempo; o Ferreiro
+     põe a peça no cofre; e só start() (o cliente) gasta o estoque */
+  try {
+    novoSave(); const sv = P.save; sv.cofre = 1000;
+    const C0 = JSON.parse(CONTEUDO).supplies;
+    if (!P.compra('pocao') || !P.compra('pocao') || sv.prov.pocao !== 2 || sv.cofre !== 1000 - 2 * C0.pocao.preco) falhas.push(`comprar duas poções: prov ${JSON.stringify(sv.prov)}, cofre ${sv.cofre}`);
+    for (let i = 0; i < 9; i++) P.compra('pocao');
+    if (sv.prov.pocao !== C0.pocao.max || P.podeComprar('pocao') !== 'max') falhas.push(`a poção passou do máximo: ${sv.prov.pocao}`);
+    if (!P.compra('queijo') || P.compra('presunto') || P.podeComprar('presunto') !== 'queijo') falhas.push(`duas refeições na mesma caçada: ${JSON.stringify(sv.prov)}`);
+    P.compra('runa_pedra'); P.compra('pressa');
+    const cofre0 = sv.cofre;
+    if (!P.compra('f_espada') || sv.itens.espada !== 1 || sv.prov.f_espada || sv.cofre !== cofre0 - C0.f_espada.preco) falhas.push(`o Ferreiro não pôs a espada no cofre: ${JSON.stringify(sv.itens)}`);
+    sv.cofre = 0; if (P.podeComprar('frutas') === '' ) falhas.push('comprou sem ouro');
+    if (JSON.stringify(P.normaliza(JSON.parse(JSON.stringify(sv))).prov) !== JSON.stringify(sv.prov)) falhas.push('o save não guarda as provisões');
+    if (P.normaliza({prov: {pocao: 99, sumiu: 2, f_espada: 1}}).prov.pocao !== C0.pocao.max || 'sumiu' in P.normaliza({prov: {sumiu: 2}}).prov) falhas.push('save com provisão demais ou inexistente não foi aparado');
+    I.newRun(31); const p = I.G.p, K = JSON.parse(CONTEUDO).classes.feiticeiro;
+    if (p.pot !== 3 + C0.pocao.max) falhas.push(`levou ${C0.pocao.max} poções e começou com ${p.pot}`);
+    if (p.rgm !== C0.queijo.efeito.rmp || p.rgh !== 0) falhas.push(`o queijo não deu mana por segundo: ${p.rgh}/${p.rgm}`);
+    if (!(Cb.bf('arm', p) === C0.runa_pedra.efeito.buff.arm && Cb.bf('velo', p) === C0.pressa.efeito.buff.velo)) falhas.push(`buffs do começo: arm ${Cb.bf('arm', p)}, velo ${Cb.bf('velo', p)}`);
+    p.buffs.arm = {v: 0.4, left: 6};
+    if (Math.abs(Cb.bf('arm', p) - 0.55) > 1e-9) falhas.push(`o Provocar trocou a runa em vez de somar: ${Cb.bf('arm', p)}`);
+    delete p.buffs.arm; p.mp = 0; p.hp = p.mhp = 1e9;
+    I.G.active = true; I.passo(1, {x: 0, y: 0, held: [false, false, false, false]});
+    if (!(p.mp >= 0.9 * (K.rmp + C0.queijo.efeito.rmp))) falhas.push(`a mana subiu ${p.mp} em 1 s, esperado ${K.rmp + C0.queijo.efeito.rmp}`);
+    for (let i = 0; i < 100; i++) I.passo(1, {x: 0, y: 0, held: [false, false, false, false]});
+    if (Cb.bf('arm', p) || Cb.bf('velo', p)) falhas.push('os buffs da provisão não acabaram no tempo');
+    if (sv.prov.pocao !== C0.pocao.max) falhas.push('newRun() gastou o estoque: quem gasta é o start() do cliente');
+    P.gastaProv(p.prov);
+    if (Object.keys(sv.prov).length) falhas.push(`depois da caçada sobrou no estoque: ${JSON.stringify(sv.prov)}`);
+    const f = P.confereFicha({cl: 'feiticeiro', c: {lvl: 3}, up: {}, prov: {pocao: 50, nada: 1}});
+    if (!f || f.prov.pocao !== C0.pocao.max || 'nada' in f.prov) falhas.push(`a ficha de fora não aparou as provisões: ${f && JSON.stringify(f.prov)}`);
+  } catch (e) { falhas.push('as provisões quebraram no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   return {falhas, a: a && a.r};
 }
 
@@ -863,11 +906,11 @@ const CASOS = [
     ok('a chegada anuncia o nome da cidade', txt('#banner')==='Cidade', txt('#banner'));
     ok('ninguém ao alcance na chegada: sem botão de falar', $('#bFalar').hidden);
     ok('a chegada avisa onde está o Guia', /Guia/.test(txt('#log')||''), txt('#log'));
-    /* do @ da praça até o Mercador: oeste pela rua, norte pela porta da casa */
-    var x0=Cd.C.p.x;
+    /* do @ da praça até o Mercador: oeste pela rua principal, norte pela porta da casa */
+    var x0=Cd.C.p.x,mc=Cd.C.npcs.filter(function(n){return n.k==='mercador'})[0],mx=mc.x/32|0,my=mc.y/32|0;
     tecla('keydown','KeyA');
-    /* por sqm: o passo para a coluna da porta (5) começa, solta a tecla e ele termina lá */
-    var oeste=await ate(function(){return Cd.C.p.tx<=5},200);
+    /* por sqm: o passo para a coluna da porta começa, solta a tecla e ele termina lá */
+    var oeste=await ate(function(){return Cd.C.p.tx<=mx},400);
     tecla('keyup','KeyA');await ate(function(){return !Cd.C.p.mv},30);
     ok('anda para oeste pela rua', oeste&&Cd.C.p.x<x0, x0+' → '+Cd.C.p.x);
     tecla('keydown','KeyW');
@@ -879,7 +922,7 @@ const CASOS = [
     ok('o Mercador falou no registro', /Mercador: /.test(txt('#log')||''), txt('#log'));
     tecla('keydown','KeyW');await quadros(10);tecla('keyup','KeyW');
     var y1=Cd.C.p.y;
-    ok('o NPC é sólido: não se anda por cima dele', y1>=5*32, y1);
+    ok('o NPC é sólido: não se anda por cima dele', y1>=(my+1)*32, y1);
     tecla('keydown','Enter');tecla('keyup','Enter');
     ok('Enter ao lado do Mercador abre a loja', visivel('#shop'));
     clica($('#shopBack'));
@@ -894,6 +937,7 @@ const CASOS = [
     ok('o Corretor abre a Feira', visivel('#mkt')&&txt('#mkt h2')==='Feira', txt('#mkt h2'));
     ok('sem conta, a Feira pede para entrar e não negocia', /entre com uma conta/.test(txt('#mktMsg')||'')&&todos('#mktItens button').every(function(b){return b.disabled}), txt('#mktMsg'));
     clica($('#mktBack'));
+    ok('o mapa da cidade aparece no canto', $('#cmini').width>0&&getComputedStyle($('#cmini')).display!=='none', $('#cmini').width);
     Tl.abreNpc('guia');
     ok('o Guia mostra os mapas de caça', visivel('#hunts')&&todos('#huntList li').length>=1, todos('#huntList li').length);
     ok('o mapa de caça diz o nível recomendado', /nível recomendado 1/.test(txt('#huntList .meta')||''), txt('#huntList .meta'));
@@ -1034,6 +1078,54 @@ const CASOS = [
     `,
   },
   {
+    nome: 'lojas',
+    o_que: 'as lojas da cidade: a Quitandeira, a Boticária e o Mestre de magias vendem provisões para a próxima caçada, o Ferreiro vende peça para o cofre, o Guia mostra o que se leva e a caçada gasta tudo',
+    semente: 11,
+    save: {'masmorra-runas-v2': {
+      cofre: 300, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 2, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    clica($('#play'));
+    await quadros(3);
+    Tl.abreNpc('quitandeira');
+    ok('a Quitandeira abre a loja dela', visivel('#loja')&&txt('#ljNome')==='Quitandeira'&&txt('#ljCasa')==='Quitanda', txt('#ljNome')+' / '+txt('#ljCasa'));
+    ok('a loja lista o que ela vende, com preço', todos('#ljList li').length===4&&/ouro$/.test(txt('#ljList .buy')), todos('#ljList li').length+' / '+txt('#ljList .buy'));
+    ok('nada guardado ainda', /Nada guardado/.test(txt('#ljLeva')), txt('#ljLeva'));
+    clica(todos('#ljList .buy')[2]);
+    ok('comprar o presunto tira do cofre e guarda para a caçada', txt('#ljGold')==='265'&&sv().cofre===265&&sv().prov.presunto===1, txt('#ljGold')+' / '+JSON.stringify(sv().prov));
+    ok('só uma refeição por caçada: as outras ficam travadas', todos('#ljList .buy').filter(function(b){return b.disabled}).length===4&&/Você já leva Presunto defumado/.test(txt('#ljList')), txt('#ljList'));
+    clica($('#ljBack'));
+    ok('a volta da loja é para a cidade', $('#app').classList.contains('cidade')&&!visivel('#loja'));
+    Tl.abreNpc('boticaria');
+    ok('a Boticária vende poção e elixir', txt('#ljNome')==='Boticária'&&todos('#ljList li').length===2, txt('#ljList'));
+    clica($('#ljList .buy'));clica($('#ljList .buy'));
+    ok('duas poções guardadas', sv().prov.pocao===2&&/Guardadas: 2 de 5/.test(txt('#ljList')), JSON.stringify(sv().prov));
+    clica($('#ljBack'));
+    Tl.abreNpc('mago');
+    ok('o Mestre de magias vende runas', txt('#ljNome')==='Mestre de magias'&&todos('#ljList li').length===3, txt('#ljList'));
+    clica(todos('#ljList .buy')[0]);
+    ok('a runa da pele de pedra fica guardada', sv().prov.runa_pedra===1&&todos('#ljList .buy')[0].disabled, JSON.stringify(sv().prov));
+    clica($('#ljBack'));
+    Tl.abreNpc('ferreiro');
+    ok('o Ferreiro não guarda provisão: a peça vai para o cofre', $('#ljLeva').hidden&&/Vista no Banco/.test(txt('#ljFala')), txt('#ljFala'));
+    var c0=sv().cofre;
+    clica($('#ljList .buy'));
+    ok('a espada forjada foi para o cofre de peças', sv().itens.espada===1&&sv().cofre===c0-90, JSON.stringify(sv().itens)+' / '+sv().cofre);
+    clica($('#ljBack'));
+    Tl.abreNpc('guia');
+    ok('o Guia diz o que vai na caçada', /Presunto defumado/.test(txt('#hProv'))&&/2 × Poção de vida/.test(txt('#hProv')), txt('#hProv'));
+    clica($('#huntList button'));
+    await quadros(3);
+    ok('a caçada começa com as poções a mais', I.G.p.pot===5&&txt('#potN')==='×5', I.G.p.pot+' / '+txt('#potN'));
+    ok('o presunto regenera e a runa protege desde a entrada', I.G.p.rgh===3&&I.G.p.sup.arm&&I.G.p.sup.arm.v===0.15, JSON.stringify({rgh:I.G.p.rgh,sup:I.G.p.sup}));
+    ok('o registro diz o que foi levado', /Você levou .*Presunto defumado/.test(txt('#log')||''), txt('#log'));
+    ok('o estoque foi gasto ao entrar', sv()&&Object.keys(sv().prov).length===0, JSON.stringify(sv()&&sv().prov));
+`,
+  },
+  {
     nome: 'cidade-compartilhada',
     o_que: 'multiplayer na cidade: liga ao entrar, vê quem chega, anda e sai, confere dado de fora, e desliga ao ir caçar ou ao menu',
     semente: 7,
@@ -1065,7 +1157,8 @@ const CASOS = [
     var meio=a.x;await quadros(16);
     ok('o boneco dela anda o passo inteiro, um sqm, sem saltar', meio>9.5*32&&meio<10.5*32&&a.x===10.5*32&&!a.mv, meio+' → '+a.x);
     RT.pos('ana1',30,9,400);await quadros(2);
-    ok('passo de mais de 3 sqm (mensagem perdida) salta direto', a.tx===Cd.C.w-1&&a.x===(Cd.C.w-.5)*32, a.tx+' / '+a.x);
+    var lx=Math.min(30,Cd.C.w-1);
+    ok('passo de mais de 3 sqm (mensagem perdida) salta direto', a.tx===lx&&a.x===(lx+.5)*32, a.tx+' / '+a.x);
     /* dado de fora: posição fora do mapa, classe que não existe, nome comprido com controle */
     RT.entra('mal',{nome:'\u0007'+'x'.repeat(50),classe:'dragao',lvl:'9'});RT.pos('mal',1e9,-50,1e9);
     await quadros(3);
