@@ -20,15 +20,15 @@
    porta (a resposta: semente e quem está dentro), ent (entrada do
    convidado), estado (o retrato), fim (o resultado de quem saiu), log,
    fecha. */
-import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.21.0';
-import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.21.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.21.0';
-import {novaSemente} from './sim/base.js?v=0.21.0';
-import {drinkPot} from './sim/combate.js?v=0.21.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.21.0';
-import {rede,ID,anuncia} from './rede.js?v=0.21.0';
-import {persist} from './salvar.js?v=0.21.0';
-import {log} from './hud.js?v=0.21.0';
+import {CLASSES,ITEMS,SPELLS,cacaDe} from './sim/dados.js?v=0.22.0';
+import {save,ch,confereFicha,guardaSaco} from './sim/progresso.js?v=0.22.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal} from './sim/incursao.js?v=0.22.0';
+import {novaSemente} from './sim/base.js?v=0.22.0';
+import {drinkPot} from './sim/combate.js?v=0.22.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.22.0';
+import {rede,ID,anuncia} from './rede.js?v=0.22.0';
+import {persist} from './salvar.js?v=0.22.0';
+import {log} from './hud.js?v=0.22.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -195,7 +195,7 @@ function aplicaFim(r){
   const kind=r.fora==='extraiu'||r.fora==='morreu'?r.fora:'desabou';
   if(r.c&&typeof r.c==='object'){
     c.lvl=Math.max(1,n(r.c.lvl));c.xp=n(r.c.xp);c.mag=n(r.c.mag);c.manaG=n(r.c.manaG);c.per=Math.max(10,n(r.c.per));c.golpes=n(r.c.golpes);
-    if(Array.isArray(r.c.slots))c.slots=[0,1,2,3].map(i=>{const k=r.c.slots[i];return SPELLS[k]&&SPELLS[k].c===save.classe&&SPELLS[k].lvl<=c.lvl?k:null});
+    if(Array.isArray(r.c.slots))c.slots=[0,1,2,3].map(i=>{const k=r.c.slots[i];return SPELLS[k]&&SPELLS[k].c===save.classe&&SPELLS[k].lvl<=c.lvl&&c.sabe.includes(k)?k:null});
   }
   const bag={};if(r.bag&&typeof r.bag==='object')for(const[k,q]of Object.entries(r.bag))if(ITEMS[k]&&n(q))bag[k]=n(q);
   p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);

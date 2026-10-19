@@ -14,9 +14,12 @@ export function validaConteudo(c){
   for(const[k,s]of Object.entries(c.spells)){
     if(!tem(c.classes,s.c))throw new Error(`habilidade ${k} é de classe inexistente: ${s.c}`);
     if(typeof s.lvl!=='number')throw new Error(`habilidade ${k} sem lvl numérico`);
+    if(s.preco!==undefined&&!(Number.isInteger(s.preco)&&s.preco>=0))throw new Error(`habilidade ${k} com preço inválido: inteiro >= 0`);
   }
-  for(const k of c.classOrder)
+  for(const k of c.classOrder){
     if(!Object.values(c.spells).some(s=>s.c===k))throw new Error(`classe ${k} não tem nenhuma habilidade`);
+    if(!Object.values(c.spells).some(s=>s.c===k&&s.lvl<=1&&!s.preco))throw new Error(`classe ${k} sem habilidade grátis no nível 1: o personagem novo não teria como atacar`);
+  }
   for(const[k,u]of Object.entries(c.upgrades))
     if(typeof u.base!=='number'||typeof u.mult!=='number'||typeof u.max!=='number')
       throw new Error(`melhoria ${k} sem base/mult/max numéricos`);
@@ -76,6 +79,7 @@ export function validaConteudo(c){
   if(chegada!==1)throw new Error(`city.mapa precisa de exatamente um @ (tem ${chegada})`);
   for(const[k,n]of Object.entries(ci.npcs))if(letras[n.letra]!==1)throw new Error(`o NPC ${k} (${n.letra}) aparece ${letras[n.letra]} vezes no mapa, e não uma`);
   for(const a of ABRE)if(!Object.values(ci.npcs).some(n=>n.abre===a))throw new Error(`nenhum NPC da cidade abre ${a}`);
+  if(Object.values(c.spells).some(s=>s.preco)&&!Object.values(ci.npcs).some(n=>n.ensina===true&&n.abre==='loja'))throw new Error('há habilidade com preço e nenhuma loja da cidade com ensina: true');
   for(const q of ci.chao||[]){
     const l=M[q&&q.y],t=l&&typeof q.x==='number'?l[q.x]:undefined;
     if(!q||!tem(c.items,q.item))throw new Error(`city.chao cita item inexistente: ${q&&q.item}`);
@@ -155,6 +159,8 @@ export let CLASSES,CL_ORDEM;
 export let SPELLS,SLOT_LVL;
 export const EL_COR={fogo:'#ff9a3c',energia:'#9db8ff',gelo:'#8fe3ff',terra:'#9fd36b',sagrado:'#ffe7a8',fisico:'#e8e0cf'};
 export const listaDaClasse=c=>Object.keys(SPELLS).filter(k=>SPELLS[k].c===c);
+/* o preço de aprender (0: vem sozinha ao chegar no nível) */
+export const precoHab=k=>SPELLS[k].preco||0;
 export const slotsIniciais=(c,lvl)=>{
   const n=SLOT_LVL.filter(l=>lvl>=l).length,libs=listaDaClasse(c).filter(k=>SPELLS[k].lvl<=lvl);
   return [0,1,2,3].map(i=>i<n?(libs[i]||null):null);
