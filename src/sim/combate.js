@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.26.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.26.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots} from './progresso.js?v=0.26.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.26.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.26.1';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.26.1';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots} from './progresso.js?v=0.26.1';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.26.1';
 
 function target(p,range){
   let best=null,bd=range;
@@ -230,6 +230,9 @@ export function vesteDoSaco(p,k){
    que foi vestida do saco, menos a que saiu do corpo para o saco */
 export const pecasDaCaca=p=>{const o={};for(const[k,q]of Object.entries(p.bag))if(ITEMS[k].slot&&q>0)o[k]=q;
   for(const[k,n]of Object.entries(p.troca||{})){const q=(o[k]|0)+n;if(q>0)o[k]=q;else delete o[k]}return o};
+/* na morte, só as vestidas do saco que ainda estão no corpo: o banco dá
+   origem a elas (no máximo uma por casa), e o resto do saco se perde */
+export const vestidasDaCaca=p=>{const o={};for(const[k,n]of Object.entries(p.troca||{}))if(n>0)o[k]=n;return o};
 export function tiraProSaco(p,sl){const e=p.c.equip,k=e[sl];if(!k||p.fora)return false;e[sl]=null;poeNoSaco(p,k,1);troca(p,k,-1);reveste(p);return true}
 export function pickup(d,i,p){
   let v=0;

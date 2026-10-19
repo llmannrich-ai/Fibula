@@ -179,7 +179,7 @@ window.__nuvem={dados:${JSON.stringify(remoto ?? null)},contas:${JSON.stringify(
       poeO=(k,q)=>{O.itens[k]=(O.itens[k]|0)+q;if(O.itens[k]<=0)delete O.itens[k]};
     if(fn==='mercado_livro')return r(200,{taxa:2,itens:M.itens,minhas:M.minhas,caixa:M.caixa,lastro:O});
     if(fn==='caca_comecar')return r(200,++M.caca);
-    if(fn==='caca_fim'){let n=0;if(b.p_desfecho==='extraiu')for(const k in b.p_saco){poeO(k,b.p_saco[k]);n+=b.p_saco[k]}O.ouro+=b.p_ouro;return r(200,{pecas:n,ouro:b.p_ouro})}
+    if(fn==='caca_fim'){let n=0;const q=Object.values(b.p_saco||{}).reduce((a,x)=>a+x,0);if(b.p_desfecho==='extraiu'||q<=3)for(const k in b.p_saco){poeO(k,b.p_saco[k]);n+=b.p_saco[k]}O.ouro+=b.p_ouro;return r(200,{pecas:n,ouro:b.p_ouro})}
     if(fn==='lastro_banco'){if(O.itens[b.p_item]>0){poeO(b.p_item,-1);O.ouro+=b.p_val}return r(204,null)}
     if(!N.dados)return erro('sem_save');
     if(N.forcaErro){const m=N.forcaErro;N.forcaErro='';return erro(m)}
@@ -908,6 +908,7 @@ async function testaSimulacao() {
     if (JSON.stringify(Cb.pecasDaCaca(p)) !== '{"amuleto":1,"machado":1}') falhas.push(`origem das peças da caçada: ${JSON.stringify(Cb.pecasDaCaca(p))}`);
     Cb.tiraProSaco(p, 'amuleto');
     if (JSON.stringify(Cb.pecasDaCaca(p)) !== '{"amuleto":1,"machado":1}') falhas.push(`o amuleto que já era do corpo ganhou origem: ${JSON.stringify(Cb.pecasDaCaca(p))}`);
+    if (JSON.stringify(Cb.vestidasDaCaca(p)) !== '{"machado":1}') falhas.push(`na morte, a origem devia ser só a vestida do saco: ${JSON.stringify(Cb.vestidasDaCaca(p))}`);
     p.fora = 'morreu'; if (Cb.vesteDoSaco(p, 'amuleto')) falhas.push('vestiu depois de sair da caçada');
   } catch (e) { falhas.push('vestir na caçada quebrou no Node: ' + (e.stack || e.message).split('\n').slice(0, 3).join(' | ')); }
   /* provisões das lojas: comprar tira do cofre e respeita o máximo e o grupo
@@ -2275,6 +2276,36 @@ const CASOS = [
     ok('o ouro extraído vai como origem', f.p_ouro>=200&&window.__nuvem.mk.lastro.ouro===f.p_ouro, f.p_ouro+' / '+window.__nuvem.mk.lastro.ouro);
     ok('a espada vendida não volta ao cofre', sv()&&!(sv().itens||{}).espada, sv()&&JSON.stringify(sv().itens));
     ok('a fila da origem esvaziou', (localStorage.getItem('masmorra-runas-v2-fila')||'[]')==='[]', localStorage.getItem('masmorra-runas-v2-fila'));
+`,
+  },
+  {
+    nome: 'vestida-morte',
+    o_que: 'com conta, vestir do saco e morrer: a peça fica no corpo e a caçada fecha no banco dando origem só a ela, para poder ir à Feira',
+    semente: 11,
+    patches: [P.tempo(20, 10), P.sacoEquip, P.nuvem(null, {}, {lastro: {ouro: 0, itens: {}}})],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0, dono: 'u1',
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
+    },
+    'masmorra-runas-v2-sessao': {tk: 'tk1', uid: 'u1', usuario: 'ana'}},
+    roteiro: `
+    await ate(function(){return /salvo na nuvem · ana/.test(txt('#contaT')||'')},300);
+    cacar();
+    await ate(function(){return window.__nuvem.chamadas.indexOf('caca_comecar')>=0},200);
+    await quadros(4);
+    clica($('#bMochila'));
+    clica(todos('#moGrade .cel:not(:disabled)').filter(function(b){return /espada/.test(b.getAttribute('aria-label')||'')})[0]);
+    ok('a espada do saco oferece vestir', txt('#moAcoes button')==='Vestir', txt('#moAcoes'));
+    clica($('#moAcoes button'));
+    clica($('#moX'));
+    I.sai(I.G.p,'morreu');
+    var fim=await ate(function(){return !!window.__nuvem.args.caca_fim},300);
+    var f=window.__nuvem.args.caca_fim||{};
+    ok('a morte fecha a caçada mandando só a peça vestida', fim&&f.p_desfecho==='morreu'&&JSON.stringify(f.p_saco)==='{"espada":1}', JSON.stringify(f));
+    ok('a espada ganhou origem na nuvem', (window.__nuvem.mk.lastro.itens||{}).espada===1, JSON.stringify(window.__nuvem.mk.lastro));
+    ok('a espada continua vestida depois da morte', sv().chars.feiticeiro.equip.arma==='espada', JSON.stringify(sv().chars.feiticeiro.equip));
 `,
   },
   {
