@@ -357,7 +357,7 @@ h2.lost{color:var(--hp)}
 .quem[hidden]{display:none}
 .inicio .cta{font-size:18px;padding:16px}
 .contaok{display:flex;justify-content:space-between;align-items:center;gap:8px}
-.contaok p:empty{display:none}
+.contaok{margin:0;color:var(--muted);font-size:12px;line-height:1.45} .contaok:empty{display:none}
 .inicio .link{justify-self:center;font-size:13px}
 .cls .risco{font-size:11px}
 .link{background:none;border:0;color:var(--bone);text-decoration:underline;font:12px var(--f-body);min-height:44px;padding:0 0 0 12px;cursor:pointer}
@@ -453,7 +453,7 @@ h2.lost{color:var(--hp)}
           <div class="row2"><input id="contaU" autocomplete="username" autocapitalize="none" spellcheck="false" maxlength="24" placeholder="usuário" aria-label="Nome de usuário"><input id="contaS" type="password" autocomplete="current-password" placeholder="senha" aria-label="Senha"></div>
           <div class="row2"><button class="ghost" id="contaB">Entrar</button><button class="ghost" type="button" id="contaC">Criar conta</button></div>
         </form>
-        <div class="contaok"><p id="contaT" role="status"></p><button class="link" type="button" id="contaSair" hidden>Sair</button></div>
+        <p class="contaok" id="contaT" role="status"></p>
       </div>
       <button class="cta" id="play">Jogar</button>
     </div>
@@ -506,6 +506,7 @@ h2.lost{color:var(--hp)}
         <div><dt>Caçadas</dt><dd id="sRuns">0</dd></div>
         <div><dt>Mortes</dt><dd id="sDead">0</dd></div>
       </dl>
+      <p class="contaok" id="pConta" hidden></p>
       <ul id="pickList"></ul>
       <div class="rodape"><button class="ghost" id="toRegras">Regras</button><button class="ghost" id="pickBack">Voltar</button></div>
     </div>
@@ -657,7 +658,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.41.0"></script>
+<script type="module" src="src/main.js?v=0.42.0"></script>
 
 </body>
 </html>

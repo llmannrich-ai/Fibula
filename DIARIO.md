@@ -18,6 +18,22 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 11:28 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** sem tela intermediária depois do login (0.42.0), a pedido do Leonardo ("a tela intermediária de continuar não faz sentido"). Com sessão, `showMenu()` vai direto a `showPick()`: ao abrir o jogo (com o save local, refeito quando a nuvem chega) e depois de Entrar ou Criar conta, quando `puxa()` termina ou falha (`seguir()` em `src/nuvem.js`). A tela de entrada perdeu o "Continuar" e o "Sair"; "Sair da conta" virou o `#pickBack` da escolha de personagem com sessão (`sairDaConta()`), e a linha da conta aparece ali (`#pConta`).
+
+**Validação:** `node tools/testar.mjs` — 36/36. Asserções novas: conta nova entra direto na escolha de personagem, sem "Continuar"; sessão guardada abre na escolha com "Sair da conta"; sair volta à tela de entrada.
+
+**Análise:** com a nuvem fora do ar, o login cai na escolha de personagem com o save do aparelho e tenta ler a nuvem de novo a cada 30 s; se o save da nuvem chegar com a escolha aberta, ela é refeita.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono).
+
+**Pendências e riscos:** quem joga sem conta volta à tela de entrada pelo "Voltar" da escolha; quem tem conta só a vê saindo da conta.
+
+**Próximo passo recomendado:** o Leonardo entrar no celular e conferir que cai direto na escolha.
+
+---
+
 ## 2026-10-19 11:23 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** mapas de caça fixos e a ponte com o Remere's Map Editor (0.41.0), por decisão do Leonardo ("pode publicar na main e seguir com o Remere; o mapa será fixo e igual sempre, não tem aleatoriedade no mapa"). Antes, a 0.37.0 publicou os mapas vestidos (mesclando a `main` 0.36.0). Agora cada lugar tem `hunts.<lugar>.mapa`: pilhas de itens do OTSP por sqm (`c`/`p`/`o`/`v`, `l` para luz), grade em base 64, entrada e um monstro por ponto de spawn; `newRun()` lê com `leMapa()` e cada ponto é uma "sala" de um monstro em `G.rooms` (nasce e renasce ali; a herança da sala da 0.38.0 segue funcionando). `tools/mapas.mjs` gerou os quatro rascunhos a partir de `hunts.<lugar>.rascunho` (o gerador e os enfeites da 0.37.0 viraram ferramenta); `tools/otbm.mjs` exporta e importa `.otbm` (formato OTBM 2, items.otb 3.55, como o `otsp.otbm` salvo pelo RME 3.3), lê o spawn.xml e o waypoint `entrada`, e monta a pasta do editor com os 19 monstros do Fibula; `tools/otsp-itens.json` traz o que é chão, sólido, luz e parede no `items.otb` do OTSP (no OTSP o id do servidor é o do cliente). O desenho pinta a pilha de cada sqm com os padrões e a animação dos itens (`t<id>` no atlas, que foi a 784 KB). Guia em `docs/rme.md`.
@@ -321,16 +337,3 @@ execução precisa saber e não vai descobrir lendo o código.
 - Cada entrada pela porta gasta as provisões de novo (já anotado na entrada da 0.20.0).
 
 **Próximo passo recomendado:** o Leonardo testar no celular criar sala, entrar, sair e entrar de novo; depois, decidir se volta algum limite de tempo.
-## 2026-10-19 04:00 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a entrada do Esgoto virou uma grade no chão (0.24.0), a pedido do Leonardo ("troque a entrada do esgoto por uma entrada ao invés de um NPC, com a imagem de um esgoto da cidade"). O NPC `vigia` saiu; entrou `city.npcs.grade` com `lugar: true` e `acao: "Descer"`, na rua sul (20,32), desenhado com o item 999 do OTSP ("sewers") deitado no chão. Um NPC-lugar não bloqueia o caminho (`entraCidade()`), quem volta do Esgoto sai em cima dele, o botão diz a `acao` em vez de "Falar" e o registro mostra só a frase, sem "Nome:". Sem a arte, uma grade redonda desenhada em código.
-
-**Validação:** `node tools/testar.mjs` — 32/32; o caso `mapas-de-caca` confere que a grade não é sólida, que a volta é em cima dela e que o botão diz "Descer" com o rótulo acessível. Tela conferida em 390×780 com o atlas.
-
-**Análise:** `lugar` e `acao` são campos genéricos do NPC, validados em `validaConteudo()`; servem para a próxima entrada que não é pessoa (um alçapão, uma escada de cripta).
-
-**Roadmap:** sem mudança.
-
-**Pendências e riscos:** a grade fica perto da borda sul do mapa, então a câmera presa à borda a deixa colada aos botões no celular; se incomodar, subir a grade uma ou duas linhas.
-
-**Próximo passo recomendado:** o Leonardo descer pela grade no celular e dizer se a posição está boa.

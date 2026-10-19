@@ -11,13 +11,13 @@
    outra conta vence sempre a nuvem, para uma conta não herdar a outra.
    Depois de uma operação do mercado (save.mkt), a nuvem recusa save mais
    velho que ela ('mercado'), e este aparelho adota o da nuvem. */
-import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.41.0';
-import {ITEMS} from './sim/dados.js?v=0.41.0';
-import {G} from './sim/incursao.js?v=0.41.0';
-import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.41.0';
-import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.41.0';
-import {menu,showMenu} from './telas.js?v=0.41.0';
-import {$} from './dom.js?v=0.41.0';
+import {normaliza,soPecas,save,setSave,ehMat} from './sim/progresso.js?v=0.42.0';
+import {ITEMS} from './sim/dados.js?v=0.42.0';
+import {G} from './sim/incursao.js?v=0.42.0';
+import {pecasDaCaca,vestidasDaCaca} from './sim/combate.js?v=0.42.0';
+import {KEY,persist,marcaFalha,aoGravar} from './salvar.js?v=0.42.0';
+import {menu,showMenu,pickS,showPick} from './telas.js?v=0.42.0';
+import {$} from './dom.js?v=0.42.0';
 
 export const SB_URL='https://bpwljbualdjlwmzcryzl.supabase.co',SB_KEY='sb_publishable_3qKOZTHCsqhpQkyIXNwsrg_KUxPvFhp';
 const KEYS=KEY+'-sessao';
@@ -68,8 +68,8 @@ export async function puxa(forca){
     if(adota){setSave(normaliza(d));save.dono=sessao.uid;try{localStorage.setItem(KEY,JSON.stringify(save))}catch(e){marcaFalha()}}
     nuvem.pronto=true;nuvem.erro=false;esvazia();
     if(!adota){save.dono=sessao.uid;persist()}
-    if(!menu.hidden)showMenu();else desenhaConta();
-  }catch(e){nuvem.erro=true;desenhaConta();setTimeout(()=>puxa(forca),30000)}
+    seguir();
+  }catch(e){nuvem.erro=true;seguir();setTimeout(()=>puxa(forca),30000)}
 }
 /* ---------- mercado entre jogadores ----------
    O livro de ofertas e o match moram no banco (tools/supabase/003_mercado.sql),
@@ -137,15 +137,20 @@ export function cacaFim(kind,p){
 export const lastroBanco=(k,val)=>enfila('lastro_banco',{p_item:k,p_val:val});
 /* o nome de usuário da conta ligada: é o nome que os outros veem na cidade */
 export const quemSou=()=>sessao?sessao.usuario||null:null;
+/* depois de ler a nuvem (ou de não conseguir), quem está na tela de entrada
+   segue para a escolha de personagem, e quem já está nela a vê de novo com o
+   save que chegou: com conta aberta, a tela de entrada não aparece */
+function seguir(){if(!menu.hidden)showMenu();else if(!pickS.hidden)showPick();else desenhaConta()}
 export function desenhaConta(){
-  /* a tela de entrada é só a conta: com sessão, Continuar; sem, entra-se sem conta */
-  const pl=$('#play');if(!pl.disabled){pl.textContent=!SB_KEY?'Jogar':sessao?'Continuar':'Jogar sem conta';pl.className=SB_KEY&&!sessao?'link':'cta'}
+  /* a tela de entrada é só para quem não tem conta aberta: entrar, criar ou jogar sem conta */
+  const pl=$('#play');if(!pl.disabled){pl.textContent=SB_KEY?'Jogar sem conta':'Jogar';pl.className=SB_KEY?'link':'cta'}
+  $('#pickBack').textContent=sessao?'Sair da conta':'Voltar';
+  const pc=$('#pConta');pc.hidden=!sessao;
   const box=$('#mConta');box.hidden=!SB_KEY;if(!SB_KEY)return;
-  $('#contaF').hidden=!!sessao;$('#contaSair').hidden=!sessao;
-  $('#contaT').textContent=sessao
-    ?(nuvem.erro?'Sem conexão com a nuvem agora. O progresso segue salvo neste aparelho.'
-      :nuvem.pronto?`Progresso salvo na nuvem · ${sessao.usuario}`:'Conectando à nuvem…')
-    :nuvem.msg||'';
+  $('#contaF').hidden=!!sessao;
+  const t=sessao?(nuvem.erro?'Sem conexão com a nuvem agora. O progresso segue salvo neste aparelho.'
+      :nuvem.pronto?`Progresso salvo na nuvem · ${sessao.usuario}`:'Conectando à nuvem…'):'';
+  $('#contaT').textContent=sessao?t:nuvem.msg||'';pc.textContent=t;
 }
 async function acessa(fn){
   const u=$('#contaU').value.trim(),pw=$('#contaS').value;
@@ -160,10 +165,10 @@ async function acessa(fn){
 }
 $('#contaF').addEventListener('submit',ev=>{ev.preventDefault();acessa('conta_entrar')});
 $('#contaC').addEventListener('click',()=>acessa('conta_criar'));
-$('#contaSair').addEventListener('click',async()=>{
+export async function sairDaConta(){
   clearTimeout(nuvem.timer);if(nuvem.sujo)await empurra();
   if(sessao)rpc('conta_sair',{p_token:sessao.tk}).catch(()=>{});
   guardaSessao(null);nuvem.pronto=false;nuvem.erro=false;nuvem.msg='';desenhaConta();
-});
+}
 /* fechar a aba ou trocar de app não pode deixar a última gravação para trás */
 addEventListener('visibilitychange',()=>{if(document.hidden&&nuvem.sujo){clearTimeout(nuvem.timer);empurra(true)}});

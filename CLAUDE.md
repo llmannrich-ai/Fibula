@@ -643,13 +643,16 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `hud.js` — `log()`, `banner()`, `hud()`, `montaBotoes()`, `montaIcones()`,
   o cache de elementos `E` e o **HUD da cidade** (`hudCidade()`, botão de
   falar e a frase do NPC no registro)
-- `telas.js` — **telas** (`showMenu()`, a tela de entrada: só a conta —
-  usuário, senha, Entrar, Criar conta — e o `#play`, que é "Continuar" com
-  sessão e "Jogar sem conta" sem ela, e leva à escolha de personagem;
-  `showPick()`, a tela seguinte e o único lugar de trocar de personagem,
-  aberta também pelo Menu da cidade: tocar num personagem entra na cidade
-  (`escolher()`), cada um mostra o preço da morte (`riscoCurto(c)`), e o
-  rodapé tem Regras e Voltar; o Grimório fica só na cidade, no `#cGrim`;
+- `telas.js` — **telas** (`showMenu()`, a tela de entrada: só para quem não
+  tem conta aberta — usuário, senha, Entrar, Criar conta e o link "Jogar sem
+  conta" (`#play`); com sessão, `showMenu()` vai direto a `showPick()`, ao
+  abrir o jogo e logo depois de entrar, quando a nuvem responde (`seguir()`
+  em `nuvem.js`, que também refaz a escolha se o save da nuvem chegar com
+  ela aberta); `showPick()`, a escolha de personagem e o único lugar de
+  trocar de personagem, aberta também pelo Menu da cidade: tocar num
+  personagem entra na cidade (`escolher()`), cada um mostra o preço da morte
+  (`riscoCurto(c)`), a conta aparece em `#pConta`, e o rodapé tem Regras e
+  Voltar, que vira "Sair da conta" com sessão (`sairDaConta()`); o Grimório fica só na cidade, no `#cGrim`;
   `showRegras()`, cujos números saem do `content.json`; `start()`,
   `showEnd()`), **cidade**
   (`V.cidade`, `showCidade()`, `abreNpc()`, `showHunts()` do Guia de caça),

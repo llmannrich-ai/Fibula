@@ -2747,7 +2747,7 @@ const CASOS = [
     roteiro: `
     await quadros(4);
     ok('a caixa de conta aparece', visivel('#mConta'));
-    ok('a sessão antiga do e-mail foi descartada', visivel('#contaF')&&!visivel('#contaSair'));
+    ok('a sessão antiga do e-mail foi descartada', visivel('#menu')&&visivel('#contaF'));
     ok('sem sessão nada é lido da nuvem', window.__nuvem.gets===0, window.__nuvem.gets);
     clica($('#contaB'));
     await quadros(2);
@@ -2762,9 +2762,9 @@ const CASOS = [
     ok('usuário repetido não cria conta (sem diferenciar maiúscula)', existe, txt('#contaT'));
     $('#contaU').value='  novato ';$('#contaS').value='1';
     clica($('#contaC'));
-    var entrou=await ate(function(){return /salvo na nuvem · novato/.test(txt('#contaT')||'')},200);
-    ok('conta nova entra e mostra o usuário', entrou, txt('#contaT'));
-    ok('com a conta aberta, a tela de entrada diz Continuar', txt('#play')==='Continuar'&&!visivel('#contaF'), txt('#play'));
+    var entrou=await ate(function(){return /salvo na nuvem · novato/.test(txt('#pConta')||'')&&visivel('#pick')},200);
+    ok('conta nova entra direto na escolha de personagem, com o usuário', entrou&&visivel('#pConta'), txt('#pConta')+' / pick='+visivel('#pick'));
+    ok('não há tela intermediária: nada de Continuar', !visivel('#menu')&&txt('#play')!=='Continuar', txt('#play'));
     ok('a conta foi criada com o nome sem espaços', window.__nuvem.contas.novato==='1', JSON.stringify(window.__nuvem.contas));
     ok('a sessão ficou guardada no aparelho', /tk1/.test(localStorage.getItem('masmorra-runas-v2-sessao')||''));
     ok('a senha não fica guardada no aparelho', !/"1"/.test(localStorage.getItem('masmorra-runas-v2-sessao')||'')&&$('#contaS').value==='');
@@ -2803,7 +2803,7 @@ const CASOS = [
     ok('o save local foi substituído', sv()&&sv().cofre===900&&sv().runs===5, sv()&&[sv().cofre,sv().runs].join(','));
     ok('o aparelho ficou ligado à conta', sv()&&sv().dono==='u1', sv()&&sv().dono);
     ok('a caixa mostra a conta', /salvo na nuvem · jogador/.test(txt('#contaT')||''), txt('#contaT'));
-    ok('o formulário some com a sessão aberta', !visivel('#contaF')&&visivel('#contaSair'));
+    ok('com a sessão guardada, o jogo abre direto na escolha de personagem', visivel('#pick')&&!visivel('#menu')&&txt('#pickBack')==='Sair da conta', txt('#pickBack'));
     cacar();
     ${espera(1800)}
     ok('a incursão nova foi gravada na nuvem', window.__nuvem.posts>=1&&window.__nuvem.dados.runs===6, window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.runs));
@@ -2836,9 +2836,9 @@ const CASOS = [
     ok('o save local, mais recente, não foi trocado', sv()&&sv().cofre===120&&sv().runs===3, sv()&&[sv().cofre,sv().runs].join(','));
     ok('o acampamento mostra o cofre local', txt('#sCofre')==='120', txt('#sCofre'));
     ok('o save local subiu para a nuvem', window.__nuvem.posts>=1&&window.__nuvem.dados.cofre===120, window.__nuvem.posts+' / '+(window.__nuvem.dados&&window.__nuvem.dados.cofre));
-    clica($('#contaSair'));
+    clica($('#pickBack'));
     await quadros(4);
-    ok('sair da conta mostra o formulário de novo', visivel('#contaF')&&!visivel('#contaSair'));
+    ok('Sair da conta, na escolha de personagem, volta à tela de entrada', visivel('#menu')&&visivel('#contaF'));
     ok('a sessão foi apagada do aparelho', !localStorage.getItem('masmorra-runas-v2-sessao'));
     ok('o banco foi avisado da saída', window.__nuvem.saiu===1, window.__nuvem.saiu);
     ok('sair da conta não apaga o progresso local', sv()&&sv().cofre===120, sv()&&sv().cofre);

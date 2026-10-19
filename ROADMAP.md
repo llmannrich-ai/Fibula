@@ -129,6 +129,12 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-19 — Sem tela intermediária depois do login (0.42.0)** *(pedido
+  do Leonardo: "a tela intermediária de continuar não faz sentido"; pilar 5)*.
+  Com conta aberta, a tela de entrada não aparece: o jogo abre na escolha de
+  personagem, e entrar ou criar conta leva a ela quando a nuvem responde (ou
+  falha). "Sair da conta" virou o botão do rodapé da escolha.
+
 - **2026-10-19 — Mapas de caça fixos e o Remere's Map Editor (0.41.0)**
   *(decisão do Leonardo: "o mapa será fixo e igual sempre, não tem
   aleatoriedade no mapa"; pilar 2)*. Cada lugar tem o mapa em
