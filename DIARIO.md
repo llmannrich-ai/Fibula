@@ -28,7 +28,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 **Roadmap:** fila refeita pelos pilares. `Agora`: mapas de caça fixos. `Próximo`: queda de conexão não mata; saída segura perto; medir o ritmo até o nível 20; morte da opção B; créditos; PWA; escada de lugares. Saíram "Sair cedo", "Revisar a escala de HP", "Selo de resguardo" e "três profundidades".
 
-**Pendências e riscos:** jogador de nível alto agora acha os lugares baixos fáceis — é o pilar 1 funcionando, mas falta lugar acima do nível 15 (item 7). As quatro tarefas agendadas tiveram a instrução trocada para ler o `CLAUDE.md` (Parte 5); o ciclo continua `pausado`. Pendências do dono na Parte 6: P7 (venda do saco na caçada, sensível, em conflito com o pilar 4), P8 (saída a ≤ 60 s), P9 (números da morte B, sensível).
+**Pendências e riscos:** jogador de nível alto agora acha os lugares baixos fáceis — é o pilar 1 funcionando, mas falta lugar acima do nível 15 (item 7). As quatro tarefas agendadas ainda mandam ler `docs/agentes/comum.md` e `docs/agentes/<papel>.md` (a instrução só pode ser trocada na conversa de cada uma); esses arquivos agora só redirecionam para o `CLAUDE.md`. O ciclo continua `pausado`. Pendências do dono na Parte 6: P7 (venda do saco na caçada, sensível, em conflito com o pilar 4), P8 (saída a ≤ 60 s), P9 (números da morte B, sensível).
 
 **Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).
 ## 2026-10-20 01:30 UTC — sessão manual (nuvem)

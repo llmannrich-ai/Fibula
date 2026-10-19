@@ -4,7 +4,9 @@ Este é **o único documento de instrução** do Fibula, para os agentes agendad
 e para as sessões manuais. Leia-o inteiro antes do primeiro `edit`. Em
 19/10/2026, por decisão do Leonardo, ele absorveu o `VISAO.md`, o
 `docs/PRD.md` e as instruções de `docs/agentes/`, que deixaram de existir; não
-os recrie. Instrução nova entra **aqui**, na parte certa, sem contradizer o
+os recrie. (Em `docs/agentes/` ficaram o `modo.txt` e cinco arquivos de duas
+linhas que só redirecionam para cá, porque as tarefas agendadas ainda os citam.
+Não escreva regra neles.) Instrução nova entra **aqui**, na parte certa, sem contradizer o
 resto: se uma regra nova muda uma antiga, a antiga sai no mesmo commit.
 
 | Parte | Responde | Quem muda |
@@ -1184,10 +1186,13 @@ produto é o Leonardo, usuário `llmannrich-ai` no GitHub.
 | Fibula · Revisor | todo dia, 10:20, 14:20, 18:20 e 22:20 | Confere o que entrou na `main` |
 | Fibula · Balanceamento | segunda-feira, 06:50 | Mede e propõe ajuste de tabela |
 
-A instrução de cada tarefa é só: *"Leia o `CLAUDE.md` da `main` de
-llmannrich-ai/Fibula e execute a seção do papel <X> da Parte 5, do início ao
-fim, sem fazer perguntas no chat."* O comportamento muda editando este arquivo,
-nunca a tarefa.
+A instrução gravada em cada tarefa manda ler `docs/agentes/comum.md` e
+`docs/agentes/<papel>.md`, que hoje só redirecionam para este arquivo. O
+comportamento muda editando este arquivo, nunca a tarefa. Se o Leonardo
+regravar as tarefas, o texto ideal é: *"Rode `git fetch origin main && git
+checkout -B main origin/main`, leia o `CLAUDE.md` inteiro e execute a seção
+"Papel: <X>" da Parte 5, do início ao fim, sem fazer perguntas no chat."* — e
+então os redirecionamentos podem sair.
 
 ### Início de toda execução
 
