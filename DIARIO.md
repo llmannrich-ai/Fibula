@@ -20,7 +20,7 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ## 2026-10-19 16:30 UTC — sessão manual (nuvem)
 
-**Item desenvolvido:** o mundo em volta da cidade (0.45.0), pedido do Leonardo: a cidade de hoje cercada por muralha, com portões abertos ("porta, não portal mágico"), e fora dela estradas, vilas e matas para explorar e, mais tarde, achar os próximos lugares de caça; sem monstros por enquanto. `tools/mundo.mjs` gera `city.mapa` (240×180, antes 54×38), `city.regioes` (15 nomes anunciados ao entrar) e `city.mundo` (semente e retângulo da cidade, que o script não toca). O portão `P` virou chão; a muralha mostra a face de fora; o mapa do canto mostra uma janela de 64 sqm; `city.chao` foi deslocado para as coordenadas do mundo.
+**Item desenvolvido:** o mundo em volta da cidade (0.46.0, sobre a 0.45.0 dos portais), pedido do Leonardo: a cidade de hoje cercada por muralha, com portões abertos ("porta, não portal mágico"), e fora dela estradas, vilas e matas para explorar e, mais tarde, achar os próximos lugares de caça; sem monstros por enquanto. `tools/mundo.mjs` gera `city.mapa` (240×180, antes 54×38), `city.regioes` (15 nomes anunciados ao entrar) e `city.mundo` (semente e retângulo da cidade, que o script não toca). O portão `P` virou chão; a muralha mostra a face de fora; o mapa do canto mostra uma janela de 64 sqm; `city.chao` foi deslocado para as coordenadas do mundo.
 
 **Validação:** `node tools/testar.mjs` completo, todos verdes. Casos `chao-da-cidade` e `armas-que-renascem` passaram a usar as coordenadas do mundo (+93, +71). Simulação no Node ganhou: quatro portões abertos, toda região alcançável a pé do `@`, sair pelo portão sul e voltar anuncia a cidade, região fora do mapa recusada. Telas conferidas em 360×640 (portão sul, Vila da Ponte, muralha, Vila do Cais, Ruínas). Download: `content.json` 21 → 29 KB em gzip; total 573 KB.
 
@@ -31,6 +31,25 @@ execução precisa saber e não vai descobrir lendo o código.
 **Pendências e riscos:** rodar `node tools/mundo.mjs` de novo apaga edição à mão fora dos muros (a cidade fica). O portão é só um vão na muralha, sem sprite de portão; um portão aberto do OTSP pede `tools/sprites.mjs` com o `cwebp`. Quem está numa versão velha não vê quem está na nova (o canal da cidade é por versão), como sempre. Pilar 5: andar longe sem nada a decidir é tempo morto; enquanto o mundo não tiver entradas de caça, ele é passeio opcional (os NPCs continuam todos dentro dos muros).
 
 **Próximo passo recomendado:** pôr a entrada de um lugar de caça numa clareira (item 6 da fila).
+## 2026-10-19 — sessão manual (nuvem): uma sala por lugar, com portal
+
+**Item desenvolvido:** a pedido do Leonardo ("ao entrar no mapa de caça, estar no quadrado que migra para o mapa, um portal, e criar o servidor dele se ninguém estiver jogando lá; se já houver, entra nele; sem ninguém, o servidor fica com a última pessoa que saiu"), 0.45.0, com as escolhas dele: entrada automática para todos na fase de teste (aceitando a trapaça do anfitrião entre desconhecidos), cópia 2 quando lota, voz opcional, portal no chão. `content.json`: NPCs `abre: "portal"` com `caca` (a grade passou a portal; novos `portal_runas`, `portal_cripta` ao lado do portão e `barco` no cais); o Esgoto agora é explicado pelo Guia. `dados.js`: `ABRE` com `portal`, validação (todo mapa tem portal) e `portalDe()`. `sala.js`: canal por lugar (`sala-<x.y>-<mapa>-<cópia>`), `vaiCaca()` procura pela presença quem tem `anf` e entra nele (pede a porta sozinho) ou vira o servidor (`viraServidor()`); `cheia` leva à cópia seguinte; o anfitrião que sai da masmorra com gente lá dentro passa o servidor (`passaPara()`, com a herança), e o último que sai fica com ele até alguém entrar; convidado que sai da masmorra sai da sala. `telas.js`: `pisa()` (só ao chegar no sqm, para quem volta em cima do portal não entrar de novo), o Guia com Entrar, quantos caçam e onde é a entrada; a volta é em cima do portal.
+
+**Validação:** `node tools/testar.mjs` inteiro verde. Casos reescritos: `mapas-de-caca` (pisar na grade e no barco, volta em cima do portal, o último fica com o servidor, ir a outro lugar fecha a caçada vazia), `sala-anfitriao` (canal do lugar, passar o servidor ao sair com gente dentro, último que sai fica, quem chega recebe o servidor com a herança), `sala-convidado` (acha o servidor pela presença, entra sozinho, sai da sala ao sair da masmorra, volta pelo portal); novo `sala-lotada` (cópia 2). Não testado com aparelhos de verdade.
+
+**Análise:** com um canal por lugar, a presença do canal é o "servidor de nomes": quem tem `anf: true` é o servidor. Dois chegando no mesmo instante viram servidores ao mesmo tempo; a disputa de geração e id (já existente) resolve, e quem perde vira convidado e pede a porta sozinho, mas a caçada que ele tinha aberto se perde.
+
+**Roadmap:** item em `Concluído`, fora da fila (pedido do dono). `Agora` segue "Queda de conexão não mata".
+
+**Pendências e riscos:**
+- Desconhecidos caçam no aparelho uns dos outros: quem tem o servidor pode trapacear no XP e no loot de quem está com ele. Aceito pelo Leonardo só na fase de teste; cai com o servidor da F2.
+- O último que sai segura a caçada no aparelho dele (CPU e dados na cidade). Se ele fechar o jogo ou for a outro lugar, a caçada se perde; o próximo abre uma nova.
+- Dois chegando juntos no lugar vazio: o que perde a disputa volta à cidade e entra de novo no servidor do outro (uma ida e volta visível).
+- O portal da Ilha fica sobre a água do cais, e os portais das Runas e da Cripta usam o sprite do portal da masmorra (sem sprite próprio).
+
+**Próximo passo recomendado:** testar com 2 ou 3 celulares: um pisa na grade; o segundo pisa e deve cair na mesma caçada; o primeiro sai e o segundo continua com o servidor; o segundo sai e, depois, um terceiro entra e encontra os monstros como ficaram.
+
+---
 
 ## 2026-10-19 15:10 UTC — sessão manual (nuvem)
 
@@ -330,17 +349,3 @@ A primeira CI reprovou o `rede-4g` (primeira tela 2,8 s, arte 3,5 s; aqui 1,3 e 
 - `comer()` roda fora do `update()`, como `drinkPot()`: na F2 vira entrada (`ent`).
 
 **Próximo passo recomendado:** o Leonardo jogar uma caçada com e sem comida e decidir se o personagem novo ganha comida de saída.
-
-## 2026-10-19 10:20 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** um guia só e o mundo igual para todos (0.28.0), por decisão do Leonardo. (1) O `VISAO.md`, o `docs/PRD.md` e as seis instruções de `docs/agentes/` viraram um único `CLAUDE.md` em seis partes (jogo, produto, código, testes, agentes, decisões), sem contradição entre si: o princípio-mãe "a realidade como ela é" e os seis pilares novos (mundo igual para todos; mundo fixo que se aprende; evoluir lento, nível 20 em ~3 h; morte cara da opção B, sempre visível e nunca pela rede; uma mão e parar a qualquer hora; todo recurso com ralo). Cada pilar tem regra verificável e "estado hoje". O `AGENTS.md` só aponta para o guia; `docs/analise-tibia-habilidades.md` e `docs/plano-multiplayer.md` ficaram como referência. Só o `modo.txt` continua em `docs/agentes/`. (2) Os monstros deixaram de escalar com o nível e com o grupo: saíram `hpPerCharLevel`, `bossLevelFactor`, `party.monsters` e `party.bossHp` (e o respawn que crescia com o grupo); o `validaConteudo()` recusa esses campos.
-
-**Validação:** `node tools/testar.mjs` — 32/32. A simulação no Node troca "o grupo põe mais monstros" por "o mesmo mundo para 1 ou 4 jogadores, de nível 1 ou 30" (monstro, sqm e vida). Sabotagem (monstros vezes o tamanho do grupo numa cópia) barrada com a mensagem certa.
-
-**Análise:** a fila estava presa em "Sair cedo" desde 18/10, um item que perdeu o sentido quando a caçada virou sala sem relógio. O mapa de caça ainda é sorteado a cada sala, o que fere o pilar 2.
-
-**Roadmap:** fila refeita pelos pilares. `Agora`: mapas de caça fixos. `Próximo`: queda de conexão não mata; saída segura perto; medir o ritmo até o nível 20; morte da opção B; créditos; PWA; escada de lugares. Saíram "Sair cedo", "Revisar a escala de HP", "Selo de resguardo" e "três profundidades".
-
-**Pendências e riscos:** jogador de nível alto agora acha os lugares baixos fáceis — é o pilar 1 funcionando, mas falta lugar acima do nível 15 (item 7). As quatro tarefas agendadas ainda mandam ler `docs/agentes/comum.md` e `docs/agentes/<papel>.md` (a instrução só pode ser trocada na conversa de cada uma); esses arquivos agora só redirecionam para o `CLAUDE.md`. O ciclo continua `pausado`. Pendências do dono na Parte 6: P7 (venda do saco na caçada, sensível, em conflito com o pilar 4), P8 (saída a ≤ 60 s), P9 (números da morte B, sensível).
-
-**Próximo passo recomendado:** "Mapas de caça fixos" (`Agora`).

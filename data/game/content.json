@@ -1879,14 +1879,14 @@
       "AA,,,AA,,v,,,,AA,AA,AAA,AA,AA,AAAAAA,AA,.,AAAAAAAAAAAAAAAAAAAAA,,A,AAy,,,,,,,,,,,,,,,,,,,,,,,#,,,.,......Q.....,,,,,,y,.,y,,,,,,,,,,,,,~~,,,,,,,,,#,,,,,,,,,,,,,,,,,,,,,,,,v,,A,A,,,,,A,,,,,,~~~~~~~~~~~~~~~~,,,Av,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,,,,,,,,AAAAAA,A,AAAA,AAAAAAA,AA,,A,.,AAAAAAA,,,AAA,AAAAAA,AAAAAAA,,,,,,,,,,,,,A,,AA,,,,,#,,r.,............A,,,,,,,.,.............,~~,r,,,,,,,#,,,,,,,,,,,,,,,,,,,,,y,A,,,,,,,,,,,,,,,,~~~~~~~~,,,,~~~~~~~~,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,,,,,,,yAA,A,,AAA,,A,A,AAAA,AAAAAA,,.,AAAAAAAAAAA,AAAAAAAA,AA,,yA,,,,,,,,,,,,,,,,,,,,,,,,#,,,.,.bc......wb.,,,,,,,,.,.kk.......kk.,~~,,,,N,,,,#~~~,,,,,,A,,,,,,A,,,,,,,,,,,,,,,,,,,,,~~~~~~A,,,A,,,,,,,~~~~~~,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
-      "AA,,,,,,,,v,,AA,A,,AA,AAAAAAAAA,AAAAAAA,.,AAAAAAAAA,AAAAAAA,A,AA,AAAAA,,,,,,,,A,,,,,,,,,,,,,,#,,,.,............,,,,A,,,.,......T......,~~~~~~~~~~~~~~~~~~~~,,A,,,,,A,,,,,,,,,,,,,,,,~~~~~~~~~,A,A,,A,,,,,A,A,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "AA,,,,,,,,v,,AA,A,,AA,AAAAAAAAA,AAAAAAA,.,AAAAAAAAA,AAAAAAA,A,AA,AAAAA,,,,,,,,A,,,,,,,,,,,,,,#,,,.,............,,,,A,,,.,......T......,~~~~~~~~I~~~~~~~~~~~,,A,,,,,A,,,,,,,,,,,,,,,,~~~~~~~~~,A,A,,A,,,,,A,A,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,,,,,,vyA,AA,,,A,A,,,,AAAAAAAAAAA,,,.,,,AAAA,AAA,AAAAAAAAAA,,A,AAA,,,,,,,,,,,,,,,,,,,,,,,#,,,.,,,,,,,,,,,,,,,,,,,,,.,...c.....b...,~~~~~~~~~~~~~~~~~~~~~,,,,,,,,,v,,,,,,,,vv~~~~~~~~~~~,AA,,,A,,,,AA,,,,,,A~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,y,,,,,,,,AAA,,A,,AAA,AA,AA,,AAAAA,,,,.,,,,AAA,AA,A,AAAA,A,AAAAAA,AA,,,,,,,,,,,,,,,,,,,,,,,#Ay,.,vvv,vvv,,A,,r,,,,,,,.,.k.........k.,,,,,,,,,,,,#,,,,,,~~~~~,,,,,,,,,,,,,,A,~~~~~~~~A,,,,A,,,AA,,,,A,,,,A,,A,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,,,,,,,,AA,AA,AAAAAA,AAAAAAAAAAA,,,,.,,,,AAAAAAAAAAAAA,AAAAAA,AAAAA,,,,,,,,,,,,,,,,,,,,,,#A,,.,,,,p,,,,,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,,,,,,,#,,,,,,,~~~~~,,,,,A,,,,,,~~~~~~~A,,,,,,,,,A,A,,,A,A,A,,,,A,,,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,y,,,,,,,A,,,AAA,,,AAAA,A,A,,,,AA,,,:::,,,AAAAA,,,AAAA,AAAA,AA,AAyy,A,,,,,,,,,,,,,,,,,,,,,#,,,................V.................,,,,,,,,,,,,,,,#,,,,,,,,,~~~~~,,,,,,,~~~~~~~~,,,A,,,,,,,AAA,AAAA,,,A,,,,AA,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,,,,AA,AAAAAA,,,,AAAA,,AAAAAA,A,,,,:::,,,,AAA,AA,AA,AAAAAAAAA,A,,A,A,,,,,,,,,,,,,,,,,,,,,#,,,,,,,,,,,,,,,,,,,,,,,,,.,##_######,,,,,,,,,,,,,,,,#,,,,,,,,,,~~~~~~~~~~~~~~~~,,,,,,,,,,,,,,A,A,,y,,vv,A,,,,AAA,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AAA,A,,,,,,,Ay,,AAAAA,AAA,,,AAAA,AAA,,,:::,,,AAA,AAAAAAAAA,,AA,AA,,A,A,,,,,,,,,,,,,,,,,,,,,,,#,y,,,,,,r,,,,y,,,,r,,,A,,.,#____F_n#,,,,,,,,,,,,,,,,#,,,,,,,,,,,,~~~~~~~~~~~,,,,A,,,,,,,,,,,,,,,,AAAvvv,,,,AAA,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
-      "AA,,,,,,,A,AAAAAAAAAAAA,A,AAAAAA,AAA,,,,,,,,,AAAAAAAAAA,,AAAAAAAA,AAAA,,,,,A,,,,,,,,,,,,,,,,,#,,,,,,,,,,,,,,,,,,,,,,,,,.,#w______#,,,,,,,,,,,,,,,,#,,,,,,A,,,,,,,,,,,,,,,,,,,,,,,,A,,,,,,,,AA,,A,,Av,,A,,,,,A,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
+      "AA,,,,,,,A,AAAAAAAAAAAA,A,AAAAAA,AAA,,,,,,,,,AAAAAAAAAA,,AAAAAAAA,AAAA,,,,,A,,,,,,,,,,,,,,,,,#,,,,,,,,,,,,,,,,,,,,X,,R,.,#w______#,,,,,,,,,,,,,,,,#,,,,,,A,,,,,,,,,,,,,,,,,,,,,,,,A,,,,,,,,AA,,A,,Av,,A,,,,,A,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,,,,,,A,,,AA,AA,,,AAAAA,,AAAAAAA,,,,,,,,,,AAAAAAAAAAAA,AAA,,AAAAAA,,,,A,,,,,,,,,,,,,,,,,,#,,,,,,,,,,,,,,,,,,,,,,,,,.G#########,,,,,,,,,,,,,,,,#,,,,,,,,,,,,,AA,A,,,,,,,,,,,,,,,,y,,,,,,,,,,AA,,,A,,,AAAAy,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,A,,A,,A,,A,,A,AAAAAAAAA,AAAA,AA,A,,,,,,,AAAA,AAA,,AAAAA,AAAAAAA,AA,,,,,,,,,,,,,,,,,,,,,,,##########################P###########################,,,,v,,,,,,,,AA,,,,,,,,,,,,,,A,,,,,,,,,,,,A,,,,A,A,,,A,A,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
       "AA,,,A,,,A,A,,AAAAAA,,,AA,,AAAAA,,AA,A,A,AAAA,AAAAAAAAA,,AA,AAA,A,A,,A,,,,,v,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,.,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,v,,,,,,A,,,,A,,,,,,,,,,,,,,,,A,,,,,,,,,,,,,,,A,,,,,,,,~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",
@@ -1981,7 +1981,7 @@
         "nome": "Guia de caça",
         "casa": "Portão da cidade",
         "abre": "cacadas",
-        "fala": "Daqui saem a Masmorra de Runas e a Cripta. O portal abre em 1:30. Quem leva provisões, leva para uma caçada só."
+        "fala": "Os portais ao lado do portão levam à Masmorra de Runas e à Cripta; o Esgoto é pela grade da rua do mercado. Pise no portal e entre: se alguém já caça lá, você cai junto. Quem leva provisões, leva para uma caçada só."
       },
       "corretor": {
         "letra": "T",
@@ -2038,7 +2038,8 @@
         "letra": "V",
         "nome": "Grade do esgoto",
         "casa": "Rua do mercado",
-        "abre": "cacadas",
+        "abre": "portal",
+        "caca": "esgoto",
         "lugar": true,
         "acao": "Descer",
         "fala": "Uma grade de ferro no chão da rua, e o cheiro que sobe dela. Lá embaixo, ratos e baratas, e dizem que uma centopeia do tamanho de um homem."
@@ -2048,7 +2049,37 @@
         "nome": "Capitão",
         "casa": "Porto",
         "abre": "cacadas",
-        "fala": "O navio leva até a Ilha da Enseada e espera pelo portal. Lá o bicho é grande: venha forte."
+        "fala": "O barco no cais leva até a Ilha da Enseada. Lá o bicho é grande: venha forte."
+      },
+      "portal_runas": {
+        "letra": "R",
+        "nome": "Portal das Runas",
+        "casa": "Portão da cidade",
+        "abre": "portal",
+        "caca": "runas",
+        "lugar": true,
+        "acao": "Entrar",
+        "fala": "Um portal de pedra gravada. Do outro lado, a Masmorra de Runas."
+      },
+      "portal_cripta": {
+        "letra": "X",
+        "nome": "Portal da Cripta",
+        "casa": "Portão da cidade",
+        "abre": "portal",
+        "caca": "cripta",
+        "lugar": true,
+        "acao": "Entrar",
+        "fala": "Um portal frio, de pedra escura. Do outro lado, a Cripta Antiga. Não é lugar para quem começa."
+      },
+      "barco": {
+        "letra": "I",
+        "nome": "Barco da Ilha",
+        "casa": "Porto",
+        "abre": "portal",
+        "caca": "ilha",
+        "lugar": true,
+        "acao": "Embarcar",
+        "fala": "O barco do Capitão, amarrado no cais. Leva à Ilha da Enseada."
       }
     },
     "mundo": {
@@ -2175,7 +2206,7 @@
       "nome": "Esgoto",
       "desc": "Galerias úmidas sob a cidade. Morcegos e ratos perto da grade, baratas e lesmas lá embaixo, e a Centopeia-rainha no ninho.",
       "nivel": 1,
-      "npc": "grade",
+      "npc": "guia",
       "entrada": "Você desceu pela grade do esgoto.",
       "bands": [
         {

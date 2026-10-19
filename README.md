@@ -93,7 +93,8 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
-| 0.45.0 (19/10/2026) | A cidade ganhou muralha e quatro portões: fora deles há um mundo para andar, com estradas, quatro vilas, matas, rio, lago, a costa com um cais e ruínas antigas. Ainda sem monstros; é onde vão ficar as entradas dos próximos lugares de caça. O mapa do canto mostra os arredores, e entrar num lugar anuncia o nome dele |
+| 0.46.0 (19/10/2026) | A cidade ganhou muralha e quatro portões: fora deles há um mundo para andar, com estradas, quatro vilas, matas, rio, lago, a costa com um cais e ruínas antigas. Ainda sem monstros; é onde vão ficar as entradas dos próximos lugares de caça. O mapa do canto mostra os arredores, e entrar num lugar anuncia o nome dele |
+| 0.45.0 (19/10/2026) | Cada lugar de caça tem um portal na cidade: a grade do esgoto, os portais das Runas e da Cripta ao lado do portão e o barco da Ilha no cais. Pise nele e entre: se alguém já caça lá, você cai na caçada dele; se não, ela abre no seu aparelho. Lugar cheio (4) abre uma cópia. Quem sai por último fica com a caçada rodando até alguém chegar. O Guia diz quantos caçam em cada lugar |
 | 0.44.0 (19/10/2026) | O jogo abre mais rápido: as imagens caíram de 793 KB para 420 KB (WebP sem perda, o mesmo desenho), e o download inteiro antes de jogar foi de 938 KB para 564 KB |
 | 0.43.2 (19/10/2026) | A Mochila não vende mais na Feira durante a caçada: o que está nela só fica a salvo saindo pela porta. Vender é na cidade |
 | 0.43.0 (19/10/2026) | A escolha de personagem cabe inteira na tela, sem barra de rolagem: os números da conta numa linha e cartões mais baixos, com o preço da morte no lugar da descrição de quem já existe |

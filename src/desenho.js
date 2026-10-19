@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.45.0';
-import {CITY,CLASSES,ITEMS,HUNTS,SPELLS,EL_COR} from './sim/dados.js?v=0.45.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.45.0';
-import {G,solid} from './sim/incursao.js?v=0.45.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.45.0';
-import {bf,formaMira} from './sim/combate.js?v=0.45.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.45.0';
-import {$,app,RM} from './dom.js?v=0.45.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.46.0';
+import {CITY,CLASSES,ITEMS,HUNTS,SPELLS,EL_COR} from './sim/dados.js?v=0.46.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.46.0';
+import {G,solid} from './sim/incursao.js?v=0.46.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.46.0';
+import {bf,formaMira} from './sim/combate.js?v=0.46.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.46.0';
+import {$,app,RM} from './dom.js?v=0.46.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
@@ -510,7 +510,9 @@ function drawNpc(n,p){
   const perto=hyp(p.x-n.x,p.y-n.y)<T*3,face=perto?Math.atan2(p.y-n.y,p.x-n.x):Math.PI/2;
   if(C.perto===n.k){ctx.strokeStyle='rgba(232,194,90,.85)';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(n.x,n.y+10,15,6,0,0,TAU);ctx.stroke()}
   /* um lugar (a grade do esgoto) é um item deitado no chão, não uma pessoa */
-  if(n.n.lugar){if(ART.ok&&spr('npc_'+n.k,0,0,n.x,n.y))return;
+  /* um portal sem sprite próprio usa o do portal da masmorra */
+  if(n.n.lugar){if(ART.ok&&(spr('npc_'+n.k,0,0,n.x,n.y)||(n.n.abre==='portal'&&spr('portal',0,0,n.x,n.y))))return;
+    if(n.n.abre==='portal'&&n.k!=='grade'){ctx.strokeStyle='#8fd0ff';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(n.x,n.y,12,8,0,0,TAU);ctx.stroke();return}
     ctx.fillStyle='#2a2a2e';circle(ctx,n.x,n.y,11);ctx.strokeStyle='#8a8a90';ctx.lineWidth=2;ctx.beginPath();ctx.arc(n.x,n.y,11,0,TAU);
     for(let k=-1;k<=1;k++){ctx.moveTo(n.x+k*6,n.y-10);ctx.lineTo(n.x+k*6,n.y+10)}ctx.stroke();return}
   if(ART.ok&&sprCriatura('npc_'+n.k,face,false,0,false,n.x,n.y))return;
