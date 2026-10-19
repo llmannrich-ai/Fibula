@@ -141,6 +141,15 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Equipamento no corpo (0.10.0)** *(pedido do Leonardo; pilar 2:
+  na cidade compartilhada, o que o outro veste conta quanto ele já arriscou)*.
+  Os bonecos das classes no OTSP têm uma camada só, sem a máscara de cor dos
+  outfits do Tibia, então nada de sprite novo: a armadura retinge a roupa do
+  tronco guardando a sombra (`items.<k>.veste` no `content.json`: `cor` e
+  `malha`), a arma é o sprite do item na mão e gira no golpe, o amuleto é uma
+  pedra no peito. O Banco ganhou o boneco vestido, que gira ao toque; a
+  presença da cidade leva o equipamento, conferido em `poeOutro()`. Caso
+  `equipamento-no-corpo` no harness.
 - **2026-10-19 — Andar por sqm (0.9.0)** *(decisão do Leonardo: "faça para
   tudo"; pilares 2 e 3, base do servidor da F2)*. Jogador, monstros e os outros
   jogadores da cidade andam um sqm por vez, em 8 direções, como no Tibia. A

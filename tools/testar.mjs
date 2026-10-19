@@ -983,6 +983,71 @@ const CASOS = [
 `,
   },
   {
+    nome: 'equipamento-no-corpo',
+    o_que: 'o que o personagem veste aparece nele: retrato no Banco, cidade, incursão com golpe, e os outros jogadores veem pela presença',
+    semente: 11,
+    limite: 90000,
+    patches: [P.spawnNaEntrada],
+    save: {'masmorra-runas-v2': {
+      cofre: 0, itens: {couraca: 1}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null],
+        equip: {arma: 'espada', armadura: 'cota', amuleto: 'amuleto'}}},
+    }},
+    roteiro: `
+    var RT=window.__rt,V=document.querySelector('script[src*="main.js"]').src.split('v=')[1];
+    var chegou=await ate(function(){return $('#app').dataset.arte==='1'},400);
+    ok('o atlas carregou', chegou);
+    /* uma impressão digital dos pixels do retrato: muda se o boneco muda */
+    var digital=function(){var c=$('#eqBoneco canvas'),d=c.getContext('2d').getImageData(0,0,c.width,c.height).data,h=0,n=0;
+      for(var i=0;i<d.length;i+=4){if(d[i+3]){n++;h=(Math.imul(h,31)+d[i]*7+d[i+1]*13+d[i+2]*17+i)|0}}return n+':'+h};
+    clica($('#play'));
+    await ate(function(){return txt('#cRede')==='Só você na cidade'},40);
+    var tr=RT.enviadas.filter(function(d){return d.event==='presence'});
+    ok('a presença diz o que ele veste', tr.length===1&&JSON.stringify(tr[0].payload.payload.eq)==='{"arma":"espada","armadura":"cota","amuleto":"amuleto"}', tr.length&&JSON.stringify(tr[0].payload.payload));
+    /* dado de fora: só peça que existe e é daquele espaço */
+    RT.entra('ana1',{nome:'Ana',classe:'druida',lvl:4,eq:{arma:'machado',armadura:'coroa',amuleto:'__proto__'}});RT.pos('ana1',9,9);
+    await quadros(4);
+    var a=Cd.OUTROS.get('ana1');
+    ok('o equipamento dos outros chega conferido', a&&a.eq.arma==='machado'&&a.eq.armadura===null&&a.eq.amuleto===null, a&&JSON.stringify(a.eq));
+    RT.entra('bia',{nome:'Bia',classe:'feiticeiro',lvl:2});RT.pos('bia',10,9);
+    await quadros(4);
+    ok('quem não manda equipamento aparece sem nada', Cd.OUTROS.get('bia')&&Cd.OUTROS.get('bia').eq.arma===null, Cd.OUTROS.get('bia')&&JSON.stringify(Cd.OUTROS.get('bia').eq));
+    Tl.abreNpc('banqueiro');
+    ok('o Banco mostra o boneco vestido', visivel('#eqBoneco'), $('#eqBoneco').hidden);
+    var d0=digital();
+    ok('o retrato tem o boneco desenhado', +d0.split(':')[0]>300, d0);
+    clica($('#eqBoneco'));var d1=digital();
+    ok('tocar no boneco o gira', d1!==d0, d0+' → '+d1);
+    clica($('#eqBoneco'));clica($('#eqBoneco'));clica($('#eqBoneco'));
+    ok('quatro toques voltam de frente', digital()===d0, digital());
+    var linha=todos('#eqList li.sp')[0];
+    clica(linha.querySelectorAll('.btns button')[0]);
+    var d2=digital();
+    ok('trocar a cota pela couraça muda o boneco', sv().chars.cavaleiro.equip.armadura==='couraca'&&d2!==d0, d2);
+    clica(todos('#eqSlots button')[0]);
+    ok('tirar a arma também muda o boneco', !sv().chars.cavaleiro.equip.arma&&digital()!==d2, digital());
+    await quadros(3);
+    tr=RT.enviadas.filter(function(d){return d.event==='presence'});
+    var ult=tr[tr.length-1].payload.payload.eq;
+    ok('o que muda no Banco vai de novo para os outros', tr.length===2&&ult.arma===null&&ult.armadura==='couraca'&&ult.amuleto==='amuleto', tr.length+' / '+JSON.stringify(ult));
+    clica($('#eqList li.sp .btns button'));
+    ok('a espada voltou para a mão', sv().chars.cavaleiro.equip.arma==='espada', JSON.stringify(sv().chars.cavaleiro.equip));
+    clica($('#eqBack'));
+    await quadros(6);
+    cacar();
+    await quadros(2);
+    ok('a incursão começou vestida', $('#app').classList.contains('playing'));
+    tecla('keydown','KeyJ');
+    var In=await import('./src/sim/incursao.js?v='+V);
+    var golpeou=await ate(function(){return In.G&&In.G.p.swing>0},400);
+    await quadros(6);
+    tecla('keyup','KeyJ');
+    ok('o golpe saiu com a espada na mão, sem erro de desenho', golpeou, In.G&&In.G.p.swing);
+`,
+  },
+  {
     nome: 'incursao-extracao',
     o_que: 'incursão de ponta a ponta: combate, portal, extração, cofre creditado e equipamento guardado como peça',
     semente: 11,

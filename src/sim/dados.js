@@ -25,6 +25,9 @@ export function validaConteudo(c){
     if(!SLOTS_EQ.includes(it.slot))throw new Error(`item ${k} com slot desconhecido: ${it.slot}`);
     for(const[b,v]of Object.entries(it.bonus||{}))
       if(!(b in BONUS)||typeof v!=='number')throw new Error(`item ${k} com bônus inválido: ${b}`);
+    const v=it.veste;
+    if(v!==undefined&&(!v||typeof v!=='object'||(v.cor!==undefined&&!/^#[0-9a-f]{6}$/i.test(v.cor))||(v.malha!==undefined&&typeof v.malha!=='boolean')))
+      throw new Error(`item ${k} com veste inválida: cor é #rrggbb e malha é true ou false`);
   }
   for(const k of Object.keys(c.enemies))if(!c.loot[k])throw new Error(`inimigo sem tabela de loot: ${k}`);
   for(const[k,tbl]of Object.entries(c.loot)){

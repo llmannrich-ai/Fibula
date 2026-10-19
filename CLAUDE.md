@@ -186,7 +186,11 @@ principal, o markup das telas e do HUD, e a linha que carrega
 - `desenho.js` — canvas, `resize()`, **interpolação** (`render()` desenha
   entre o passo anterior e o atual e chama `cena()`), `spr()` (desenha com o canto inferior
   direito no tile, como o Tibia), `render()`, `drawPlayer()`, `drawMon()`,
-  `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`. Com a
+  `drawMini()`, `efArea()` (magia de área tile a tile), `sprCriatura()`, o
+  **equipamento no corpo** (`mede()`, `vestido()`, `poeArma()`,
+  `poeAmuleto()`, `bonecoVestido()`: a armadura retinge o tronco do boneco pela
+  `veste` do item no `content.json`, a arma é o sprite do item na mão) e
+  `retrato()`, o boneco vestido no Banco. Com a
   arte, o `render()` segue a ordem do cliente do Tibia: chão, depois **linha
   por linha** as paredes da linha e quem está nela — a parede de baixo cobre o
   pé de quem encosta nela. Sem a arte, o caminho antigo (formas em código)

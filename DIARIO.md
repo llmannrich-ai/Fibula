@@ -18,6 +18,26 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-19 01:25 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** equipamento visível no personagem (0.10.0), a pedido do Leonardo. Nova seção "equipamento no corpo" em `src/desenho.js`: `mede()` lê os pixels de cada quadro da classe uma vez (topo, altura, pescoço, mãos e quais pixels do tronco são roupa, pela cor dominante da faixa), `vestido()` guarda em cache o quadro retingido pela armadura, `poeArma()` desenha o sprite do item na mão (atrás do corpo de costas, girando no golpe) e `poeAmuleto()` a pedra no peito. `retrato()` desenha o mesmo boneco em qualquer canvas: o Banco mostra o personagem vestido e gira ao toque. Dados em `items.<k>.veste` (`cor`, `malha`), validados na carga. Rede: a presença leva `eq`, reenviada quando muda no Banco; `poeOutro()` só aceita peça que existe e é daquele espaço. Sem a arte, o desenho em código ganhou a faixa da armadura e a pedra.
+
+**Validação:** `node tools/testar.mjs` — 23/23, com o caso novo `equipamento-no-corpo` (presença com `eq`, dado de fora conferido, retrato desenhado, giro, troca de armadura e arma mudando o boneco, presença reenviada, golpe na incursão com a arma). Fora do harness: bancada com as 4 classes × 4 combinações × 4 direções e o jogo em 390×740 (cidade e Banco), olhados um a um.
+
+**Análise:** os outfits com máscara de cor e addons existem no OTSP (16–18, 20, 21, 44, 45), mas são cidadãos genéricos; usá-los trocaria a cara das classes. A cor dominante resolve bem o manto dos magos e o aço do cavaleiro; no caçador, couro e pele têm o mesmo matiz, então a couraça pinta também os braços (fica como manga).
+
+**Roadmap:** "Equipamento no corpo" em `Concluído`, fora da fila (pedido do dono).
+
+**Pendências e riscos:**
+- **Arte por código, não por sprite.** A posição da arma vem da borda do boneco na altura da mão, não de um ponto de mão desenhado; em alguns quadros ela fica um pouco solta do corpo. Se o Leonardo quiser acabamento de Tibia, o caminho é um ponto de mão por classe e direção numa tabela de arte (em `tools/sprites.mjs` ou no `atlas.json`).
+- No cavaleiro e no caçador de frente, a arma equipada aparece junto da arma que o sprite já segura.
+- A cor de cada peça nova precisa de `veste` no `content.json`; sem ela, a armadura não aparece (arma aparece sempre, pelo `it_<chave>`; amuleto usa dourado).
+- Presença com `eq` é aberta como o resto da cidade: quem tem a chave pode dizer que veste qualquer peça que existe. Não vale nada, só se vê.
+
+**Próximo passo recomendado:** o Leonardo olhar no celular (Banco e cidade com outra pessoa); depois, "Sair cedo" (`Agora`).
+
+---
+
 ## 2026-10-19 03:00 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** andar por sqm em tudo (0.9.0), a pedido do Leonardo depois do estudo do movimento do Tibia. `base.js` ganhou o passo de sqm (`poeNoSqm`, `comeca`, `avanca`, `dir8`, `passoPara`, `DIR8`, `centro`), usado pelo jogador e pelos monstros da incursão, pelo jogador da cidade e pelos outros jogadores da cidade. `progresso.js` tem `durPasso()`; `progression.walk` no `content.json` (validado em `dados.js`). Na incursão: `G.ocu` (bloqueio de corpo), `passoM()`, monstros que descem o fluxo sqm a sqm, contornam por sqm de mesma distância quando perto, atacam do vizinho e o xamã recua um sqm; `move()`, `blocked()` e o empurrão entre monstros saíram; o fluxo parte do sqm do jogador. Rede: `pos` agora é `{id,x,y,d}` em sqm e ms, um por passo.
@@ -551,28 +571,5 @@ hoje depende de o agente lembrar de chamar. Depois disso, o item `Agora` do
 roadmap.
 
 
-
----
-
-## 2026-10-18 23:50 UTC — Desenvolvedor
-
-**Item desenvolvido:** CI no GitHub Actions — `.github/workflows/ci.yml`, commits `fea2e5e` e `9b92a55`.
-
-**Validação:** run `39162120905` verde na `main`. Branch descartável `teste-ci-quebrada` com erro de sintaxe proposital: CI falhou (sem PR, o push do branch já dispara).
-
-**Análise:**
-- A primeira versão da CI chamava `tools/teste.js`, que o dono removera ao consolidar tudo em `tools/testar.mjs` ("um harness só"). Falhou com MODULE_NOT_FOUND. Lição: `git pull` e ler `tools/` antes de apontar a CI para um script.
-- `tools/testar.mjs` já inclui a checagem de sintaxe, então a CI tem um passo só.
-- O C4 foi concedido pelo dono (app Claude com acesso de escrita a workflows em todos os repositórios); o push do workflow passou direto na `main`.
-- `gh api .../logs` falha (proxy); os logs saem pela ferramenta `get_job_logs` do GitHub MCP.
-
-**Roadmap:** CI em `Concluído`; aviso de falha do save + teste da migração promovido a `Agora`. O teste da migração v1→v2 já existe em `testar.mjs` (caso de migração): conferir antes de duplicar.
-
-**Pendências e riscos:**
-- O branch remoto `teste-ci-quebrada` ficou: a exclusão deu 403. Apagar à mão (GitHub → Branches).
-- Node 20 nas actions `checkout@v4`/`setup-node@v4` gera aviso de depreciação; subir versão quando houver.
-- C3 (proteger a `main` exigindo CI) segue com o dono, e `modo.txt` continua `direto`. Proteger a `main` obrigaria PR; o dono decidiu direto na `main`, então não sugerir.
-
-**Próximo passo recomendado:** aviso de falha do `persist()` no menu; o teste da migração já existe.
 
 ---
