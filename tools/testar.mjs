@@ -1032,8 +1032,23 @@ const CASOS = [
     }},
     roteiro: `
     ok('o acampamento abriu', visivel('#menu'));
-    ok('o menu mostra a versão do jogo', /^Protótipo · v\\d+\\.\\d+\\.\\d+ · Feiticeiro$/.test(txt('#mEye')||''), txt('#mEye'));
-    ok('o cofre semeado aparece no menu', txt('#sCofre')==='1000', txt('#sCofre'));
+    ok('a tela inicial diz o personagem e o nível', txt('#mCls')==='Feiticeiro'&&txt('#sLvl')==='1', txt('#mQuem'));
+    ok('o cofre semeado aparece na tela inicial', txt('#mCofre')==='cofre: 1000', txt('#mCofre'));
+    ok('a tela inicial é curta: sem grade de números nem instruções', !$('#menu .stats')&&!$('#menu ol')&&visivel('#play')&&visivel('#toRegras'));
+    var r0=$('#play').getBoundingClientRect();
+    ok('Jogar aparece sem rolar a tela', r0.bottom<=innerHeight&&r0.top>=0, r0.top+'..'+r0.bottom+' de '+innerHeight);
+    /* as regras: os números vêm do content.json, a versão e os créditos estão nelas */
+    clica($('#toRegras'));
+    ok('o botão Regras abre as regras', visivel('#regras')&&!visivel('#menu'));
+    var CJ=await (await fetch('data/game/content.json')).json();
+    ok('as regras dizem a perda de XP do content.json', txt('#rPerda')===String(Math.round(CJ.progression.xp.deathLoss*100)), txt('#rPerda'));
+    ok('as regras dizem os espaços da mochila', txt('#rEsp')===String(CJ.progression.mochila.espacos), txt('#rEsp'));
+    ok('as regras listam todo lugar de caça com o nível', todos('#rLugares li').length===Object.keys(CJ.hunts).filter(function(k){return k[0]!=='_'}).length&&/nível \\d+/.test(txt('#rLugares')), txt('#rLugares'));
+    ok('as regras não falam do relógio que não existe mais', !/1:30|portal abre|o tempo acabar/.test(txt('#regras')), txt('#regras'));
+    ok('as regras trazem a versão do jogo', /^Fibula · v\\d+\\.\\d+\\.\\d+$/.test(txt('#rVer')||''), txt('#rVer'));
+    ok('as regras dão crédito ao OTSP com a licença', !!$('#regras a[href*="opentibia_sprite_pack"]')&&!!$('#regras a[href*="creativecommons.org/licenses/by/4.0"]'));
+    clica($('#regrasBack'));
+    ok('Voltar das regras volta à tela inicial', visivel('#menu'));
     clica($('#play'));
     ok('o menu leva à cidade', $('#app').classList.contains('cidade')&&!visivel('#menu'));
     Tl.abreNpc('mercador');
@@ -1078,7 +1093,7 @@ const CASOS = [
       chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null]}},
     }},
     roteiro: `
-    ok('o botão do menu leva à cidade', txt('#play')==='Entrar na cidade', txt('#play'));
+    ok('o botão principal da tela inicial é Jogar', txt('#play')==='Jogar', txt('#play'));
     clica($('#play'));
     await quadros(3);
     ok('a cidade abriu, sem nenhuma tela por cima', $('#app').classList.contains('cidade')&&todos('.screen').every(function(t){return t.hidden}));
@@ -2021,7 +2036,7 @@ const CASOS = [
       chars: {feiticeiro: {lvl: 1, xp: 400, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], equip: {arma: 'machado', armadura: null, amuleto: null}}},
     }},
     roteiro: `
-    ok('o menu avisa o preço da morte antes de entrar', /25% da experiência do nível.*Hoje: 100 xp\\./.test(txt('#mRisco')||''), txt('#mRisco'));
+    ok('a tela inicial avisa o preço da morte antes de entrar', txt('#mRisco')==='Morrer custa a mochila (vazia) e 100 de XP.', txt('#mRisco'));
     cacar();
     await quadros(2);
     ok('a incursão começou', $('#app').classList.contains('playing'));
@@ -2050,7 +2065,7 @@ const CASOS = [
     ok('o Guia de caça também avisa, com o XP reduzido', (txt('#hRisco')||'').indexOf('Hoje: '+Math.floor(sv().chars.feiticeiro.xp*0.25)+' xp.')>=0, txt('#hRisco'));
     clica($('#huntBack'));
     clica($('#cMenu'));
-    ok('de volta ao menu, o aviso já conta o XP reduzido', (txt('#mRisco')||'').indexOf('Hoje: '+Math.floor(sv().chars.feiticeiro.xp*0.25)+' xp.')>=0, txt('#mRisco'));
+    ok('de volta à tela inicial, o aviso já conta o XP reduzido', (txt('#mRisco')||'').indexOf(' e '+Math.floor(sv().chars.feiticeiro.xp*0.25)+' de XP.')>=0, txt('#mRisco'));
 `,
   },
   {
@@ -2059,7 +2074,10 @@ const CASOS = [
     semente: 5,
     save: {'masmorra-runas-v2': {cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0, up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0}, classe: null, chars: {}}},
     roteiro: `
-    ok('save sem classe abre a escolha de personagem', visivel('#pick'));
+    ok('save sem classe abre a tela inicial pedindo personagem', visivel('#menu')&&txt('#play')==='Criar personagem', txt('#play'));
+    ok('sem personagem, a conta e as regras estão à mão', visivel('#toRegras')&&!visivel('#toPick')&&!visivel('#mQuem'));
+    clica($('#play'));
+    ok('Criar personagem abre a escolha de classe', visivel('#pick'));
     var cards=function(){return todos('#pickList button.cls')};
     ok('quatro classes na lista', cards().length===4, cards().length);
     var nomes=cards().map(function(b){return b.querySelector('h3').textContent});
@@ -2071,7 +2089,7 @@ const CASOS = [
       var n=nomes[i];
       clica(cards().filter(function(b){return b.querySelector('h3').textContent===n})[0]);
       ok('escolher '+n+' leva ao acampamento', visivel('#menu'));
-      ok('o acampamento identifica '+n, (txt('#mEye')||'').slice(-n.length)===n, txt('#mEye'));
+      ok('a tela inicial identifica '+n, txt('#mCls')===n, txt('#mCls'));
       ok(n+' nasce no nível 1', txt('#sLvl')==='1', txt('#sLvl'));
       ok(n+' nasce com 2 espaços', txt('#sSlots')==='2', txt('#sSlots'));
       cacar();
@@ -2259,6 +2277,7 @@ const CASOS = [
     roteiro: `
     ok('alguma tela abriu, o jogo não ficou em branco', visivel('#menu')||visivel('#pick'), 'menu='+visivel('#menu')+' pick='+visivel('#pick'));
     ok('o cofre não foi perdido', sv()&&sv().cofre===300, sv()&&sv().cofre);
+    if(visivel('#menu')&&txt('#play')==='Criar personagem')clica($('#play'));
     if(visivel('#pick')){
       clica(todos('#pickList button.cls').filter(function(b){return b.querySelector('h3').textContent==='Druida'})[0]);
       ok('dá para escolher uma classe e seguir', visivel('#menu'));
