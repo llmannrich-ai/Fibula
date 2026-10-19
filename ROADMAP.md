@@ -130,6 +130,14 @@ empilhamento abaixo de 340px de largura nunca foi verificado.
 
 ## Concluído
 
+- **2026-10-19 — Mochila e cofre, como no Tibia (0.26.0)** *(pedido do
+  Leonardo: "apenas com a mochila e o cofre"; pilar 1)*. O saco saiu. A
+  mochila é do personagem e fica com ele entre as caçadas: entra inteira na
+  próxima e cai toda na morte (menos o Selo). Extrair não guarda nada
+  sozinho; o Banqueiro guarda uma coisa ou tudo no cofre e devolve peças e
+  ouro à mochila. 20 espaços (`progression.mochila`); cheia, o loot fica no
+  chão. O Guia de caça e a Mochila dizem quanto ela arrisca.
+
 - **2026-10-19 — A Mochila com o corpo do inventário do Tibia (0.23.0)**
   *(pedido do Leonardo: "algo que se assemelha ao do Tibia, equipamentos em
   posição de uso"; pilar 1)*. Três colunas como a janela do Tibia: amuleto,

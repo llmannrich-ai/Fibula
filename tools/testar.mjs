@@ -620,6 +620,39 @@ async function testaSimulacao() {
     if (P.vender('cota')) falhas.push('vendeu uma peça que não estava no cofre');
     if (!P.desequipar('armadura') || !P.vender('cota') || sv.cofre !== 260) falhas.push(`devolver e vender a cota: cofre ${sv.cofre}`);
   } catch (e) { falhas.push('o cofre quebrou no Node: ' + e.message); }
+  /* a mochila (progression.mochila): fica com o personagem entre as caçadas,
+     entra inteira na seguinte, a morte leva tudo (menos o selo), extrair não
+     guarda nada sozinho, o Banco guarda e devolve, e cheia o loot fica no chão */
+  try {
+    novoSave(); const sv = P.save, c = P.ch(), cap = P.nEspacos();
+    if (!c.mochila || Object.keys(c.mochila).length) falhas.push('personagem novo sem mochila vazia');
+    c.mochila = {ouro: 30, gema: 1, espada: 2};
+    if (P.ocupa(c.mochila) !== 4 || P.valMochila(c.mochila) !== 190) falhas.push(`mochila: ${P.ocupa(c.mochila)} espaços, ${P.valMochila(c.mochila)} de ouro (esperado 4 e 190)`);
+    I.newRun(61); let p = I.G.ps[0];
+    if (p.bagVal !== 190 || p.bag.espada !== 2 || p.bag === c.mochila) falhas.push(`a mochila não entrou na caçada como cópia: ${JSON.stringify(p.bag)} / ${p.bagVal}`);
+    p.bag.ouro += 10; p.bagVal += 10; I.finish('extraiu');
+    if (sv.cofre !== 0 || c.mochila.ouro !== 40 || c.mochila.espada !== 2 || sv.best !== 10) falhas.push(`extrair: cofre ${sv.cofre}, mochila ${JSON.stringify(c.mochila)}, recorde ${sv.best} (esperado 0, 40 de ouro e 10)`);
+    sv.up.seguro = 1; I.newRun(62); I.finish('morreu');
+    if (Object.keys(c.mochila).length || sv.cofre !== Math.round(200 * 0.2)) falhas.push(`morrer: mochila ${JSON.stringify(c.mochila)}, cofre ${sv.cofre} (esperado vazia e 40 do selo)`);
+    /* o Banco */
+    sv.cofre = 0; c.mochila = {ouro: 30, gema: 1, espada: 2, seda: 3};
+    const g1 = P.guardaUm('espada');
+    if (!g1 || g1.pecas !== 1 || c.mochila.espada !== 1 || sv.itens.espada !== 1) falhas.push(`guardar uma espada: ${JSON.stringify(c.mochila)} / ${JSON.stringify(sv.itens)}`);
+    const g2 = P.guardaMochila();
+    if (g2.ouro !== 150 || g2.mats !== 3 || sv.cofre !== 150 || sv.itens.espada !== 2 || sv.mats.seda !== 3 || Object.keys(c.mochila).length) falhas.push(`guardar tudo: ${JSON.stringify(g2)}, cofre ${sv.cofre}, mochila ${JSON.stringify(c.mochila)}`);
+    if (!P.leva('espada') || c.mochila.espada !== 1 || sv.itens.espada !== 1 || !P.retira(50) || c.mochila.ouro !== 50 || sv.cofre !== 100) falhas.push(`levar do cofre: mochila ${JSON.stringify(c.mochila)}, cofre ${sv.cofre}`);
+    /* cheia: peça de equipamento ocupa um espaço cada, o resto empilha */
+    c.mochila = {espada: cap - 1, ouro: 5};
+    if (P.cabe(c.mochila, 'espada') || !P.cabe(c.mochila, 'ouro') || P.cabe(c.mochila, 'gema') || P.leva('espada')) falhas.push('a mochila cheia ainda aceitou peça nova');
+    I.newRun(63); p = I.G.ps[0]; const d = {x: p.x, y: p.y, items: [['ouro', 3], ['gema', 1]], rar: 1, t: 99, dono: 0};
+    I.G.drops.push(d); Cb.pickup(d, I.G.drops.length - 1, p);
+    if (p.bag.ouro !== 8 || p.bag.gema || I.G.drops.length !== 1 || d.items.length !== 1 || d.items[0][0] !== 'gema') falhas.push(`mochila cheia: pegou ${JSON.stringify(p.bag)}, ficou no chão ${JSON.stringify(d.items)}`);
+    /* save cru e ficha de fora: item que não existe some */
+    const n = P.normaliza({classe: 'druida', chars: {druida: {lvl: 2, mochila: {ouro: 7, sumiu: 3, gema: -1}}}});
+    if (JSON.stringify(n.chars.druida.mochila) !== '{"ouro":7}') falhas.push(`normaliza() na mochila: ${JSON.stringify(n.chars.druida.mochila)}`);
+    const f = P.confereFicha({cl: 'druida', c: {lvl: 2, mochila: {coroa: 1, nada: 9}}});
+    if (JSON.stringify(f.c.mochila) !== '{"coroa":1}') falhas.push(`confereFicha() na mochila: ${JSON.stringify(f.c.mochila)}`);
+  } catch (e) { falhas.push('a mochila quebrou no Node: ' + e.message); }
   /* a forja do Gordon: encomenda só com o material todo, consome o que pede e
      libera a loja; venda de material barata; o save cru é limpo */
   try {
@@ -726,10 +759,10 @@ async function testaSimulacao() {
     I.G.t = 200; I.G.portal.open = true; a1.x = I.G.portal.x; a1.y = I.G.portal.y; a1.bag = {ouro: 40}; a1.bagVal = 40;
     for (let i = 0; i < 80 && !a1.fora; i++) I.update(0.05, [parado, parado]);
     if (a1.fora !== 'extraiu' || I.G.over || a0.fora) falhas.push(`a extração de um encerrou a sala ou não aconteceu (${a1.fora}, over=${I.G.over}, ${a0.fora})`);
-    if (sv.cofre !== cofre0 || sv.ext !== ext0) falhas.push('a extração de outro jogador mexeu no cofre deste aparelho');
+    if (sv.cofre !== cofre0 || sv.ext !== ext0 || P.ch().mochila.ouro) falhas.push('a extração de outro jogador mexeu no cofre ou na mochila deste aparelho');
     a0.x = I.G.portal.x; a0.y = I.G.portal.y; a0.bag = {ouro: 25}; a0.bagVal = 25;
     for (let i = 0; i < 80 && !I.G.over; i++) I.update(0.05, [parado, parado]);
-    if (!I.G.over || sv.cofre !== cofre0 + 25 || sv.ext !== ext0 + 1) falhas.push(`o último a extrair não fechou a sala ou não guardou o saco (cofre ${cofre0} → ${sv.cofre})`);
+    if (!I.G.over || sv.cofre !== cofre0 || P.ch().mochila.ouro !== 25 || sv.ext !== ext0 + 1) falhas.push(`o último a extrair não fechou a sala ou a mochila não saiu com ele (cofre ${cofre0} → ${sv.cofre}, mochila ${JSON.stringify(P.ch().mochila)})`);
     /* o retrato da sala: o convidado que gera a mesma masmorra pela semente e
        aplica o retrato do anfitrião vê os mesmos monstros, jogadores e sacos */
     const fr = fichas(2); I.newRun(31, fr); I.G.active = true;
@@ -776,9 +809,9 @@ async function testaSimulacao() {
         if (conta() !== 0) falhas.push('a sala repovoou com o jogador dentro dela');
         B1.poeNoSqm(pl, Math.floor(G.portal.x / 32), Math.floor(G.portal.y / 32)); pl.longe = true; pl.bag = {ouro: 9}; pl.bagVal = 9; const cofre0 = P.save.cofre;
         for (let k = 0; k < 80 && !pl.fora; k++) I.update(0.05, [parado]);
-        if (pl.fora !== 'extraiu' || P.save.cofre !== cofre0 + 9 || G.over) falhas.push(`sair pela porta: ${pl.fora}, cofre ${cofre0} → ${P.save.cofre}, sala acabou: ${G.over}`);
+        if (pl.fora !== 'extraiu' || P.save.cofre !== cofre0 || P.ch().mochila.ouro !== 9 || G.over) falhas.push(`sair pela porta: ${pl.fora}, cofre ${cofre0} → ${P.save.cofre}, mochila ${JSON.stringify(P.ch().mochila)}, sala acabou: ${G.over}`);
         const de = I.entra(0, I.fichaLocal());
-        if (de.fora || de.bagVal || G.ps.length !== 1 || de.longe) falhas.push('entrar de novo pela porta não deu um jogador novo, na porta e com o saco vazio');
+        if (de.fora || de.bagVal !== 9 || G.ps.length !== 1 || de.longe) falhas.push(`entrar de novo pela porta não deu um jogador novo, na porta e com a mochila de antes (${de.bagVal})`);
       }
     }
     if (P.confereFicha({cl: 'dragao', c: {}}) || P.confereFicha({cl: 'druida', c: {lvl: 1e9, slots: ['golpe', 'gelo']}}).c.lvl !== 200 || P.confereFicha({cl: 'druida', c: {lvl: 2, slots: ['golpe', 'gelo']}}).c.slots[0] !== null)
@@ -1191,7 +1224,7 @@ const CASOS = [
     ok('quem acabou de entrar não sai sem querer: está na porta', (await quadros(70),!a.fora), a.pch);
     a.longe=true;a.bag={ouro:30};a.bagVal=30;
     await ate(function(){return a.fora==='extraiu'},120);await ate(function(){return visivel('#end')},400);
-    ok('o anfitrião sai pela porta com o saco: tela final e cofre', a.fora==='extraiu'&&visivel('#end')&&Pg.save.cofre===30, txt('#endTitle')+' / '+Pg.save.cofre);
+    ok('o anfitrião sai pela porta com a mochila: tela final, e nada vai sozinho para o cofre', a.fora==='extraiu'&&visivel('#end')&&Pg.save.cofre===0&&Pg.ch().mochila.ouro===30, txt('#endTitle')+' / '+Pg.save.cofre+' / '+JSON.stringify(Pg.ch().mochila));
     ok('sair não fecha a masmorra para quem ficou', !I.G.over&&!I.G.ps[1].fora, I.G.over);
     clica($('#toMenu'));var t1=I.G.t;await quadros(6);
     ok('na cidade, o aparelho do anfitrião continua rodando a masmorra', I.G.t>t1&&$('#app').classList.contains('cidade'), t1+' → '+I.G.t);
@@ -1259,8 +1292,8 @@ const CASOS = [
     await ate(function(){return visivel('#end')},400);
     ok('o resultado do anfitrião vira a tela final', visivel('#end')&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
     var s=sv(),c=s&&s.chars.druida;
-    ok('e vai para o save deste aparelho: cofre, extração e o personagem', s&&s.cofre===40&&s.ext===1&&c.lvl===3&&c.xp===15&&c.mag===1, s&&JSON.stringify({cofre:s.cofre,ext:s.ext,lvl:c.lvl,xp:c.xp}));
-    ok('item que não existe e habilidade de outra classe não entram', !(s.itens&&s.itens.inexistente)&&c.slots[1]===null, JSON.stringify(c.slots));
+    ok('e vai para o save deste aparelho: mochila, extração e o personagem', s&&s.cofre===0&&c.mochila.ouro===40&&s.ext===1&&c.lvl===3&&c.xp===15&&c.mag===1, s&&JSON.stringify({cofre:s.cofre,mochila:c.mochila,ext:s.ext,lvl:c.lvl,xp:c.xp}));
+    ok('item que não existe e habilidade de outra classe não entram', !c.mochila.inexistente&&c.slots[1]===null, JSON.stringify(c.slots));
     clica($('#toMenu'));Tl.abreNpc('guia');
     ok('depois de sair, continua na sala, com a porta aberta', Sa.SALA.papel==='convidado'&&todos('#hSala button').some(function(b){return b.textContent==='Entrar pela porta'&&!b.disabled}), txt('#hSala'));
     clica(todos('#hSala button').filter(function(b){return b.textContent==='Entrar pela porta'})[0]);await quadros(2);
@@ -1461,7 +1494,7 @@ const CASOS = [
   },
   {
     nome: 'mochila',
-    o_que: 'botão Mochila na cidade e na masmorra: corpo vestido, saco em grade com o risco da morte, sem pausar o jogo',
+    o_que: 'botão Mochila na cidade e na masmorra: corpo vestido, a mochila em grade de 20 espaços com o risco da morte, sem pausar o jogo',
     semente: 7,
     patches: [P.tempo(8, 3), P.sacoEquip],
     save: {'masmorra-runas-v2': {
@@ -1483,7 +1516,7 @@ const CASOS = [
     ok('o corpo tem o desenho do Tibia: três colunas, as casas que o jogo não tem apagadas', todos('#moDoll > div').length===3&&todos('#moDoll .trava').length===6&&$('#moDoll > div:first-child .s-amuleto')&&$('#moDoll > div:nth-child(2) .s-armadura')&&$('#moDoll > div:last-child .s-saco'), todos('#moDoll > div').map(function(c){return c.children.length}).join(','));
     ok('o boneco vestido aparece ao lado do corpo', visivel('#moFig'));
     ok('o total vestido aparece', txt('#moTot')==='Vestido: +10% de dano. Vida 85 · Mana 95', txt('#moTot'));
-    ok('na cidade o saco está vazio, em grade', cheias().length===0&&todos('#moGrade .cel').length===12, todos('#moGrade .cel').length);
+    ok('na cidade a mochila está vazia, com os 20 espaços', cheias().length===0&&todos('#moGrade .cel').length===20&&txt('#moTit')==='Mochila', todos('#moGrade .cel').length);
     tecla('keydown','KeyB');tecla('keyup','KeyB');
     ok('B fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
     clica(bt);
@@ -1492,11 +1525,11 @@ const CASOS = [
     await quadros(2);
     clica(bt);
     ok('a mochila abre na masmorra', aberta());
-    ok('o saco mostra o valor', txt('#moVal')==='220 ouro', txt('#moVal'));
-    ok('o saco tem as duas peças, a mais valiosa primeiro', cheias().length===2&&/^200 de ouro/.test(cheias()[0].getAttribute('aria-label')||''), cheias().map(function(b){return b.getAttribute('aria-label')}).join(' | '));
-    ok('o risco da morte aparece, com o selo', txt('#moRisco')==='Se morrer, perde 176 de ouro (o selo guarda 44). Extraia para guardar.', txt('#moRisco'));
+    ok('a mochila mostra o valor e os espaços', txt('#moVal')==='220 ouro · 2/20', txt('#moVal'));
+    ok('a mochila tem as duas coisas, a mais valiosa primeiro', cheias().length===2&&/^200 de ouro/.test(cheias()[0].getAttribute('aria-label')||''), cheias().map(function(b){return b.getAttribute('aria-label')}).join(' | '));
+    ok('o risco da morte aparece, com o selo', txt('#moRisco')==='Se morrer, perde 176 de ouro em loot (o selo guarda 44). Saia pela porta e guarde no Banco.', txt('#moRisco'));
     clica(cheias()[1]);
-    ok('tocar numa peça diz o que ela é', txt('#moInfo')==='espada enferrujada · vale 20 de ouro · Arma, +6% de dano. Ao extrair, vai para o Banco.', txt('#moInfo'));
+    ok('tocar numa peça diz o que ela é', txt('#moInfo')==='espada enferrujada · vale 20 de ouro · Arma, +6% de dano. Na mochila, cai na morte. Guardada no Banco, vai para o cofre.', txt('#moInfo'));
     ok('a peça tocada fica marcada', $('#moGrade .cel.on')&&$('#moGrade .cel.on').dataset.k==='espada');
     var t0=txt('#timeT');
     await quadros(40);
@@ -1507,6 +1540,48 @@ const CASOS = [
     var acabou=await ate(function(){return visivel('#end')},1500);
     ok('a incursão acabou', acabou);
     ok('a tela final fecha a mochila', !aberta()&&bt.getAttribute('aria-expanded')==='false');
+    ok('soterrado, a mochila ficou na masmorra', txt('#eLoot')==='220 ouro · perdido'&&sv()&&JSON.stringify(sv().chars.feiticeiro.mochila)==='{}', txt('#eLoot')+' / '+(sv()&&JSON.stringify(sv().chars.feiticeiro.mochila)));
+`,
+  },
+  {
+    nome: 'banco-mochila',
+    o_que: 'a mochila fica com o personagem entre as caçadas: o Banqueiro guarda uma peça ou tudo no cofre (gema vira ouro, material vai ao Gordon), devolve peça e ouro à mochila, o Guia avisa o que ela arrisca e ela entra inteira na caçada',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 10, itens: {}, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'feiticeiro',
+      chars: {feiticeiro: {lvl: 1, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['faisca', null, null, null], mochila: {ouro: 50, gema: 1, espada: 2, seda: 2, sumiu: 4}}},
+    }},
+    roteiro: `
+    var mo=function(){return sv()&&sv().chars.feiticeiro.mochila};
+    var linhaMo=function(nome){return todos('#eqMo li.sp').filter(function(li){return li.querySelector('h3').textContent.indexOf(nome)>=0})[0]};
+    clica($('#play'));
+    clica($('#bMochila'));
+    ok('na cidade a Mochila mostra o que o personagem carrega, uma casa por espada', todos('#moGrade .cel:not(:disabled)').length===5&&txt('#moVal')==='226 ouro · 5/20', txt('#moVal'));
+    ok('e avisa que vai junto na próxima caçada', /^Vai com você na próxima caçada: se morrer, perde 226 de ouro em loot\./.test(txt('#moRisco')), txt('#moRisco'));
+    clica($('#bMochila'));
+    Tl.abreNpc('guia');
+    ok('o Guia diz o que a mochila arrisca', /A mochila vai junto, com 226 de ouro em loot: morrer perde 226\./.test(txt('#hRisco')), txt('#hRisco'));
+    Tl.abreNpc('banqueiro');
+    ok('o Banco mostra a mochila', visivel('#equip')&&todos('#eqMo li.sp').length===4&&txt('#eqMoVal')==='226 ouro · 5/20', txt('#eqMoVal')+' / '+todos('#eqMo li.sp').length);
+    clica(linhaMo('espada').querySelector('button'));
+    ok('guardar uma espada leva uma só para o cofre', mo().espada===1&&sv().itens.espada===1&&/1 peça de equipamento/.test(txt('#eqMsg')), JSON.stringify(mo())+' / '+txt('#eqMsg'));
+    clica($('#eqGuarda'));
+    ok('guardar tudo: ouro e gema viram ouro no cofre, a espada vira peça, a seda vai ao Gordon', sv().cofre===180&&sv().itens.espada===2&&sv().mats.seda===2&&JSON.stringify(mo())==='{}', sv().cofre+' / '+JSON.stringify(sv().itens)+' / '+JSON.stringify(sv().mats));
+    ok('o Banco diz o que foi para onde', /170 de ouro e 1 peça de equipamento/.test(txt('#eqMsg'))&&/2 materiais foram para o depósito do Gordon/.test(txt('#eqMsg')), txt('#eqMsg'));
+    ok('com a mochila vazia, guardar tudo fica apagado', $('#eqGuarda').disabled&&txt('#eqGold')==='180');
+    var levar=todos('#eqList li.sp')[0].querySelectorAll('.btns button')[2];
+    ok('a peça do cofre tem o botão de levar', levar&&levar.textContent==='levar', levar&&levar.textContent);
+    clica(levar);
+    ok('levar põe a espada de volta na mochila', mo().espada===1&&sv().itens.espada===1, JSON.stringify(mo()));
+    $('#eqQtd').value='30';clica($('#eqRetira'));
+    ok('retirar ouro tira do cofre e põe na mochila', sv().cofre===150&&mo().ouro===30&&txt('#eqGold')==='150', sv().cofre+' / '+JSON.stringify(mo()));
+    $('#eqQtd').value='999';clica($('#eqRetira'));
+    ok('não se retira mais do que o cofre tem', sv().cofre===150&&/O cofre tem 150/.test(txt('#eqMsg')), txt('#eqMsg'));
+    cacar();
+    await quadros(2);
+    ok('a mochila entra inteira na caçada', txt('#bagT')==='50', txt('#bagT'));
 `,
   },
   {
@@ -1531,7 +1606,7 @@ const CASOS = [
     ok('o save lembra que já pegou', sv().chao['27,20']===1&&sv().chao['29,20']===1, JSON.stringify(sv().chao));
     ok('o registro avisa', /Você pegou espada enferrujada/.test(txt('#log')||''), txt('#log'));
     clica($('#bMochila'));
-    ok('a Mochila na cidade mostra o cofre do Banco, com as duas', txt('#moTit')==='Cofre do Banco'&&txt('#moVal')==='2 peças'&&todos('#moGrade .cel:not([disabled])').length===2, txt('#moTit')+' / '+txt('#moVal')+' / '+todos('#moGrade .cel:not([disabled])').length);
+    ok('foram para o cofre, não para a mochila', txt('#moTit')==='Mochila'&&txt('#moVal')==='0 ouro · 0/20'&&todos('#moGrade .cel:not([disabled])').length===0, txt('#moTit')+' / '+txt('#moVal')+' / '+todos('#moGrade .cel:not([disabled])').length);
     clica($('#moX'));
     clica($('#cMenu'));await quadros(2);clica($('#play'));await quadros(2);
     ok('voltando à cidade, não aparecem de novo', Cd.C.chao.length===0, Cd.C.chao.length);
@@ -1606,7 +1681,7 @@ const CASOS = [
   },
   {
     nome: 'forja',
-    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e mostra o que a encomenda usa; extrair leva o material ao depósito',
+    o_que: 'o Gordon na Forja: encomenda só com o material todo, entregar libera a loja, comprar põe a peça no Banco, vender material é barato e mostra o que a encomenda usa; o material extraído volta na mochila e o Banco leva ao depósito',
     semente: 11,
     limite: 90000,
     patches: [P.tempo(20, 10), P.sacoMat, P.portalNaEntrada],
@@ -1652,13 +1727,16 @@ const CASOS = [
     var acabou=await ate(function(){return visivel('#end')},1500);
     tecla('keyup','KeyJ');
     ok('saiu pelo portal', acabou&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
-    ok('a seda foi para o depósito, não para o ouro', sv().mats.seda>=2&&sv().cofre>=288, JSON.stringify(sv().mats)+' / '+sv().cofre);
-    ok('a tela final avisa do material', /para o depósito do Gordon/.test(txt('#endText')||''), txt('#endText'));
+    var m0=sv().mats.seda|0,c0=sv().cofre;
+    ok('a seda saiu na mochila, sem ir sozinha para lugar nenhum', sv().chars.cavaleiro.mochila.seda>=2&&sv().cofre===c0, JSON.stringify(sv().chars.cavaleiro.mochila));
+    clica($('#toMenu'));Tl.abreNpc('banqueiro');clica($('#eqGuarda'));
+    ok('guardada no Banco, a seda vai para o depósito, não para o ouro', (sv().mats.seda|0)>=m0+2&&!sv().chars.cavaleiro.mochila.seda, JSON.stringify(sv().mats)+' / '+sv().cofre);
+    ok('o Banco avisa do material', /para o depósito do Gordon/.test(txt('#eqMsg')||''), txt('#eqMsg'));
 `,
   },
   {
     nome: 'incursao-extracao',
-    o_que: 'incursão de ponta a ponta: combate, portal, extração, cofre creditado e equipamento guardado como peça',
+    o_que: 'incursão de ponta a ponta: combate, portal, extração com a mochila, e o Banco guardando o ouro no cofre e o equipamento como peça',
     semente: 11,
     limite: 90000,
     patches: [P.tempo(20, 10), P.sacoEquip, P.portalNaEntrada, P.spawnNaEntrada],
@@ -1683,19 +1761,21 @@ const CASOS = [
     tecla('keyup','KeyJ');
     ok('a incursão chegou ao fim', acabou);
     ok('saiu pelo portal', txt('#endTitle')==='Extraído!', txt('#endTitle')+' / '+txt('#endText'));
-    var m=/^([0-9]+) ouro · (\\S+)$/.exec(txt('#eLoot')||'');
-    ok('o saco foi guardado', !!m&&m[2]==='guardado', txt('#eLoot'));
-    var loot=m?+m[1]:-1;
-    ok('o saco semeado veio junto', loot>=220, loot);
+    var m=/^([0-9]+) ouro · (.+)$/.exec(txt('#eLoot')||'');
+    ok('o loot saiu na mochila', !!m&&m[2]==='na mochila', txt('#eLoot'));
+    var loot=m?+m[1]:-1,mo=sv()&&sv().chars.feiticeiro.mochila;
+    ok('o loot semeado veio junto', loot>=220, loot);
+    ok('a extração não guarda nada sozinha: está tudo na mochila', sv()&&sv().cofre===0&&!Object.keys(sv().itens||{}).length&&mo&&mo.espada>=1, sv()&&JSON.stringify(mo));
+    ok('a tela final mostra o mesmo cofre', txt('#eCofre')===sv().cofre+' ouro', txt('#eCofre'));
+    ok('a tela final manda guardar no Banco', /guarde no Banco/.test(txt('#endText')||''), txt('#endText'));
+    ok('a espada aparece marcada como arma', todos('#endItems li small').some(function(x){return x.textContent==='arma'}), todos('#endItems li small').length);
+    ok('o recorde foi atualizado', sv()&&sv().best===loot, sv()&&sv().best);
+    clica($('#toMenu'));Tl.abreNpc('banqueiro');clica($('#eqGuarda'));
     var VAL={espada:20,machado:28,amuleto:60,couraca:30,cota:90,dente:3,seda:8,osso:10,erva:15},pecas=0;
     for(var k in (sv()&&sv().itens)||{})pecas+=VAL[k]*sv().itens[k];
     for(var k in (sv()&&sv().mats)||{})pecas+=VAL[k]*sv().mats[k];
-    ok('a espada foi para o cofre como peça, não como ouro', sv()&&sv().itens&&sv().itens.espada>=1, sv()&&JSON.stringify(sv().itens));
-    ok('ouro no cofre + peças e materiais guardados = valor do saco', sv()&&sv().cofre+pecas===loot, sv()&&(sv().cofre+' + '+pecas+' de '+loot));
-    ok('a tela final mostra o mesmo cofre', txt('#eCofre')===sv().cofre+' ouro', txt('#eCofre'));
-    ok('a tela final avisa das peças no cofre', /peças? de equipamento/.test(txt('#endText')||''), txt('#endText'));
-    ok('a espada aparece marcada como arma', todos('#endItems li small').some(function(x){return x.textContent==='arma'}), todos('#endItems li small').length);
-    ok('o recorde foi atualizado', sv()&&sv().best===loot, sv()&&sv().best);
+    ok('guardada no Banco, a espada vai para o cofre como peça, não como ouro', sv()&&sv().itens&&sv().itens.espada>=1, sv()&&JSON.stringify(sv().itens));
+    ok('ouro no cofre + peças e materiais guardados = valor da mochila', sv()&&sv().cofre+pecas===loot&&!Object.keys(sv().chars.feiticeiro.mochila).length, sv()&&(sv().cofre+' + '+pecas+' de '+loot));
     ok('uma saída foi contada', sv()&&sv().ext===1, sv()&&sv().ext);
     ok('uma incursão foi contada', sv()&&sv().runs===1, sv()&&sv().runs);
     ok('nenhuma morte foi contada', sv()&&sv().deaths===0, sv()&&sv().deaths);
@@ -1706,7 +1786,7 @@ const CASOS = [
     ok('o tempo na masmorra foi registrado', (txt('#eTime')||'')!=='', txt('#eTime'));
     ok('o selo não aparece em extração', $('#eSeal').hidden);
     ok('extrair não custa experiência', $('#eXpPerda').hidden&&$('#eXpPerdaDt').hidden);
-    ok('o saco foi detalhado item por item', todos('#endItems li').length>=1, todos('#endItems li').length);
+    ok('a mochila foi detalhada item por item', todos('#endItems li').length>=1, todos('#endItems li').length);
 `,
   },
   {

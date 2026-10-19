@@ -47,8 +47,9 @@ O contrapeso é o tempo de recuperação: a perda tem que doer por uma ou duas
 incursões, não por uma semana. Perder três horas de progresso era o erro do
 Tibia, não a virtude.
 
-Hoje (0.6.0): morrer custa o saco inteiro, menos o que o Selo de resguardo
-protege, e 25% da experiência acumulada no nível atual, nunca o nível. O menu
+Hoje (0.26.0): morrer custa a mochila inteira, menos o que o Selo de resguardo
+protege (e ela fica com o personagem entre as caçadas: só o cofre do Banco é
+seguro), e 25% da experiência acumulada no nível atual, nunca o nível. O menu
 mostra quanto XP está em jogo antes de entrar. Isso é o piso, não o teto — o peso da morte pode crescer,
 desde que continue legível e recuperável.
 

@@ -18,6 +18,25 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-20 01:30 UTC — sessão manual (nuvem)
+
+**Item desenvolvido:** mochila e cofre como no Tibia (0.26.0), a pedido do Leonardo ("apenas com a mochila e o cofre"). O saco deixou de existir como inventário: `p.bag` é a mochila durante a caçada, começa com `ch().mochila` e volta para ela na extração; a morte a esvazia. O Banco ganhou "Guardar tudo", "guardar" por linha, "levar" nas peças do cofre e "Retirar" ouro. Mochila de 20 espaços (`progression.mochila.espacos`), peça de equipamento ocupa um, o resto empilha; cheia, o que não cabe fica no chão.
+
+**Validação:** `node tools/testar.mjs` — 33/33 (caso novo `banco-mochila`; bloco novo da mochila na simulação no Node: entrar com ela, extrair sem cofre, morrer esvaziando com o selo, guardar, levar, retirar, mochila cheia deixando loot no chão, `normaliza()` e `confereFicha()` limpando item inexistente). Banco e Mochila conferidos em captura de 390×844.
+
+**Análise:** a conversão automática (ouro, gema, peça, material) que a extração fazia em `guardaSaco()` foi mantida, só mudou de hora: acontece no Banco. Por isso o servidor da Feira não mudou (`itens` e `cofre` continuam sendo o cofre). Na sala, a ficha do convidado agora leva a mochila (`confereFicha()` limpa) e o `fim` do anfitrião vira a mochila do convidado.
+
+**Roadmap:** item fora da fila (pedido do dono), decisão na seção 15.1 do PRD.
+
+**Pendências e riscos:**
+- **Fechar o jogo no meio da caçada preserva a mochila** com que se entrou (só o ganho da caçada se perde, e nenhum XP). Já era assim com o XP; com a mochila valendo mais, o incentivo a fechar o app antes de morrer cresce. Corrigir pede esvaziar a mochila ao entrar e devolvê-la ao sair, cuidando do anfitrião que cria a sala com o próprio jogador "fora".
+- **Origem (lastro) a mais:** a extração credita na origem o que a caçada rendeu, mas se o jogador morrer depois com aquilo na mochila a origem não diminui. Só quem edita o save tira proveito, e só até esse teto.
+- O cofre não tem limite de espaços (o Leonardo citou espaços no banco também); com peças empilhando por tipo no save, um limite precisaria contar peça por peça e decidir o que fazer com quem já passou dele.
+- A mochila cheia é um freio novo à ganância (pilar 4): medir com o Balanceamento se 20 espaços apertam ou sobram nos mapas fundos.
+- Gema e coroa só viram ouro no Banco; não há NPC que compre loot avulso, de propósito por enquanto.
+
+**Próximo passo recomendado:** o Leonardo jogar duas caçadas seguidas sem passar no Banco e morrer na segunda, para sentir se a perda está legível; decidir se fechar o app deve contar como morte.
+
 ## 2026-10-19 23:40 UTC — sessão manual (nuvem)
 
 **Item desenvolvido:** toda caçada é numa sala (0.25.0), a pedido do Leonardo ("área de caça só acessível criando um servidor compartilhado ou entrando em um existente"), e a correção do "Entrar pela porta" que não respondia no celular.
@@ -367,55 +386,5 @@ execução precisa saber e não vai descobrir lendo o código.
 **Pendências e riscos:** o limite exato oscila entre execuções (18 a 5/s perdeu, 20 a 5/s passou): o rate limit do Supabase parece ser por janela, sensível a rajada. Teste com pessoas de verdade, que não mandam no mesmo milissegundo, deve aguentar mais. Cota mensal: o painel do Supabase (Usage → Realtime Messages) mostra o consumo; vale olhar depois do primeiro teste com amigos.
 
 **Próximo passo recomendado:** o Leonardo testar com amigos; depois, "Sair cedo" (`Agora`).
-
----
-
-## 2026-10-19 01:10 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a cidade compartilhada (0.8.0), a pedido do Leonardo ("testar o multiplayer apenas no cenário base de cidade, deixando as caçadas individuais, rodando com o que temos"). Branch `claude/cidade-multiplayer`: parte do `claude/cidade` (0.7.0, ainda fora da `main`), mescla a `main` (passo fixo, 0.6.1) e acrescenta `src/rede.js` (Supabase Realtime por `WebSocket` nativo: presença + broadcast de posição), os outros jogadores em `src/sim/cidade.js` (`OUTROS`, `poeOutro()`, `tiraOutro()`, boneco que corre atrás da posição recebida), o desenho deles com nome em `renderCidade()` (`drawPlayer()` aceita `p.classe`), o contador no HUD da cidade (`#cRede`) e um Realtime falso no prelúdio do harness.
-
-**Validação:** `node tools/testar.mjs` — 22/22. Caso novo `cidade-compartilhada` (22 asserções): liga só na cidade, canal da versão, presença com nome/classe/nível, quem chega aparece e é avisado, boneco anda sem saltar, dado hostil conferido (posição 1e9, classe inexistente, nome de 51 caracteres com controle), no máximo 8 posições por segundo, quem sai some, loja mantém a conexão, caçar desliga e esquece os outros, a volta religa e recebe quem já estava, queda avisa e religa sozinha, menu desliga. Fora do harness: dois Chromium (Playwright de scratch, fora do repositório) no Realtime **de verdade**, 360×640: cada um viu o outro (`2 na cidade`), o B viu o A andar até a posição exata (485,368), e o A viu o B sair ao ir caçar; nenhum erro de página. Screenshot conferido.
-
-**Análise:**
-- Realtime com a chave publicável funciona sem configurar nada: canal público, broadcast e presença. Medido antes de escrever código, com dois clientes no Node.
-- A mesclagem `claude/cidade` × `main` teve conflito em todos os `?v=`; os imports novos do passo fixo (`TICK`, `passo`) se perderam na primeira resolução e o harness pegou (`TICK is not defined`).
-- A identidade é por aba, não por conta: duas abas da mesma conta são dois bonecos. Nome sem conta = nome da classe.
-
-**Roadmap:** a cidade compartilhada entrou em `Concluído`, fora da fila (decisão do dono, registrada na 15.1 do PRD).
-
-**Pendências e riscos:**
-- **A `main` ainda não tem a cidade.** Este branch leva a 0.7.0 junto; mesclar na `main` publica as duas coisas. Se a sessão da cidade mesclar a dela antes, este branch precisa de outra mesclagem da `main`.
-- Cota do plano Free: 2 milhões de mensagens por mês, contando cada entrega. 4 pessoas andando sem parar a 8/s gastam ~350 mil por hora; para teste com amigos sobra, para abrir ao público não.
-- Sem antitrapaça, de propósito: qualquer um com a chave publicável manda posição e nome falsos no canal. Aceitável porque a cidade não tem regra; **nada que valha ouro, XP ou item pode passar por esse canal**.
-- Nome de conta aparece para todos na cidade: nome de usuário é público a partir de agora.
-- No celular de verdade, falta ver a troca de 4G para Wi-Fi e a tela apagando (o código desliga com a aba no fundo e religa ao voltar).
-
-**Próximo passo recomendado:** o Leonardo testar com duas ou três pessoas no ar (depois de mesclar na `main`) e dizer o que sentiu falta (chat, emote, ver o nível); depois, seguir o `Agora` (sair cedo).
-
----
-
-## 2026-10-19 00:30 UTC — sessão manual (nuvem)
-
-**Item desenvolvido:** a Cidade (0.7.0), a pedido do Leonardo ("um mapa compartilhado geral chamado Cidade, com casas dos NPCs de mercado, banco e acesso aos mapas de caça"). O menu agora leva à cidade; nela o jogador anda com o mesmo joystick até a casa do Mercador, a do Banco (a antiga tela de Equipamento, que é o cofre da conta) e o Guia de caça no portão sul, que abre a lista de mapas de caça. Mapa em texto (`city.mapa`, uma letra por tile), NPCs e mapas de caça no `content.json`; regra em `src/sim/cidade.js`; `renderCidade()` em `src/desenho.js`; HUD e botão Falar em `src/hud.js`; fluxo em `src/telas.js`. Mesclado sobre a 0.6.0 (morte custando XP), que entrou na `main` em paralelo.
-
-**Validação:** `node tools/testar.mjs` — 21/21 (simulação no Node + 20 casos). Caso `cidade` novo: anda pelo teclado do @ da praça até o Mercador (oeste pela rua, norte pela porta), confere o botão e o rótulo acessível, a frase no registro, o NPC sólido, Enter e o botão abrindo a loja, a volta no mesmo lugar, o Banco, o Guia com nível recomendado, a entrada na masmorra e a volta pelo portão ao lado do Guia. Na simulação no Node: dimensões, NPCs, alcance, chegada pelo portão e cinco conteúdos tortos recusados (linha de tamanho diferente, letra desconhecida, sem @, sem Guia, sem mapa de caça). `sem-arte` passa pela cidade desenhada em código. Screenshots em 360×640 conferidos (praça, casa do Mercador, portão).
-
-**Análise:**
-- **"Compartilhado" ainda não é rede.** Ver outros jogadores na cidade é F3 e precisa do servidor (D2, teto de gasto). O que dá para fazer sem servidor foi feito: a cidade é uma só para a conta, e o estado dela é simulação sem DOM, então o servidor vai rodar o mesmo código com N jogadores em `C`.
-- O fluxo mudou: acampamento → cidade → Guia → incursão → tela final → cidade. Mercador e Equipamento saíram do menu (agora são casas); Grimório e Personagens ficaram no menu e ganharam botões no alto da cidade. "Nova incursão" na tela final continua entrando direto, para não alongar o ciclo (pilar 4).
-- O aviso do preço da morte (pilar 1) também aparece no Guia de caça, que é por onde se entra agora.
-- As paredes das casas saem do mesmo `pecas()` da masmorra, com o assoalho fazendo papel de chão; `pecas()` aceita a grade de qualquer tamanho.
-- 17 roteiros do harness clicavam em "Entrar na masmorra"; agora chamam `cacar()`, que entra na cidade e fala com o Guia sem andar.
-
-**Roadmap:** a Cidade entrou em `Concluído` (fora da fila, antecipada pelo dono; decisão registrada na seção 15.1 do PRD). "Lugares com nome" agora aponta para o Guia de caça como lugar da escolha. `Agora` segue "Sair cedo".
-
-**Pendências e riscos:**
-- **Os mapas de caça ainda são um só.** `hunts` tem só a Masmorra de Runas e `start()` ignora qual foi escolhido; "Lugares com nome" precisa ligar cada entrada de `hunts` à própria tabela de spawn e paleta.
-- Atlas subiu de ~205 KB para ~250 KB (dez sprites novos); a primeira carga num 3G ruim fica um pouco mais lenta, mas o jogo não espera o atlas.
-- A cidade não tem minimapa; com 24×17 tiles não faz falta, mas uma cidade maior vai precisar.
-- O Banco é a tela de equipamento renomeada: não há depósito e saque, porque todo ouro já cai no cofre. Se o banco precisar de função própria (transferir entre contas, guardar acima de um limite), é decisão de design.
-- Em tela larga (computador), o mapa inteiro cabe e fica centrado com bordas escuras; em celular a câmera segue o jogador.
-
-**Próximo passo recomendado:** "Sair cedo" (`Agora`); depois, "Lugares com nome", que agora tem lugar natural no Guia de caça.
 
 ---

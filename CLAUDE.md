@@ -146,7 +146,8 @@ principal, o markup das telas e do HUD, e a linha que carrega
   personagem pelo nível); a **forja do Gordon** (`ehMat()`, `missao()`,
   `podeEntregar()`, `entregar()`, `venderMat()`, `comprarForja()`); as
   **provisões** (`podeComprar()`, `compra()`, `gastaProv()`, `efeitoProv()`,
-  `soProv()`)
+  `soProv()`); a **mochila** (`ocupa()`, `cabe()`, `valMochila()`,
+  `guardaMochila()`, `guardaUm()`, `leva()`, `retira()`)
 - `mapa.js` — `genMap(m)` (m é o `mapa` do mapa de caça: quantas salas, de
   que tamanho, quantos atalhos; sem ele, a Masmorra de Runas na sequência de
   sorteio de sempre), `carveRooms()`, `corridor()`, `carve()`, `pecas()`
@@ -362,11 +363,24 @@ outro lado da parede não vem. Mexer nisso muda o jogo inteiro.
 
 **O save é mesclado, e migrado quando preciso.** `localStorage` na chave
 `masmorra-runas-v2`, formato
-`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto}}}}`.
+`{cofre,itens:{<item>:qtd},prov:{<provisão>:qtd},mats:{<material>:qtd},forja,runs,ext,deaths,best,up:{...},classe,chars:{<classe>:{lvl,xp,mag,manaG,per,golpes,slots,sabe:[<habilidade>],equip:{arma,armadura,amuleto},mochila:{<item>:qtd}}}}`.
 O que é da conta (cofre de ouro, peças guardadas em `itens`, provisões para a
 próxima caçada em `prov`, materiais do Gordon em `mats`, encomendas entregues em `forja`, melhorias, estatísticas)
 fica na raiz; o que é do personagem (inclusive o equipamento
-vestido) fica em `chars`, um por classe. As operações do cofre de peças
+vestido e a mochila) fica em `chars`, um por classe.
+
+**Mochila e cofre, como no Tibia** (decisão do Leonardo em 19/10/2026). O
+loot da caçada vai para `p.bag`, que **é a mochila** durante a incursão:
+`novoJogador()` começa com a cópia de `ch().mochila` (e guarda `p.bag0`, como
+entrou). Extraindo, `sai()` devolve `p.bag` para `c.mochila`, sem converter
+nada; morrendo, `c.mochila` fica vazia e só o Selo vai ao cofre. Guardar é no
+Banco (`guardaMochila()`, `guardaUm()`: equipamento vira peça em `itens`,
+material vai para `mats`, ouro e gema viram ouro), e o Banco devolve com
+`leva()` (peça) e `retira()` (ouro). Espaços em `progression.mochila`
+(`ocupa()`, `cabe()`): peça de equipamento ocupa um, o resto empilha; cheia,
+`pickup()` deixa no chão o que não cabe. Na nuvem, `caca_fim` recebe só o que
+a caçada rendeu (`p.bag` menos `p.bag0`), para a origem não contar duas vezes
+o que entrou na mochila. As operações do cofre de peças
 (`equipar()`, `desequipar()`, `vender()`, `guardaSaco()`) e o `eqBonus()` moram
 em `src/sim/progresso.js`; `normaliza()` completa `itens` e `equip` em save
 antigo e descarta peça que saiu do `content.json`.

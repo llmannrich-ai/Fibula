@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.25.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.25.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots} from './progresso.js?v=0.25.0';
-import {G,flowAt,num,shake,sai} from './incursao.js?v=0.25.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.26.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.26.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.26.0';
+import {G,flowAt,num,shake,sai} from './incursao.js?v=0.26.0';
 
 function target(p,range){
   let best=null,bd=range;
@@ -210,15 +210,24 @@ export function hurtPlayer(p,d){
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;sai(p,'morreu')}
 }
-/* venda do saco na Feira (src/hud.js): a peça sai do saco quando o jogador
+/* venda da mochila na Feira (src/hud.js): a peça sai da mochila quando o jogador
    anuncia e volta se o banco recusar. Quem chama é o cliente, com a resposta
    da rede, fora do update() — como drinkPot(); na F2 vira entrada (ent) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
 export function poeNoSaco(p,k,q){p.bag[k]=(p.bag[k]|0)+q;p.bagVal+=ITEMS[k].val*q}
+/* o loot vai para a mochila até ela encher (progression.mochila); o que não
+   cabe fica no chão, e o aviso sai uma vez por jogador em cada drop (d.av) */
 export function pickup(d,i,p){
-  let v=0;
-  for(const[k,q]of d.items){p.bag[k]=(p.bag[k]||0)+q;v+=ITEMS[k].val*q}
-  p.bagVal+=v;G.drops.splice(i,1);
+  let v=0,levou=null,resta=null;
+  for(const it of d.items){const[k,q]=it,n=Math.min(q,cabe(p.bag,k));
+    if(n>0){p.bag[k]=(p.bag[k]||0)+n;v+=ITEMS[k].val*n;(levou||(levou=[])).push(n<q?[k,n]:it)}
+    if(n<q)(resta||(resta=[])).push(n?[k,q-n]:it)}
+  const avisa=t=>{if(d.av&1<<p.id)return;d.av|=1<<p.id;saida.log(t,'info',p)};
+  if(!levou)return avisa('A mochila está cheia. O loot ficou no chão.');
+  p.bagVal+=v;
+  if(resta){d.items=resta;d.rar=Math.max(...resta.map(g=>ITEMS[g[0]].rar));avisa('A mochila está cheia: parte do loot ficou no chão.')}
+  else G.drops.splice(i,1);
   num(p.x,p.y-30,'+'+v+' ouro','#f2c14e');
-  if(d.rar>=1)saida.log(`Você guardou: ${d.items.filter(([k])=>ITEMS[k].rar>=1).map(fmtItem).join(', ')}.`,['loot','rare','epic'][d.rar],p);
+  const raro=levou.filter(([k])=>ITEMS[k].rar>=1);
+  if(raro.length)saida.log(`Na mochila: ${raro.map(fmtItem).join(', ')}.`,['loot','rare','epic'][Math.max(...raro.map(([k])=>ITEMS[k].rar))],p);
 }

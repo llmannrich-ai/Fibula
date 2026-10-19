@@ -2,7 +2,7 @@
    O save em memória e tudo o que deriva dele. Onde o save é gravado
    (localStorage, nuvem) é do cliente, em src/salvar.js e src/nuvem.js; aqui
    ele só é lido e alterado, e quem altera chama saida.persist() depois. */
-import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.25.0';
+import {CLASSES,SPELLS,SLOT_LVL,UP,ITEMS,PROG,SLOTS_EQ,FORJA,SUP,BUFFS,listaDaClasse,slotsIniciais,precoHab} from './dados.js?v=0.26.0';
 
 export const UP0={vigor:0,foco:0,poder:0,bolsa:0,seguro:0};
 const EQ0=()=>({arma:null,armadura:null,amuleto:null});
@@ -22,12 +22,12 @@ export function confereFicha(f){
   const equip=EQ0();for(const sl of SLOTS_EQ){const k=c.equip&&c.equip[sl];if(ITEMS[k]&&ITEMS[k].slot===sl)equip[sl]=k}
   const up={};for(const k in UP0)up[k]=n(f.up&&f.up[k],0,UP[k]?UP[k].max:0);
   return{cl:f.cl,nome:String(f.nome||CLASSES[f.cl].nome).replace(/[\u0000-\u001f]/g,'').slice(0,20),
-    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,sabe,equip},up,prov:soProv(f.prov)};
+    c:{lvl,xp:n(c.xp,0,1e9),mag:n(c.mag,0,200),manaG:n(c.manaG,0,1e9),per:n(c.per,10,200),golpes:n(c.golpes,0,1e9),slots,sabe,equip,mochila:soMochila(c.mochila)},up,prov:soProv(f.prov)};
 }
-export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),sabe:daClasse(c,lvl),equip:EQ0()});
+export const novoChar=(c,lvl=1)=>({lvl,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:slotsIniciais(c,lvl),sabe:daClasse(c,lvl),equip:EQ0(),mochila:{}});
 /* cofre (ouro), itens (equipamento guardado), prov (provisões para a próxima
    caçada), mats (materiais para o Gordon) e forja (encomendas entregues) são
-   da conta; equip é de cada personagem */
+   da conta; equip e mochila são de cada personagem */
 /* chao: as peças do chão da cidade (city.chao) que esta conta já pegou, por id */
 export const SAVE0=()=>({cofre:0,itens:{},prov:{},mats:{},forja:0,runs:0,ext:0,deaths:0,best:0,up:Object.assign({},UP0),classe:null,chars:{},chao:{}});
 /* só as peças que existem no content.json, com quantidade inteira positiva:
@@ -45,7 +45,7 @@ export const normaliza=s=>{const n=Object.assign(SAVE0(),s);n.up=Object.assign({
   n.chao=s.chao&&typeof s.chao==='object'&&!Array.isArray(s.chao)?s.chao:{};
   for(const[cl,c]of Object.entries(n.chars)){const e=EQ0();
     for(const sl of SLOTS_EQ){const id=c.equip&&c.equip[sl];if(id&&ITEMS[id]&&ITEMS[id].slot===sl)e[sl]=id}
-    c.equip=e;c.sabe=confereSabe(c.sabe,cl,c.lvl|0)}
+    c.equip=e;c.sabe=confereSabe(c.sabe,cl,c.lvl|0);c.mochila=soMochila(c.mochila)}
   return n};
 export let save=SAVE0();
 export const setSave=s=>{save=s};
@@ -99,7 +99,7 @@ export const stats=(c=ch(),cl=save.classe,u=save.up)=>{const K=CLASSES[cl],l=c.l
 /* ---------- cofre e equipamento ----------
    O cofre é da conta: ouro em save.cofre, peças em save.itens, servem a
    qualquer personagem. O que está vestido mora em ch().equip, é só daquele
-   personagem e não cai na morte — só o saco cai. */
+   personagem e não cai na morte — só a mochila cai. */
 export const eqBonus=(b,c=ch())=>{const e=c.equip;let v=0;if(!e)return v;
   for(const sl of SLOTS_EQ){const id=e[sl],bo=id&&ITEMS[id]&&ITEMS[id].bonus;if(bo&&bo[b])v+=bo[b]}
   return v};
@@ -113,8 +113,29 @@ export function desequipar(sl){const e=ch().equip,k=e[sl];if(!k)return false;poe
 /* peça do chão da cidade: vai para o cofre, uma vez por conta */
 export function pegaDoChao(id,k){if(!ITEMS[k]||save.chao[id])return false;save.chao[id]=1;poeNoCofre(k);return true}
 export function vender(k){if(!tiraDoCofre(k))return false;save.cofre+=ITEMS[k].val;return true}
-/* extração: equipamento vai para o cofre como peça, material que o Gordon
-   compra vai para o depósito de materiais, o resto vira ouro */
+/* ---------- mochila ----------
+   Como no Tibia (decisão do Leonardo, 19/10/2026): o loot fica na mochila do
+   personagem (ch().mochila, {item: qtd}, ouro inclusive), ela entra inteira
+   na caçada seguinte e a morte leva tudo o que está dentro. Só o cofre é
+   seguro, e guardar é com o Banqueiro. Cada peça de equipamento ocupa uma
+   casa; o resto empilha, uma casa por tipo (progression.mochila.espacos). */
+export const soMochila=o=>{const r={};for(const[k,q]of Object.entries(o||{}))if(ITEMS[k]&&q>0)r[k]=Math.min(1e9,q|0);return r};
+export const nEspacos=()=>PROG.mochila.espacos;
+export const ocupa=bag=>{let n=0;for(const k in bag)n+=ITEMS[k].slot?bag[k]:1;return n};
+/* quantas unidades de k ainda cabem */
+export const cabe=(bag,k)=>{const l=nEspacos()-ocupa(bag);return ITEMS[k].slot?Math.max(0,l):bag[k]||l>0?1e9:0};
+export const valMochila=bag=>{let v=0;for(const k in bag)v+=ITEMS[k].val*bag[k];return v};
+/* no Banco: tudo da mochila para o cofre (o mesmo destino de cada coisa que
+   guardaSaco() dá), ou um tipo só (uma peça de equipamento por vez) */
+export function guardaMochila(){const c=ch(),r=guardaSaco(c.mochila);c.mochila={};return r}
+export function guardaUm(k){const m=ch().mochila,q=ITEMS[k]&&ITEMS[k].slot?1:m[k];if(!(m[k]>0))return null;
+  if((m[k]-=q)<=0)delete m[k];return guardaSaco({[k]:q})}
+/* do cofre para a mochila: uma peça, ou n de ouro */
+export function leva(k){const m=ch().mochila;if(!cabe(m,k)||!tiraDoCofre(k))return false;m[k]=(m[k]|0)+1;return true}
+export function retira(n){const m=ch().mochila;n=Math.min(n|0,save.cofre);if(!(n>0)||!cabe(m,'ouro'))return false;
+  save.cofre-=n;m.ouro=(m.ouro|0)+n;return true}
+/* equipamento vai para o cofre como peça, material que o Gordon compra vai
+   para o depósito de materiais, o resto (ouro, gemas) vira ouro no cofre */
 export function guardaSaco(bag){let ouro=0,pecas=0,mats=0;
   for(const[k,q]of Object.entries(bag)){if(ITEMS[k].slot){save.itens[k]=(save.itens[k]||0)+q;pecas+=q}
     else if(ehMat(k)){save.mats[k]=(save.mats[k]||0)+q;mats+=q}else ouro+=ITEMS[k].val*q}

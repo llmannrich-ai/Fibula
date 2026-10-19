@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.26.0 (19/10/2026) | Inventário como no Tibia: o saco saiu e ficaram a mochila e o cofre. O loot fica na mochila do personagem depois da caçada, vai junto na próxima e cai inteiro se ele morrer. Só o cofre do Banco é seguro: o Banqueiro guarda uma coisa ou tudo e devolve peças e ouro à mochila. A mochila tem 20 espaços; cheia, o loot fica no chão |
 | 0.25.0 (19/10/2026) | Toda caçada é numa sala: no Guia de caça, o lugar abre uma sala sua e já entra pela porta, e quem estiver na cidade pode entrar junto. A sala abre mesmo sem conexão. Corrige o "Entrar pela porta" que não respondia quando o canal da sala não tinha ligado, e o botão desabilitado agora parece desabilitado |
 | 0.24.0 (19/10/2026) | A entrada do Esgoto deixou de ser um vigia: agora é uma grade de ferro no chão da rua, perto do mercado. Pise nela (ou chegue perto) e toque em Descer; quem volta do Esgoto sai em cima dela |
 | 0.23.0 (19/10/2026) | A Mochila ganhou o corpo da janela de inventário do Tibia: três colunas com cada peça no lugar em que se usa (amuleto no pescoço, arma na mão, armadura no peito, o saco onde o Tibia põe a mochila), a silhueta do que vai em cada casa vazia e, ao lado, o boneco vestido, que gira ao toque |

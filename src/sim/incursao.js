@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.25.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.25.0';
-import {save,ch,stats,sealPct,guardaSaco,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv} from './progresso.js?v=0.25.0';
-import {genMap,pecas} from './mapa.js?v=0.25.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.25.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara} from './base.js?v=0.26.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,cacaDe} from './dados.js?v=0.26.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila} from './progresso.js?v=0.26.0';
+import {genMap,pecas} from './mapa.js?v=0.26.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup} from './combate.js?v=0.26.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -55,6 +55,9 @@ function novoJogador(f,i,s){
     x:0,y:0,tx:0,ty:0,ox:0,oy:0,st:0,sd:0,r:11,face:0,hp:st.mhp,mhp:st.mhp,mp:st.mmp,mmp:st.mmp,
     cds:{},gcd:{ataque:0,cura:0,apoio:0},buffs:{},sup:e.buffs,rgh:e.rhp,rgm:e.rmp,cdC:0,pot:3+f.up.bolsa+e.pot,flash:0,walk:0,mv:false,swing:0,swingA:0,swingR:0,
     pch:0,bag:{},bagVal:0,kills:0,xpGain:0,magGain:0,perGain:0,fora:null,sealed:0,ouroExt:0,pecas:0,mats:0,xpPerdido:0};
+  /* a mochila entra inteira (p.bag é ela durante a caçada); bag0 é como
+     entrou, para o banco só contar como origem o que a caçada rendeu */
+  const mo=soMochila(f.c.mochila);for(const k in mo)p.bag[k]=(p.bag[k]|0)+mo[k];p.bagVal=valMochila(p.bag);p.bag0=mo;
   poeNoSqm(p,s.cx+o[0],s.cy+o[1]);return p;
 }
 /* s é a semente da incursão: a mesma semente dá a mesma masmorra. Sem ela,
@@ -315,13 +318,15 @@ function updateProj(dt){
   }
 }
 /* um jogador sai da incursão: pelo portal ('extraiu'), morto ('morreu') ou
-   soterrado ('desabou'). A perda de XP e o Selo valem para a ficha de
-   qualquer um; cofre, peças e estatísticas só para a ficha local. Quem sai
-   não volta, e a sala acaba quando não sobra ninguém dentro */
+   soterrado ('desabou'). Extraindo, a mochila sai como está (nada vai sozinho
+   para o cofre: guardar é no Banco); morrendo, fica toda na masmorra. A perda
+   de XP, a mochila e o Selo valem para a ficha de qualquer um; cofre e
+   estatísticas só para a ficha local. Quem sai não volta, e a sala acaba
+   quando não sobra ninguém dentro */
 export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
-  if(kind==='extraiu'){if(p.local){const r=guardaSaco(p.bag);p.ouroExt=r.ouro;p.pecas=r.pecas;p.mats=r.mats;save.ext++;save.best=Math.max(save.best,p.bagVal)}}
-  else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;
+  if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
+  else{p.sealed=Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   if(p.local)saida.persist();
   saida.sai(p);

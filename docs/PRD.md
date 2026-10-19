@@ -390,6 +390,7 @@ a partir de issue `decisao-do-dono` respondida).
 | 2026-10-19 | Mercado entre jogadores antecipado da F3 (pedido do Leonardo): livro de compra e venda com match automático no banco, custódia no save da nuvem e 2% de taxa na venda; só peças de equipamento, só com conta | `CLAUDE.md` (Supabase), `tools/supabase/003_mercado.sql` |
 | 2026-10-19 | D-M1: antecipar da F2 só a M1 (a simulação com N jogadores, sem rede nem gasto). D-M2: regras de grupo do plano, com o loot **único**: um drop por monstro, só um jogador pega; a troca entre jogadores fica para o Mercado, mais tarde | `docs/plano-multiplayer.md` (seções 3 e 7), `ROADMAP.md` |
 | 2026-10-19 | Toda caçada é numa sala: o Guia de caça não oferece mais a incursão solo com relógio. Sozinho é uma sala de um (o lugar de caça cria a sala e entra pela porta), que outros podem ver e entrar; criar não depende da rede. A masmorra continua **sem tempo** (escolha do dono contra a recomendação de manter o relógio): o pilar 4 da VISAO foi reescrito | `CLAUDE.md` (Sala), `VISAO.md` (pilar 4) |
+| 2026-10-19 | Inventário como no Tibia: só **mochila** e **cofre**. A mochila é do personagem, fica com ele entre as caçadas, entra inteira na seguinte e cai toda na morte (menos o Selo de resguardo); tem 20 espaços (`progression.mochila`): peça de equipamento ocupa um, o resto empilha. Extrair não guarda nada sozinho: o Banqueiro guarda (uma coisa ou tudo) e devolve peça e ouro à mochila | `CLAUDE.md`, `content.json` |
 
 ### 15.2 Pendentes (com padrão)
 
