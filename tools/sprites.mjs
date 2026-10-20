@@ -118,11 +118,14 @@ const ARTE = {
 /* os itens das pilhas dos mapas de caça (hunts.<k>.mapa.pilhas no
    content.json), como t<id>, com todos os padrões (pad): o mapa fixo é
    desenhado no Remere's Map Editor e pode usar qualquer item do pacote */
+const PADROES = {2260: 2};
 function itensDosMapas() {
   const c = JSON.parse(readFileSync(join(RAIZ, 'data', 'game', 'content.json'), 'utf8')), ids = new Set();
   for (const [k, h] of Object.entries(c.hunts)) if (k[0] !== '_' && h.mapa)
     for (const t of h.mapa.pilhas) for (const n of t.split(/\s+/).slice(1).map(Number)) if (n) ids.add(n);
-  for (const id of [...ids].sort((a, b) => a - b)) ARTE['t' + id] = {i: id, pad: true};
+  /* pad é quantos padrões entram por eixo: a água do pacote tem 8×8, que
+     pesaria ~100 KB a mais no download; 2×2 já não mostra a repetição */
+  for (const id of [...ids].sort((a, b) => a - b)) ARTE['t' + id] = {i: id, pad: PADROES[id] || 99};
 }
 itensDosMapas();
 
@@ -255,12 +258,13 @@ function quadros(t, spr, def) {
      Tibia), com até 8 quadros de animação */
   else if (def.pad) {
     linhas = [];
-    for (let y = 0; y < c.py; y++) for (let x = 0; x < c.px; x++) linhas.push(Array.from({length: Math.min(8, c.fr)}, (_, f) => quadro(spr, c, {x, y, f})));
+    const qx = Math.min(c.px, def.pad), qy = Math.min(c.py, def.pad);
+    for (let y = 0; y < qy; y++) for (let x = 0; x < qx; x++) linhas.push(Array.from({length: Math.min(8, c.fr)}, (_, f) => quadro(spr, c, {x, y, f})));
   }
   else linhas = [Array.from({length: c.fr}, (_, f) => quadro(spr, c, {f})).filter((q) => q.d.some((v, k) => k % 4 === 3 && v))];
   if (def.tom) for (const l of linhas) for (const q of l) giraMatiz(q, def.tom);
   const [ox, oy] = c.a[0x19] || [0, 0];
-  return {linhas, ox, oy, px: def.pad ? c.px : 0, py: def.pad ? c.py : 0};
+  return {linhas, ox, oy, px: def.pad ? Math.min(c.px, def.pad) : 0, py: def.pad ? Math.min(c.py, def.pad) : 0};
 }
 
 /* ---------- PNG sem biblioteca ---------- */

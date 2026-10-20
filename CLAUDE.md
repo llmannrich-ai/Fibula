@@ -171,7 +171,9 @@ motivo. A vida é assim.** Saber onde ir, com quem andar e de quem desconfiar
   vende na Feira durante a caçada (decisão do Leonardo, 19/10/2026): o que
   está na mochila só fica a salvo saindo pela porta. Desde a 0.48.0 há PvP
   **só na Arena** (decisão do Leonardo, 19/10/2026): lá, quem é de outro time
-  fere com metade do dano, e quem morre deixa a mochila no chão, sem Selo. O
+  fere com metade do dano, e quem morre deixa a mochila no chão, sem Selo;
+  morto por outro jogador, perde também uma peça vestida, sorteada, e quem
+  matou fica com a experiência que ele perdeu (0.49.0). O
   Leonardo aceitou que, até a F2, quem roda o servidor da sala calcula o PvP
   e pode forjar a morte de outro. Fora da Arena ainda não há PvP. A
   regra da cidade neutra já está na simulação (`protegido()` e `podeAtacar()`
@@ -352,7 +354,7 @@ na mão.
 | Cidade | Mapa de `city.mapa`: a cidade murada no meio de um mundo de 240×180 sqm sem monstros (estradas, vilas, matas, rio, costa, clareiras para futuras entradas de caça); NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
-| Arena | Pelo Mestre da Arena (portão sul) ou pelo botão Arena do menu: partida de 10 min que recomeça sozinha, até 4 jogadores por enquanto, times por código, PvP entre times, anéis que desabam, chefes e saídas no centro (0.48.0) |
+| Arena | Pelo Mestre da Arena (portão sul) ou pelo botão Arena do menu: partida de 6 min ao ar livre (mata, rio, ruínas) que recomeça sozinha e não para com o aparelho no fundo, até 4 jogadores por enquanto, times por código, PvP entre times, anéis que desabam, chefes e saídas nas ruínas do centro; paga o dobro da experiência, mais loot e bônus de saída (0.49.0) |
 | Caçar junto | Uma sala por lugar, de até 4 (cópia 2 quando lota): pisa-se no portal do lugar e entra-se no servidor de quem já caça lá; o aparelho do anfitrião calcula, e o último que sai fica com ele |
 | Testes e CI | `node tools/testar.mjs` (sintaxe, simulação no Node, casos no Chromium headless); GitHub Actions em todo push |
 
@@ -1222,7 +1224,13 @@ até `arena.max` jogadores.
   meio tem menos tempo. Depois de `entraAte` a porta fecha (`arenaFechada()`).
   As `fases` dão o aviso e o chefe do centro (`chefeNoCentro()`, sem
   sorteio). `G.arF` diz em que partida cada fase já disparou, e `G.arC` qual
-  é a partida; os dois vão na herança.
+  é a partida; os dois vão na herança. **O relógio não para com o aparelho
+  no fundo** (decisão do Leonardo, 20/10/2026): o navegador para o laço, e
+  ao voltar `src/main.js` chama `alcanca()`, que roda a regra o tempo que
+  passou (até uma partida), com quem estava parado parado.
+- **Paga mais que as outras caçadas**, igual para todos lá dentro: `arena.xp`
+  multiplica a experiência dos monstros, `arena.loot` a chance de cada drop,
+  e quem sai vivo ganha `bonusSaida` da experiência que fez na entrada.
 - **Os anéis** (`arena.aneis`): fora do raio, contado do centro como o maior
   dos dois eixos, o chão tira `desaba` da vida máxima por segundo, igual para
   todos. No fim da partida quem está dentro morre (`'desabou'`) e
@@ -1234,11 +1242,19 @@ até `arena.max` jogadores.
   (`entradaDe()`) e não se fere. Sem código, todos são adversários.
 - **PvP e morte:** `podeFerir()` só vale com `G.arena`. Quem morre na Arena
   deixa a mochila inteira no chão (`largaMochila()`, `dono: -1`), e o Selo
-  não guarda nada lá, para morrer de propósito não duplicar valor. Matar
-  jogador não dá XP; conta em `p.pk`.
-- **O mapa** é um rascunho de `tools/mapas.mjs` com salas fixas
-  (`rascunho.fixas`, `entradas`): o centro, um anel e um canto por time; a
-  profundidade é a proximidade do centro, e o script grava `arena.pontos`.
+  não guarda nada lá, para morrer de propósito não duplicar valor. Morto
+  por outro jogador (`p.mortoPor`), perde também uma peça vestida, sorteada
+  pela regra (`tiraPeca()`, com `arena.pvpPeca`; o convidado tira do save
+  pelo `perdeu` do `fim`), e quem matou ganha `xpPerdido × arena.pvpXp`.
+  Com `pvpXp` 1 é troca, não criação: dois cúmplices se matando não
+  fabricam experiência. Os abates contam em `p.pk`.
+- **O mapa** é ao ar livre (decisão do Leonardo, 20/10/2026): rascunho de
+  `tools/mapas.mjs` com `rascunho.aberta` (`arenaAberta()`): mata pelo ruído
+  do sqm, mais fechada perto da borda; um rio de norte a sul com pontes;
+  ruínas de muro quebrado no centro, onde ficam as saídas; um canto por
+  time. O que a porta não alcança vira mata, a profundidade é a
+  proximidade do centro, e o script grava `arena.pontos`. A água do pacote
+  entra no atlas com 2×2 padrões (`PADROES` em `tools/sprites.mjs`).
   Os casos `arena` e `arena-convidado` e o bloco "Arena" da simulação no
   Node cobrem a regra.
 
@@ -1824,6 +1840,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 | 19/10 | **Monetização com impacto no jogo**, não só estética, inspirada no Tibia; substitui o não-objetivo "Compra que vira poder" por "Pagar para pular o mundo" (o mundo segue igual, a morte segue custando, e quem só joga alcança o que quem paga alcança). O mercado de itens com saque em dinheiro real foi analisado e deixado de lado por ora (regulação, fraude e escala) | Pilar 6; não-objetivos; Parte 2, F4; `ROADMAP.md`, Depois |
+| 20/10 | **A Arena, depois do primeiro teste:** partida de 6 min; mapa ao ar livre (mata, rio, ruínas); paga mais que qualquer outra caçada (o dobro da experiência, mais loot, bônus de saída); no PvP quem mata fica com a experiência que o morto perde, a mochila e uma peça vestida dele; o relógio não para com o aparelho do servidor no fundo | Pilares 3 e 4; Parte 3, "Arena" |
 | 19/10 | **A Arena:** um modo com outra dinâmica, pelo Mestre da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha, times por código, anéis que desabam da borda ao centro, chefes e saídas no centro (até 4 jogadores por enquanto: 8 esgota a cota grátis do Realtime em cerca de uma hora e espera a decisão de custo). O personagem sai com XP e itens, como de qualquer lugar de caça. **PvP só na Arena, já**, calculado por quem roda o servidor da sala, com o risco de trapaça aceito até a F2; lá a mochila do morto fica no chão e o Selo não guarda | Pilar 4; Parte 3, "Arena"; [docs/plano-arena.md](docs/plano-arena.md) |
 | 19/10 | **Teto de infraestrutura (era a D2):** até R$ 100 por mês na F2 (uma máquina pequena do Fly.io, Supabase grátis) e até R$ 600 por mês no lançamento (duas máquinas, Supabase Pro, e-mail de login). Passar disso pede nova decisão | Parte 2, Riscos e C6 |
 

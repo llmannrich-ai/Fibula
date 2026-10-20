@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.48.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.48.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.48.0';
-import {G,setG,newRun,nComida,meuTime,poeTime,arenaFechada,reabreEm} from './sim/incursao.js?v=0.48.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.48.0';
-import {persist,saveFalhou} from './salvar.js?v=0.48.0';
-import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.48.0';
-import {rede,SALAS} from './rede.js?v=0.48.0';
-import {SALA,maxSala,avisoFechada,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.48.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.48.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.48.0';
-import {icone} from './arte.js?v=0.48.0';
-import {$,app} from './dom.js?v=0.48.0';
-import {retrato} from './desenho.js?v=0.48.0';
+import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.49.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.49.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.49.0';
+import {G,setG,newRun,nComida,meuTime,poeTime,arenaFechada,reabreEm} from './sim/incursao.js?v=0.49.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.49.0';
+import {persist,saveFalhou} from './salvar.js?v=0.49.0';
+import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.49.0';
+import {rede,SALAS} from './rede.js?v=0.49.0';
+import {SALA,maxSala,avisoFechada,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.49.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.49.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.49.0';
+import {icone} from './arte.js?v=0.49.0';
+import {$,app} from './dom.js?v=0.49.0';
+import {retrato} from './desenho.js?v=0.49.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja'),arenaS=$('#arenaS');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS,arenaS];
@@ -248,11 +248,13 @@ function showArena(k){
   for(const t of[`Partida de ${mm(A.dur)} que recomeça sozinha; a porta fecha aos ${mm(A.entraAte)}. Até ${A.max} jogadores.`,
     `A borda desaba aos ${mm(A.aneis[0].t)}, e cada anel seguinte, até sobrar só o centro: fora dele, o chão tira ${Math.round(A.desaba*100)}% da vida por segundo.`,
     `Chefes no centro: ${chefes}. As saídas abrem no centro aos ${mm(A.saidas)}; quem não sair até o fim morre.`,
-    `Outros jogadores ferem você com ${Math.round(A.pvp*100)}% do dano normal. Quem tem o mesmo código de time não se fere.`,
+    `Paga mais que qualquer caçada: ${A.xp}× a experiência dos monstros, mais loot, e quem sai vivo ganha mais ${Math.round(A.bonusSaida*100)}% da experiência que fez lá dentro.`,
+    `Outros jogadores ferem você com ${Math.round(A.pvp*100)}% do dano normal. Quem mata fica com a experiência que o morto perde${A.pvpPeca?', a mochila dele e uma peça que ele vestia':' e a mochila dele'}. Quem tem o mesmo código de time não se fere.`,
     `Nível recomendado ${H.nivel}`+(c.lvl<H.nivel?', acima do seu.':'.')])
   {const li=document.createElement('li');li.textContent=t;ul.appendChild(li)}
   const pd=perdaXp(),v=valMochila(c.mochila);
-  setT($('#aRisco'),`Morrer aqui custa a mochila inteira (${v?v+' de ouro, que fica no chão para quem passar':'vazia'}) e ${pd?pd+' de XP':'nada de XP'}. O Selo não guarda nada na Arena. A experiência e o loot que você trouxer são seus.`);
+  const eq=Object.values(c.equip).filter(Boolean).length;
+  setT($('#aRisco'),`Morrer aqui custa a mochila inteira (${v?v+' de ouro, que fica no chão para quem passar':'vazia'}) e ${pd?pd+' de XP':'nada de XP'}`+(A.pvpPeca&&eq?`; morto por outro jogador, também uma das ${eq} peça${eq>1?'s':''} que você veste, sorteada`:'')+'. O Selo não guarda nada na Arena. A experiência e o loot que você trouxer são seus.');
   const inp=$('#aTime');if(document.activeElement!==inp)inp.value=meuTime;
   setT($('#aTimeT'),meuTime?`Time ${meuTime}: quem digitar o mesmo código entra no mesmo canto e não fere você.`:'Sem código, você entra sozinho, e todos lá dentro são adversários.');
   const box=$('#aSala');if(SALA.papel&&SALA.caca===ak)desenhaSala(box);else box.textContent='';
@@ -503,6 +505,7 @@ export function showEnd(){
     :k==='morreu'?`A mochila ficou na masmorra com tudo o que estava dentro, e a morte levou ${pctPerdaXp()}% da experiência do nível.`
     :`A masmorra desabou antes de você chegar ao portal. A mochila ficou para trás, e você perdeu ${pctPerdaXp()}% da experiência do nível.`;
   if(pk)$('#endText').textContent+=pk;
+  if(p.perdeu&&ITEMS[p.perdeu])$('#endText').textContent+=` Quem matou você levou também ${ITEMS[p.perdeu].nome}, que você vestia.`;
   const l=$('#eLoot');l.textContent=`${p.bagVal} ouro · ${ok?'na mochila':'perdido'}`;l.className=ok?'ok':'bad';
   const sealOn=!ok&&p.sealed>0,sl=$('#eSeal');
   $('#eSealDt').hidden=!sealOn;sl.hidden=!sealOn;

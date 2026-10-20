@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.48.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,SPELLS,ITEMS,cacaDe} from './dados.js?v=0.48.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.48.0';
-import {leMapa,pecas} from './mapa.js?v=0.48.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito,podeFerir} from './combate.js?v=0.48.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.49.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,SPELLS,ITEMS,cacaDe} from './dados.js?v=0.49.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.49.0';
+import {leMapa,pecas} from './mapa.js?v=0.49.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito,podeFerir,gainXp} from './combate.js?v=0.49.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -336,7 +336,7 @@ export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
   if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
   else{p.sealed=G.arena?0:Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
-    if(G.arena)largaMochila(p);
+    if(G.arena)largaMochila(p,p.mortoPor&&HUNTS[G.caca].arena.pvpPeca?tiraPeca(p):null);
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   if(p.local)saida.persist();
   saida.sai(p);
@@ -376,6 +376,13 @@ function repovoa(dt){
     r.esp=0;
     for(let falta=alvo-vivos.length;falta>0;falta--)spawn(r.tipo,r,r.prof,!!MT[r.tipo].boss);
   }
+}
+/* a Arena anda no relógio de verdade: quando o aparelho do servidor volta do
+   fundo (o navegador para o laço), a partida anda o tempo que passou, com
+   quem estava parado parado. No máximo uma partida inteira */
+export function alcanca(seg,ent){
+  if(!G||!G.arena||G.over||!(seg>0))return;
+  let r=Math.min(seg,HUNTS[G.caca].arena.dur);while(r>0&&!G.over){const d=Math.min(.1,r);passo(d,ent);r-=d}
 }
 /* a sala acaba para todos que ainda estão nela (o desabamento, ou o teste) */
 export function finish(kind){if(G.over)return;for(const p of G.ps)if(!p.fora)sai(p,kind)}
@@ -419,7 +426,10 @@ function arena(dt){
   /* a saída é de cada um, como o portal: parado nela, sai com a mochila */
   for(const p of G.ps){if(p.fora)continue;
     let perto=false;if(po.open)for(const q of G.arP.s){if(hyp(p.x-(q[0]+.5)*T,p.y-(q[1]+.5)*T)<38){perto=true;break}}
-    if(perto){p.pch+=dt;if(p.pch>=EXT)sai(p,'extraiu')}else p.pch=Math.max(0,p.pch-dt*2)}
+    if(perto){p.pch+=dt;if(p.pch>=EXT){
+      /* quem sai vivo ganha a mais uma parte do que fez nesta entrada */
+      const b=Math.round(p.xpGain*A.bonusSaida);if(b>0){gainXp(b,p);saida.log(`Bônus de saída da Arena: +${b} de experiência.`,'rare',p)}
+      sai(p,'extraiu')}}else p.pch=Math.max(0,p.pch-dt*2)}
   /* o desabamento fere uma vez por segundo quem está fora do anel: a mesma
      fração da vida para todos, sem armadura */
   G.arT+=dt;if(G.arT>=1){G.arT-=1;const r=raioArena();
@@ -449,8 +459,16 @@ function chefeNoCentro(k,c){
 /* De quem não é deste aparelho (o convidado), só vai ao chão o que ele pegou
    nesta entrada: o resto (p.bag0) só sai do save dele quando o fim chega, e
    se a rede dele cair antes, a mochila existiria nos dois personagens */
-function largaMochila(p){
-  const b0=p.local?{}:p.bag0||{},items=Object.entries(p.bag).map(([k,q])=>[k,q-(b0[k]|0)]).filter(([,q])=>q>0);if(!items.length)return;
+/* morto por outro jogador (arena.pvpPeca), perde uma peça vestida, sorteada
+   pela regra: sai do corpo e vai para o chão com a mochila */
+function tiraPeca(p){
+  const e=p.c.equip,sl=Object.keys(e).filter(k=>e[k]);if(!sl.length)return null;
+  const k=sl[ri(0,sl.length-1)],it=e[k];e[k]=null;p.perdeu=it;
+  saida.log(`Você perdeu ${ITEMS[it].nome} na morte.`,'warn',p);return it;
+}
+function largaMochila(p,peca){
+  const b0=p.local?{}:p.bag0||{},items=Object.entries(p.bag).map(([k,q])=>[k,q-(b0[k]|0)]).filter(([,q])=>q>0);
+  if(peca)items.push([peca,1]);if(!items.length)return;
   G.drops.push({x:p.x,y:p.y,items,rar:Math.max(...items.map(([k])=>ITEMS[k].rar)),t:PROG.party.lootProtection,dono:-1});
   saida.log(`${p.nome||CLASSES[p.cl].nome} caiu, e a mochila ficou no chão.`,'loot');
 }

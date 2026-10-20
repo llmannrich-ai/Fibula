@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.48.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,HUNTS,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.48.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.48.0';
-import {G,num,shake,sai,solid} from './incursao.js?v=0.48.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.49.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,HUNTS,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.49.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.49.0';
+import {G,num,shake,sai,solid} from './incursao.js?v=0.49.0';
 
 /* sem p, o jogador deste aparelho: é o que a tela pergunta */
 export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k],s=p.sup&&p.sup[k];return (b?b.v:0)+(s?s.v:0)};
@@ -200,18 +200,19 @@ function kill(m){
   G.cad.push({x:m.x,y:m.y,k:m.k});if(G.cad.length>60)G.cad.shift();
   for(let k=0;k<10;k++){const a=frr(0,TAU),s=frr(15,50);G.fx.push({k:'puff',x:m.x,y:m.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,r:frr(3,6),t:0,life:.6})}
   /* XP cheia para cada um que bateu no monstro ou estava por perto */
-  const PT=PROG.party,perto=PT.shareTiles*T;let dono=0;
+  /* a Arena paga mais (arena.xp e arena.loot), igual para todos lá dentro */
+  const PT=PROG.party,perto=PT.shareTiles*T,A=G.arena&&HUNTS[G.caca].arena,mx=A?A.xp:1,ml=A?A.loot:1;let dono=0;
   for(const q of G.ps){if(m.dn[q.id]>m.dn[dono])dono=q.id;
-    if(!q.fora&&(m.dn[q.id]>0||hyp(q.x-m.x,q.y-m.y)<=perto)){q.kills++;gainXp(Math.round(m.t.xp*m.xpm),q)}}
+    if(!q.fora&&(m.dn[q.id]>0||hyp(q.x-m.x,q.y-m.y)<=perto)){q.kills++;gainXp(Math.round(m.t.xp*m.xpm*mx),q)}}
   const got=[];
-  for(const[k,ch,a,b]of LOOT[m.k])if(sorte()<ch)got.push([k,ri(a,b)]);
+  for(const[k,ch,a,b]of LOOT[m.k])if(sorte()<ch*ml)got.push([k,ri(a,b)]);
   const rar=got.length?Math.max(...got.map(g=>ITEMS[g[0]].rar)):0;
   /* um drop só, e quem causou mais dano tem a vez (ver update) */
   if(got.length)G.drops.push({x:m.x,y:m.y,items:got,rar,t:0,dono});
   saida.log(`Loot de ${m.t.nome}: ${got.length?got.map(fmtItem).join(', '):'nada'}.`,['loot','rare','epic'][rar]);
   if(m.t.boss){saida.banner(m.t.nome+' caiu');}
 }
-function gainXp(x,p){
+export function gainXp(x,p){
   const c=p.c;c.xp+=x;p.xpGain+=x;num(p.x,p.y-40,x+' xp','#f3ead6');
   while(c.xp>=xpNeed(c.lvl)){
     const slotsAntes=nSlots(c);
@@ -243,8 +244,11 @@ export function hurtPlayer(p,d,de){
   d=Math.max(1,Math.round(d*(1-Math.min(.75,CLASSES[p.cl].red+eqBonus('red',p.c)+bf('arm',p)))));
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;
-    if(de){de.pk++;saida.log(`${de.nome||CLASSES[de.cl].nome} matou você.`,'warn',p);saida.log(`Você matou ${p.nome||CLASSES[p.cl].nome}.`,'rare',de)}
-    sai(p,'morreu')}
+    if(de){de.pk++;p.mortoPor=de;saida.log(`${de.nome||CLASSES[de.cl].nome} matou você.`,'warn',p);saida.log(`Você matou ${p.nome||CLASSES[p.cl].nome}.`,'rare',de)}
+    sai(p,'morreu');
+    /* quem mata fica com a experiência que o morto perdeu (arena.pvpXp): é
+       troca, não criação, para dois cúmplices não fabricarem XP se matando */
+    if(de&&!de.fora&&G.arena){const x=Math.round(p.xpPerdido*HUNTS[G.caca].arena.pvpXp);if(x>0)gainXp(x,de)}}
 }
 /* tirar e pôr na mochila da caçada, com o valor dela (p.bagVal) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}

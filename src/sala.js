@@ -37,16 +37,16 @@
    e diz quem fica no lugar, com a herança) e fecha (saiu sozinho),
    e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
 
-import {CLASSES,ITEMS,SPELLS,HUNTS,cacaDe} from './sim/dados.js?v=0.48.0';
-import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.48.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid,arenaFechada,reabreEm,meuTime} from './sim/incursao.js?v=0.48.0';
-import {novaSemente} from './sim/base.js?v=0.48.0';
-import {drinkPot,comer} from './sim/combate.js?v=0.48.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.48.0';
-import {rede,ID,anuncia} from './rede.js?v=0.48.0';
-import {persist} from './salvar.js?v=0.48.0';
-import {log} from './hud.js?v=0.48.0';
-import {recebeVoz,desligaVoz} from './voz.js?v=0.48.0';
+import {CLASSES,ITEMS,SPELLS,HUNTS,cacaDe} from './sim/dados.js?v=0.49.0';
+import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.49.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid,arenaFechada,reabreEm,meuTime} from './sim/incursao.js?v=0.49.0';
+import {novaSemente} from './sim/base.js?v=0.49.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.49.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.49.0';
+import {rede,ID,anuncia} from './rede.js?v=0.49.0';
+import {persist} from './salvar.js?v=0.49.0';
+import {log} from './hud.js?v=0.49.0';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.49.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -209,7 +209,7 @@ export function entradas(local){
 function mandaFim(p){
   const id=[...IDX].find(([,i])=>i===p.id);if(!id)return;
   const c=p.c;
-  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,pk:p.pk,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
+  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,pk:p.pk,perdeu:p.perdeu||null,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
     c:{lvl:c.lvl,xp:c.xp,mag:c.mag,manaG:c.manaG,per:c.per,golpes:c.golpes,slots:c.slots}}});
 }
 /* chamado por saida.sai e saida.log/banner (src/main.js) para quem não é
@@ -372,7 +372,9 @@ function aplicaFim(r){
     if(Array.isArray(r.c.slots))c.slots=[0,1,2,3].map(i=>{const k=r.c.slots[i];return SPELLS[k]&&SPELLS[k].c===save.classe&&SPELLS[k].lvl<=c.lvl&&c.sabe.includes(k)?k:null});
   }
   const bag={};if(r.bag&&typeof r.bag==='object')for(const[k,q]of Object.entries(r.bag))if(ITEMS[k]&&n(q))bag[k]=n(q);
-  p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.pk=n(r.pk);p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);
+  p.bag=bag;p.bagVal=n(r.bagVal);p.sealed=n(r.sealed);p.xpPerdido=n(r.xpPerdido);p.kills=n(r.kills);p.pk=n(r.pk);
+  /* a peça vestida que a morte para outro jogador levou (Arena) */
+  if(typeof r.perdeu==='string'&&ITEMS[r.perdeu]){const sl=ITEMS[r.perdeu].slot;if(sl&&c.equip[sl]===r.perdeu){c.equip[sl]=null;p.perdeu=r.perdeu}}p.xpGain=n(r.xpGain);p.magGain=n(r.magGain);p.perGain=n(r.perGain);
   p.fora=kind;p.c=c;
   /* a mochila sai como o anfitrião contou, ou fica na masmorra */
   if(kind==='extraiu'){c.mochila=Object.assign({},bag);save.ext++;save.best=Math.max(save.best,valMochila(bag)-valMochila(p.bag0||{}))}

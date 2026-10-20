@@ -60,6 +60,7 @@ export function pilhaDe(chao, itens) {
 }
 
 export function rascunho(h, prog) {
+  if (h.arena && h.rascunho.aberta) return arenaAberta(h, prog);
   const R = h.rascunho, s = R.semente >>> 0;
   semeia(s);
   const {g, rooms, obj} = genMap(R), P = pecas(g), hs = (x, y, k) => hash(x, y, k, s);
@@ -137,6 +138,85 @@ function arena(h, prog, g, rooms, pilha) {
     for (let k = 0; k < n; k++) poe(tipo(d), r.x + 1 + ri(0, Math.max(0, r.w - 3)), r.y + 1 + ri(0, Math.max(0, r.h - 3)));
   }
   h.arena.pontos = {centro: `${c0.cx} ${c0.cy}`, entradas: ents.map((r) => `${r.cx} ${r.cy}`), saidas: saidas.map(([x, y]) => `${x} ${y}`)};
+  return codifica(pilha, h.arena.pontos.entradas[0], spawn);
+}
+
+/* a Arena ao ar livre (rascunho.aberta): mata, um rio com pontes e as ruínas
+   no centro, onde ficam as saídas. Sem salas: o chão é aberto, e a mata
+   fecha só onde o ruído do sqm manda (mais densa perto da borda). Tudo sai do
+   hash do sqm (a mesma semente dá o mesmo mapa); só o tipo de cada monstro
+   gasta o sorteio. Ninguém fica preso: o que a porta não alcança vira mata,
+   e cada entrada ganha um caminho até o centro se precisar */
+function arenaAberta(h, prog) {
+  const R = h.rascunho, A = R.aberta, s = R.semente >>> 0; semeia(s);
+  const hs = (x, y, k) => hash(x, y, k, s), N = MW * MH, cx = MW >> 1, cy = MH >> 1;
+  const t = new Uint8Array(N); /* 0 chão, 1 mata, 2 água, 3 ponte, 4 ruína, 5 chão das ruínas */
+  const I = (x, y) => y * MW + x, cheb = (x, y, a, b) => Math.max(Math.abs(x - a), Math.abs(y - b));
+  /* o ruído: valores do hash numa grade de 6 sqm, interpolados */
+  const v = (gx, gy) => hs(gx, gy, 90);
+  const ruido = (x, y) => { const gx = x / 6, gy = y / 6, x0 = Math.floor(gx), y0 = Math.floor(gy), fx = gx - x0, fy = gy - y0;
+    const a = v(x0, y0) * (1 - fx) + v(x0 + 1, y0) * fx, b = v(x0, y0 + 1) * (1 - fx) + v(x0 + 1, y0 + 1) * fx; return a * (1 - fy) + b * fy; };
+  const ents = A.entradas.map(([x, y]) => [x, y]), saidas = [[-3, 0], [3, 0], [0, 3]].map(([i, j]) => [cx + i, cy + j]);
+  const livreDe = (x, y) => ents.some(([a, b]) => cheb(x, y, a, b) <= 4) || cheb(x, y, cx, cy) <= A.ruinas;
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const i = I(x, y), borda = Math.min(x, y, MW - 1 - x, MH - 1 - y);
+    if (borda < 2) { t[i] = 1; continue; }
+    /* a mata: mais fechada longe do centro, nunca nas entradas nem nas ruínas */
+    const d = cheb(x, y, cx, cy) / 32;
+    if (!livreDe(x, y) && ruido(x, y) > A.mata - d * 0.18) t[i] = 1;
+  }
+  /* o rio: de norte a sul, a oeste das ruínas, com as pontes de A.pontes */
+  for (let y = 0; y < MH; y++) { const xr = Math.round(A.rio + 4 * Math.sin(y / 7));
+    for (let k = -1; k <= 1; k++) { const x = xr + k; if (x < 2 || x >= MW - 2) continue; t[I(x, y)] = A.pontes.some((py) => Math.abs(y - py) <= 1) ? 3 : 2; } }
+  /* as ruínas: um muro quebrado em volta do centro, aberto nos quatro lados */
+  for (let y = cy - A.ruinas; y <= cy + A.ruinas; y++) for (let x = cx - A.ruinas; x <= cx + A.ruinas; x++) {
+    const d = cheb(x, y, cx, cy), i = I(x, y);
+    if (d < A.ruinas - 1) t[i] = 5;
+    else if (d === A.ruinas - 1) t[i] = Math.abs(x - cx) <= 1 || Math.abs(y - cy) <= 1 || hs(x, y, 91) < 0.3 ? 5 : 4;
+    else t[i] = 0;
+  }
+  for (const [x, y] of saidas) t[I(x, y)] = 5;
+  /* os pilares tombados dentro das ruínas */
+  for (let y = cy - A.ruinas + 2; y <= cy + A.ruinas - 2; y++) for (let x = cx - A.ruinas + 2; x <= cx + A.ruinas - 2; x++)
+    if (t[I(x, y)] === 5 && cheb(x, y, cx, cy) > 3 && hs(x, y, 92) < 0.05) t[I(x, y)] = 4;
+  const anda = (k) => k === 0 || k === 3 || k === 5, Q = new Int32Array(N);
+  const alcance = () => { const m = new Uint8Array(N); let a = 0, b = 0; const e = I(ents[0][0], ents[0][1]); m[e] = 1; Q[b++] = e;
+    while (a < b) { const c = Q[a++], x = c % MW; for (const dd of [x > 0 ? -1 : 0, x < MW - 1 ? 1 : 0, -MW, MW]) { const k = c + dd; if (dd && k >= 0 && k < N && !m[k] && anda(t[k])) { m[k] = 1; Q[b++] = k; } } } return m; };
+  /* cada entrada e o centro precisam se alcançar: senão, um caminho reto
+     até o centro (a mata sai, a água vira ponte) */
+  for (const [ex, ey] of ents) { if (alcance()[I(cx, cy)] && alcance()[I(ex, ey)]) continue;
+    let x = ex, y = ey; while (x !== cx || y !== cy) { if (x !== cx) x += Math.sign(cx - x); else y += Math.sign(cy - y);
+      for (const [i, j] of [[0, 0], [0, 1]]) { const k = I(x + i, y + j); if (t[k] === 1 || t[k] === 4) t[k] = 0; else if (t[k] === 2) t[k] = 3; } } }
+  const m = alcance();
+  for (let i = 0; i < N; i++) if (anda(t[i]) && !m[i]) t[i] = 1;
+  /* as pilhas */
+  const g = new Uint8Array(N); for (let i = 0; i < N; i++) g[i] = anda(t[i]) ? 0 : 1;
+  const ru = new Uint8Array(N); for (let i = 0; i < N; i++) ru[i] = t[i] === 4 ? 1 : 0;
+  const P = pecas(ru), pilha = new Array(N);
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const i = I(x, y), k = t[i], grama = um(A.grama, hs(x, y, 4));
+    if (k === 1) pilha[i] = pilhaDe(grama, [um(A.arvores, hs(x, y, 3))]);
+    else if (k === 2) pilha[i] = pilhaDe(A.agua, []);
+    else if (k === 3) pilha[i] = pilhaDe(A.ponte, []);
+    else if (k === 4) pilha[i] = pilhaDe(grama, [P[i] ? R.parede[P[i] - 1] : A.pilar]);
+    else if (k === 5) pilha[i] = pilhaDe(A.pedra, hs(x, y, 5) < 0.06 ? [um(A.restos, hs(x, y, 6))] : []);
+    else pilha[i] = pilhaDe(grama, hs(x, y, 7) < A.flores ? [um(A.detalhes, hs(x, y, 8))] : []);
+  }
+  for (let i = 0; i < N; i++) if ((pilha[i][0] === 'c') !== (g[i] === 0))
+    throw new Error(`arena aberta: o sqm ${i % MW},${i / MW | 0} não bate com a pilha "${pilha[i]}"`);
+  /* os monstros: pontos espalhados pelo chão alcançável, mais fortes perto do centro */
+  const usado = new Set(), spawn = [], md = Math.hypot(cx, cy);
+  for (const [x, y] of saidas) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) usado.add(I(x + i, y + j));
+  const tipo = (d) => { const b = h.bands.find((b) => d < b.untilDepth) || h.bands[h.bands.length - 1]; let r = sorte();
+    for (const [k, w] of Object.entries(b.weights)) { if (r < w) return k; r -= w; } return Object.keys(b.weights).pop(); };
+  let livres = 0; for (let i = 0; i < N; i++) if (m[i] && t[i] !== 3) livres++;
+  for (let y = 0; y < MH; y++) for (let x = 0; x < MW; x++) {
+    const i = I(x, y); if (!m[i] || t[i] === 3 || usado.has(i) || ents.some(([a, b]) => cheb(x, y, a, b) <= 6)) continue;
+    if (hs(x, y, 93) >= A.monstros / livres) continue;
+    for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) usado.add(I(x + k, y + j));
+    spawn.push(`${x} ${y} ${tipo(1 - Math.hypot(x - cx, y - cy) / md)}`);
+  }
+  h.arena.pontos = {centro: `${cx} ${cy}`, entradas: ents.map(([x, y]) => `${x} ${y}`), saidas: saidas.map(([x, y]) => `${x} ${y}`)};
   return codifica(pilha, h.arena.pontos.entradas[0], spawn);
 }
 

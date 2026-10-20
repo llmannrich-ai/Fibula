@@ -1294,19 +1294,39 @@ async function testaSimulacao() {
       const h2 = JSON.parse(JSON.stringify(I.heranca()));
       if (!I.adota(h2, -1, I.fichaLocal()) || I.G.ps[0].time !== 'A' || I.G.ps[0].pk !== 1 || I.G.arCanto.tB !== G2.arCanto.tB) falhas.push(`Arena: a herança perdeu o time, os abates ou os cantos (${I.G.ps[0].time}/${I.G.ps[0].pk})`);
     }
+    /* o que a Arena paga: o PvP dá a quem mata a experiência que o morto
+       perde e uma peça que ele vestia; o monstro rende arena.xp; quem sai
+       ganha o bônus; e o relógio alcança o tempo que o aparelho ficou no fundo */
+    {
+      const G3 = partida(8), [k1, v1] = G3.ps; v1.c.equip.arma = 'espada'; v1.c.xp = 2000; G3.drops.length = 0;
+      const xk = k1.c.xp; v1.hp = 1; Cb.hurtPlayer(v1, 5, k1);
+      const itens = G3.drops.map((q) => q.items).flat().map((i) => i[0]);
+      if (v1.c.equip.arma || v1.perdeu !== 'espada' || !itens.includes('espada')) falhas.push(`Arena: o morto no PvP não deixou a peça vestida no chão (${v1.c.equip.arma}, ${JSON.stringify(itens)})`);
+      if (v1.xpPerdido <= 0 || k1.xpGain !== v1.xpPerdido * A.pvpXp) falhas.push(`Arena: quem matou não ganhou a experiência que o morto perdeu (${k1.xpGain} / ${v1.xpPerdido})`);
+      const m = G3.mons.find((q) => !q.t.boss), x0 = k1.xpGain; m.dn[k1.id] = 1; Cb.hitMon(m, 1e6, null, k1);
+      if (k1.xpGain - x0 !== Math.round(m.t.xp * m.xpm * A.xp)) falhas.push(`Arena: o monstro não rendeu arena.xp (${k1.xpGain - x0})`);
+      const t0 = G3.t; I.alcanca(90, [PAR, PAR, PAR]);
+      if (Math.abs(G3.t - t0 - 90) > 0.06) falhas.push(`Arena: o relógio não alcançou o tempo do fundo (${G3.t - t0})`);
+      /* no centro antes de a borda cair, esperando a saída abrir */
+      const [sx3, sy3] = A.pontos.saidas[0].split(' ').map(Number); k1.mhp = k1.hp = 1e7; B.poeNoSqm(k1, sx3, sy3);
+      for (let q = 0; q < 20000 && I.tempoArena() < A.saidas - 0.1; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      const ganho = k1.xpGain;
+      for (let q = 0; q < 200 && !k1.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      if (k1.fora !== 'extraiu' || k1.xpGain !== ganho + Math.round(ganho * A.bonusSaida)) falhas.push(`Arena: o bônus de saída não veio (${k1.fora}, ${ganho} → ${k1.xpGain})`);
+    }
     /* fora da Arena ninguém fere ninguém */
     novoSave(); I.newRun(4, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B')], true, 'runas');
     if (Cb.podeFerir(I.G.ps[0], I.G.ps[1])) falhas.push('Arena: jogador fere jogador fora da Arena');
     /* o relógio: a porta fecha, os chefes nascem, as saídas abrem, a borda mata */
     G = partida(5); const [p1, , p3] = G.ps; G.ps[1].fora = 'fora';
+    /* vida de sobra: aqui se prova o chão e a saída, não a luta com os monstros */
+    p1.mhp = p1.hp = 1e5; p3.mhp = p3.hp = 1e7;
     const ate = (t) => { for (let q = 0; q < 20000 && I.tempoArena() < t; q++) I.passo(0.05, [PAR, PAR, PAR]); };
     ate(A.entraAte + 1);
     if (!I.arenaFechada()) falhas.push('Arena: a porta não fechou');
     const chefes = A.fases.filter((f) => f.chefe).map((f) => f.chefe);
     /* p3 vai ao centro (o anel não o alcança) e fica numa saída */
     const [sx, sy] = A.pontos.saidas[0].split(' ').map(Number);
-    /* vida de sobra: aqui se prova o chão e a saída, não a luta com os monstros */
-    p1.mhp = p1.hp = 1e5; p3.mhp = p3.hp = 1e7;
     ate(A.aneis[0].t - 1); B.poeNoSqm(p3, sx, sy);
     ate(A.aneis[0].t + 20);
     if (p1.fora !== 'desabou') falhas.push(`Arena: quem ficou na borda não morreu com ela (${p1.fora}, vida ${p1.hp})`);
@@ -1545,7 +1565,7 @@ const CASOS = [
     ok('o Guia de caça não lista a Arena: quem leva a ela é o Mestre', !/Arena/.test(txt('#huntList')||''), txt('#huntList h3'));
     clica($('#huntBack'));
     Tl.abreNpc('mestre_arena');
-    ok('o Mestre da Arena abre a tela dela, com as regras da partida', visivel('#arenaS')&&txt('#arenaS h2')==='Mestre da Arena'&&/10:00/.test(txt('#aRegras')||'')&&/Centopeia-rainha aos 3:00/.test(txt('#aRegras')||'')&&/saídas abrem no centro aos 7:00/.test(txt('#aRegras')||''), txt('#aRegras'));
+    ok('o Mestre da Arena abre a tela dela, com as regras da partida', visivel('#arenaS')&&txt('#arenaS h2')==='Mestre da Arena'&&/6:00/.test(txt('#aRegras')||'')&&/Centopeia-rainha aos 1:45/.test(txt('#aRegras')||'')&&/saídas abrem no centro aos 4:15/.test(txt('#aRegras')||'')&&/2× a experiência/.test(txt('#aRegras')||''), txt('#aRegras'));
     ok('o preço da morte na Arena é dito antes: a mochila fica no chão e o Selo não guarda', /40 de ouro, que fica no chão/.test(txt('#aRisco')||'')&&/Selo não guarda nada/.test(txt('#aRisco')||''), txt('#aRisco'));
     var inp=$('#aTime');inp.value='ab-1';inp.dispatchEvent(new Event('input'));
     ok('o código do time fica em maiúsculas, só letras e números', I.meuTime==='AB1'&&/Time AB1/.test(txt('#aTimeT')||''), I.meuTime+' / '+txt('#aTimeT'));
@@ -1555,8 +1575,8 @@ const CASOS = [
     ok('entrar abre a Arena neste aparelho, sem ninguém lá', foi&&Sa.SALA.papel==='anfitriao'&&Sa.SALA.caca==='arena'&&I.G.arena&&E&&!E.fora&&E.time==='AB1', Sa.SALA.papel+' / '+Sa.SALA.caca+' / '+(E&&E.time));
     ok('o time nasce num canto da arena', E&&(E.tx<12||E.tx>52)&&(E.ty<12||E.ty>52), E&&(E.tx+','+E.ty));
     await quadros(4);
-    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^9:5|^10:00/.test(txt('#timeT')||'')&&/^Saídas em 6:5|^Saídas em 7:00/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
-    ok('a entrada diz quando abrem as saídas', /saídas abrem no centro aos 7 minutos/i.test(txt('#log')||''), txt('#log'));
+    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^5:5|^6:00/.test(txt('#timeT')||'')&&/^Saídas em 4:1/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
+    ok('a entrada diz quando abrem as saídas', /saídas abrem nas ruínas do centro aos 4:15/i.test(txt('#log')||''), txt('#log'));
     I.finish('morreu');await ate(function(){return visivel('#end')},200);
     ok('a tela final diz que a mochila ficou no chão da Arena', /chão da Arena/.test(txt('#endText')||''), txt('#endText'));
     ok('a mochila ficou no chão para quem passar', I.G.drops.some(function(d){return d.dono===-1&&d.items.some(function(i){return i[0]==='ouro'&&i[1]===40})}), JSON.stringify(I.G.drops.map(function(d){return d.items})));
@@ -1564,7 +1584,7 @@ const CASOS = [
     ok('a volta é ao lado do Mestre da Arena', $('#app').classList.contains('cidade')&&Cd.C.perto==='mestre_arena'&&/saiu da Arena/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
     I.G.t=250;
     Tl.abreNpc('mestre_arena');clica($('#aEntra'));await quadros(3);
-    ok('no meio da partida a porta fecha até a seguinte', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 5:50/.test(txt('#log')||''), txt('#log'));
+    ok('no meio da partida a porta fecha até a seguinte', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 1:50/.test(txt('#log')||''), txt('#log'));
     Tl.showPick();
     ok('a escolha de personagem tem o botão da Arena', visivel('#toArena'), txt('#pick .rodape'));
     clica($('#toArena'));await quadros(3);

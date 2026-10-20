@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.48.0';
-import {ALFA} from './mapa.js?v=0.48.0';
+import {MW,MH} from './base.js?v=0.49.0';
+import {ALFA} from './mapa.js?v=0.49.0';
 /* a Arena (hunts.<k>.arena, decisão do Leonardo em 19/10/2026): uma partida
    de dur segundos que recomeça sozinha. Até entraAte se entra; os anéis
    desabam da borda ao centro (r em sqm, contado como o maior dos dois eixos);
@@ -17,6 +17,8 @@ function validaArena(a,c,E){
   const num=(v,a0,b)=>typeof v==='number'&&v>=a0&&v<=b;
   if(!num(a.dur,60,3600)||!num(a.entraAte,0,a.dur)||!num(a.saidas,0,a.dur))E('dur, entraAte e saidas são segundos dentro da partida');
   if(!num(a.desaba,0.001,1)||!num(a.pvp,0,1)||!Number.isInteger(a.max)||a.max<1||a.max>8)E('desaba e pvp vão de 0 a 1; max, de 1 a 8');
+  /* o que a Arena paga a mais: igual para todos lá dentro (pilar 1) */
+  if(!num(a.xp,1,10)||!num(a.loot,1,10)||!num(a.bonusSaida,0,5)||!num(a.pvpXp,0,5)||typeof a.pvpPeca!=='boolean')E('xp e loot de 1 a 10, bonusSaida e pvpXp de 0 a 5, pvpPeca true ou false');
   if(!Array.isArray(a.aneis)||a.aneis.some((r,i)=>!num(r.t,0,a.dur)||!num(r.r,0,64)||(i&&(r.t<=a.aneis[i-1].t||r.r>=a.aneis[i-1].r))))E('aneis em ordem de tempo, cada um menor que o anterior');
   if(!Array.isArray(a.fases)||a.fases.some(f=>!num(f.t,0,a.dur-1)||typeof f.msg!=='string'||(f.chefe!==undefined&&!(c.enemies[f.chefe]&&c.enemies[f.chefe].boss))))E('fases com t, msg e, se houver, chefe (um inimigo com boss)');
 }

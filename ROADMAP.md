@@ -180,6 +180,13 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-20 — A Arena depois do primeiro teste (0.49.0)** *(decisão do
+  Leonardo; pilares 3 e 4)*. Partida de 6 min; mapa ao ar livre (mata, rio
+  com pontes, ruínas no centro, `arenaAberta()` em `tools/mapas.mjs`); o
+  dobro da experiência, 1,5× a chance de loot e 50% de bônus de saída; no
+  PvP, quem mata fica com a experiência que o morto perde e uma peça vestida
+  dele; o relógio alcança o tempo em que o aparelho do servidor ficou no
+  fundo (`alcanca()`).
 - **2026-10-19 — A Arena (0.48.0)** *(decisão do Leonardo; pilares 4 e 6,
   a pedido dos testadores)*. Um lugar de caça com outra dinâmica, pelo Mestre
   da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha,
