@@ -1332,12 +1332,18 @@ async function testaSimulacao() {
       for (let q = 0; q < 200 && !r1.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
       if (r1.fora !== 'extraiu' || r1.xpGain !== 100) falhas.push(`Arena: a saída antecipada não deixou sair, ou deu bônus (${r1.fora}, ${r1.xpGain})`);
       if (!I.jaSaiu(r1.id) || I.jaSaiu(r2.id)) falhas.push('Arena: quem saiu não ficou marcado como já saído desta partida');
-      r2.mhp = r2.hp = 1e7; for (let q = 0; q < 20000 && I.tempoArena() < A.antecipada + 1; q++) I.passo(0.05, [PAR, PAR, PAR]);
-      B.poeNoSqm(r2, ax, ay); for (let q = 0; q < 100 && !r2.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      /* r2 espera no centro (o anel não o alcança) e, depois do anel do meio, vai à antecipada */
+      const [cx5, cy5] = A.pontos.centro.split(' ').map(Number); B.poeNoSqm(r2, cx5, cy5 - 1); r2.semRede = true;
+      for (let q = 0; q < 20000 && I.tempoArena() < A.antecipada + 1; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      if (r2.fora) falhas.push(`Arena: quem esperava no centro saiu antes de testar a antecipada (${r2.fora})`);
+      r2.semRede = true; B.poeNoSqm(r2, ax, ay); for (let q = 0; q < 100 && !r2.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
       if (r2.fora === 'extraiu') falhas.push('Arena: a saída antecipada continuou aberta depois de o anel do meio desabar');
+      /* a herança leva quem já saiu: quem assume não o deixa voltar */
+      const h5 = JSON.parse(JSON.stringify(I.heranca()));
+      if (!I.adota(h5, -1, I.fichaLocal()) || !I.jaSaiu(r1.id)) falhas.push('Arena: a herança esqueceu quem já saiu da partida');
       const AA = (await import(url('dados.js'))).HUNTS[AK].arena, c0 = AA.comida; AA.comida = [['carne', 1]];
-      const m = G5.mons.find((q) => !q.t.boss); G5.drops.length = 0; Cb.hitMon(m, 1e6, null, r2); AA.comida = c0;
-      if (!G5.drops.some((d) => d.items.some(([k]) => k === 'carne'))) falhas.push('Arena: o bicho não deixou a comida da Arena');
+      const G6 = I.G, m = G6.mons.find((q) => !q.t.boss); G6.drops.length = 0; Cb.hitMon(m, 1e6, null, G6.ps[1]); AA.comida = c0;
+      if (!G6.drops.some((d) => d.items.some(([k]) => k === 'carne'))) falhas.push('Arena: o bicho não deixou a comida da Arena');
     }
     /* fora da Arena ninguém fere ninguém */
     novoSave(); I.newRun(4, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B')], true, 'runas');
@@ -1600,7 +1606,7 @@ const CASOS = [
     ok('entrar abre a Arena neste aparelho, sem ninguém lá', foi&&Sa.SALA.papel==='anfitriao'&&Sa.SALA.caca==='arena'&&I.G.arena&&E&&!E.fora&&E.time==='AB1', Sa.SALA.papel+' / '+Sa.SALA.caca+' / '+(E&&E.time));
     ok('o time nasce num canto da arena', E&&(E.tx<12||E.tx>52)&&(E.ty<12||E.ty>52), E&&(E.tx+','+E.ty));
     await quadros(4);
-    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^5:5|^6:00/.test(txt('#timeT')||'')&&/^Saída antecipada até 4:1/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
+    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^5:5|^6:00/.test(txt('#timeT')||'')&&/^Antecipadas fecham em 4:1/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
     ok('a entrada diz quando abrem as saídas', /saídas antecipadas ficam no anel do meio até os 4:15/i.test(txt('#log')||''), txt('#log'));
     I.finish('morreu');await ate(function(){return visivel('#end')},200);
     ok('a tela final diz que a mochila ficou no chão da Arena', /chão da Arena/.test(txt('#endText')||''), txt('#endText'));

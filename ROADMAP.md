@@ -180,6 +180,11 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-20 — A Arena, segundo ajuste (0.50.0)** *(decisão do Leonardo;
+  pilares 4 e 6)*. Entrada só nos primeiros 15 s; quem sai não volta à mesma
+  partida; várias arenas ao mesmo tempo (quem chega tarde cai numa nova);
+  saídas antecipadas no anel do meio até ele desabar, sem bônus; comida no
+  loot dos bichos.
 - **2026-10-20 — A Arena depois do primeiro teste (0.49.0)** *(decisão do
   Leonardo; pilares 3 e 4)*. Partida de 6 min; mapa ao ar livre (mata, rio
   com pontes, ruínas no centro, `arenaAberta()` em `tools/mapas.mjs`); o

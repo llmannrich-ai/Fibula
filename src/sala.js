@@ -152,10 +152,14 @@ export const dentro=id=>{const i=IDX.get(id);return SALA.papel==='anfitriao'?!!(
    do Leonardo em 20/10/2026). Para o anfitrião: sem ninguém lá dentro, a
    arena recomeça aqui; com gente, ele passa o servidor e vai a outra arena
    (a cópia seguinte), que começa quando ele chegar. Devolve se pode entrar */
+const TODAS='Todas as arenas estão em partida. Tente de novo em instantes.';
 export function arenaPronta(){
   if(SALA.papel!=='anfitriao'||!G||!G.arena||!(arenaFechada()||saiuDaPartida(meuI())))return true;
   if(!G.ps.some(p=>!p.fora)){abreMasmorra();mandaMembros();return true}
-  const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Indo a outra arena…','info');saiDaSala();if(n<9)vaiCaca(k,n+1);return false;
+  /* o servidor fica com quem está lá dentro, como em qualquer sala */
+  const k=SALA.caca,n=SALA.n||1,prox=SALA.membros.find(m=>m.id!==ID&&dentro(m.id));
+  log('Esta partida da Arena já começou. Indo a outra arena…','info');if(prox)passaPara(prox);else saiDaSala();
+  if(n<9)vaiCaca(k,n+1);else log(TODAS,'warn');return false;
 }
 export function entraPorta(){
   if(SALA.papel==='anfitriao'&&G&&G.arena&&(arenaFechada()||saiuDaPartida(meuI())))return false;
@@ -196,6 +200,9 @@ export const correndo=()=>!!(G&&G.sala&&G.active&&!G.over);
 function abrePorta(q){
   const m=SALA.membros.find(x=>x.id===q.id),f=confereFicha(q.ficha);
   if(!m||!f||!G||!G.sala)return;
+  /* servidor parado (ninguém lá dentro, ele espera na cidade): a arena
+     recomeça para quem chega, em vez de mandá-lo a outra cópia */
+  if(G.arena&&arenaFechada()&&!G.ps.some(p=>!p.fora))abreMasmorra();
   let i=IDX.get(q.id);
   if(arenaFechada()||(i!==undefined&&saiuDaPartida(i))){bc('fechada',{id:q.id,s:Math.ceil(reabreEm())});return}
   if(i===undefined){i=G.ps.length;if(i>=8){bc('cheia',{id:q.id});return}IDX.set(q.id,i)}
@@ -272,7 +279,7 @@ function tira(id){
   const i=SALA.membros.findIndex(m=>m.id===id);if(i<1)return;
   const m=SALA.membros.splice(i,1)[0];log(`${m.nome} saiu da sua sala.`,'info');
   /* quem fecha o jogo dentro da masmorra some dela, sem resultado */
-  const k=IDX.get(id);if(k!==undefined&&id!==ID){ENTS[k]=null;if(G&&G.sala&&G.ps[k]&&!G.ps[k].fora)G.ps[k].fora='fora'}
+  const k=IDX.get(id);if(k!==undefined&&id!==ID){ENTS[k]=null;if(G&&G.sala&&G.ps[k]&&!G.ps[k].fora){G.ps[k].fora='fora';if(G.arena)G.ps[k].saiuEm=G.arC}}
   mandaMembros();avisa();
 }
 
@@ -316,7 +323,8 @@ function assume(velho,motivo){
   if(her&&adota(her.h,eu,fichaLocal())){
     IDX.clear();ENTS.length=0;ids.forEach((id,k)=>{if(id&&k<G.ps.length)IDX.set(id,k)});
     potesViu=Array.isArray(her.pot)?her.pot.map(v=>v|0):[];comidasViu=Array.isArray(her.com)?her.com.map(v=>v|0):[];
-    if(eu<0){const k=IDX.has(ID)?IDX.get(ID):G.ps.length;entra(k,fichaLocal());G.ps[k].fora='fora';G.p=G.ps[k];IDX.set(ID,k)}
+    /* quem já saiu desta partida da Arena continua sem poder voltar (saiuEm) */
+    if(eu<0){const k=IDX.has(ID)?IDX.get(ID):G.ps.length,old=G.ps[k];entra(k,fichaLocal());G.ps[k].fora='fora';if(old&&old.saiuEm!==undefined)G.ps[k].saiuEm=old.saiuEm;G.p=G.ps[k];IDX.set(ID,k)}
     const k=velho?IDX.get(velho):undefined;if(k!==undefined&&G.ps[k]&&!G.ps[k].fora)G.ps[k].fora='fora';
     /* quem estava dentro fica no sqm em que já estava neste aparelho */
     if(dentroEu&&!solid(px,py)&&(G.p.tx!==px||G.p.ty!==py)){const p=G.p;p.tx=px;p.ty=py;p.x=p.x0=p.ox=(px+.5)*32;p.y=p.y0=p.oy=(py+.5)*32;p.sd=0;p.st=0}
@@ -364,7 +372,7 @@ function recebeConv(ev,q){
     /* lotado: a cópia seguinte do mesmo lugar */
     const k=SALA.caca,n=SALA.n||1;solta();if(n<9)vaiCaca(k,n+1);else log('Todos os lugares deste mapa estão cheios.','warn')}
   /* a partida já começou (ou eu já saí dela): outra arena, a cópia seguinte */
-  else if(ev==='fechada'&&q&&q.id===ID){const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Procurando outra arena…','info');solta();if(n<9)vaiCaca(k,n+1)}
+  else if(ev==='fechada'&&q&&q.id===ID){const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Procurando outra arena…','info');solta();if(n<9)vaiCaca(k,n+1);else log(TODAS,'warn')}
   else if(ev==='fecha'){if(correndo())ganchos.aborta('O anfitrião fechou a sala.');log('O anfitrião fechou a sala.','warn');solta()}
   else if(ev==='porta'&&q&&q.id===ID&&Array.isArray(q.ps)){
     /* a porta abriu para mim: a masmorra é a mesma semente, e eu sou o i */

@@ -18,7 +18,7 @@ function validaArena(a,c,E){
   if(!num(a.dur,60,3600)||!num(a.entraAte,0,a.dur)||!num(a.saidas,0,a.dur))E('dur, entraAte e saidas são segundos dentro da partida');
   if(!num(a.desaba,0.001,1)||!num(a.pvp,0,1)||!Number.isInteger(a.max)||a.max<1||a.max>8)E('desaba e pvp vão de 0 a 1; max, de 1 a 8');
   /* o que a Arena paga a mais: igual para todos lá dentro (pilar 1) */
-  if(!num(a.antecipada,0,a.dur)||!Array.isArray(a.comida)||a.comida.some(q=>!Array.isArray(q)||!(c.items[q[0]]&&c.items[q[0]].comida>0)||!num(q[1],0,1)))E('antecipada é o segundo em que fecham as saídas antecipadas; comida, uma lista de [comida, chance]');
+  if(!num(a.antecipada,0,a.saidas)||!Array.isArray(a.comida)||a.comida.some(q=>!Array.isArray(q)||!(c.items[q[0]]&&c.items[q[0]].comida>0)||!num(q[1],0,1)))E('antecipada é o segundo em que fecham as saídas antecipadas; comida, uma lista de [comida, chance]');
   if(!num(a.xp,1,10)||!num(a.loot,1,10)||!num(a.bonusSaida,0,5)||!num(a.pvpXp,0,5)||typeof a.pvpPeca!=='boolean')E('xp e loot de 1 a 10, bonusSaida e pvpXp de 0 a 5, pvpPeca true ou false');
   if(!Array.isArray(a.aneis)||a.aneis.some((r,i)=>!num(r.t,0,a.dur)||!num(r.r,0,64)||(i&&(r.t<=a.aneis[i-1].t||r.r>=a.aneis[i-1].r))))E('aneis em ordem de tempo, cada um menor que o anterior');
   if(!Array.isArray(a.fases)||a.fases.some(f=>!num(f.t,0,a.dur-1)||typeof f.msg!=='string'||(f.chefe!==undefined&&!(c.enemies[f.chefe]&&c.enemies[f.chefe].boss))))E('fases com t, msg e, se houver, chefe (um inimigo com boss)');
@@ -160,7 +160,11 @@ export function validaConteudo(c){
     if(h.arena){const P=h.arena.pontos,ok=t=>{const[x,y]=xy(t).map(Number);return kAt(x,y)==='c'};
       if(!P||!ok(P.centro)||!Array.isArray(P.entradas)||!P.entradas.length||!Array.isArray(P.saidas)||!P.saidas.length)E('arena.pontos precisa de centro, entradas e saidas');
       for(const t of P.entradas){const[x,y]=xy(t).map(Number);if([[0,0],[1,0],[-1,0],[0,1]].some(([i,j])=>kAt(x+i,y+j)!=='c'))E(`a entrada ${t} da arena (e os sqm em volta) precisa ser chão`)}
-      for(const t of [...P.saidas,...(P.antecipadas||[])])if(!ok(t))E(`a saída ${t} da arena precisa ser chão`)}
+      if(P.antecipadas!==undefined&&!Array.isArray(P.antecipadas))E('arena.pontos.antecipadas é uma lista');
+      for(const t of [...P.saidas,...(P.antecipadas||[])])if(!ok(t))E(`a saída ${t} da arena precisa ser chão`);
+      /* a antecipada fica no anel que desaba quando ela fecha: de pé até lá, e no chão depois */
+      const A=h.arena,ia=A.aneis.findIndex(r=>r.t===A.antecipada),[cx,cy]=xy(P.centro).map(Number);
+      if(P.antecipadas&&P.antecipadas.length&&(ia<1||P.antecipadas.some(t=>{const[x,y]=xy(t).map(Number),d=Math.max(Math.abs(x-cx),Math.abs(y-cy));return d<=A.aneis[ia].r||d>A.aneis[ia-1].r})))E('as saídas antecipadas ficam no anel que desaba em antecipada (entre o raio dele e o do anel anterior)')}
   }
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='arena'&&!hs.some(([,h])=>h.arena&&h.npc===k))throw new Error(`o NPC ${k} abre arena, mas nenhuma arena é dele`);
   for(const[k,n]of Object.entries(ci.npcs))if(n.abre==='cacadas'&&!hs.some(([,h])=>h.npc===k))throw new Error(`o NPC ${k} abre cacadas, mas nenhum mapa de caça é dele`);

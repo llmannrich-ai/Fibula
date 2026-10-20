@@ -18,6 +18,35 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-20 03:00 UTC — sessão manual (nuvem): a Arena, segundo ajuste (0.50.0)
+
+**Item desenvolvido:** pedidos do Leonardo:
+- só se entra nos primeiros 15 s (`entraAte`);
+- quem sai (extraindo ou morto) não volta à mesma partida (`p.saiuEm`, `jaSaiu()`);
+- várias arenas ao mesmo tempo: quem chega tarde recebe `fechada` e vai à cópia seguinte do canal, que começa quando ele chegar. O servidor parado, sem ninguém dentro, recomeça para quem chega (`abrePorta`); o anfitrião com gente dentro passa o servidor a quem está lá e vai à seguinte (`arenaPronta()`);
+- saídas antecipadas, uma em cada diagonal do anel do meio (17 sqm do centro), abertas até ele desabar (4:15) e sem o bônus de saída (`saidasAbertas()`);
+- comida no loot dos bichos da Arena (`arena.comida`: carne, frutas, queijo).
+
+**Validação:** `node tools/testar.mjs`, 44/44. A simulação no Node cobre:
+- a saída antecipada que abre, não dá bônus e fecha com o anel;
+- quem saiu marcado, com a marca passando na herança;
+- a comida no abate.
+
+Os casos de navegador cobrem a arena que recomeça para o anfitrião sozinho, o anfitrião com gente dentro indo à cópia 2 e o convidado mandado à cópia 2 pelo `fechada`. Revisor independente: cinco bloqueios, todos resolvidos:
+1. as antecipadas estavam no anel errado; agora o `validaArena` recusa;
+2. um teste passava sem testar;
+3. o servidor parado mandava todos embora;
+4. faltava a mensagem depois da cópia 9;
+5. o `saiuEm` se perdia no `assume()` e no `tira()`.
+
+**Pendências e riscos:**
+- Com a janela de 15 s, um time precisa entrar quase junto. Quem demora cai numa arena nova, sozinho.
+- Não há asserção de que o anfitrião responde `fechada` a quem já saiu: o lado do convidado está coberto, o do anfitrião não.
+- Quem recarrega a página ganha um id novo e pode voltar à mesma partida dentro dos 15 s.
+- Continua valendo o que a entrada da 0.49.0 deixou: os números da recompensa e o limite do alcance.
+
+**Próximo passo recomendado:** o Leonardo testar com os amigos entrando juntos (mesmo código de time) nos 15 s.
+
 ## 2026-10-20 01:30 UTC — sessão manual (nuvem): a Arena depois do primeiro teste (0.49.0)
 
 **Item desenvolvido:** pedidos do Leonardo depois de testar a 0.48.0. Partida de 6 min (fases, anéis e saídas proporcionais). Mapa ao ar livre, `arenaAberta()` em `tools/mapas.mjs`: mata pelo ruído do sqm, rio com pontes, ruínas no centro. A Arena paga mais que as outras caçadas: `xp` 2, `loot` 1,5 e `bonusSaida` 0,5. No PvP, quem mata ganha o XP que o morto perde (no máximo um nível dele), e o morto deixa no chão uma peça vestida sorteada (`pvpPeca`). O relógio não para com o aparelho do servidor no fundo (`alcanca()`); antes ele parava, como o Leonardo viu no celular. Atlas com água, ponte e pedra (`PADROES` limita a água a 2×2: +9 KB em vez de +100 KB); o `cwebp` foi instalado pelo apt nesta nuvem.
