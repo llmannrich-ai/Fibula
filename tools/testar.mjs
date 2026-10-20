@@ -1312,7 +1312,16 @@ async function testaSimulacao() {
       for (let q = 0; q < 20000 && I.tempoArena() < A.saidas - 0.1; q++) I.passo(0.05, [PAR, PAR, PAR]);
       const ganho = k1.xpGain;
       for (let q = 0; q < 200 && !k1.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
-      if (k1.fora !== 'extraiu' || k1.xpGain !== ganho + Math.round(ganho * A.bonusSaida)) falhas.push(`Arena: o bônus de saída não veio (${k1.fora}, ${ganho} → ${k1.xpGain})`);
+      /* o bônus não conta a experiência que veio do PvP (k1.xpPvp): senão dois cúmplices a fabricariam */
+      if (k1.fora !== 'extraiu' || !(k1.xpPvp > 0) || k1.xpGain !== ganho + Math.round((ganho - k1.xpPvp) * A.bonusSaida)) falhas.push(`Arena: o bônus de saída não veio (${k1.fora}, ${ganho} → ${k1.xpGain})`);
+    }
+    /* ninguém morre pela ausência do aparelho: enquanto alcança o tempo do
+       fundo, nem o chão nem os monstros ferem; o convidado sem notícia também não */
+    {
+      const G4 = partida(9), [q1, q2] = G4.ps, h1 = q1.hp; I.alcanca(A.aneis[0].t + 20);
+      if (q1.fora || q1.hp !== h1 || I.tempoArena() < A.aneis[0].t) falhas.push(`Arena: alcançar o tempo do fundo feriu quem estava parado (${q1.fora}, ${q1.hp}/${h1})`);
+      q2.semRede = true; const h2 = q2.hp; Cb.hurtPlayer(q2, 50, q1);
+      if (q2.hp !== h2) falhas.push('Arena: convidado sem notícia do aparelho foi ferido');
     }
     /* fora da Arena ninguém fere ninguém */
     novoSave(); I.newRun(4, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B')], true, 'runas');
@@ -1599,7 +1608,7 @@ const CASOS = [
       cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
       up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
       classe: 'druida',
-      chars: {druida: {lvl: 8, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['gelo', null, null, null]}},
+      chars: {druida: {lvl: 8, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['gelo', null, null, null], equip: {arma: 'espada', armadura: null, amuleto: null}}},
     }},
     roteiro: `
     var RT=window.__rt;
@@ -1618,6 +1627,17 @@ const CASOS = [
     ok('aceito na sala, pede a porta sozinho', RT.salaMandadas('entro').length===1, RT.salaMandadas('entro').length);
     RT.sala('fechada',{id:EU,s:200});await quadros(3);
     ok('a porta fechada diz quando começa a próxima partida, e o jogo não entra', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 3:20/.test(txt('#log')||''), txt('#log'));
+    /* na partida seguinte entra; morto por outro jogador, perde a peça vestida do save */
+    Sa.entraPorta();
+    RT.sala('porta',{id:EU,i:1,semente:7,h:'arena',ps:[{nome:'Ana',cl:'cavaleiro',c:{lvl:5,equip:{}},up:{}},{nome:'Druida',cl:'druida',c:{lvl:8,equip:{arma:'espada'}},up:{}}]});
+    var dentro=await ate(function(){return I.G&&I.G.convidado&&I.G.arena&&$('#app').classList.contains('playing')},40);
+    ok('a porta abre e o convidado entra na Arena', dentro, I.G&&I.G.caca);
+    var R={fora:'morreu',bag:{},bagVal:0,sealed:0,xpPerdido:10,kills:0,pk:0,perdeu:'espada',xpGain:0,magGain:0,perGain:0,c:{lvl:8,xp:0,mag:0,manaG:0,per:10,golpes:0,slots:['gelo',null,null,null]}};
+    RT.sala('fim',{id:EU,anf:'velho',r:R});await quadros(3);
+    ok('o resultado de um servidor antigo não vale', $('#app').classList.contains('playing')&&Pg.ch().equip.arma==='espada', Pg.ch().equip.arma);
+    RT.sala('fim',{id:EU,anf:'anf1',r:R});
+    await ate(function(){return visivel('#end')},600);
+    ok('morto por outro jogador, a peça vestida sai do save e a tela final diz', Pg.ch().equip.arma===null&&/levou também espada enferrujada/.test(txt('#endText')||''), Pg.ch().equip.arma+' / '+txt('#endText'));
     `,
   },
   {
@@ -1791,7 +1811,7 @@ const CASOS = [
     ok('a poção vira pedido ao anfitrião', RT.salaMandadas('ent').pop().pot===1, RT.salaMandadas('ent').pop().pot);
     tecla('keydown','KeyC');tecla('keyup','KeyC');await quadros(4);
     ok('comer vira pedido ao anfitrião', RT.salaMandadas('ent').pop().com===1, RT.salaMandadas('ent').pop().com);
-    RT.sala('fim',{id:EU,r:{fora:'extraiu',bag:{ouro:40,inexistente:9,carne:2},bagVal:52,sealed:0,xpPerdido:0,kills:3,xpGain:90,magGain:1,perGain:0,c:{lvl:3,xp:15,mag:1,manaG:10,per:10,golpes:0,slots:['gelo','golpe',null,null]}}});
+    RT.sala('fim',{id:EU,anf:'anf1',r:{fora:'extraiu',bag:{ouro:40,inexistente:9,carne:2},bagVal:52,sealed:0,xpPerdido:0,kills:3,xpGain:90,magGain:1,perGain:0,c:{lvl:3,xp:15,mag:1,manaG:10,per:10,golpes:0,slots:['gelo','golpe',null,null]}}});
     await ate(function(){return visivel('#end')},400);
     ok('o resultado do anfitrião vira a tela final', visivel('#end')&&txt('#endTitle')==='Extraído!', txt('#endTitle'));
     var s=sv(),c=s&&s.chars.druida;

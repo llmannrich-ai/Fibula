@@ -202,14 +202,22 @@ function abrePorta(q){
    cada convidado */
 export function entradas(local){
   if(!correndo()||SALA.papel!=='anfitriao')return local;
-  const m=meuI();ENTS[m]=local;for(let i=0;i<G.ps.length;i++)if(i!==m&&!ENTS[i])ENTS[i]={x:0,y:0,held:[false,false,false,false]};
+  const m=meuI();ENTS[m]=local;for(let i=0;i<G.ps.length;i++)if(i!==m&&!ENTS[i])ENTS[i]={x:0,y:0,held:[false,false,false,false],visto:0};
   return ENTS;
+}
+/* convidado sem entrada há SEMREDE s fica parado e não se fere (p.semRede):
+   a queda da rede não mata, e quem corta a rede de propósito não deixa a
+   mochila ou a peça no chão sem perdê-las do save */
+const SEMREDE=1.5;
+function vigiaRede(dt){
+  const m=meuI();for(let i=0;i<G.ps.length;i++){if(i===m)continue;const e=ENTS[i],p=G.ps[i];if(!e||!p)continue;
+    e.visto=(e.visto||0)+dt;const sem=e.visto>SEMREDE;p.semRede=sem;if(sem){e.held[0]=e.held[1]=e.held[2]=e.held[3]=false;if(e.pos){e.pos.x=p.tx;e.pos.y=p.ty}}}
 }
 /* o resultado de um convidado que saiu, para o save dele */
 function mandaFim(p){
   const id=[...IDX].find(([,i])=>i===p.id);if(!id)return;
   const c=p.c;
-  bc('fim',{id:id[0],r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,pk:p.pk,perdeu:p.perdeu||null,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
+  bc('fim',{id:id[0],anf:ID,r:{fora:p.fora,bag:p.bag,bagVal:p.bagVal,sealed:p.sealed,xpPerdido:p.xpPerdido,kills:p.kills,pk:p.pk,perdeu:p.perdeu||null,xpGain:p.xpGain,magGain:p.magGain,perGain:p.perGain,
     c:{lvl:c.lvl,xp:c.xp,mag:c.mag,manaG:c.manaG,per:c.per,golpes:c.golpes,slots:c.slots}}});
 }
 /* chamado por saida.sai e saida.log/banner (src/main.js) para quem não é
@@ -246,7 +254,7 @@ function recebeAnf(ev,q,de){
       e.mira[k]=Number.isFinite(a)?a/100:NaN;e.alc[k]=Number.isFinite(d)?Math.max(0,Math.min(1,d/100)):1}
     /* o sqm em que o convidado diz estar; o anfitrião só anda até lá pela regra */
     if(Number.isInteger(q.x)&&Number.isInteger(q.y)){e.pos=e.pos||{x:0,y:0};e.pos.x=Math.max(0,Math.min(63,q.x));e.pos.y=Math.max(0,Math.min(63,q.y))}
-    e.f=Number.isFinite(q.f)?q.f/100:e.f;
+    e.f=Number.isFinite(q.f)?q.f/100:e.f;e.visto=0;
     /* a poção é um contador: cada aumento é um gole, mesmo que uma mensagem se perca */
     const n=q.pot|0;if(n>(potesViu[i]||0)){potesViu[i]=n;drinkPot(G.ps[i])}
     const c=q.com|0;if(c>(comidasViu[i]||0)){comidasViu[i]=c;comer(G.ps[i])}
@@ -358,7 +366,9 @@ function recebeConv(ev,q){
     if(i<0||i>=fichas.length||fichas.some(f=>!f))return;
     eu=i;potes=0;comidas=0;ritmo=0;SALA.caca=cacaDe(q.h);ganchos.comeca(q.semente>>>0,fichas,eu,SALA.caca);
   }else if(ev==='estado'&&q&&correndo()&&G.convidado)aplicaRetrato(q,eu);
-  else if(ev==='fim'&&q&&q.id===ID&&correndo()&&G.convidado)aplicaFim(q.r);
+  /* só vale o resultado de quem é o servidor agora: um antigo que volta do
+     fundo não decide a caçada de quem já está no servidor novo */
+  else if(ev==='fim'&&q&&q.id===ID&&q.anf===SALA.anf&&correndo()&&G.convidado)aplicaFim(q.r);
   else if(ev==='log'&&q&&(q.id===null||q.id===ID)&&(correndo()||q.id===null)){if(q.b)ganchos.banner(String(q.m));else log(String(q.m),typeof q.c==='string'?q.c:'info')}
 }
 /* o resultado que o anfitrião calculou vai para o save deste aparelho, como
@@ -438,7 +448,7 @@ export function quadro(dt,ent){
   if(SALA.papel==='anfitriao'){
     /* o anfitrião saiu da masmorra e há gente lá dentro: o servidor passa a
        quem está caçando. Sem ninguém, fica com ele, o último que saiu */
-    if(correndo()){const me=G.ps[meuI()],den=!!(me&&!me.fora);if(dentroAntes&&!den)jaSaiu=true;dentroAntes=den;
+    if(correndo()){vigiaRede(dt);const me=G.ps[meuI()],den=!!(me&&!me.fora);if(dentroAntes&&!den)jaSaiu=true;dentroAntes=den;
       if(jaSaiu&&!den){const prox=SALA.membros.find(m=>m.id!==ID&&dentro(m.id));if(prox){passaPara(prox);return}}}
     if(ritmo<=0){
       /* com convidado lá dentro, o retrato a 10 por segundo (que também diz

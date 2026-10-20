@@ -63,7 +63,8 @@ if(pronto){
     quadro(dt,V.cidade);
     const ent=leEntrada(),corre=G&&G.active&&!G.over;
     /* a Arena não espera o aparelho do servidor: de volta do fundo, alcança o tempo */
-    if(corre&&G.arena&&!G.convidado&&cru>.5)alcanca(cru-dt,entradas(PARADO));
+    /* com gente na sala e mais de PACIENCIA no fundo, ela já passou a outro servidor: não alcança */
+    if(corre&&G.arena&&!G.convidado&&cru>.5&&(cru<12||!G.ps.some(p=>p!==G.p&&!p.fora)))alcanca(cru-dt);
     if(V.cidade&&C){
       /* andando na cidade; com uma tela dela aberta, ela só fica de fundo */
       if(app.classList.contains('cidade')){updateCidade(dt,ent);pisa();hudCidade();if((miniC-=dt)<=0){drawMiniCidade();miniC=.15}}

@@ -1,6 +1,6 @@
 /* ---------- estado da incursão ---------- */
 import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.49.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,SPELLS,ITEMS,cacaDe} from './dados.js?v=0.49.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,SPELLS,ITEMS,SLOTS_EQ,cacaDe} from './dados.js?v=0.49.0';
 import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.49.0';
 import {leMapa,pecas} from './mapa.js?v=0.49.0';
 import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito,podeFerir,gainXp} from './combate.js?v=0.49.0';
@@ -336,7 +336,7 @@ export function sai(p,kind){
   if(G.over||p.fora)return;p.fora=kind;
   if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
   else{p.sealed=G.arena?0:Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
-    if(G.arena)largaMochila(p,p.mortoPor&&HUNTS[G.caca].arena.pvpPeca?tiraPeca(p):null);
+    if(G.arena)largaMochila(p,p.mortoPor!==undefined&&HUNTS[G.caca].arena.pvpPeca?tiraPeca(p):null);
     if(p.local){save.deaths++;if(p.sealed)save.cofre+=p.sealed}}
   if(p.local)saida.persist();
   saida.sai(p);
@@ -380,9 +380,13 @@ function repovoa(dt){
 /* a Arena anda no relógio de verdade: quando o aparelho do servidor volta do
    fundo (o navegador para o laço), a partida anda o tempo que passou, com
    quem estava parado parado. No máximo uma partida inteira */
-export function alcanca(seg,ent){
+export function alcanca(seg){
   if(!G||!G.arena||G.over||!(seg>0))return;
-  let r=Math.min(seg,HUNTS[G.caca].arena.dur);while(r>0&&!G.over){const d=Math.min(.1,r);passo(d,ent);r-=d}
+  /* todos parados e ninguém se fere enquanto isso (G.alcanca): o relógio, as
+     fases e o fim da partida andam, e quem ficou dentro até o fim desaba */
+  const ents=G.ps.map(()=>PARADO);G.alcanca=true;
+  let r=Math.min(seg,HUNTS[G.caca].arena.dur);while(r>0&&!G.over){const d=Math.min(.1,r);passo(d,ents);r-=d}
+  G.alcanca=false;
 }
 /* a sala acaba para todos que ainda estão nela (o desabamento, ou o teste) */
 export function finish(kind){if(G.over)return;for(const p of G.ps)if(!p.fora)sai(p,kind)}
@@ -428,12 +432,12 @@ function arena(dt){
     let perto=false;if(po.open)for(const q of G.arP.s){if(hyp(p.x-(q[0]+.5)*T,p.y-(q[1]+.5)*T)<38){perto=true;break}}
     if(perto){p.pch+=dt;if(p.pch>=EXT){
       /* quem sai vivo ganha a mais uma parte do que fez nesta entrada */
-      const b=Math.round(p.xpGain*A.bonusSaida);if(b>0){gainXp(b,p);saida.log(`Bônus de saída da Arena: +${b} de experiência.`,'rare',p)}
+      const b=Math.round(Math.max(0,p.xpGain-(p.xpPvp||0))*A.bonusSaida);if(b>0){gainXp(b,p);saida.log(`Bônus de saída da Arena: +${b} de experiência.`,'rare',p)}
       sai(p,'extraiu')}}else p.pch=Math.max(0,p.pch-dt*2)}
   /* o desabamento fere uma vez por segundo quem está fora do anel: a mesma
-     fração da vida para todos, sem armadura */
+     fração da vida para todos, sem armadura (e ninguém sem notícia do aparelho) */
   G.arT+=dt;if(G.arT>=1){G.arT-=1;const r=raioArena();
-    for(const p of G.ps){if(p.fora||!foraDoAnel(p,c,r))continue;
+    for(const p of G.ps){if(p.fora||p.semRede||G.alcanca||!foraDoAnel(p,c,r))continue;
       const d=Math.ceil(p.mhp*A.desaba);p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#c9a36b',true);
       if(p.hp<=0){p.hp=0;saida.log('O chão desabou debaixo de você.','warn',p);sai(p,'desabou')}}}
 }
@@ -462,7 +466,7 @@ function chefeNoCentro(k,c){
 /* morto por outro jogador (arena.pvpPeca), perde uma peça vestida, sorteada
    pela regra: sai do corpo e vai para o chão com a mochila */
 function tiraPeca(p){
-  const e=p.c.equip,sl=Object.keys(e).filter(k=>e[k]);if(!sl.length)return null;
+  const e=p.c.equip,sl=SLOTS_EQ.filter(k=>e[k]);if(!sl.length)return null;
   const k=sl[ri(0,sl.length-1)],it=e[k];e[k]=null;p.perdeu=it;
   saida.log(`Você perdeu ${ITEMS[it].nome} na morte.`,'warn',p);return it;
 }
@@ -575,7 +579,7 @@ export function assiste(dt,eu,ent){
    atrasados de G.pend (funções) não vão: no máximo se perde o segundo golpe
    de um ataque múltiplo. */
 const copia=(o,sem)=>{const r={};for(const k in o)if(!sem.includes(k))r[k]=o[k];return r};
-const SEM_M=['t','x0','y0','a0','dot'],SEM_Q=['x0','y0','s','p','tg'],SEM_P=['x0','y0','w0','desv','c','up','local'];
+const SEM_M=['t','x0','y0','a0','dot'],SEM_Q=['x0','y0','s','p','tg'],SEM_P=['x0','y0','w0','desv','c','up','local','semRede'];
 const chaveSp=s=>{for(const k in SPELLS)if(SPELLS[k]===s)return k;return null};
 export function heranca(){
   const ocu=[];for(let i=0;i<MW*MH;i++)if(G.ocu[i])ocu.push(i);

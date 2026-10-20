@@ -18,6 +18,28 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-20 01:30 UTC — sessão manual (nuvem): a Arena depois do primeiro teste (0.49.0)
+
+**Item desenvolvido:** pedidos do Leonardo depois de testar a 0.48.0. Partida de 6 min (fases, anéis e saídas proporcionais). Mapa ao ar livre, `arenaAberta()` em `tools/mapas.mjs`: mata pelo ruído do sqm, rio com pontes, ruínas no centro. A Arena paga mais que as outras caçadas: `xp` 2, `loot` 1,5 e `bonusSaida` 0,5. No PvP, quem mata ganha o XP que o morto perde (no máximo um nível dele), e o morto deixa no chão uma peça vestida sorteada (`pvpPeca`). O relógio não para com o aparelho do servidor no fundo (`alcanca()`); antes ele parava, como o Leonardo viu no celular. Atlas com água, ponte e pedra (`PADROES` limita a água a 2×2: +9 KB em vez de +100 KB); o `cwebp` foi instalado pelo apt nesta nuvem.
+
+**Validação:** `node tools/testar.mjs`, 44/44. O bloco "Arena" da simulação no Node passou a cobrir:
+- a peça vestida no chão e o XP do PvP;
+- o `arena.xp` dos monstros;
+- o bônus de saída sem o XP do PvP;
+- o relógio que alcança sem ferir ninguém;
+- o convidado sem rede que não se fere.
+
+O caso `arena-convidado` passou a cobrir o `fim` de servidor antigo recusado, a peça que sai do save do convidado e a frase na tela final. Capturas em 360×640 da entrada na mata e das ruínas do centro. Revisor independente: cinco bloqueios, todos resolvidos. Eram a criação de XP pelo bônus sobre o PvP, a duplicação com o convidado que corta a rede, o `alcanca` que rodava uma sala já passada adiante, a morte enquanto o aparelho estava no fundo e a falta de teste do lado do convidado. Também foram aplicados o `mortoPor` como id (fora da herança), o sorteio da peça por `SLOTS_EQ`, a entrada parada para todos no alcance e a origem só das peças que ficaram no corpo.
+
+**Pendências e riscos:**
+- **Sensível, a confirmar pelo Leonardo:** os números da recompensa (`xp` 2, `loot` 1,5, `bonusSaida` 0,5) aceleram a progressão. Ele pediu ganho alto, mas os valores foram escolha minha e precisam ser medidos contra o alvo de nível 20 em ~3 h.
+- Fundo mais longo que uma partida perde o excedente (`alcanca` para em `dur`). Quadros entre 0,1 e 0,5 s ainda perdem tempo.
+- O alcance de 6 min roda em ~0,2 s no Node e pode travar 1 a 2 s num celular fraco.
+- O convidado que bloqueia as mensagens de chegada e segue mandando entrada (cliente modificado) ainda pode duplicar a mochila e a peça.
+- A proteção `semRede` não tem prazo: o convidado sem notícia fica intocável até a presença cair. A regra dos 20 s do item `Agora` ainda falta.
+
+**Próximo passo recomendado:** o Leonardo jogar a 0.49.0 no celular, inclusive minimizando, e dizer se os números da recompensa estão bons.
+
 ## 2026-10-19 23:50 UTC — sessão manual (nuvem): a Arena (0.48.0)
 
 **Item desenvolvido:** decisão do Leonardo a partir da conversa com os testadores. `hunts.arena` traz a Arena: o Mestre da Arena no portão sul, e o botão Arena no menu e na escolha de personagem. É uma partida de 10 min que recomeça sozinha no servidor da sala. A porta fecha aos 4:00, os anéis desabam da borda ao centro (5:00, 7:00 e 9:00), os chefes nascem no centro (3:00 e 6:00), e as saídas, só no centro, abrem aos 7:00. Os times se formam por código. Há PvP entre times, com 50% do dano; quem morre deixa a mochila no chão, e o Selo não guarda lá. O personagem sai com XP e itens. O mapa é um rascunho com salas fixas (`rascunho.fixas`), e o script grava `arena.pontos`.

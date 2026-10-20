@@ -239,16 +239,22 @@ export function gainXp(x,p){
 }
 /* de é o jogador que feriu (PvP, na Arena); sem ele, um monstro ou o chão */
 export function hurtPlayer(p,d,de){
-  if(G.over||p.fora)return;
+  /* sem notícia do aparelho (p.semRede, posto pela sala) ou enquanto a Arena
+     alcança o tempo do fundo (G.alcanca), ninguém se fere: a morte nunca vem
+     da ausência do aparelho (pilar 4) */
+  if(G.over||p.fora||p.semRede||G.alcanca)return;
   /* armadura da classe (o shielding/armor do Tibia) somada ao buff de Provocar */
   d=Math.max(1,Math.round(d*(1-Math.min(.75,CLASSES[p.cl].red+eqBonus('red',p.c)+bf('arm',p)))));
   p.hp-=d;p.flash=.15;num(p.x,p.y-30,d,'#ff4d4d',true);shake(3);efeito(p.x,p.y,'fisico');
   if(p.hp<=0){p.hp=0;
-    if(de){de.pk++;p.mortoPor=de;saida.log(`${de.nome||CLASSES[de.cl].nome} matou você.`,'warn',p);saida.log(`Você matou ${p.nome||CLASSES[p.cl].nome}.`,'rare',de)}
+    if(de){de.pk++;p.mortoPor=de.id;saida.log(`${de.nome||CLASSES[de.cl].nome} matou você.`,'warn',p);saida.log(`Você matou ${p.nome||CLASSES[p.cl].nome}.`,'rare',de)}
     sai(p,'morreu');
     /* quem mata fica com a experiência que o morto perdeu (arena.pvpXp): é
        troca, não criação, para dois cúmplices não fabricarem XP se matando */
-    if(de&&!de.fora&&G.arena){const x=Math.round(p.xpPerdido*HUNTS[G.caca].arena.pvpXp);if(x>0)gainXp(x,de)}}
+    /* no máximo um nível de quem mata: um cúmplice alto não sobe um baixo de vez */
+    if(de&&!de.fora&&G.arena){const x=Math.min(xpNeed(de.c.lvl),Math.round(p.xpPerdido*HUNTS[G.caca].arena.pvpXp));
+      /* fica à parte (xpPvp): o bônus de saída não conta o que veio de outro jogador */
+      if(x>0){gainXp(x,de);de.xpPvp=(de.xpPvp||0)+x}}}
 }
 /* tirar e pôr na mochila da caçada, com o valor dela (p.bagVal) */
 export function tiraDoSaco(p,k,q){if(!((p.bag[k]|0)>=q))return false;p.bag[k]-=q;if(!p.bag[k])delete p.bag[k];p.bagVal-=ITEMS[k].val*q;return true}
@@ -274,7 +280,7 @@ export const pecasDaCaca=p=>{const o={},b0=p.bag0||{},t=p.troca||{};
 /* na morte, só as vestidas da mochila que ainda estão no corpo e não tinham
    entrado nela já com origem (p.bag0): o banco dá origem a elas (no máximo
    uma por casa), e o resto da mochila se perde */
-export const vestidasDaCaca=p=>{const o={},b0=p.bag0||{};for(const[k,n]of Object.entries(p.troca||{})){const q=n-(b0[k]|0);if(q>0)o[k]=q}return o};
+export const vestidasDaCaca=p=>{const o={},b0=p.bag0||{},no=new Set(Object.values(p.c.equip));for(const[k,n]of Object.entries(p.troca||{})){const q=n-(b0[k]|0);if(q>0&&no.has(k))o[k]=q}return o};
 export function tiraProSaco(p,sl){const e=p.c.equip,k=e[sl];if(!k||p.fora||!cabe(p.bag,k))return false;e[sl]=null;poeNoSaco(p,k,1);troca(p,k,-1);reveste(p);return true}
 /* o loot vai para a mochila até ela encher (progression.mochila); o que não
    cabe fica no chão, e o aviso sai uma vez por jogador em cada drop (d.av) */

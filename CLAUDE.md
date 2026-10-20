@@ -1227,7 +1227,11 @@ até `arena.max` jogadores.
   é a partida; os dois vão na herança. **O relógio não para com o aparelho
   no fundo** (decisão do Leonardo, 20/10/2026): o navegador para o laço, e
   ao voltar `src/main.js` chama `alcanca()`, que roda a regra o tempo que
-  passou (até uma partida), com quem estava parado parado.
+  passou (até uma partida), com todos parados e **ninguém se ferindo**
+  (`G.alcanca`): o relógio, as fases e o fim da partida andam, e quem ficou
+  dentro até o fim desaba. Com gente na sala e mais de 12 s no fundo, não
+  alcança: a sala já passou a outro servidor, e o convidado só aceita o
+  `fim` de quem é o anfitrião agora (`anf` na mensagem).
 - **Paga mais que as outras caçadas**, igual para todos lá dentro: `arena.xp`
   multiplica a experiência dos monstros, `arena.loot` a chance de cada drop,
   e quem sai vivo ganha `bonusSaida` da experiência que fez na entrada.
@@ -1245,9 +1249,15 @@ até `arena.max` jogadores.
   não guarda nada lá, para morrer de propósito não duplicar valor. Morto
   por outro jogador (`p.mortoPor`), perde também uma peça vestida, sorteada
   pela regra (`tiraPeca()`, com `arena.pvpPeca`; o convidado tira do save
-  pelo `perdeu` do `fim`), e quem matou ganha `xpPerdido × arena.pvpXp`.
-  Com `pvpXp` 1 é troca, não criação: dois cúmplices se matando não
-  fabricam experiência. Os abates contam em `p.pk`.
+  pelo `perdeu` do `fim`), e quem matou ganha `xpPerdido × arena.pvpXp`,
+  no máximo um nível dele (`xpNeed`). Com `pvpXp` 1 é troca, não criação, e
+  o bônus de saída não conta esse XP (`p.xpPvp`): dois cúmplices se matando
+  não fabricam experiência. Os abates contam em `p.pk`.
+- **Sem notícia não se morre.** O anfitrião marca `p.semRede` no convidado
+  sem entrada há 1,5 s (`vigiaRede()` em `src/sala.js`): parado e sem levar
+  dano de ninguém, do chão nem de monstro. É a primeira parte do "queda de
+  conexão não mata" (pilar 4), e fecha o truque de cortar a rede para
+  morrer sem perder a mochila nem a peça do save.
 - **O mapa** é ao ar livre (decisão do Leonardo, 20/10/2026): rascunho de
   `tools/mapas.mjs` com `rascunho.aberta` (`arenaAberta()`): mata pelo ruído
   do sqm, mais fechada perto da borda; um rio de norte a sul com pontes;
