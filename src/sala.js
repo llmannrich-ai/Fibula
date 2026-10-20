@@ -153,13 +153,16 @@ export const dentro=id=>{const i=IDX.get(id);return SALA.papel==='anfitriao'?!!(
    arena recomeça aqui; com gente, ele passa o servidor e vai a outra arena
    (a cópia seguinte), que começa quando ele chegar. Devolve se pode entrar */
 const TODAS='Todas as arenas estão em partida. Tente de novo em instantes.';
+/* a cópia seguinte do canal; a arena de uma sala do saguão (n em texto, 'L…') não tem seguinte */
+const seguinte=n=>typeof n==='number'&&n<9?n+1:null;
+const semSeguinte=n=>typeof n==='number'?TODAS:'A partida da sua sala já começou ou está cheia.';
 export function arenaPronta(){
   if(SALA.papel!=='anfitriao'||!G||!G.arena||!(arenaFechada()||saiuDaPartida(meuI())))return true;
   if(!G.ps.some(p=>!p.fora)){abreMasmorra();mandaMembros();return true}
   /* o servidor fica com quem está lá dentro, como em qualquer sala */
   const k=SALA.caca,n=SALA.n||1,prox=SALA.membros.find(m=>m.id!==ID&&dentro(m.id));
   log('Esta partida da Arena já começou. Indo a outra arena…','info');if(prox)passaPara(prox);else saiDaSala();
-  if(n<9)vaiCaca(k,n+1);else log(TODAS,'warn');return false;
+  const n2=seguinte(n);if(n2)vaiCaca(k,n2);else log(semSeguinte(n),'warn');return false;
 }
 export function entraPorta(){
   if(SALA.papel==='anfitriao'&&G&&G.arena&&(arenaFechada()||saiuDaPartida(meuI())))return false;
@@ -370,9 +373,9 @@ function recebeConv(ev,q){
     SALA.membros=limpa(q.lista);troca(q.anf,q.gen|0,'O anfitrião saiu da sala.');
   }else if(ev==='cheia'&&q&&q.id===ID){
     /* lotado: a cópia seguinte do mesmo lugar */
-    const k=SALA.caca,n=SALA.n||1;solta();if(n<9)vaiCaca(k,n+1);else log('Todos os lugares deste mapa estão cheios.','warn')}
+    const k=SALA.caca,n=SALA.n||1;solta();const n2=seguinte(n);if(n2)vaiCaca(k,n2);else log(typeof n==='number'?'Todos os lugares deste mapa estão cheios.':semSeguinte(n),'warn')}
   /* a partida já começou (ou eu já saí dela): outra arena, a cópia seguinte */
-  else if(ev==='fechada'&&q&&q.id===ID){const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Procurando outra arena…','info');solta();if(n<9)vaiCaca(k,n+1);else log(TODAS,'warn')}
+  else if(ev==='fechada'&&q&&q.id===ID){const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Procurando outra arena…','info');solta();const n2=seguinte(n);if(n2)vaiCaca(k,n2);else log(semSeguinte(n),'warn')}
   else if(ev==='fecha'){if(correndo())ganchos.aborta('O anfitrião fechou a sala.');log('O anfitrião fechou a sala.','warn');solta()}
   else if(ev==='porta'&&q&&q.id===ID&&Array.isArray(q.ps)){
     /* a porta abriu para mim: a masmorra é a mesma semente, e eu sou o i */

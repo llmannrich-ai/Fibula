@@ -1698,12 +1698,18 @@ const CASOS = [
     ok('quem não criou a sala não tem o botão de começar', !$('#sgComeca'), !!$('#sgComeca'));
     var EU=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='phx_join'})[0].payload.config.presence.key;
     var eq={dono1:'VERMELHO'};eq[EU]='AZUL';
-    RT.entra('dono1',{sg:1,nome:'Ana',cl:'feiticeiro',lvl:9,sala:'dono1',quer:'VERMELHO',dono:{nome:'Os de sempre',eq:eq}});await quadros(3);
+    /* anf: na arena da sala, a Ana é o servidor (a presença falsa vale para todo canal) */
+    RT.entra('dono1',{sg:1,anf:true,nome:'Ana',cl:'feiticeiro',lvl:9,sala:'dono1',quer:'VERMELHO',dono:{nome:'Os de sempre',eq:eq}});await quadros(3);
     ok('o criador confirma: a equipe passa a ser a azul', /Equipe: Azul/.test(txt('#sgSala')||''), txt('#sgSala'));
     RT.todos({event:'broadcast',payload:{type:'broadcast',event:'comeca',payload:{sala:'dono1'}}});
     await ate(function(){return RT.enviadas.some(function(d){return d.event==='phx_join'&&/-arena-Ldono1$/.test(d.topic)})},400);
     var j=RT.enviadas.filter(function(d){return d.event==='phx_join'&&/-arena-Ldono1$/.test(d.topic)})[0];
     ok('começar leva quem está na sala à arena dela, com a cor da equipe como time', j&&I.meuTime==='AZUL'&&Sa.SALA.caca==='arena', (j&&j.topic)+' / '+I.meuTime);
+    /* a arena da sala não tem cópia seguinte: fechada ou cheia, o aviso é da sala */
+    var n0=RT.enviadas.filter(function(d){return d.event==='phx_join'}).length;
+    await ate(function(){return Sa.SALA.papel==='convidado'},60);
+    RT.sala('fechada',{id:EU,s:100});await quadros(3);
+    ok('a arena da sala começada sem ele avisa, sem cair noutra arena', /A partida da sua sala já começou/.test(txt('#log')||'')&&!RT.enviadas.slice(n0).some(function(d){return d.event==='phx_join'&&/-arena-/.test(d.topic)&&!/-arena-Ldono1$/.test(d.topic)}), txt('#log'));
     `,
   },
   {
@@ -1720,6 +1726,10 @@ const CASOS = [
     var RT=window.__rt;
     var me=function(){var t=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='presence'}).pop();return t&&t.payload.payload};
     Tl.showPick();clica($('#toArena'));await ate(function(){return /Nenhuma sala/.test(txt('#sgEstado')||'')},60);
+    /* sair da tela por outro caminho também é sair da sala */
+    $('#sgNome').value='Rascunho';clica($('#sgCriaB'));await quadros(3);Tl.showPick();await quadros(3);
+    ok('sair da tela das salas tira da sala', me()&&me().sala===null, JSON.stringify(me()));
+    clica($('#toArena'));await quadros(4);
     $('#sgNome').value='Treino';clica($('#sgCriaB'));await quadros(3);
     var EU=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='phx_join'})[0].payload.config.presence.key;
     ok('criar a sala anuncia o nome e o criador na presença', me()&&me().sala===EU&&me().dono&&me().dono.nome==='Treino'&&/Treino · 1\\/4/.test(txt('#sgSala')||''), JSON.stringify(me()));
@@ -1731,6 +1741,8 @@ const CASOS = [
     ok('confirmar põe a Bia na equipe verde', me().dono.eq.b1==='VERDE', JSON.stringify(me().dono));
     RT.entra('x9',{sg:1,nome:'<b>Mau</b>',cl:'mago-falso',lvl:999,sala:EU,quer:'ROXO'});await quadros(3);
     ok('dado de fora com classe que não existe fica de fora da sala', !/Mau/.test(txt('#sgSala')||''), txt('#sgSala'));
+    /* ainda com o servidor de outra arena: começar o tira dela e o leva à da sala */
+    Sa.criaSala('arena');await quadros(2);
     clica($('#sgComeca'));
     var foi=await ate(function(){return $('#app').classList.contains('playing')},400);
     var bc=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='broadcast'&&d.payload.event==='comeca'})[0];

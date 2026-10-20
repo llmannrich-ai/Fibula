@@ -18,6 +18,30 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-10-20 04:30 UTC — sessão manual (nuvem): salas da Arena no menu (0.51.0)
+
+**Item desenvolvido:** pedido do Leonardo: um saguão no menu, não no mapa, para organizar a partida da Arena (`src/saguao.js`, módulo novo com fronteira clara: a rede do saguão; tela `#saguao`, `showSaguao()` em `src/telas.js`).
+- Quem cria abre uma sala. Os outros veem as abertas (nome, criador, quantos, equipes), entram e veem quem está nela.
+- Cada um mostra a equipe a que pertence (a que o criador confirmou) e a que quer (a que pediu), entre 4 cores: Vermelha, Azul, Verde e Amarela. No máximo 4 equipes e `arena.max` jogadores.
+- Começar manda `comeca` com as equipes. O criador abre a arena da sala (`arena-L<id>`) e os outros entram 4,5 s depois, com a cor como código de time.
+- O botão Arena do menu e da escolha de personagem abre o saguão; o Mestre na cidade ganhou "Salas da Arena".
+
+**Validação:** `node tools/testar.mjs`, 46/46, com os casos novos `saguao` (entrar, escolher a cor, ser confirmado, começar, o aviso da arena da sala fechada) e `saguao-dono` (criar, a própria cor, confirmar, dado de fora com classe falsa recusado, sair da tela tira da sala, começar ainda com o servidor de outra arena). Captura em 360×640 da sala. O revisor independente encontrou cinco bloqueios, todos resolvidos:
+1. criador com outro servidor caía na arena errada;
+2. o `n` em texto (`'L…'`) quebrava a cópia seguinte;
+3. a reconexão tirava o membro da sala (agora espera a presença inteira e dá 10 s ao criador);
+4. sair da tela não tirava da sala;
+5. a equipe podia chegar atrasada (agora vai no `comeca`) e a sala passava de 4 (agora o corte é igual em todo aparelho).
+
+**Pendências e riscos:**
+- O `comeca` pode ser forjado por quem tem a chave e joga os membros numa arena sem o criador. É risco da fase de teste, até o canal privado.
+- Voltar do saguão aberto pelo Mestre leva à escolha de personagem, não à cidade.
+- A cor da sala fica como time na Arena comum até o jogador trocá-la no Mestre.
+- Não há teste da reconexão do membro.
+- Com rede lenta, o membro pode passar dos 15 s da porta. Aí ele recebe o aviso e fica fora.
+
+**Próximo passo recomendado:** testar com 2 a 4 aparelhos de verdade, criando a sala e começando juntos.
+
 ## 2026-10-20 03:00 UTC — sessão manual (nuvem): a Arena, segundo ajuste (0.50.0)
 
 **Item desenvolvido:** pedidos do Leonardo:

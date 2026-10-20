@@ -19,7 +19,7 @@ import {save,ch} from './sim/progresso.js?v=0.51.0';
 import {poeTime} from './sim/incursao.js?v=0.51.0';
 import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.51.0';
 import {ID} from './rede.js?v=0.51.0';
-import {vaiCaca} from './sala.js?v=0.51.0';
+import {vaiCaca,SALA,saiDaSala} from './sala.js?v=0.51.0';
 import {log} from './hud.js?v=0.51.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
@@ -32,10 +32,13 @@ const COR=new Set(CORES.map(c=>c.k));
    equipes que confirmei (só o dono) */
 export const SG={estado:'fora',salas:[],minha:null,quer:null,nomeSala:'',eq:{},aberto:false,aoMudar(){}};
 const PRES=new Map();
-let ws=null,ref=0,pronto=false,espera=0,tenta=0,batida=0,vai=0,vaiK=null,saindo=0;
+let ws=null,ref=0,pronto=false,espera=0,tenta=0,batida=0,vai=0,vaiK=null,saindo=0,viu=false,sumiu=0;
+/* quanto se espera o criador voltar (a rede dele caiu) antes de dar a sala por fechada */
+const FOLGA=10;
 
 const manda=(event,payload)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify({topic:TOPICO,event,payload,ref:String(++ref),join_ref:'1'}))};
-const nome=t=>String(t||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,24);
+/* sem controle nem caracteres que invertem a ordem do texto */
+const nome=t=>String(t||'').replace(/[\u0000-\u001f\u202a-\u202e\u2066-\u2069]/g,'').trim().slice(0,24);
 const eu=()=>({sg:1,nome:quemSou()||CLASSES[save.classe].nome,cl:save.classe,lvl:ch().lvl,sala:SG.minha,quer:SG.quer,
   dono:SG.minha===ID?{nome:SG.nomeSala,eq:SG.eq}:null});
 const presenca=()=>{if(pronto)manda('presence',{type:'presence',event:'track',payload:eu()})};
@@ -53,16 +56,19 @@ function confere(id,m){
 function monta(){
   const todos=[...PRES.values()],me=confere(ID,eu());if(me)todos.push(me);
   SG.salas=todos.filter(p=>p.dono).map(d=>({id:d.id,nome:d.dono.nome,dono:d.nome,eq:d.dono.eq,
-    membros:todos.filter(p=>p.sala===d.id).sort((a,b)=>(b.id===d.id)-(a.id===d.id)).map(p=>({id:p.id,nome:p.nome,cl:p.cl,lvl:p.lvl,quer:p.quer,eq:d.dono.eq[p.id]||null}))}));
-  /* a sala em que eu estava sumiu (o dono saiu): estou fora */
-  if(SG.minha&&SG.minha!==ID&&pronto&&!SG.salas.some(s=>s.id===SG.minha)){SG.minha=null;SG.quer=null;log('A sala da Arena fechou: o criador saiu.','warn');presenca()}
+    /* no máximo arena.max: o criador primeiro, depois por id (o mesmo corte em todo aparelho) */
+    membros:todos.filter(p=>p.sala===d.id).sort((a,b)=>(b.id===d.id)-(a.id===d.id)||(a.id<b.id?-1:1)).slice(0,maxSaguao()).map(p=>({id:p.id,nome:p.nome,cl:p.cl,lvl:p.lvl,quer:p.quer,eq:d.dono.eq[p.id]||null}))}));
+  /* a sala em que eu estava sumiu: espera FOLGA s pelo criador (a rede dele
+     pode ter caído) e só então sai; antes da presença inteira chegar, nada */
+  if(SG.minha&&SG.minha!==ID&&viu)sumiu=SG.salas.some(s=>s.id===SG.minha)?0:sumiu||FOLGA;
   SG.aoMudar();
 }
 export const minhaSala=()=>SG.salas.find(s=>s.id===SG.minha)||null;
 
 /* ---------- o que o jogador faz ---------- */
 export function abre(){SG.aberto=true;if(!ws)liga();monta()}
-export function fecha(){SG.aberto=false}
+/* sair da tela é sair da sala (menos quem está partindo para a arena dela) */
+export function fecha(){SG.aberto=false;if(SG.minha&&saindo<=0&&!vaiK)sai()}
 export function cria(n){if(!save.classe)return;SG.minha=ID;SG.nomeSala=nome(n)||`Sala de ${eu().nome}`;SG.eq={};if(SG.quer)SG.eq[ID]=SG.quer;presenca();monta()}
 export function entra(id){const s=SG.salas.find(x=>x.id===id);if(!s||s.membros.length>=maxSaguao()||SG.minha)return false;SG.minha=id;SG.quer=null;presenca();monta();return true}
 export function sai(){SG.minha=null;SG.quer=null;SG.eq={};presenca();monta()}
@@ -73,15 +79,18 @@ export function confirma(id,k){if(SG.minha!==ID)return;if(COR.has(k))SG.eq[id]=k
 /* começar: todos da sala vão à mesma arena, a do canal arena-L<id> */
 export function comeca(){
   const s=minhaSala();if(!s||s.id!==ID)return false;
-  manda('broadcast',{type:'broadcast',event:'comeca',payload:{sala:ID}});
+  /* as equipes vão junto: a presença do criador pode chegar depois do broadcast */
+  manda('broadcast',{type:'broadcast',event:'comeca',payload:{sala:ID,eq:Object.assign({},SG.eq)}});
   parte(s,true);return true;
 }
 /* quem parte: a cor confirmada vira o time; o dono abre a arena agora, os
    outros entram depois que ela abriu (ESPERA quadros), ainda nos 15 s */
 const ESPERA=4.5;
-function parte(s,dono){
-  const eq=s.eq[ID]||null;poeTime(eq||'');
+function parte(s,dono,eqDado){
+  const eq=(dono?SG.eq[ID]:eqDado!==undefined?eqDado:s.eq[ID])||null;poeTime(eq||'');
   const k=Object.keys(HUNTS).find(h=>HUNTS[h].arena);vaiK={k,n:'L'+s.id};
+  /* quem ainda tem outra sala (o servidor de uma arena de antes) sai dela */
+  if(SALA.papel&&SALA.id!==k+'-'+vaiK.n)saiDaSala();
   log(`A partida da sala ${s.nome} vai começar${eq?`, na equipe ${CORES.find(c=>c.k===eq).nome.toLowerCase()}`:''}.`,'info');
   SG.aberto=false;
   /* o dono mantém a sala no ar uns segundos, para o 'comeca' chegar antes de
@@ -91,7 +100,7 @@ function parte(s,dono){
 
 /* ---------- canal ---------- */
 function liga(){
-  pronto=false;ref=0;SG.estado='ligando';PRES.clear();
+  pronto=false;viu=false;ref=0;SG.estado='ligando';PRES.clear();
   try{ws=new WebSocket(SB_URL.replace(/^http/,'ws')+'/realtime/v1/websocket?apikey='+SB_KEY+'&vsn=1.0.0')}catch(e){ws=null;caiu();return}
   const s=ws;
   s.onopen=()=>{if(ws!==s)return;tenta=0;manda('phx_join',{config:{broadcast:{self:false},presence:{key:ID},private:false}})};
@@ -105,18 +114,20 @@ const metas=v=>v&&Array.isArray(v.metas)?v.metas[v.metas.length-1]:null;
 function recebe(d){
   const p=d.payload||{};
   if(d.event==='phx_reply'&&d.ref==='1'){if(p.status!=='ok'){caiu();return}pronto=true;SG.estado='ligado';presenca();monta();return}
-  if(d.event==='presence_state'){PRES.clear();for(const id in p){if(id===ID)continue;const o=confere(id,metas(p[id]));if(o)PRES.set(id,o)}monta()}
+  if(d.event==='presence_state'){viu=true;PRES.clear();for(const id in p){if(id===ID)continue;const o=confere(id,metas(p[id]));if(o)PRES.set(id,o)}monta()}
   else if(d.event==='presence_diff'){
     for(const id in p.leaves||{})if(!(p.joins&&p.joins[id]))PRES.delete(id);
     for(const id in p.joins||{}){if(id===ID)continue;const o=confere(id,metas(p.joins[id]));if(o)PRES.set(id,o);else PRES.delete(id)}
     monta()}
-  else if(d.event==='broadcast'&&p.event==='comeca'&&p.payload&&p.payload.sala===SG.minha&&SG.minha!==ID){const s=minhaSala();if(s)parte(s,false)}
+  else if(d.event==='broadcast'&&p.event==='comeca'&&p.payload&&p.payload.sala===SG.minha&&SG.minha!==ID){const s=minhaSala();
+    if(s&&s.membros.some(m=>m.id===ID)){const e=p.payload.eq&&typeof p.payload.eq==='object'?p.payload.eq[ID]:undefined;parte(s,false,e===undefined?undefined:COR.has(e)?e:null)}}
 }
 /* chamado pelo laço */
 export function quadro(dt){
   /* a vez de quem não é dono: entra na arena da sala, já aberta pelo dono */
   if(vai>0){vai-=dt;if(vai<=0&&vaiK){vaiCaca(vaiK.k,vaiK.n);vaiK=null}}
   if(saindo>0){saindo-=dt;if(saindo<=0){SG.minha=null;SG.quer=null;SG.eq={};presenca()}}
+  if(sumiu>0){sumiu-=dt;if(sumiu<=0&&SG.minha&&SG.minha!==ID&&!SG.salas.some(s=>s.id===SG.minha)){SG.minha=null;SG.quer=null;log('A sala da Arena fechou: o criador saiu.','warn');presenca();SG.aoMudar()}}
   const quer=SG.aberto||!!SG.minha;
   if(!quer){if(ws)desliga();return}
   if(!ws){espera-=dt;if(espera<=0)liga();return}
