@@ -1,10 +1,10 @@
 /* ---------- combate ----------
    Toda função aqui recebe o jogador que age (p, de G.ps): o personagem dele
    é p.c, a classe p.cl e as melhorias p.up. Nada lê o save. */
-import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.49.0';
-import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,HUNTS,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.49.0';
-import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.49.0';
-import {G,num,shake,sai,solid} from './incursao.js?v=0.49.0';
+import {T,TAU,rr,ri,frr,sorte,hyp,saida} from './base.js?v=0.50.0';
+import {EL_COR,SPELLS,ITEMS,LOOT,PROG,CLASSES,HUNTS,fmtItem,listaDaClasse,precoHab} from './dados.js?v=0.50.0';
+import {stats,eqBonus,xpNeed,manaPraMag,golpesPraPer,nSlots,cabe} from './progresso.js?v=0.50.0';
+import {G,num,shake,sai,solid} from './incursao.js?v=0.50.0';
 
 /* sem p, o jogador deste aparelho: é o que a tela pergunta */
 export const bf=(k,p=G.ps[0])=>{const b=p.buffs[k],s=p.sup&&p.sup[k];return (b?b.v:0)+(s?s.v:0)};
@@ -206,6 +206,8 @@ function kill(m){
     if(!q.fora&&(m.dn[q.id]>0||hyp(q.x-m.x,q.y-m.y)<=perto)){q.kills++;gainXp(Math.round(m.t.xp*m.xpm*mx),q)}}
   const got=[];
   for(const[k,ch,a,b]of LOOT[m.k])if(sorte()<ch*ml)got.push([k,ri(a,b)]);
+  /* na Arena todo bicho pode deixar comida (arena.comida), além do loot dele */
+  if(A)for(const[k,ch]of A.comida)if(sorte()<ch)got.push([k,1]);
   const rar=got.length?Math.max(...got.map(g=>ITEMS[g[0]].rar)):0;
   /* um drop só, e quem causou mais dano tem a vez (ver update) */
   if(got.length)G.drops.push({x:m.x,y:m.y,items:got,rar,t:0,dono});

@@ -176,6 +176,10 @@ function arenaAberta(h, prog) {
     else t[i] = 0;
   }
   for (const [x, y] of saidas) t[I(x, y)] = 5;
+  /* as saídas antecipadas: uma em cada diagonal, no anel do meio, com o chão
+     em volta limpo (abrem no começo e fecham quando esse anel desaba) */
+  const antes = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([i, j]) => [cx + i * A.antecipadas, cy + j * A.antecipadas]);
+  for (const [x, y] of antes) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) { const k = I(x + i, y + j); if (t[k] !== 2 && t[k] !== 3) t[k] = 0; }
   /* os pilares tombados dentro das ruínas */
   for (let y = cy - A.ruinas + 2; y <= cy + A.ruinas - 2; y++) for (let x = cx - A.ruinas + 2; x <= cx + A.ruinas - 2; x++)
     if (t[I(x, y)] === 5 && cheb(x, y, cx, cy) > 3 && hs(x, y, 92) < 0.05) t[I(x, y)] = 4;
@@ -184,7 +188,7 @@ function arenaAberta(h, prog) {
     while (a < b) { const c = Q[a++], x = c % MW; for (const dd of [x > 0 ? -1 : 0, x < MW - 1 ? 1 : 0, -MW, MW]) { const k = c + dd; if (dd && k >= 0 && k < N && !m[k] && anda(t[k])) { m[k] = 1; Q[b++] = k; } } } return m; };
   /* cada entrada e o centro precisam se alcançar: senão, um caminho reto
      até o centro (a mata sai, a água vira ponte) */
-  for (const [ex, ey] of ents) { if (alcance()[I(cx, cy)] && alcance()[I(ex, ey)]) continue;
+  for (const [ex, ey] of [...ents, ...antes]) { if (alcance()[I(cx, cy)] && alcance()[I(ex, ey)]) continue;
     let x = ex, y = ey; while (x !== cx || y !== cy) { if (x !== cx) x += Math.sign(cx - x); else y += Math.sign(cy - y);
       for (const [i, j] of [[0, 0], [0, 1]]) { const k = I(x + i, y + j); if (t[k] === 1 || t[k] === 4) t[k] = 0; else if (t[k] === 2) t[k] = 3; } } }
   const m = alcance();
@@ -206,7 +210,8 @@ function arenaAberta(h, prog) {
     throw new Error(`arena aberta: o sqm ${i % MW},${i / MW | 0} não bate com a pilha "${pilha[i]}"`);
   /* os monstros: pontos espalhados pelo chão alcançável, mais fortes perto do centro */
   const usado = new Set(), spawn = [], md = Math.hypot(cx, cy);
-  for (const [x, y] of saidas) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) usado.add(I(x + i, y + j));
+  for (const [x, y] of [...saidas, ...antes]) for (let j = -1; j <= 1; j++) for (let i = -1; i <= 1; i++) usado.add(I(x + i, y + j));
+  for (const [x, y] of antes) if (!m[I(x, y)]) throw new Error(`arena aberta: a saída antecipada ${x},${y} ficou fora do alcance; mude rascunho.aberta.antecipadas`);
   const tipo = (d) => { const b = h.bands.find((b) => d < b.untilDepth) || h.bands[h.bands.length - 1]; let r = sorte();
     for (const [k, w] of Object.entries(b.weights)) { if (r < w) return k; r -= w; } return Object.keys(b.weights).pop(); };
   let livres = 0; for (let i = 0; i < N; i++) if (m[i] && t[i] !== 3) livres++;
@@ -216,7 +221,7 @@ function arenaAberta(h, prog) {
     for (let j = -1; j <= 1; j++) for (let k = -1; k <= 1; k++) usado.add(I(x + k, y + j));
     spawn.push(`${x} ${y} ${tipo(1 - Math.hypot(x - cx, y - cy) / md)}`);
   }
-  h.arena.pontos = {centro: `${cx} ${cy}`, entradas: ents.map(([x, y]) => `${x} ${y}`), saidas: saidas.map(([x, y]) => `${x} ${y}`)};
+  h.arena.pontos = {centro: `${cx} ${cy}`, entradas: ents.map(([x, y]) => `${x} ${y}`), saidas: saidas.map(([x, y]) => `${x} ${y}`), antecipadas: antes.map(([x, y]) => `${x} ${y}`)};
   return codifica(pilha, h.arena.pontos.entradas[0], spawn);
 }
 

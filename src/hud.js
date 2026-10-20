@@ -1,17 +1,17 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.49.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES,HUNTS} from './sim/dados.js?v=0.49.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.49.0';
-import {G,nComida,reabreEm} from './sim/incursao.js?v=0.49.0';
-import {vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.49.0';
-import {persist} from './salvar.js?v=0.49.0';
-import {C} from './sim/cidade.js?v=0.49.0';
-import {ART,icone} from './arte.js?v=0.49.0';
-import {retrato} from './desenho.js?v=0.49.0';
-import {rede} from './rede.js?v=0.49.0';
-import {VOZ} from './voz.js?v=0.49.0';
-import {$,app} from './dom.js?v=0.49.0';
+import {RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.50.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES,HUNTS} from './sim/dados.js?v=0.50.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.50.0';
+import {G,nComida,reabreEm,saidasAbertas} from './sim/incursao.js?v=0.50.0';
+import {vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.50.0';
+import {persist} from './salvar.js?v=0.50.0';
+import {C} from './sim/cidade.js?v=0.50.0';
+import {ART,icone} from './arte.js?v=0.50.0';
+import {retrato} from './desenho.js?v=0.50.0';
+import {rede} from './rede.js?v=0.50.0';
+import {VOZ} from './voz.js?v=0.50.0';
+import {$,app} from './dom.js?v=0.50.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -61,10 +61,12 @@ export function hud(){
   setT(E.clsT,CLASSES[p.cl].nome);setT(E.magT,'Magia '+c.mag);setT(E.perT,'Perícia '+c.per);
   setT(E.bagT,String(p.bagVal));if(p.bagVal!==MO.val&&!MO.el.hidden)desenhaMochila();setT(E.timeT,A||!G.aberta?fmt(left):'sem tempo');E.clock.classList.toggle('warn',(A||!G.aberta)&&left<=60);
   /* na Arena, o relógio é o da partida e o portal são as saídas do centro */
-  setT(E.portalT,A?(G.portal.open?'Saídas abertas':'Saídas em '+fmt(Math.max(0,A.saidas-(A.dur-left)))):G.aberta?'Porta da sala':G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
+  const ta=A?A.dur-left:0;
+  setT(E.portalT,A?(ta<A.antecipada?'Saída antecipada até '+fmt(A.antecipada-ta):ta>=A.saidas?'Saídas do centro abertas':'Saídas em '+fmt(Math.max(0,A.saidas-ta))):G.aberta?'Porta da sala':G.portal.open?'Portal aberto':'Portal em '+fmt(PORTAL_AT-G.t));E.portalT.classList.toggle('open',G.portal.open);
   const showCompass=G.portal.open&&!G.over&&(A||!G.aberta||p.longe);E.compass.hidden=!showCompass;
-  /* na Arena, G.portal é a primeira saída: as três ficam juntas, no centro */
-  if(showCompass)E.compassArrow.style.transform=`rotate(${Math.atan2(G.portal.y-p.y,G.portal.x-p.x)}rad)`;
+  /* na Arena, a seta aponta a saída aberta mais perto */
+  if(showCompass){let px=G.portal.x,py=G.portal.y;if(A){let bd=1e18;for(const q of saidasAbertas()){const x=(q[0]+.5)*32,y=(q[1]+.5)*32,d=(x-p.x)**2+(y-p.y)**2;if(d<bd){bd=d;px=x;py=y}}}
+    E.compassArrow.style.transform=`rotate(${Math.atan2(py-p.y,px-p.x)}rad)`}
   E.bPot.style.setProperty('--cd',clamp(p.cdC,0,1));E.bPot.classList.toggle('dim',p.pot<=0);setT(E.potN,'×'+p.pot);
   /* a comida: quantas restam e quanto tempo de alimentação falta (sem ele, fome) */
   const nc=G.convidado?p.nc|0:nComida(p.bag);

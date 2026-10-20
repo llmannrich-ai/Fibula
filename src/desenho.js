@@ -2,14 +2,14 @@
    Canvas, câmera, sprites e luz. Lê o estado da incursão (G) e o da cidade
    (C) e nunca os altera, a não ser pela lista de tochas visíveis, que é cache
    do próprio desenho. */
-import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.49.0';
-import {CITY,CLASSES,ITEMS,HUNTS,SPELLS,EL_COR} from './sim/dados.js?v=0.49.0';
-import {save,KL,ch} from './sim/progresso.js?v=0.49.0';
-import {G,solid,raioArena,reabreEm} from './sim/incursao.js?v=0.49.0';
-import {C,LISTA_OBJ} from './sim/cidade.js?v=0.49.0';
-import {bf,formaMira} from './sim/combate.js?v=0.49.0';
-import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.49.0';
-import {$,app,RM} from './dom.js?v=0.49.0';
+import {T,MW,MH,RUN,EXT,TAU,TICK,frr,hyp,clamp} from './sim/base.js?v=0.50.0';
+import {CITY,CLASSES,ITEMS,HUNTS,SPELLS,EL_COR} from './sim/dados.js?v=0.50.0';
+import {save,KL,ch} from './sim/progresso.js?v=0.50.0';
+import {G,solid,raioArena,reabreEm,tempoArena} from './sim/incursao.js?v=0.50.0';
+import {C,LISTA_OBJ} from './sim/cidade.js?v=0.50.0';
+import {bf,formaMira} from './sim/combate.js?v=0.50.0';
+import {ART,dir4,dir8,PECA,desl} from './arte.js?v=0.50.0';
+import {$,app,RM} from './dom.js?v=0.50.0';
 
 const cvs=$('#c'),ctx=cvs.getContext('2d');
 const mini=$('#mini'),mctx=mini.getContext('2d'),cmini=$('#cmini'),cmctx=cmini.getContext('2d');
@@ -344,10 +344,12 @@ function desenhaPortal(po,A){
   }
 }
 /* as saídas e o centro da Arena, lidos uma vez por lugar (nada de alocar por quadro) */
-let SAI=null,SAIk=null,CEN=null;const UMP=[null];
-const leArena=()=>{if(SAIk===G.caca)return;SAIk=G.caca;const P=HUNTS[G.caca].arena.pontos;
-  SAI=P.saidas.map(t=>{const[x,y]=t.split(' ').map(Number);return{x:(x+.5)*T,y:(y+.5)*T,open:false}});CEN=P.centro.split(' ').map(Number)};
-const portais=()=>{if(!G.arena){UMP[0]=G.portal;return UMP}leArena();for(const q of SAI)q.open=G.portal.open;return SAI};
+let SAI=null,SAIk=null,CEN=null,NC=0;const UMP=[null];
+const leArena=()=>{if(SAIk===G.caca)return;SAIk=G.caca;const P=HUNTS[G.caca].arena.pontos,pt=t=>{const[x,y]=t.split(' ').map(Number);return{x:(x+.5)*T,y:(y+.5)*T,open:false}};
+  SAI=P.saidas.map(pt);NC=SAI.length;for(const t of P.antecipadas||[])SAI.push(pt(t));CEN=P.centro.split(' ').map(Number)};
+/* na Arena: as do centro (as NC primeiras) abrem em saidas; as antecipadas ficam abertas até antecipada */
+const portais=()=>{if(!G.arena){UMP[0]=G.portal;return UMP}leArena();const A=HUNTS[G.caca].arena,t=tempoArena();
+  for(let i=0;i<SAI.length;i++)SAI[i].open=i<NC?t>=A.saidas:t<A.antecipada;return SAI};
 const centroArena=()=>{leArena();return CEN};
 const proxAnel=()=>{const A=HUNTS[G.caca].arena,t=A.dur-reabreEm();for(const a of A.aneis)if(t<a.t)return a.t-t<=30?a.r:99;return 99};
 function chaoArena(x0,x1,y0,y1){

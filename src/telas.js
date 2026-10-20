@@ -2,20 +2,20 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.49.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.49.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.49.0';
-import {G,setG,newRun,nComida,meuTime,poeTime,arenaFechada,reabreEm} from './sim/incursao.js?v=0.49.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.49.0';
-import {persist,saveFalhou} from './salvar.js?v=0.49.0';
-import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.49.0';
-import {rede,SALAS} from './rede.js?v=0.49.0';
-import {SALA,maxSala,avisoFechada,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.49.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.49.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.49.0';
-import {icone} from './arte.js?v=0.49.0';
-import {$,app} from './dom.js?v=0.49.0';
-import {retrato} from './desenho.js?v=0.49.0';
+import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.50.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.50.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.50.0';
+import {G,setG,newRun,nComida,meuTime,poeTime,arenaFechada,reabreEm} from './sim/incursao.js?v=0.50.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.50.0';
+import {persist,saveFalhou} from './salvar.js?v=0.50.0';
+import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.50.0';
+import {rede,SALAS} from './rede.js?v=0.50.0';
+import {SALA,maxSala,arenaPronta,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.50.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.50.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.50.0';
+import {icone} from './arte.js?v=0.50.0';
+import {$,app} from './dom.js?v=0.50.0';
+import {retrato} from './desenho.js?v=0.50.0';
 
 export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja'),arenaS=$('#arenaS');
 const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS,arenaS];
@@ -160,7 +160,7 @@ function showLoja(k){lojaDe=k;drawLoja();soTela(lojaS)}
 /* a porta da sala: o anfitrião entra na masmorra que o aparelho dele já roda;
    o convidado pede, e a incursão começa quando a resposta chega (src/main.js) */
 /* a Arena fecha a porta no meio da partida: o anfitrião só entra no começo dela */
-const anfEntra=()=>{if(arenaFechada()){log(avisoFechada(reabreEm()),'warn');return}start(()=>{entraPorta()})};
+const anfEntra=()=>{if(arenaPronta())start(()=>{entraPorta()})};
 const pelaPorta=()=>{if(SALA.papel==='anfitriao')anfEntra();else if(entraPorta()&&!huntS.hidden)showHunts()};
 /* quem pisou no portal e ficou com o servidor do lugar entra direto */
 ganchos.entra=()=>{if(SALA.papel==='anfitriao')anfEntra()};
@@ -245,9 +245,10 @@ function showArena(k){
   setT($('#aFala'),n.fala);
   const ul=$('#aRegras');ul.textContent='';
   const chefes=A.fases.filter(f=>f.chefe).map(f=>`${MT[f.chefe].nome} aos ${mm(f.t)}`).join(', ');
-  for(const t of[`Partida de ${mm(A.dur)} que recomeça sozinha; a porta fecha aos ${mm(A.entraAte)}. Até ${A.max} jogadores.`,
+  for(const t of[`Partida de ${mm(A.dur)}. Só se entra nos primeiros ${A.entraAte} segundos, e quem sai não volta à mesma partida: quem chega depois cai numa arena nova. Até ${A.max} jogadores em cada uma, e várias ao mesmo tempo.`,
     `A borda desaba aos ${mm(A.aneis[0].t)}, e cada anel seguinte, até sobrar só o centro: fora dele, o chão tira ${Math.round(A.desaba*100)}% da vida por segundo.`,
-    `Chefes no centro: ${chefes}. As saídas abrem no centro aos ${mm(A.saidas)}; quem não sair até o fim morre.`,
+    `Chefes no centro: ${chefes}. Há saídas antecipadas no anel do meio até ele desabar, aos ${mm(A.antecipada)}; depois, só as do centro, que dão o bônus. Quem não sair até o fim morre.`,
+    `Os bichos da Arena deixam comida, além do loot deles.`,
     `Paga mais que qualquer caçada: ${A.xp}× a experiência dos monstros, mais loot, e quem sai vivo ganha mais ${Math.round(A.bonusSaida*100)}% da experiência que fez lá dentro.`,
     `Outros jogadores ferem você com ${Math.round(A.pvp*100)}% do dano normal. Quem mata fica com a experiência que o morto perde${A.pvpPeca?', a mochila dele e uma peça que ele vestia':' e a mochila dele'}. Quem tem o mesmo código de time não se fere.`,
     `Nível recomendado ${H.nivel}`+(c.lvl<H.nivel?', acima do seu.':'.')])

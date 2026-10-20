@@ -1,9 +1,9 @@
 /* ---------- estado da incursão ---------- */
-import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.49.0';
-import {EL_COR,MT,PROG,CLASSES,HUNTS,SPELLS,ITEMS,SLOTS_EQ,cacaDe} from './dados.js?v=0.49.0';
-import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.49.0';
-import {leMapa,pecas} from './mapa.js?v=0.49.0';
-import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito,podeFerir,gainXp} from './combate.js?v=0.49.0';
+import {T,MW,MH,RUN,PORTAL_AT,EXT,TAU,TICK,rnd,rr,ri,frr,sorte,semeia,semente,novaSemente,hyp,DIRS,saida,DIR8,poeNoSqm,comeca,avanca,dir8,passoPara,sorteAgora,poeSorte} from './base.js?v=0.50.0';
+import {EL_COR,MT,PROG,CLASSES,HUNTS,SPELLS,ITEMS,SLOTS_EQ,cacaDe} from './dados.js?v=0.50.0';
+import {save,ch,stats,sealPct,perdaXp,durPasso,passoDaVel,confereFicha,efeitoProv,soMochila,valMochila,ehComida} from './progresso.js?v=0.50.0';
+import {leMapa,pecas} from './mapa.js?v=0.50.0';
+import {bf,lancarSlot,atingir,explode,hitMon,hurtPlayer,pickup,efeito,podeFerir,gainXp} from './combate.js?v=0.50.0';
 
 export let G=null;
 export const setG=v=>{G=v};
@@ -333,7 +333,7 @@ function updateProj(dt){
    estatísticas só para a ficha local. Quem sai não volta, e a sala acaba
    quando não sobra ninguém dentro */
 export function sai(p,kind){
-  if(G.over||p.fora)return;p.fora=kind;
+  if(G.over||p.fora)return;p.fora=kind;if(G.arena)p.saiuEm=G.arC;
   if(kind==='extraiu'){p.c.mochila=Object.assign({},p.bag);if(p.local){save.ext++;save.best=Math.max(save.best,p.bagVal-valMochila(p.bag0||{}))}}
   else{p.sealed=G.arena?0:Math.round(p.bagVal*sealPct(p.up));p.xpPerdido=perdaXp(p.c);p.c.xp-=p.xpPerdido;p.c.mochila={};
     if(G.arena)largaMochila(p,p.mortoPor!==undefined&&HUNTS[G.caca].arena.pvpPeca?tiraPeca(p):null);
@@ -403,7 +403,14 @@ export function finish(kind){if(G.over)return;for(const p of G.ps)if(!p.fora)sai
    Ferir outro jogador é aqui, e só aqui (podeFerir, em combate.js) */
 const xy=t=>String(t).trim().split(/\s+/).map(Number);
 /* os pontos da Arena, lidos uma vez por masmorra: nada de texto no passo */
-const lePontos=A=>({c:xy(A.pontos.centro),s:A.pontos.saidas.map(xy),e:A.pontos.entradas.map(xy)});
+const lePontos=A=>({c:xy(A.pontos.centro),s:A.pontos.saidas.map(xy),a:(A.pontos.antecipadas||[]).map(xy),e:A.pontos.entradas.map(xy)});
+/* as saídas abertas agora: as antecipadas, do começo até o anel do meio
+   desabar (arena.antecipada); depois, as do centro (arena.saidas). Sem
+   alocar: devolve a lista lida do mapa */
+const NENHUMA=[];
+export function saidasAbertas(){const A=HUNTS[G.caca].arena,t=tempoArena();return t<A.antecipada?G.arP.a:t>=A.saidas?G.arP.s:NENHUMA}
+/* quem já saiu desta partida (pela saída ou morto) não entra de novo nela */
+export const jaSaiu=i=>!!(G&&G.arena&&G.ps[i]&&G.ps[i].fora&&G.ps[i].saiuEm===G.arC);
 /* o canto de cada um: o time inteiro no mesmo; sem time, um por jogador. O
    time novo fica com o canto menos ocupado, pela ordem de chegada, para dois
    adversários não nascerem lado a lado enquanto houver canto livre */
@@ -426,13 +433,14 @@ function arena(dt){
   for(let i=0;i<A.fases.length;i++){const f=A.fases[i];if(t<f.t||G.arF[i]===ci)continue;G.arF[i]=ci;
     for(const p of G.ps)if(!p.fora){saida.banner(f.msg,p);saida.log(f.msg,f.chefe?'epic':'warn',p)}
     if(f.chefe)chefeNoCentro(f.chefe,c)}
-  const po=G.portal;po.open=t>=A.saidas;
+  const po=G.portal,ab=saidasAbertas(),centro=ab===G.arP.s;po.open=ab.length>0;
   /* a saída é de cada um, como o portal: parado nela, sai com a mochila */
   for(const p of G.ps){if(p.fora)continue;
-    let perto=false;if(po.open)for(const q of G.arP.s){if(hyp(p.x-(q[0]+.5)*T,p.y-(q[1]+.5)*T)<38){perto=true;break}}
+    let perto=false;for(const q of ab){if(hyp(p.x-(q[0]+.5)*T,p.y-(q[1]+.5)*T)<38){perto=true;break}}
     if(perto){p.pch+=dt;if(p.pch>=EXT){
-      /* quem sai vivo ganha a mais uma parte do que fez nesta entrada */
-      const b=Math.round(Math.max(0,p.xpGain-(p.xpPvp||0))*A.bonusSaida);if(b>0){gainXp(b,p);saida.log(`Bônus de saída da Arena: +${b} de experiência.`,'rare',p)}
+      /* quem sai pelo centro, no fim, ganha a mais uma parte do que fez
+         nesta entrada; a saída antecipada não dá bônus */
+      const b=centro?Math.round(Math.max(0,p.xpGain-(p.xpPvp||0))*A.bonusSaida):0;if(b>0){gainXp(b,p);saida.log(`Bônus de saída da Arena: +${b} de experiência.`,'rare',p)}
       sai(p,'extraiu')}}else p.pch=Math.max(0,p.pch-dt*2)}
   /* o desabamento fere uma vez por segundo quem está fora do anel: a mesma
      fração da vida para todos, sem armadura (e ninguém sem notícia do aparelho) */

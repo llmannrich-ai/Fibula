@@ -37,16 +37,16 @@
    e diz quem fica no lugar, com a herança) e fecha (saiu sozinho),
    e voz (a apresentação da voz entre dois aparelhos, src/voz.js). */
 
-import {CLASSES,ITEMS,SPELLS,HUNTS,cacaDe} from './sim/dados.js?v=0.49.0';
-import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.49.0';
-import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid,arenaFechada,reabreEm,meuTime} from './sim/incursao.js?v=0.49.0';
-import {novaSemente} from './sim/base.js?v=0.49.0';
-import {drinkPot,comer} from './sim/combate.js?v=0.49.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.49.0';
-import {rede,ID,anuncia} from './rede.js?v=0.49.0';
-import {persist} from './salvar.js?v=0.49.0';
-import {log} from './hud.js?v=0.49.0';
-import {recebeVoz,desligaVoz} from './voz.js?v=0.49.0';
+import {CLASSES,ITEMS,SPELLS,HUNTS,cacaDe} from './sim/dados.js?v=0.50.0';
+import {save,ch,confereFicha,valMochila} from './sim/progresso.js?v=0.50.0';
+import {G,newRun,entra,retrato,aplicaRetrato,fichaLocal,heranca,adota,solid,arenaFechada,reabreEm,meuTime,jaSaiu as saiuDaPartida} from './sim/incursao.js?v=0.50.0';
+import {novaSemente} from './sim/base.js?v=0.50.0';
+import {drinkPot,comer} from './sim/combate.js?v=0.50.0';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.50.0';
+import {rede,ID,anuncia} from './rede.js?v=0.50.0';
+import {persist} from './salvar.js?v=0.50.0';
+import {log} from './hud.js?v=0.50.0';
+import {recebeVoz,desligaVoz} from './voz.js?v=0.50.0';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 /* 4 jogadores no máximo; retrato e entrada a 10 por segundo: com 4, ~40
@@ -148,11 +148,17 @@ function decide(estado){
 /* quem está dentro da masmorra da sala agora */
 export const dentro=id=>{const i=IDX.get(id);return SALA.papel==='anfitriao'?!!(G&&G.sala&&i!==undefined&&G.ps[i]&&!G.ps[i].fora):!!(SALA.membros.find(m=>m.id===id)||{}).d};
 /* a porta: o anfitrião entra direto; o convidado pede e espera a resposta */
-/* a porta da Arena fecha no meio da partida: quanto falta para reabrir */
-const mmss=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
-export const avisoFechada=s=>`A entrada da Arena está fechada: a próxima partida começa em ${mmss(s)}.`;
+/* a Arena só se entra nos primeiros segundos da partida, e uma vez (decisão
+   do Leonardo em 20/10/2026). Para o anfitrião: sem ninguém lá dentro, a
+   arena recomeça aqui; com gente, ele passa o servidor e vai a outra arena
+   (a cópia seguinte), que começa quando ele chegar. Devolve se pode entrar */
+export function arenaPronta(){
+  if(SALA.papel!=='anfitriao'||!G||!G.arena||!(arenaFechada()||saiuDaPartida(meuI())))return true;
+  if(!G.ps.some(p=>!p.fora)){abreMasmorra();mandaMembros();return true}
+  const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Indo a outra arena…','info');saiDaSala();if(n<9)vaiCaca(k,n+1);return false;
+}
 export function entraPorta(){
-  if(SALA.papel==='anfitriao'&&arenaFechada()){log(avisoFechada(reabreEm()),'warn');return false}
+  if(SALA.papel==='anfitriao'&&G&&G.arena&&(arenaFechada()||saiuDaPartida(meuI())))return false;
   if(SALA.papel==='anfitriao'){const i=meuI(),p=entra(i,fichaLocal());G.p=p;ENTS[i]=null;return true}
   if(SALA.papel==='convidado'&&pronto&&!pedindo){pedindo=true;pedT=0;bc('entro',{id:ID,ficha:minhaFicha()});return true}
   return false;
@@ -190,8 +196,8 @@ export const correndo=()=>!!(G&&G.sala&&G.active&&!G.over);
 function abrePorta(q){
   const m=SALA.membros.find(x=>x.id===q.id),f=confereFicha(q.ficha);
   if(!m||!f||!G||!G.sala)return;
-  if(arenaFechada()){bc('fechada',{id:q.id,s:Math.ceil(reabreEm())});return}
   let i=IDX.get(q.id);
+  if(arenaFechada()||(i!==undefined&&saiuDaPartida(i))){bc('fechada',{id:q.id,s:Math.ceil(reabreEm())});return}
   if(i===undefined){i=G.ps.length;if(i>=8){bc('cheia',{id:q.id});return}IDX.set(q.id,i)}
   if(G.ps[i]&&!G.ps[i].fora)return;
   entra(i,f);ENTS[i]=null;potesViu[i]=0;comidasViu[i]=0;m.ficha=f;m.lvl=f.c.lvl;
@@ -357,7 +363,8 @@ function recebeConv(ev,q){
   }else if(ev==='cheia'&&q&&q.id===ID){
     /* lotado: a cópia seguinte do mesmo lugar */
     const k=SALA.caca,n=SALA.n||1;solta();if(n<9)vaiCaca(k,n+1);else log('Todos os lugares deste mapa estão cheios.','warn')}
-  else if(ev==='fechada'&&q&&q.id===ID){pedindo=false;SALA.auto=false;log(avisoFechada(Math.max(0,q.s|0)),'warn')}
+  /* a partida já começou (ou eu já saí dela): outra arena, a cópia seguinte */
+  else if(ev==='fechada'&&q&&q.id===ID){const k=SALA.caca,n=SALA.n||1;log('Esta partida da Arena já começou. Procurando outra arena…','info');solta();if(n<9)vaiCaca(k,n+1)}
   else if(ev==='fecha'){if(correndo())ganchos.aborta('O anfitrião fechou a sala.');log('O anfitrião fechou a sala.','warn');solta()}
   else if(ev==='porta'&&q&&q.id===ID&&Array.isArray(q.ps)){
     /* a porta abriu para mim: a masmorra é a mesma semente, e eu sou o i */

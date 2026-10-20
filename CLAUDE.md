@@ -1221,7 +1221,13 @@ até `arena.max` jogadores.
 - **O relógio é da arena, não de quem entra.** `arena()` em
   `src/sim/incursao.js` conta partidas de `arena.dur` segundos no `G.t` da
   masmorra aberta, enquanto o servidor da sala estiver de pé; quem chega no
-  meio tem menos tempo. Depois de `entraAte` a porta fecha (`arenaFechada()`).
+  meio tem menos tempo. Depois de `entraAte` (15 s) a porta fecha
+  (`arenaFechada()`), e quem já saiu desta partida não entra de novo
+  (`jaSaiu()`, por `p.saiuEm`). **Várias arenas ao mesmo tempo** (decisão do
+  Leonardo, 20/10/2026): quem chega tarde recebe `fechada` e vai à cópia
+  seguinte do canal (`arena-2`, `arena-3`…), que começa quando ele chegar; o
+  anfitrião sem ninguém lá dentro recomeça a dele, e com gente passa o
+  servidor e vai à seguinte (`arenaPronta()` em `src/sala.js`).
   As `fases` dão o aviso e o chefe do centro (`chefeNoCentro()`, sem
   sorteio). `G.arF` diz em que partida cada fase já disparou, e `G.arC` qual
   é a partida; os dois vão na herança. **O relógio não para com o aparelho
@@ -1239,8 +1245,13 @@ até `arena.max` jogadores.
   dos dois eixos, o chão tira `desaba` da vida máxima por segundo, igual para
   todos. No fim da partida quem está dentro morre (`'desabou'`) e
   `fimDaPartida()` põe os monstros do mapa de volta e limpa o chão.
-- **Saídas** só no centro (`arena.pontos.saidas`), abertas em `saidas`; a
-  porta da sala é só de entrada. `G.portal` é a primeira saída, para o HUD.
+- **Saídas** (`saidasAbertas()`): as **antecipadas**, uma em cada diagonal
+  do anel do meio (`pontos.antecipadas`), ficam abertas do começo até
+  `arena.antecipada`, quando esse anel desaba; depois, as do centro
+  (`pontos.saidas`), até o fim. Só as do centro dão o bônus. A porta da sala
+  é só de entrada; a seta do HUD aponta a saída aberta mais perto.
+- **Comida:** além do loot de cada bicho, a Arena sorteia `arena.comida`
+  (`[comida, chance]`) a cada abate.
 - **Times:** o código (`p.time`, até 8 letras e números) vai na ficha
   (`confereFicha()` limpa). O mesmo código nasce no mesmo canto
   (`entradaDe()`) e não se fere. Sem código, todos são adversários.
@@ -1850,6 +1861,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 | 19/10 | **Monetização com impacto no jogo**, não só estética, inspirada no Tibia; substitui o não-objetivo "Compra que vira poder" por "Pagar para pular o mundo" (o mundo segue igual, a morte segue custando, e quem só joga alcança o que quem paga alcança). O mercado de itens com saque em dinheiro real foi analisado e deixado de lado por ora (regulação, fraude e escala) | Pilar 6; não-objetivos; Parte 2, F4; `ROADMAP.md`, Depois |
+| 20/10 | **A Arena, segundo ajuste:** só se entra nos primeiros 15 s; quem sai não volta à mesma partida; várias arenas ao mesmo tempo (quem chega tarde cai numa nova); saídas antecipadas no anel do meio até ele desabar; comida no loot dos bichos | Parte 3, "Arena" |
 | 20/10 | **A Arena, depois do primeiro teste:** partida de 6 min; mapa ao ar livre (mata, rio, ruínas); paga mais que qualquer outra caçada (o dobro da experiência, mais loot, bônus de saída); no PvP quem mata fica com a experiência que o morto perde, a mochila e uma peça vestida dele; o relógio não para com o aparelho do servidor no fundo | Pilares 3 e 4; Parte 3, "Arena" |
 | 19/10 | **A Arena:** um modo com outra dinâmica, pelo Mestre da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha, times por código, anéis que desabam da borda ao centro, chefes e saídas no centro (até 4 jogadores por enquanto: 8 esgota a cota grátis do Realtime em cerca de uma hora e espera a decisão de custo). O personagem sai com XP e itens, como de qualquer lugar de caça. **PvP só na Arena, já**, calculado por quem roda o servidor da sala, com o risco de trapaça aceito até a F2; lá a mochila do morto fica no chão e o Selo não guarda | Pilar 4; Parte 3, "Arena"; [docs/plano-arena.md](docs/plano-arena.md) |
 | 19/10 | **Teto de infraestrutura (era a D2):** até R$ 100 por mês na F2 (uma máquina pequena do Fly.io, Supabase grátis) e até R$ 600 por mês no lançamento (duas máquinas, Supabase Pro, e-mail de login). Passar disso pede nova decisão | Parte 2, Riscos e C6 |

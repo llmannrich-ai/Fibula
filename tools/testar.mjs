@@ -1323,6 +1323,22 @@ async function testaSimulacao() {
       q2.semRede = true; const h2 = q2.hp; Cb.hurtPlayer(q2, 50, q1);
       if (q2.hp !== h2) falhas.push('Arena: convidado sem notícia do aparelho foi ferido');
     }
+    /* a saída antecipada (anel do meio) abre do começo até o anel desabar e
+       não dá bônus; quem saiu não entra de novo na mesma partida; e os bichos
+       da Arena deixam comida */
+    {
+      const G5 = partida(11), [r1, r2] = G5.ps, [ax, ay] = A.pontos.antecipadas[0].split(' ').map(Number);
+      r1.mhp = r1.hp = 1e7; r1.xpGain = 100; B.poeNoSqm(r1, ax, ay);
+      for (let q = 0; q < 200 && !r1.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      if (r1.fora !== 'extraiu' || r1.xpGain !== 100) falhas.push(`Arena: a saída antecipada não deixou sair, ou deu bônus (${r1.fora}, ${r1.xpGain})`);
+      if (!I.jaSaiu(r1.id) || I.jaSaiu(r2.id)) falhas.push('Arena: quem saiu não ficou marcado como já saído desta partida');
+      r2.mhp = r2.hp = 1e7; for (let q = 0; q < 20000 && I.tempoArena() < A.antecipada + 1; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      B.poeNoSqm(r2, ax, ay); for (let q = 0; q < 100 && !r2.fora; q++) I.passo(0.05, [PAR, PAR, PAR]);
+      if (r2.fora === 'extraiu') falhas.push('Arena: a saída antecipada continuou aberta depois de o anel do meio desabar');
+      const AA = (await import(url('dados.js'))).HUNTS[AK].arena, c0 = AA.comida; AA.comida = [['carne', 1]];
+      const m = G5.mons.find((q) => !q.t.boss); G5.drops.length = 0; Cb.hitMon(m, 1e6, null, r2); AA.comida = c0;
+      if (!G5.drops.some((d) => d.items.some(([k]) => k === 'carne'))) falhas.push('Arena: o bicho não deixou a comida da Arena');
+    }
     /* fora da Arena ninguém fere ninguém */
     novoSave(); I.newRun(4, [ficha('cavaleiro', 'A'), ficha('feiticeiro', 'B')], true, 'runas');
     if (Cb.podeFerir(I.G.ps[0], I.G.ps[1])) falhas.push('Arena: jogador fere jogador fora da Arena');
@@ -1574,7 +1590,7 @@ const CASOS = [
     ok('o Guia de caça não lista a Arena: quem leva a ela é o Mestre', !/Arena/.test(txt('#huntList')||''), txt('#huntList h3'));
     clica($('#huntBack'));
     Tl.abreNpc('mestre_arena');
-    ok('o Mestre da Arena abre a tela dela, com as regras da partida', visivel('#arenaS')&&txt('#arenaS h2')==='Mestre da Arena'&&/6:00/.test(txt('#aRegras')||'')&&/Centopeia-rainha aos 1:45/.test(txt('#aRegras')||'')&&/saídas abrem no centro aos 4:15/.test(txt('#aRegras')||'')&&/2× a experiência/.test(txt('#aRegras')||''), txt('#aRegras'));
+    ok('o Mestre da Arena abre a tela dela, com as regras da partida', visivel('#arenaS')&&txt('#arenaS h2')==='Mestre da Arena'&&/6:00/.test(txt('#aRegras')||'')&&/Centopeia-rainha aos 1:45/.test(txt('#aRegras')||'')&&/primeiros 15 segundos/.test(txt('#aRegras')||'')&&/saídas antecipadas no anel do meio/.test(txt('#aRegras')||'')&&/2× a experiência/.test(txt('#aRegras')||''), txt('#aRegras'));
     ok('o preço da morte na Arena é dito antes: a mochila fica no chão e o Selo não guarda', /40 de ouro, que fica no chão/.test(txt('#aRisco')||'')&&/Selo não guarda nada/.test(txt('#aRisco')||''), txt('#aRisco'));
     var inp=$('#aTime');inp.value='ab-1';inp.dispatchEvent(new Event('input'));
     ok('o código do time fica em maiúsculas, só letras e números', I.meuTime==='AB1'&&/Time AB1/.test(txt('#aTimeT')||''), I.meuTime+' / '+txt('#aTimeT'));
@@ -1584,8 +1600,8 @@ const CASOS = [
     ok('entrar abre a Arena neste aparelho, sem ninguém lá', foi&&Sa.SALA.papel==='anfitriao'&&Sa.SALA.caca==='arena'&&I.G.arena&&E&&!E.fora&&E.time==='AB1', Sa.SALA.papel+' / '+Sa.SALA.caca+' / '+(E&&E.time));
     ok('o time nasce num canto da arena', E&&(E.tx<12||E.tx>52)&&(E.ty<12||E.ty>52), E&&(E.tx+','+E.ty));
     await quadros(4);
-    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^5:5|^6:00/.test(txt('#timeT')||'')&&/^Saídas em 4:1/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
-    ok('a entrada diz quando abrem as saídas', /saídas abrem nas ruínas do centro aos 4:15/i.test(txt('#log')||''), txt('#log'));
+    ok('o HUD mostra o relógio da partida e quando abrem as saídas', /^5:5|^6:00/.test(txt('#timeT')||'')&&/^Saída antecipada até 4:1/.test(txt('#portalT')||''), txt('#timeT')+' / '+txt('#portalT'));
+    ok('a entrada diz quando abrem as saídas', /saídas antecipadas ficam no anel do meio até os 4:15/i.test(txt('#log')||''), txt('#log'));
     I.finish('morreu');await ate(function(){return visivel('#end')},200);
     ok('a tela final diz que a mochila ficou no chão da Arena', /chão da Arena/.test(txt('#endText')||''), txt('#endText'));
     ok('a mochila ficou no chão para quem passar', I.G.drops.some(function(d){return d.dono===-1&&d.items.some(function(i){return i[0]==='ouro'&&i[1]===40})}), JSON.stringify(I.G.drops.map(function(d){return d.items})));
@@ -1593,7 +1609,11 @@ const CASOS = [
     ok('a volta é ao lado do Mestre da Arena', $('#app').classList.contains('cidade')&&Cd.C.perto==='mestre_arena'&&/saiu da Arena/.test(txt('#log')||''), Cd.C.perto+' / '+txt('#log'));
     I.G.t=250;
     Tl.abreNpc('mestre_arena');clica($('#aEntra'));await quadros(3);
-    ok('no meio da partida a porta fecha até a seguinte', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 1:50/.test(txt('#log')||''), txt('#log'));
+    ok('no meio da partida, sem ninguém lá dentro, a arena recomeça para quem chega', $('#app').classList.contains('playing')&&I.G.arena&&I.tempoArena()<2&&!I.G.p.fora, I.tempoArena());
+    I.finish('extraiu');await ate(function(){return visivel('#end')},200);clica($('#toMenu'));await quadros(4);
+    I.entra(1,Pg.confereFicha({cl:'druida',nome:'Bia',c:Pg.novoChar('druida',5),up:{}}));I.G.t=250;
+    Tl.abreNpc('mestre_arena');clica($('#aEntra'));await quadros(4);
+    ok('com gente lá dentro, quem chega tarde vai a outra arena (a cópia seguinte)', Sa.SALA.n===2&&Sa.SALA.caca==='arena'&&Sa.SALA.id==='arena-2'&&I.tempoArena()<5, Sa.SALA.n+' / '+Sa.SALA.id);
     Tl.showPick();
     ok('a escolha de personagem tem o botão da Arena', visivel('#toArena'), txt('#pick .rodape'));
     clica($('#toArena'));await quadros(3);
@@ -1625,10 +1645,7 @@ const CASOS = [
     RT.sala('membros',{anf:'anf1',gen:0,s:7,h:'arena',lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},{id:EU,nome:'Druida',cl:'druida',lvl:8}]});
     await ate(function(){return RT.salaMandadas('entro').length===1},40);
     ok('aceito na sala, pede a porta sozinho', RT.salaMandadas('entro').length===1, RT.salaMandadas('entro').length);
-    RT.sala('fechada',{id:EU,s:200});await quadros(3);
-    ok('a porta fechada diz quando começa a próxima partida, e o jogo não entra', !$('#app').classList.contains('playing')&&/entrada da Arena está fechada: a próxima partida começa em 3:20/.test(txt('#log')||''), txt('#log'));
-    /* na partida seguinte entra; morto por outro jogador, perde a peça vestida do save */
-    Sa.entraPorta();
+    /* entra; morto por outro jogador, perde a peça vestida do save */
     RT.sala('porta',{id:EU,i:1,semente:7,h:'arena',ps:[{nome:'Ana',cl:'cavaleiro',c:{lvl:5,equip:{}},up:{}},{nome:'Druida',cl:'druida',c:{lvl:8,equip:{arma:'espada'}},up:{}}]});
     var dentro=await ate(function(){return I.G&&I.G.convidado&&I.G.arena&&$('#app').classList.contains('playing')},40);
     ok('a porta abre e o convidado entra na Arena', dentro, I.G&&I.G.caca);
@@ -1638,6 +1655,14 @@ const CASOS = [
     RT.sala('fim',{id:EU,anf:'anf1',r:R});
     await ate(function(){return visivel('#end')},600);
     ok('morto por outro jogador, a peça vestida sai do save e a tela final diz', Pg.ch().equip.arma===null&&/levou também espada enferrujada/.test(txt('#endText')||''), Pg.ch().equip.arma+' / '+txt('#endText'));
+    /* quem saiu (ou chegou tarde) não entra de novo: o servidor diz que a partida começou, e ele vai a outra arena */
+    clica($('#toMenu'));await quadros(4);Tl.abreNpc('mestre_arena');clica($('#aEntra'));
+    await ate(function(){return RT.salaMandadas('quero').length>=2},60);
+    RT.sala('membros',{anf:'anf1',gen:0,s:7,h:'arena',lista:[{id:'anf1',nome:'Ana',cl:'cavaleiro',lvl:5},{id:EU,nome:'Druida',cl:'druida',lvl:8}]});
+    await ate(function(){return RT.salaMandadas('entro').length>=2},60);
+    RT.sala('fechada',{id:EU,s:200});await quadros(3);
+    var j2=RT.enviadas.filter(function(d){return d.event==='phx_join'&&d.topic.indexOf('realtime:sala-')===0}).pop();
+    ok('a partida começada manda para outra arena, a cópia seguinte', Sa.SALA.n===2&&j2&&/-arena-2$/.test(j2.topic)&&/Procurando outra arena/.test(txt('#log')||''), Sa.SALA.n+' / '+(j2&&j2.topic));
     `,
   },
   {
