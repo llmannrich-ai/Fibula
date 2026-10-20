@@ -287,6 +287,18 @@ h2.lost{color:var(--hp)}
 .aTime input{flex:1;min-height:44px;font:inherit;text-transform:uppercase;letter-spacing:.08em;padding:0 10px;background:#15121b;color:inherit;border:1px solid var(--line,#3b3546);border-radius:8px}
 #arenaS .nota{font-size:12px;margin:0 0 8px;opacity:.85}
 #playArena{display:block;width:100%;margin-top:8px}
+#aSalas{display:block;width:100%;margin:8px 0}
+.sgCria{display:flex;gap:6px;margin:0 0 8px}.sgCria input{flex:1;min-height:48px;font:inherit;padding:0 10px;background:#15121b;color:inherit;border:1px solid var(--line,#3b3546);border-radius:8px}.sgCria button{min-height:48px}
+.sgLista{list-style:none;margin:0 0 8px;padding:0;display:grid;gap:6px}
+.sgLista li,.sgSala .mb{border:1px solid var(--line,#3b3546);padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.sgLista h3,.sgSala h3{margin:0;font-size:14px;color:var(--torch)}.sgLista p,.sgSala p{margin:2px 0 0;font-size:12px}
+.sgLista button,.sgSala button{min-height:48px;min-width:48px}
+.sgSala{display:grid;gap:6px;margin:0 0 8px}.sgSala ul{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.sgSala .mb{flex-wrap:wrap}.sgSala .mb .q{font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.eqc{display:inline-flex;align-items:center;gap:4px}.eqc i{display:inline-block;width:12px;height:12px;border:1px solid #000}
+.sgCores{display:grid;grid-template-columns:1fr 1fr;gap:6px}.sgCores button{min-height:48px;font:700 13px var(--f-body);color:#fff;text-shadow:1px 1px 0 #000;border:2px solid #000}
+.sgCores button.on{outline:3px solid #fff;outline-offset:-5px}
+.sgAcoes{display:flex;gap:6px;flex-wrap:wrap}.sgAcoes button{flex:1}
 #hSala h3{margin:0;font-size:13px;color:var(--torch)}
 #hSala p{margin:0;font-size:12px}
 #hSala ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
@@ -645,6 +657,19 @@ h2.lost{color:var(--hp)}
     </div>
   </div>
 
+  <div class="screen" id="saguao" hidden>
+    <div class="panel">
+      <p class="eyebrow">Arena</p>
+      <h2>Salas da Arena</h2>
+      <p class="lede">Organize a partida antes de entrar: crie uma sala ou entre na de alguém, escolha a equipe pela cor e espere o criador começar. Todos da sala entram juntos na mesma arena.</p>
+      <p class="nota" id="sgEstado" role="status"></p>
+      <div class="sgCria" id="sgCria"><input id="sgNome" maxlength="24" autocomplete="off" spellcheck="false" placeholder="nome da sala" aria-label="Nome da sala"><button class="ghost" id="sgCriaB">Criar sala</button></div>
+      <ul class="sgLista" id="sgLista"></ul>
+      <div class="sgSala" id="sgSala" hidden></div>
+      <button class="ghost voltar" id="sgBack">Voltar</button>
+    </div>
+  </div>
+
   <div class="screen" id="arenaS" hidden>
     <div class="panel">
       <p class="eyebrow">Portão da cidade</p>
@@ -656,6 +681,7 @@ h2.lost{color:var(--hp)}
       <p class="nota" id="aTimeT"></p>
       <div class="sala" id="aSala"></div>
       <button class="cta" id="aEntra">Entrar na Arena</button>
+      <button class="ghost" id="aSalas">Salas da Arena: jogar com equipes</button>
       <button class="ghost voltar" id="arenaBack">Voltar à cidade</button>
     </div>
   </div>
@@ -683,7 +709,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.50.0"></script>
+<script type="module" src="src/main.js?v=0.51.0"></script>
 
 </body>
 </html>

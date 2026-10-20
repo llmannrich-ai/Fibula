@@ -4,8 +4,8 @@
    fora do motor: ajustar balanceamento não exige mexer em código. Quem busca o
    arquivo é o cliente (src/main.js) ou o servidor; aqui ele é validado e vira
    as tabelas abaixo, que são leituras dele e não literais. */
-import {MW,MH} from './base.js?v=0.50.0';
-import {ALFA} from './mapa.js?v=0.50.0';
+import {MW,MH} from './base.js?v=0.51.0';
+import {ALFA} from './mapa.js?v=0.51.0';
 /* a Arena (hunts.<k>.arena, decisão do Leonardo em 19/10/2026): uma partida
    de dur segundos que recomeça sozinha. Até entraAte se entra; os anéis
    desabam da borda ao centro (r em sqm, contado como o maior dos dois eixos);

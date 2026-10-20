@@ -1,17 +1,17 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {T,RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.50.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES,HUNTS} from './sim/dados.js?v=0.50.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.50.0';
-import {G,nComida,reabreEm,saidasAbertas} from './sim/incursao.js?v=0.50.0';
-import {vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.50.0';
-import {persist} from './salvar.js?v=0.50.0';
-import {C} from './sim/cidade.js?v=0.50.0';
-import {ART,icone} from './arte.js?v=0.50.0';
-import {retrato} from './desenho.js?v=0.50.0';
-import {rede} from './rede.js?v=0.50.0';
-import {VOZ} from './voz.js?v=0.50.0';
-import {$,app} from './dom.js?v=0.50.0';
+import {T,RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.51.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES,HUNTS} from './sim/dados.js?v=0.51.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.51.0';
+import {G,nComida,reabreEm,saidasAbertas} from './sim/incursao.js?v=0.51.0';
+import {vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.51.0';
+import {persist} from './salvar.js?v=0.51.0';
+import {C} from './sim/cidade.js?v=0.51.0';
+import {ART,icone} from './arte.js?v=0.51.0';
+import {retrato} from './desenho.js?v=0.51.0';
+import {rede} from './rede.js?v=0.51.0';
+import {VOZ} from './voz.js?v=0.51.0';
+import {$,app} from './dom.js?v=0.51.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){

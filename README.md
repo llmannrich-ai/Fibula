@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.51.0 (20/10/2026) | Salas da Arena, no menu: crie uma sala ou entre na de alguém, veja quem está nela e escolha a equipe por uma das quatro cores. Quem criou a sala confirma as equipes e começa a partida, e todos entram juntos na mesma arena |
 | 0.50.0 (20/10/2026) | Na Arena só se entra nos primeiros 15 segundos de cada partida, e quem sai não volta a ela: quem chega depois cai numa arena nova, e várias correm ao mesmo tempo. Há saídas antecipadas no anel do meio até ele desabar (sem o bônus), e os bichos de lá deixam comida |
 | 0.49.0 (20/10/2026) | A Arena mudou: partidas de 6 minutos, ao ar livre, numa mata com rio, pontes e ruínas no centro. Paga mais que qualquer caçada: o dobro da experiência, mais loot e um bônus para quem sai vivo. Quem mata outro jogador fica com a experiência que ele perdeu, a mochila e uma peça que ele vestia. O relógio da Arena não para quando o celular de quem a hospeda vai para o fundo |
 | 0.48.0 (19/10/2026) | A Arena: fale com o Mestre da Arena, no portão sul, ou toque em Arena no menu. Partidas de 10 minutos que recomeçam sozinhas, até 4 jogadores por enquanto, cada time num canto (quem digita o mesmo código não se fere). A borda desaba aos 5 minutos, os chefes e o melhor loot ficam no centro, e as saídas só abrem lá, aos 7. Outros jogadores podem matar você: a mochila fica no chão, e o Selo não guarda. A experiência e o loot que você trouxer são seus |

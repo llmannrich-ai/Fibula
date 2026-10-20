@@ -2,27 +2,29 @@
    Acampamento, cidade, personagens, grimório, banco (equipamento), Guia de
    caça, tela final, Mercador, lojas de provisões, Feira (mercado entre
    jogadores) e Forja (o Gordon). */
-import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.50.0';
-import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.50.0';
-import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.50.0';
-import {G,setG,newRun,nComida,meuTime,poeTime,arenaFechada,reabreEm} from './sim/incursao.js?v=0.50.0';
-import {C,entraCidade} from './sim/cidade.js?v=0.50.0';
-import {persist,saveFalhou} from './salvar.js?v=0.50.0';
-import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.50.0';
-import {rede,SALAS} from './rede.js?v=0.50.0';
-import {SALA,maxSala,arenaPronta,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.50.0';
-import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.50.0';
-import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.50.0';
-import {icone} from './arte.js?v=0.50.0';
-import {$,app} from './dom.js?v=0.50.0';
-import {retrato} from './desenho.js?v=0.50.0';
+import {T,clamp,fmtEl,sementeDe,novaSemente,EXT} from './sim/base.js?v=0.51.0';
+import {CLASSES,CL_ORDEM,SPELLS,SLOT_LVL,EL_COR,listaDaClasse,precoHab,UP,ITEMS,fmtItem,SLOTS_EQ,SLOT_NOME,fmtBonus,CITY,HUNTS,portalDe,FORJA,SUP,MT,PROG} from './sim/dados.js?v=0.51.0';
+import {save,ch,KL,novoChar,xpNeed,manaPraMag,golpesPraPer,nSlots,upCost,sealPct,equipar,desequipar,vender,ehMat,guardaMochila,guardaUm,leva as levaDoCofre,retira,cabe,ocupa,nEspacos,valMochila,perdaXp,pctPerdaXp,missao,reservado,podeEntregar,entregar,venderMat,comprarForja,podeComprar,compra,gastaProv,podeAprender,aprende} from './sim/progresso.js?v=0.51.0';
+import {G,setG,newRun,nComida,meuTime,poeTime,arenaFechada,reabreEm} from './sim/incursao.js?v=0.51.0';
+import {C,entraCidade} from './sim/cidade.js?v=0.51.0';
+import {persist,saveFalhou} from './salvar.js?v=0.51.0';
+import {desenhaConta,sairDaConta,temConta,mercado,cacaComeca,lastroBanco,tel,telCacaInicio} from './nuvem.js?v=0.51.0';
+import {rede,SALAS,ID} from './rede.js?v=0.51.0';
+import {SALA,maxSala,arenaPronta,saiDaSala,entraPorta,dentro,vaiCaca,ganchos} from './sala.js?v=0.51.0';
+import {VOZ,ligaVoz,desligaVoz} from './voz.js?v=0.51.0';
+import {SG,CORES,abre as abreSg,fecha as fechaSg,cria as criaSg,entra as entraSg,sai as saiSg,quero as queroSg,confirma as confirmaSg,comeca as comecaSg,minhaSala,maxSaguao} from './saguao.js?v=0.51.0';
+import {logEl,log,banner,montaBotoes,setT,zeraCidade,vestido,fechaMochila} from './hud.js?v=0.51.0';
+import {icone} from './arte.js?v=0.51.0';
+import {$,app} from './dom.js?v=0.51.0';
+import {retrato} from './desenho.js?v=0.51.0';
 
-export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja'),arenaS=$('#arenaS');
-const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS,arenaS];
+export const menu=$('#menu'),regrasS=$('#regras'),endS=$('#end'),shopS=$('#shop'),pickS=$('#pick'),grimS=$('#grim'),equipS=$('#equip'),huntS=$('#hunts'),mktS=$('#mkt'),forjaS=$('#forja'),lojaS=$('#loja'),arenaS=$('#arenaS'),sgS=$('#saguao');
+const TELAS=[menu,regrasS,endS,shopS,pickS,grimS,equipS,huntS,mktS,forjaS,lojaS,arenaS,sgS];
 /* V.cidade: a cidade é o fundo (está nela, ou numa tela aberta a partir dela);
    senão o fundo é a masmorra. As telas de dentro voltam para onde vieram. */
 export const V={cidade:false};
 const soTela=el=>{
+  if(el!==sgS)fechaSg();
   for(const t of TELAS)t.hidden=t!==el;app.classList.remove('playing','cidade');fechaMochila();
   for(const b of document.querySelectorAll('.voltar'))b.textContent=V.cidade?'Voltar à cidade':'Voltar';
 };
@@ -265,9 +267,57 @@ function showArena(k){
 }
 $('#aTime').addEventListener('input',e=>{poeTime(e.target.value);setT($('#aTimeT'),meuTime?`Time ${meuTime}: quem digitar o mesmo código entra no mesmo canto e não fere você.`:'Sem código, você entra sozinho, e todos lá dentro são adversários.')});
 $('#aEntra').addEventListener('click',()=>{poeTime($('#aTime').value);const k=ARENA();if(SALA.papel==='anfitriao'&&SALA.caca===k)pelaPorta();else vaiCaca(k);if(!arenaS.hidden)showArena()});
-/* do menu ou da escolha de personagem: escolhe quem vai e abre o Mestre */
+/* do menu ou da escolha de personagem: as salas da Arena (o saguão), com o
+   personagem escolhido; sem ele, a escolha primeiro */
 let praArena=false;
-const vaiArena=()=>{if(save.classe&&save.chars[save.classe]){praArena=true;escolher(save.classe)}else{praArena=true;showPick()}};
+const vaiArena=()=>{if(save.classe&&save.chars[save.classe])showSaguao();else{praArena=true;showPick()}};
+$('#aSalas').addEventListener('click',()=>showSaguao());
+/* ---------- saguão: as salas da Arena ----------
+   No menu, não no mapa (decisão do Leonardo em 20/10/2026): criar uma sala,
+   ver as abertas e quem está em cada uma, escolher a equipe por uma das 4
+   cores (o criador confirma) e começar: todos entram na mesma arena. A rede
+   e a lista moram em src/saguao.js; aqui é só a tela */
+const corDe=k=>CORES.find(c=>c.k===k);
+const pinta=(k,vazio)=>{const s=document.createElement('span');s.className='eqc';const c=corDe(k);
+  if(c){const i=document.createElement('i');i.style.background=c.cor;i.setAttribute('aria-hidden','true');s.append(i,c.nome)}else s.textContent=vazio;return s};
+function showSaguao(){V.cidade=false;abreSg();desenhaSg();soTela(sgS)}
+function desenhaSg(){
+  setT($('#sgEstado'),SG.estado==='ligado'?(SG.salas.length?'':'Nenhuma sala aberta agora. Crie a sua.'):SG.estado==='sem rede'?'Sem conexão agora: tentando de novo.':'Conectando…');
+  const s=minhaSala(),max=maxSaguao(),lista=$('#sgLista'),box=$('#sgSala');
+  $('#sgCria').hidden=!!s;lista.hidden=!!s;box.hidden=!s;lista.textContent='';box.textContent='';
+  if(!s){
+    for(const x of SG.salas){const li=document.createElement('li'),info=document.createElement('div'),h=document.createElement('h3'),p=document.createElement('p');
+      h.textContent=x.nome;const eqs=CORES.map(c=>[c,x.membros.filter(m=>m.eq===c.k).length]).filter(([,n])=>n).map(([c,n])=>`${c.nome} ${n}`).join(', ');
+      p.textContent=`criada por ${x.dono} · ${x.membros.length}/${max} jogadores`+(eqs?` · equipes: ${eqs}`:'');info.append(h,p);
+      const b=document.createElement('button');b.type='button';b.textContent=x.membros.length>=max?'cheia':'entrar';b.disabled=x.membros.length>=max;
+      b.setAttribute('aria-label',`Entrar na sala ${x.nome}`);b.addEventListener('click',()=>{entraSg(x.id);desenhaSg()});
+      li.append(info,b);lista.appendChild(li)}
+    return}
+  const dono=s.id===ID;
+  const h=document.createElement('h3');h.textContent=`${s.nome} · ${s.membros.length}/${max}`;
+  const p=document.createElement('p');p.textContent=dono?'Você criou esta sala: confirme a equipe de cada um e comece quando todos estiverem prontos.':`Criada por ${s.dono}. Escolha a equipe que quer; quem criou a sala confirma e começa a partida.`;
+  const ul=document.createElement('ul');
+  for(const m of s.membros){const li=document.createElement('li');li.className='mb';
+    const a=document.createElement('div'),t=document.createElement('b');t.textContent=`${m.nome}${m.id===s.id?' (criador)':''}`;
+    const sub=document.createElement('p');sub.textContent=`${CLASSES[m.cl].nome}, nível ${m.lvl}`;a.append(t,sub);
+    const q=document.createElement('div');q.className='q';const pe=document.createElement('span');pe.append('Equipe: ',pinta(m.eq,'nenhuma'));
+    const qu=document.createElement('span');qu.append('Quer: ',pinta(m.quer,'não escolheu'));q.append(pe,qu);
+    if(dono&&m.quer&&m.quer!==m.eq&&m.id!==s.id){const b=document.createElement('button');b.type='button';b.className='ghost';b.textContent='confirmar';
+      b.setAttribute('aria-label',`Pôr ${m.nome} na equipe ${corDe(m.quer).nome.toLowerCase()}`);b.addEventListener('click',()=>{confirmaSg(m.id,m.quer);desenhaSg()});q.appendChild(b)}
+    li.append(a,q);ul.appendChild(li)}
+  const cores=document.createElement('div');cores.className='sgCores';
+  for(const c of CORES){const b=document.createElement('button');b.type='button';b.style.background=c.cor;const n=s.membros.filter(m=>m.eq===c.k).length;
+    b.textContent=`${c.nome}${n?` · ${n}`:''}`;b.classList.toggle('on',SG.quer===c.k);b.setAttribute('aria-pressed',SG.quer===c.k?'true':'false');
+    b.setAttribute('aria-label',`Quero a equipe ${c.nome.toLowerCase()}`);b.addEventListener('click',()=>{queroSg(c.k);desenhaSg()});cores.appendChild(b)}
+  const ac=document.createElement('div');ac.className='sgAcoes';
+  if(dono){const b=document.createElement('button');b.type='button';b.className='cta';b.id='sgComeca';b.textContent='Começar a partida';
+    b.addEventListener('click',()=>{comecaSg()});ac.appendChild(b)}
+  const sb=document.createElement('button');sb.type='button';sb.className='ghost';sb.id='sgSai';sb.textContent='Sair da sala';sb.addEventListener('click',()=>{saiSg();desenhaSg()});ac.appendChild(sb);
+  box.append(h,p,ul,cores,ac);
+}
+SG.aoMudar=()=>{if(!sgS.hidden)desenhaSg()};
+$('#sgCriaB').addEventListener('click',()=>{criaSg($('#sgNome').value);desenhaSg()});
+$('#sgBack').addEventListener('click',()=>{if(SG.minha)saiSg();showPick()});
 $('#bFalar').addEventListener('click',()=>{if(C&&C.perto)abreNpc(C.perto)});
 /* pisar num portal (um lugar com abre: portal) entra no lugar dele. Só ao
    chegar no sqm: quem volta da caçada aparece em cima dele e não entra de novo */
@@ -320,8 +370,8 @@ function escolher(k){
   save.classe=k;persist();numeros();
   /* a masmorra da sala roda no aparelho do anfitrião enquanto a sala existir */
   if(!G||(G.active&&!(G.sala&&SALA.papel==='anfitriao'))){newRun()}
+  if(praArena){praArena=false;showSaguao();return}
   showCidade('chegada');
-  if(praArena){praArena=false;showArena(HUNTS[ARENA()].npc)}
 }
 
 /* ---------- grimório ---------- */

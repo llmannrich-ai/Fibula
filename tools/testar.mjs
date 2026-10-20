@@ -1623,7 +1623,7 @@ const CASOS = [
     Tl.showPick();
     ok('a escolha de personagem tem o botão da Arena', visivel('#toArena'), txt('#pick .rodape'));
     clica($('#toArena'));await quadros(3);
-    ok('o botão leva o personagem à cidade e abre o Mestre da Arena', visivel('#arenaS')&&Tl.V.cidade&&/Voltar à cidade/.test(txt('#arenaBack')||''), txt('#arenaS h2'));
+    ok('o botão leva às salas da Arena, no menu', visivel('#saguao')&&!Tl.V.cidade, txt('#saguao h2'));
     `,
   },
   {
@@ -1669,6 +1669,72 @@ const CASOS = [
     RT.sala('fechada',{id:EU,s:200});await quadros(3);
     var j2=RT.enviadas.filter(function(d){return d.event==='phx_join'&&d.topic.indexOf('realtime:sala-')===0}).pop();
     ok('a partida começada manda para outra arena, a cópia seguinte', Sa.SALA.n===2&&j2&&/-arena-2$/.test(j2.topic)&&/Procurando outra arena/.test(txt('#log')||''), Sa.SALA.n+' / '+(j2&&j2.topic));
+    `,
+  },
+  {
+    nome: 'saguao',
+    o_que: 'as salas da Arena, no menu: o botão Arena abre o saguão; a sala de outro aparece com o criador e quantos estão nela; entrar, escolher a cor (a equipe que quer), o criador confirmar (a equipe que pertence) e começar: todos vão à arena da sala, com a cor como time',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 8, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt;
+    var me=function(){var t=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='presence'}).pop();return t&&t.payload.payload};
+    Tl.showPick();clica($('#toArena'));await quadros(6);
+    ok('o botão Arena abre as salas da Arena, no menu e não no mapa', visivel('#saguao')&&!$('#app').classList.contains('cidade')&&!$('#app').classList.contains('playing'), txt('#saguao h2'));
+    await ate(function(){return /Nenhuma sala/.test(txt('#sgEstado')||'')},60);
+    ok('sem sala aberta, diz para criar a sua', /Nenhuma sala aberta/.test(txt('#sgEstado')||''), txt('#sgEstado'));
+    RT.entra('dono1',{sg:1,nome:'Ana',cl:'feiticeiro',lvl:9,sala:'dono1',quer:'VERMELHO',dono:{nome:'Os de sempre',eq:{dono1:'VERMELHO'}}});await quadros(3);
+    ok('a sala aberta aparece com o nome, o criador, quantos estão nela e as equipes', /Os de sempre/.test(txt('#sgLista')||'')&&/criada por Ana · 1\\/4 jogadores/.test(txt('#sgLista')||'')&&/Vermelha 1/.test(txt('#sgLista')||''), txt('#sgLista'));
+    clica($('#sgLista button'));await quadros(3);
+    ok('entrar na sala anuncia a sala na presença', me()&&me().sala==='dono1', JSON.stringify(me()));
+    ok('a sala mostra quem está nela e a equipe de cada um', /Ana \\(criador\\)/.test(txt('#sgSala')||'')&&/Equipe: Vermelha/.test(txt('#sgSala')||'')&&/Cavaleiro, nível 8/.test(txt('#sgSala')||''), txt('#sgSala'));
+    var azul=todos('#sgSala .sgCores button').filter(function(b){return /Azul/.test(b.textContent)})[0];clica(azul);await quadros(3);
+    ok('escolher a cor anuncia a equipe que quer; ela só vale quando o criador confirma', me().quer==='AZUL'&&/Quer: Azul/.test(txt('#sgSala')||'')&&/Equipe: nenhuma/.test(txt('#sgSala')||''), txt('#sgSala'));
+    ok('quem não criou a sala não tem o botão de começar', !$('#sgComeca'), !!$('#sgComeca'));
+    var EU=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='phx_join'})[0].payload.config.presence.key;
+    var eq={dono1:'VERMELHO'};eq[EU]='AZUL';
+    RT.entra('dono1',{sg:1,nome:'Ana',cl:'feiticeiro',lvl:9,sala:'dono1',quer:'VERMELHO',dono:{nome:'Os de sempre',eq:eq}});await quadros(3);
+    ok('o criador confirma: a equipe passa a ser a azul', /Equipe: Azul/.test(txt('#sgSala')||''), txt('#sgSala'));
+    RT.todos({event:'broadcast',payload:{type:'broadcast',event:'comeca',payload:{sala:'dono1'}}});
+    await ate(function(){return RT.enviadas.some(function(d){return d.event==='phx_join'&&/-arena-Ldono1$/.test(d.topic)})},400);
+    var j=RT.enviadas.filter(function(d){return d.event==='phx_join'&&/-arena-Ldono1$/.test(d.topic)})[0];
+    ok('começar leva quem está na sala à arena dela, com a cor da equipe como time', j&&I.meuTime==='AZUL'&&Sa.SALA.caca==='arena', (j&&j.topic)+' / '+I.meuTime);
+    `,
+  },
+  {
+    nome: 'saguao-dono',
+    o_que: 'quem cria a sala da Arena: escolhe a própria cor, vê quem entra e o que quer, confirma a equipe e começa; ele abre a arena da sala e entra nela',
+    semente: 7,
+    save: {'masmorra-runas-v2': {
+      cofre: 0, runs: 0, ext: 0, deaths: 0, best: 0,
+      up: {vigor: 0, foco: 0, poder: 0, bolsa: 0, seguro: 0},
+      classe: 'cavaleiro',
+      chars: {cavaleiro: {lvl: 8, xp: 0, mag: 0, manaG: 0, per: 10, golpes: 0, slots: ['golpe', null, null, null]}},
+    }},
+    roteiro: `
+    var RT=window.__rt;
+    var me=function(){var t=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='presence'}).pop();return t&&t.payload.payload};
+    Tl.showPick();clica($('#toArena'));await ate(function(){return /Nenhuma sala/.test(txt('#sgEstado')||'')},60);
+    $('#sgNome').value='Treino';clica($('#sgCriaB'));await quadros(3);
+    var EU=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='phx_join'})[0].payload.config.presence.key;
+    ok('criar a sala anuncia o nome e o criador na presença', me()&&me().sala===EU&&me().dono&&me().dono.nome==='Treino'&&/Treino · 1\\/4/.test(txt('#sgSala')||''), JSON.stringify(me()));
+    var verm=todos('#sgSala .sgCores button').filter(function(b){return /Vermelha/.test(b.textContent)})[0];clica(verm);await quadros(3);
+    ok('o criador escolhe a própria equipe direto', me().dono.eq[EU]==='VERMELHO'&&/Equipe: Vermelha/.test(txt('#sgSala')||''), JSON.stringify(me().dono));
+    RT.entra('b1',{sg:1,nome:'Bia',cl:'druida',lvl:3,sala:EU,quer:'VERDE'});await quadros(3);
+    ok('quem entra aparece na sala, com a equipe que quer', /Bia/.test(txt('#sgSala')||'')&&/Druida, nível 3/.test(txt('#sgSala')||'')&&/Quer: Verde/.test(txt('#sgSala')||''), txt('#sgSala'));
+    var conf=todos('#sgSala button').filter(function(b){return b.textContent==='confirmar'})[0];clica(conf);await quadros(3);
+    ok('confirmar põe a Bia na equipe verde', me().dono.eq.b1==='VERDE', JSON.stringify(me().dono));
+    RT.entra('x9',{sg:1,nome:'<b>Mau</b>',cl:'mago-falso',lvl:999,sala:EU,quer:'ROXO'});await quadros(3);
+    ok('dado de fora com classe que não existe fica de fora da sala', !/Mau/.test(txt('#sgSala')||''), txt('#sgSala'));
+    clica($('#sgComeca'));
+    var foi=await ate(function(){return $('#app').classList.contains('playing')},400);
+    var bc=RT.enviadas.filter(function(d){return String(d.topic).indexOf('realtime:saguao-')===0&&d.event==='broadcast'&&d.payload.event==='comeca'})[0];
+    ok('começar avisa a sala e abre a arena dela, com o criador dentro e na equipe dele', bc&&bc.payload.payload.sala===EU&&foi&&I.G.arena&&Sa.SALA.id==='arena-L'+EU&&I.G.p.time==='VERMELHO', (bc&&JSON.stringify(bc.payload))+' / '+Sa.SALA.id);
     `,
   },
   {

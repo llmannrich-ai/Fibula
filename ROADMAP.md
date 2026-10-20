@@ -180,6 +180,11 @@ pode desenhar pelo `.otbm` também.
 
 ## Concluído
 
+- **2026-10-20 — Salas da Arena no menu (0.51.0)** *(decisão do Leonardo;
+  pilar 6)*. O saguão (`src/saguao.js`): criar sala, ver as abertas e quem
+  está nelas, escolher a equipe por cor (4), o criador confirmar e começar;
+  todos entram na arena da sala com a cor como time. Casos `saguao` e
+  `saguao-dono`.
 - **2026-10-20 — A Arena, segundo ajuste (0.50.0)** *(decisão do Leonardo;
   pilares 4 e 6)*. Entrada só nos primeiros 15 s; quem sai não volta à mesma
   partida; várias arenas ao mesmo tempo (quem chega tarde cai numa nova);

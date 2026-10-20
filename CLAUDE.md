@@ -354,7 +354,7 @@ na mão.
 | Cidade | Mapa de `city.mapa`: a cidade murada no meio de um mundo de 240×180 sqm sem monstros (estradas, vilas, matas, rio, costa, clareiras para futuras entradas de caça); NPCs, lojas de provisões, Forja do Gordon, Banco, Mercador; compartilhada pelo Realtime do Supabase |
 | Contas e save | Usuário e senha (fase de teste), save no aparelho e na nuvem |
 | Feira | Mercado entre jogadores no banco, com origem registrada das peças |
-| Arena | Pelo Mestre da Arena (portão sul) ou pelo botão Arena do menu: partida de 6 min ao ar livre (mata, rio, ruínas) que recomeça sozinha e não para com o aparelho no fundo, até 4 jogadores por enquanto, times por código, PvP entre times, anéis que desabam, chefes e saídas nas ruínas do centro; paga o dobro da experiência, mais loot e bônus de saída (0.49.0) |
+| Arena | Pelo Mestre da Arena (portão sul) ou pelo botão Arena do menu, que abre as salas da Arena (criar, entrar, escolher a equipe por cor, começar juntos): partida de 6 min ao ar livre (mata, rio, ruínas) que recomeça sozinha e não para com o aparelho no fundo, até 4 jogadores por enquanto, times por código, PvP entre times, anéis que desabam, chefes e saídas nas ruínas do centro; paga o dobro da experiência, mais loot e bônus de saída (0.49.0) |
 | Caçar junto | Uma sala por lugar, de até 4 (cópia 2 quando lota): pisa-se no portal do lugar e entra-se no servidor de quem já caça lá; o aparelho do anfitrião calcula, e o último que sai fica com ele |
 | Testes e CI | `node tools/testar.mjs` (sintaxe, simulação no Node, casos no Chromium headless); GitHub Actions em todo push |
 
@@ -690,6 +690,14 @@ principal, o markup das telas e do HUD, e a linha que carrega
   `saiDaSala()`, `quadro(dt,ent)` chamado pelo laço, e os `ganchos` que o
   `main.js` liga às telas. `maxSala()` é 4, ou `arena.max` na Arena; lá o
   anfitrião responde `fechada` a quem pede a porta no meio da partida
+- `saguao.js` — **as salas da Arena, no menu** (ver "Arena"): o canal
+  `realtime:saguao-<x.y>`, só presença e o broadcast `comeca`. Cada um
+  anuncia `{sg, nome, cl, lvl, sala, quer}`; o criador, também `dono: {nome,
+  eq}` (as equipes que ele confirmou, das 4 `CORES`). `confere()` filtra o que
+  vem de fora; `monta()` refaz `SG.salas`; `cria()`, `entra()`, `sai()`,
+  `quero()`, `confirma()` e `comeca()` são o que o jogador faz, e
+  `quadro(dt)` liga com a tela aberta ou com sala e desliga depois. Não
+  decide regra nenhuma
 - `voz.js` — **voz da sala** (ver "Voz" na seção do Realtime): WebRTC
   nativo em malha entre quem está na sala, apresentação (`oi`, `oferta`,
   `resposta`, `tchau`) pelo canal da sala (`sinal()` de `sala.js`), segurar
@@ -1228,6 +1236,14 @@ até `arena.max` jogadores.
   seguinte do canal (`arena-2`, `arena-3`…), que começa quando ele chegar; o
   anfitrião sem ninguém lá dentro recomeça a dele, e com gente passa o
   servidor e vai à seguinte (`arenaPronta()` em `src/sala.js`).
+- **As salas da Arena** (decisão do Leonardo, 20/10/2026): no menu, não no
+  mapa, o botão Arena (e "Salas da Arena" no Mestre) abre o saguão
+  (`src/saguao.js`, `showSaguao()` em `src/telas.js`). Um jogador cria a sala;
+  os outros veem as abertas, entram, veem quem está nela, a equipe a que
+  cada um pertence (a que o criador confirmou) e a que quer (a que pediu),
+  entre 4 cores; no máximo 4 equipes. Começar manda `comeca`: o criador abre
+  a arena da sala (o canal `arena-L<id>`) e os outros entram 4,5 s depois,
+  dentro dos 15 s da porta, com a cor como código de time.
   As `fases` dão o aviso e o chefe do centro (`chefeNoCentro()`, sem
   sorteio). `G.arF` diz em que partida cada fase já disparou, e `G.arC` qual
   é a partida; os dois vão na herança. **O relógio não para com o aparelho
@@ -1861,6 +1877,7 @@ muda é corrigido no mesmo commit. Decisão substituída sai da lista.
 | 19/10 | **Telemetria mínima no Supabase:** os seis eventos da Parte 2, por um id de aparelho anônimo (com conta, ligado ao jogador), sem IP; o painel são as views `tel_*`, que só o dono lê | Parte 2, Telemetria; Parte 3, Supabase |
 | 19/10 | **Pilar 6, "A vida é sua"**: o objetivo do jogo é a liberdade de escolher e o esforço que vira poder e patrimônio; missões opcionais, fixas e iguais para todos, que dão itens e abrem lugares de caça especiais (a única porta fechada, aberta por feito, nunca por nível); o ralo não tira o que o esforço comprou, e o primeiro bem de patrimônio entra na fila | Pilar 6; Pilar 1 |
 | 19/10 | **Monetização com impacto no jogo**, não só estética, inspirada no Tibia; substitui o não-objetivo "Compra que vira poder" por "Pagar para pular o mundo" (o mundo segue igual, a morte segue custando, e quem só joga alcança o que quem paga alcança). O mercado de itens com saque em dinheiro real foi analisado e deixado de lado por ora (regulação, fraude e escala) | Pilar 6; não-objetivos; Parte 2, F4; `ROADMAP.md`, Depois |
+| 20/10 | **Salas da Arena no menu:** quem cria abre uma sala; os outros veem quem está nela, a equipe a que pertence e a que quer, entre 4 cores (no máximo 4 equipes); o criador confirma as equipes e começa, e todos entram juntos na mesma arena. Só organiza a partida | Parte 3, "Arena" e `saguao.js` |
 | 20/10 | **A Arena, segundo ajuste:** só se entra nos primeiros 15 s; quem sai não volta à mesma partida; várias arenas ao mesmo tempo (quem chega tarde cai numa nova); saídas antecipadas no anel do meio até ele desabar; comida no loot dos bichos | Parte 3, "Arena" |
 | 20/10 | **A Arena, depois do primeiro teste:** partida de 6 min; mapa ao ar livre (mata, rio, ruínas); paga mais que qualquer outra caçada (o dobro da experiência, mais loot, bônus de saída); no PvP quem mata fica com a experiência que o morto perde, a mochila e uma peça vestida dele; o relógio não para com o aparelho do servidor no fundo | Pilares 3 e 4; Parte 3, "Arena" |
 | 19/10 | **A Arena:** um modo com outra dinâmica, pelo Mestre da Arena e pelo botão Arena do menu: partida de 10 min que recomeça sozinha, times por código, anéis que desabam da borda ao centro, chefes e saídas no centro (até 4 jogadores por enquanto: 8 esgota a cota grátis do Realtime em cerca de uma hora e espera a decisão de custo). O personagem sai com XP e itens, como de qualquer lugar de caça. **PvP só na Arena, já**, calculado por quem roda o servidor da sala, com o risco de trapaça aceito até a F2; lá a mochila do morto fica no chão e o Selo não guarda | Pilar 4; Parte 3, "Arena"; [docs/plano-arena.md](docs/plano-arena.md) |
