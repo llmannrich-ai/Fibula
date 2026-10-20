@@ -14,13 +14,13 @@
      da equipe como código de time, dentro dos 15 s da porta.
    O laço chama quadro(dt): liga com a tela aberta ou com sala, e desliga ao
    sair dela. */
-import {CLASSES,HUNTS} from './sim/dados.js?v=0.51.0';
-import {save,ch} from './sim/progresso.js?v=0.51.0';
-import {poeTime} from './sim/incursao.js?v=0.51.0';
-import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.51.0';
-import {ID} from './rede.js?v=0.51.0';
-import {vaiCaca,SALA,saiDaSala} from './sala.js?v=0.51.0';
-import {log} from './hud.js?v=0.51.0';
+import {CLASSES,HUNTS} from './sim/dados.js?v=0.51.1';
+import {save,ch} from './sim/progresso.js?v=0.51.1';
+import {poeTime} from './sim/incursao.js?v=0.51.1';
+import {SB_URL,SB_KEY,quemSou} from './nuvem.js?v=0.51.1';
+import {ID} from './rede.js?v=0.51.1';
+import {vaiCaca,SALA,saiDaSala} from './sala.js?v=0.51.1';
+import {log} from './hud.js?v=0.51.1';
 
 const VER=(()=>{try{return(new URL(import.meta.url).searchParams.get('v')||'dev').split('.').slice(0,2).join('.')}catch(e){return 'dev'}})();
 const TOPICO='realtime:saguao-'+VER,BATIDA=25;

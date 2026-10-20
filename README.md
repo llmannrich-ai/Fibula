@@ -1,4 +1,4 @@
-# Fibula — Masmorra de Runas
+# Fibula
 
 Protótipo jogável de um RPG de extração para celular.
 
