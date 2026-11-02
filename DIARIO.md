@@ -18,6 +18,18 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-11-02 19:20 UTC — sessão manual (nuvem): aviso de carregamento (0.52.0)
+
+**Item desenvolvido:** pedido do Leonardo: ao abrir, a tela ficava preta e depois mostrava o menu com Jogar e Arena que não respondiam enquanto os módulos e o `content.json` baixavam; parecia travado. Agora o `index.html` traz `#carga` como primeiro elemento do `body`, com o estilo no `<style>` crítico do `<head>` (aparece antes do estilo principal): "Fibula", "Carregando o jogo…" e uma barra. O `src/main.js` troca o texto para "Carregando o mundo…" quando os módulos chegam e esconde o aviso depois do `showMenu()`, ou antes do `conteudoFalhou()`, para o erro aparecer. Depois de 12 s, uma linha (só CSS, sem script, para o caso de o código nem chegar) sugere conferir a conexão e recarregar. A barra para com `prefers-reduced-motion`. Serve ao requisito "Controle e tela" da Parte 2 (tempo morto sem explicação é defeito).
+
+**Validação:** `node tools/testar.mjs`, 46/46; asserção nova em `save-normal-sem-aviso` (o aviso some com o menu aberto). Capturas em 360×640 com a rede limitada a 200 kbit/s: aviso a 1,5 s, linha de demora a 20 s.
+
+**Pendências e riscos:**
+- O atlas continua chegando depois do menu, como antes: a cidade pode aparecer por instantes com o desenho em código.
+- A espera de 2 a 4 s do canal da sala ao pisar no portal (`vaiCaca`) não ganhou aviso; se o Leonardo sentir o mesmo "travou" ali, é o próximo lugar.
+
+---
+
 ## 2026-10-20 04:30 UTC — sessão manual (nuvem): salas da Arena no menu (0.51.0)
 
 **Item desenvolvido:** pedido do Leonardo: um saguão no menu, não no mapa, para organizar a partida da Arena (`src/saguao.js`, módulo novo com fronteira clara: a rede do saguão; tela `#saguao`, `showSaguao()` em `src/telas.js`).

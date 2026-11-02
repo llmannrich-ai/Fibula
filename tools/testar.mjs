@@ -3002,6 +3002,7 @@ const CASOS = [
     }},
     roteiro: `
     ok('o acampamento abriu', visivel('#menu'));
+    ok('o aviso de carregamento saiu da frente do menu', $('#carga').hidden);
     ok('o aviso de save não aparece', !visivel('#mAviso'));
     ok('a caixa de conta aparece, com o formulário de e-mail', visivel('#mConta')&&visivel('#contaF'));
     cacar();

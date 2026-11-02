@@ -8,7 +8,19 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Fibula">
-<style>html{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,sans-serif}</style>
+<style>html{color-scheme:dark;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);background:#0b0a09}body{margin:0;font:14px system-ui,sans-serif}
+/* aviso de carregamento: o primeiro que aparece, antes do estilo principal; src/main.js o tira quando o jogo responde.
+   A linha de demora surge sozinha depois de 12 s, sem script, para o caso de o código nem chegar. */
+#carga{position:fixed;inset:0;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#0b0a09;color:#dcd8cc;font-family:Verdana,Tahoma,sans-serif;text-align:center;padding:24px}
+#carga[hidden]{display:none}
+#carga h1{margin:0;font:600 40px "Palatino Linotype","Book Antiqua",Palatino,Georgia,serif;color:#e8c25a;text-shadow:2px 2px 0 #000}
+#carga p{margin:0;font-size:15px}
+#carga .barra{width:180px;height:6px;background:#2b2925;border:1px solid #161513;overflow:hidden}
+#carga .barra i{display:block;width:40%;height:100%;background:#e8c25a;animation:cargaVai 1.2s ease-in-out infinite}
+#carga small{max-width:280px;font-size:13px;line-height:1.45;color:#a8a294;opacity:0;animation:cargaDemora 0s 12s forwards}
+@keyframes cargaVai{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+@keyframes cargaDemora{to{opacity:1}}
+@media (prefers-reduced-motion:reduce){#carga .barra i{animation:none;width:100%;opacity:.6}}</style>
 <title>Fibula</title>
 <style>
 /* Layout: canvas de tela cheia (masmorra iluminada por tocha); HUD nos cantos; telas de menu centradas sobre o mapa.
@@ -399,6 +411,12 @@ h2.lost{color:var(--hp)}
 
 </head>
 <body>
+<div id="carga" role="status" aria-live="polite">
+  <h1>Fibula</h1>
+  <p id="cargaT">Carregando o jogo…</p>
+  <div class="barra" aria-hidden="true"><i></i></div>
+  <small>Está demorando mais que o normal. Confira a conexão; se nada mudar, recarregue a página.</small>
+</div>
 <div id="app">
   <canvas id="c"></canvas>
 
@@ -709,7 +727,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.51.1"></script>
+<script type="module" src="src/main.js?v=0.52.0"></script>
 
 </body>
 </html>

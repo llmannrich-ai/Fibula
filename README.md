@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.52.0 (02/11/2026) | Ao abrir o jogo aparece o aviso "Carregando…" com uma barra, no lugar da tela preta; o menu só aparece quando já responde. Se demorar mais de 12 segundos, o aviso sugere conferir a conexão e recarregar |
 | 0.51.0 (20/10/2026) | Salas da Arena, no menu: crie uma sala ou entre na de alguém, veja quem está nela e escolha a equipe por uma das quatro cores. Quem criou a sala confirma as equipes e começa a partida, e todos entram juntos na mesma arena |
 | 0.50.0 (20/10/2026) | Na Arena só se entra nos primeiros 15 segundos de cada partida, e quem sai não volta a ela: quem chega depois cai numa arena nova, e várias correm ao mesmo tempo. Há saídas antecipadas no anel do meio até ele desabar (sem o bônus), e os bichos de lá deixam comida |
 | 0.49.0 (20/10/2026) | A Arena mudou: partidas de 6 minutos, ao ar livre, numa mata com rio, pontes e ruínas no centro. Paga mais que qualquer caçada: o dobro da experiência, mais loot e um bônus para quem sai vivo. Quem mata outro jogador fica com a experiência que ele perdeu, a mochila e uma peça que ele vestia. O relógio da Arena não para quando o celular de quem a hospeda vai para o fundo |

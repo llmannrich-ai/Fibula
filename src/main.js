@@ -3,33 +3,37 @@
    (src/sim/, sem DOM) às telas, ao desenho e ao save, e roda o laço.
    O carregamento do conteúdo é a primeira coisa que acontece porque a migração
    de save chama slotsIniciais() e portanto já precisa de SPELLS e SLOT_LVL. */
-import {saida} from './sim/base.js?v=0.51.1';
-import {carrega} from './sim/dados.js?v=0.51.1';
-import {G,passo,parado,assiste,newRun,alcanca} from './sim/incursao.js?v=0.51.1';
-import {C,updateCidade} from './sim/cidade.js?v=0.51.1';
-import {carregaSave,persist} from './salvar.js?v=0.51.1';
-import {puxa,cacaFim,tel,telCacaFim,temConta} from './nuvem.js?v=0.51.1';
-import {ch,valMochila} from './sim/progresso.js?v=0.51.1';
-import {carregaArte} from './arte.js?v=0.51.1';
-import {W,H,resize,render,renderCidade,drawMini,drawMiniCidade} from './desenho.js?v=0.51.1';
-import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.51.1';
-import {showMenu,showPick,showEnd,showCidade,start,pickS,endS,equipS,desenhaBoneco,conteudoFalhou,V,pisa} from './telas.js?v=0.51.1';
-import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.51.1';
-import {quadro} from './rede.js?v=0.51.1';
-import {quadro as quadroSala,entradas,saiu,logPara,ganchos} from './sala.js?v=0.51.1';
-import {quadro as quadroVoz} from './voz.js?v=0.51.1';
-import {quadro as quadroSg} from './saguao.js?v=0.51.1';
-import {app} from './dom.js?v=0.51.1';
+import {saida} from './sim/base.js?v=0.52.0';
+import {carrega} from './sim/dados.js?v=0.52.0';
+import {G,passo,parado,assiste,newRun,alcanca} from './sim/incursao.js?v=0.52.0';
+import {C,updateCidade} from './sim/cidade.js?v=0.52.0';
+import {carregaSave,persist} from './salvar.js?v=0.52.0';
+import {puxa,cacaFim,tel,telCacaFim,temConta} from './nuvem.js?v=0.52.0';
+import {ch,valMochila} from './sim/progresso.js?v=0.52.0';
+import {carregaArte} from './arte.js?v=0.52.0';
+import {W,H,resize,render,renderCidade,drawMini,drawMiniCidade} from './desenho.js?v=0.52.0';
+import {log,banner,montaIcones,montaBotoes,hud,hudCidade} from './hud.js?v=0.52.0';
+import {showMenu,showPick,showEnd,showCidade,start,pickS,endS,equipS,desenhaBoneco,conteudoFalhou,V,pisa} from './telas.js?v=0.52.0';
+import {joy,joyIdle,leEntrada,soltaTudo} from './controles.js?v=0.52.0';
+import {quadro} from './rede.js?v=0.52.0';
+import {quadro as quadroSala,entradas,saiu,logPara,ganchos} from './sala.js?v=0.52.0';
+import {quadro as quadroVoz} from './voz.js?v=0.52.0';
+import {quadro as quadroSg} from './saguao.js?v=0.52.0';
+import {app} from './dom.js?v=0.52.0';
 
 /* ---------- conteúdo do jogo (data/game/content.json) ---------- */
 const DATA_URL='data/game/content.json';
+/* o aviso de carregamento do index.html: os módulos já chegaram, falta o mundo */
+const carga=document.getElementById('carga'),cargaT=document.getElementById('cargaT');
+if(cargaT)cargaT.textContent='Carregando o mundo…';
+const tiraCarga=()=>{if(carga)carga.hidden=true};
 let pronto=false;
 try{
   const res=await fetch(DATA_URL,{cache:'no-cache'});
   if(!res.ok)throw new Error(`HTTP ${res.status} em ${DATA_URL}`);
   carrega(await res.json());
   pronto=true;
-}catch(err){conteudoFalhou(err,DATA_URL)}
+}catch(err){tiraCarga();conteudoFalhou(err,DATA_URL)}
 
 if(pronto){
   carregaArte(()=>{if(!pickS.hidden)showPick();if(!equipS.hidden)desenhaBoneco();if(!endS.hidden&&G)showEnd();montaIcones()});
@@ -84,7 +88,7 @@ if(pronto){
   function onResize(){resize();if(joy.id===null)joyIdle()}
   addEventListener('resize',onResize);
   onResize();
-  showMenu();
+  showMenu();tiraCarga();
   puxa();
   tel('sessao_inicio',{conta:temConta(),tela:`${innerWidth}x${innerHeight}`,toque:matchMedia('(pointer:coarse)').matches},true);
   requestAnimationFrame(frame);
