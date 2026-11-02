@@ -18,6 +18,23 @@ execução precisa saber e não vai descobrir lendo o código.
 
 ---
 
+## 2026-11-02 23:30 UTC — sessão manual (nuvem): Mochila de batalha refeita (0.53.0)
+
+**Item desenvolvido:** pedido do Leonardo: jogadores reclamaram da Mochila durante a caçada. Em 360×640 a grade, que é o que se usa em combate, ficava no fim da janela e só a primeira linha aparecia; o corpo (com seis casas apagadas que o jogo não tem e um boneco de 132 px) ocupava o alto; o texto da peça tocada e o botão de vestir apareciam longe do dedo e empurravam a grade para baixo. Agora (`index.html`, `desenhaMochila()` em `src/hud.js`):
+- barra com "Mochila · 300 ouro · 10/20" (vermelho com a mochila cheia) e o ✕ de 48 px; o risco da morte numa linha;
+- o corpo numa coluna à esquerda (amuleto, armadura, arma e o boneco, que gira ao toque) e a grade 5×4 ao lado, sem rolar;
+- embaixo, uma faixa de altura fixa com a peça tocada e o botão (Vestir, Trocar, Tirar) ao lado; a peça de vestir compara com a vestida ("Vestida agora: +10% de dano"); na caçada, sem o texto do Banco nas peças de vestir, para caber;
+- espada repetida mostra uma, não "2 ×"; sem peça tocada, a faixa mostra o total vestido (`#moTot`);
+- a janela sai do alto, entre o HUD e os botões, e não cobre Fome, Mochila nem Poção em 360×640; na cidade desce até acima do botão Mochila. Requisito "Controle e tela" da Parte 2.
+
+**Validação:** `node tools/testar.mjs`, 46/46; caso `mochila` atualizado (coluna do corpo, 5 colunas, comparação, textos novos). Capturas em 360×640 (caçada e cidade) e 412×915.
+
+**Pendências e riscos:**
+- As casas de 44 px ficam abaixo dos 48 px do requisito em telas de até 740 px de altura (50 px acima disso); com 3 px entre elas o toque não erra a vizinha, mas é o ponto a medir com testadores.
+- Comer uma comida específica pela Mochila não existe: o botão Fome come a menor. Se pedirem, é um botão Comer na faixa.
+
+---
+
 ## 2026-11-02 19:20 UTC — sessão manual (nuvem): aviso de carregamento (0.52.0)
 
 **Item desenvolvido:** pedido do Leonardo: ao abrir, a tela ficava preta e depois mostrava o menu com Jogar e Arena que não respondiam enquanto os módulos e o `content.json` baixavam; parecia travado. Agora o `index.html` traz `#carga` como primeiro elemento do `body`, com o estilo no `<style>` crítico do `<head>` (aparece antes do estilo principal): "Fibula", "Carregando o jogo…" e uma barra. O `src/main.js` troca o texto para "Carregando o mundo…" quando os módulos chegam e esconde o aviso depois do `showMenu()`, ou antes do `conteudoFalhou()`, para o erro aparecer. Depois de 12 s, uma linha (só CSS, sem script, para o caso de o código nem chegar) sugere conferir a conexão e recarregar. A barra para com `prefers-reduced-motion`. Serve ao requisito "Controle e tela" da Parte 2 (tempo morto sem explicação é defeito).

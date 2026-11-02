@@ -93,6 +93,7 @@ A versão aparece no alto do menu do jogo.
 
 | Versão | O que trouxe |
 |---|---|
+| 0.53.0 (02/11/2026) | A Mochila foi refeita para usar no meio da caçada: tudo cabe na tela do celular sem rolar. A grade de 20 espaços em 5 colunas fica ao lado do corpo (amuleto, armadura, arma e o boneco), o valor e os espaços ficam no alto e ficam vermelhos com a mochila cheia, e a peça tocada aparece numa faixa embaixo, com o botão Vestir, Trocar ou Tirar ao lado e a comparação com o que está vestido |
 | 0.52.0 (02/11/2026) | Ao abrir o jogo aparece o aviso "Carregando…" com uma barra, no lugar da tela preta; o menu só aparece quando já responde. Se demorar mais de 12 segundos, o aviso sugere conferir a conexão e recarregar |
 | 0.51.0 (20/10/2026) | Salas da Arena, no menu: crie uma sala ou entre na de alguém, veja quem está nela e escolha a equipe por uma das quatro cores. Quem criou a sala confirma as equipes e começa a partida, e todos entram juntos na mesma arena |
 | 0.50.0 (20/10/2026) | Na Arena só se entra nos primeiros 15 segundos de cada partida, e quem sai não volta a ela: quem chega depois cai numa arena nova, e várias correm ao mesmo tempo. Há saídas antecipadas no anel do meio até ele desabar (sem o bônus), e os bichos de lá deixam comida |

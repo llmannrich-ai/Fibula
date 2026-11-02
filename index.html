@@ -329,25 +329,36 @@ h2.lost{color:var(--hp)}
 #bVoz .nm{font-size:10px} #bVoz .ct{font-size:8px;max-width:48px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
 #bVoz.on{--el:var(--mana)} #bVoz.no-ar{--el:var(--torch)} #bVoz.no-ar .nm{color:var(--torch)}
 #app.cidade .hud #bVoz{display:grid}
-.mochila{position:absolute;z-index:4;top:150px;bottom:196px;left:max(16px,env(safe-area-inset-left,0px));right:max(16px,env(safe-area-inset-right,0px));display:flex;align-items:flex-end;justify-content:center;pointer-events:none}
-.mwin{pointer-events:auto;width:min(100%,340px);max-height:100%;overflow:auto;display:grid;gap:8px;padding:0 10px 10px;box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.65);animation:sobe .16s ease-out}
-@keyframes sobe{from{opacity:0;transform:translateY(10px)}}
-.mbar{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;margin:0 -10px;padding:0 0 0 10px;background:linear-gradient(#24221f,#1a1916);border-bottom:1px solid #000;box-shadow:0 1px 0 var(--hi);font:700 11px var(--f-body);color:var(--muted)}
-.mbar b{color:var(--torch)}
-.mx{width:44px;height:30px;border:0;border-left:1px solid #000;background:none;color:var(--bone);font:700 14px var(--f-body);cursor:pointer}
-.mx:focus-visible{outline:2px solid var(--bone);outline-offset:-3px}
-.mtit{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font:700 12px var(--f-body);color:var(--bone)}
-.mtit span{font-weight:400;font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+/* Mochila em combate: o que mais se usa vem primeiro e tudo cabe sem rolar em 360×640. Uma barra com o valor
+   e os espaços; o risco da morte numa linha; o corpo numa coluna à esquerda (pescoço, peito, mão e o boneco) e a
+   grade 5×4 ao lado; embaixo, uma faixa de altura fixa com a peça tocada e o botão de vestir, perto do dedo,
+   para nada pular de lugar ao tocar. A janela fica entre o HUD de cima e os botões de baixo */
+.mochila{--c:44px;--g:3px;position:absolute;z-index:4;top:106px;bottom:190px;left:max(8px,env(safe-area-inset-left,0px));right:max(8px,env(safe-area-inset-right,0px));display:flex;align-items:flex-start;justify-content:center;pointer-events:none}
+#app.cidade .mochila{top:96px;bottom:150px}
+.mwin{pointer-events:auto;max-height:100%;overflow:auto;display:grid;gap:5px;padding:0 8px 8px;box-shadow:0 0 0 1px #000,0 12px 34px rgba(0,0,0,.65);animation:sobe .16s ease-out}
+@keyframes sobe{from{opacity:0;transform:translateY(-8px)}}
+.mbar{position:sticky;top:0;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:8px;margin:0 -8px;padding:0 0 0 10px;min-height:36px;background:linear-gradient(#24221f,#1a1916);border-bottom:1px solid #000;box-shadow:0 1px 0 var(--hi)}
+.mtit{display:flex;align-items:baseline;gap:8px;font:700 13px var(--f-body);color:var(--bone)}
+.mtit span{font-weight:400;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .mtit span b{color:var(--torch);font-weight:700}
-/* o corpo: a janela de inventário do Tibia, cada peça no lugar em que se usa. Casa vazia mostra a silhueta
-   do que vai nela; as que o jogo ainda não tem (.trava) ficam apagadas, só para o corpo ter o desenho de sempre */
-.doll{display:flex;align-items:center;justify-content:center;gap:12px;padding:8px 10px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
-.tib{display:flex;gap:4px;align-items:flex-start}
-.tib>div{display:grid;gap:4px}
-.tib>div:not(:nth-child(2)){margin-top:14px}
-.trava{position:relative;display:block;width:48px;height:48px;background:#121110;border:2px solid;border-color:var(--lo) #3a3732 #3a3732 var(--lo);opacity:.55}
-.tib .cel:empty::before,.trava::before{content:"";position:absolute;inset:7px;background:#3d3a34;-webkit-mask:var(--sil) center/contain no-repeat;mask:var(--sil) center/contain no-repeat}
-.tib .cel:disabled{cursor:default}
+.mtit span.cheia{color:var(--warn)}
+.mx{width:48px;height:36px;border:0;border-left:1px solid #000;background:none;color:var(--bone);font:700 16px var(--f-body);cursor:pointer}
+.mx:focus-visible{outline:2px solid var(--bone);outline-offset:-3px}
+.mochila .risco{font-size:11px;line-height:1.35;padding-left:6px}
+.mcorpo{display:flex;gap:6px;align-items:stretch;justify-content:center}
+.corpo,.grade{padding:3px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+.corpo{display:grid;gap:var(--g);align-content:start}
+.grade{display:grid;grid-template-columns:repeat(5,var(--c));grid-auto-rows:var(--c);gap:var(--g)}
+.cel{position:relative;width:var(--c);height:var(--c);display:grid;place-items:center;padding:0;background:#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);color:var(--muted);font:9px var(--f-body);cursor:pointer}
+.cel:focus-visible{outline:2px solid var(--bone);outline-offset:1px}
+.cel.on{outline:2px solid var(--torch);outline-offset:0;background:#2a2516}
+.cel.r1{box-shadow:inset 0 0 0 2px var(--rare)} .cel.r2{box-shadow:inset 0 0 0 2px var(--epic)}
+.cel q{position:absolute;right:2px;bottom:1px;quotes:none;font:700 10px var(--f-body);color:var(--bone);font-variant-numeric:tabular-nums;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+.cel i{font-style:normal;font-weight:700;color:var(--bone)}
+.grade .cel:disabled{cursor:default;opacity:.5}
+/* casa vazia do corpo: a silhueta do que vai nela */
+.corpo .cel:empty::before{content:"";position:absolute;inset:8px;background:#3d3a34;-webkit-mask:var(--sil) center/contain no-repeat;mask:var(--sil) center/contain no-repeat}
+.corpo .cel:disabled{cursor:default}
 .s-amuleto{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 2l6 8 6-8' fill='none' stroke='black' stroke-width='1.8'/><circle cx='12' cy='15.5' r='5.5'/></svg>")}
 .s-elmo{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M3 16a9 9 0 0 1 18 0v6h-5v-5H8v5H3z'/></svg>")}
 .s-saco{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M9 2h6v4h1a4 4 0 0 1 4 4v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V10a4 4 0 0 1 4-4h1z'/></svg>")}
@@ -358,29 +369,20 @@ h2.lost{color:var(--hp)}
 .s-calca{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M5 2h14l1 20h-6l-2-12-2 12H4z'/></svg>")}
 .s-municao{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M22 2l-1 8-3-3L4 21l-1-1L17 6l-3-3z'/></svg>")}
 .s-botas{--sil:url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M6 2h8v12l6 3c1 .5 2 1.5 2 3v2H4V2z'/></svg>")}
-.doll .fig{position:relative;display:grid;place-items:center;width:132px;height:132px;padding:0;background:radial-gradient(ellipse 34% 9% at 50% 88%,rgba(0,0,0,.45),transparent),radial-gradient(circle at 50% 60%,rgba(232,194,90,.12),transparent 62%),#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);cursor:pointer}
-.doll .fig canvas{display:block;width:128px;height:128px;image-rendering:pixelated}
-.doll .fig canvas[hidden]{display:none}
-.doll .fig b{font:700 40px var(--f-display);color:var(--torch)}
-.doll .fig:focus-visible{outline:2px solid var(--bone);outline-offset:2px}
-.cel{position:relative;width:48px;height:48px;display:grid;place-items:center;padding:0;background:#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);color:var(--muted);font:9px var(--f-body);cursor:pointer}
-.cel:focus-visible{outline:2px solid var(--bone);outline-offset:1px}
-.cel.on{outline:2px solid var(--torch);outline-offset:1px}
-.cel.r1{box-shadow:inset 0 0 0 2px var(--rare)} .cel.r2{box-shadow:inset 0 0 0 2px var(--epic)}
-.cel.cheia{box-shadow:inset 0 0 0 2px var(--torch-deep)}
-.cel q{position:absolute;right:2px;bottom:1px;quotes:none;font:700 10px var(--f-body);color:var(--bone);font-variant-numeric:tabular-nums;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
-.cel i{font-style:normal;font-weight:700;color:var(--bone)}
-.grade{display:grid;grid-template-columns:repeat(auto-fill,44px);justify-content:center;gap:4px;padding:6px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
-.grade .cel{width:44px;height:44px}
-.grade .cel:disabled{cursor:default;opacity:.55}
-.minfo{margin:0;min-height:2.8em;font:11px/1.4 var(--f-body);color:var(--muted)}
+.corpo .fig{position:relative;display:grid;place-items:center;width:var(--c);height:var(--c);padding:0;background:radial-gradient(circle at 50% 60%,rgba(232,194,90,.14),transparent 62%),#121110;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo);cursor:pointer;overflow:hidden}
+.corpo .fig canvas{display:block;width:calc(var(--c) + 8px);height:calc(var(--c) + 8px);image-rendering:pixelated}
+.corpo .fig canvas[hidden]{display:none}
+.corpo .fig b{font:700 20px var(--f-display);color:var(--torch)}
+.corpo .fig:focus-visible{outline:2px solid var(--bone);outline-offset:1px}
+/* a faixa da peça tocada: texto à esquerda, o botão à direita, sempre com a mesma altura */
+.mdet{display:flex;align-items:center;gap:8px;min-height:48px;padding:3px 3px 3px 8px;background:#1c1b18;border:2px solid;border-color:var(--lo) var(--hi) var(--hi) var(--lo)}
+.minfo{flex:1;margin:0;font:11px/1.35 var(--f-body);color:var(--muted)}
 .minfo b{color:var(--bone)} .minfo b.r1{color:var(--rare)} .minfo b.r2{color:var(--epic)}
-.mochila .risco{font-size:11px}
-.macoes{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:6px} .macoes[hidden]{display:none} .macoes .cta{padding:10px;font-size:13px}
-.mochila .eqtot{text-align:left;font-size:10px;margin-top:-4px}
-/* tela baixa: a janela sobe por cima do minimapa, o boneco encolhe e o corpo fica só com as duas linhas de cima
-   (as de baixo são todas casas que o jogo ainda não tem), para a mochila caber sem rolar */
-@media (max-height:740px){.mochila{top:112px}.mwin{gap:6px}.cel{width:42px;height:42px}.grade .cel{width:40px;height:40px}.grade{grid-template-columns:repeat(auto-fill,40px)}.doll{padding:6px 8px}.trava{width:42px;height:42px}.tib .s-anel,.tib .s-calca,.tib .s-botas,.tib .s-municao{display:none}.tib>div:not(:nth-child(2)){margin-top:10px}.doll .fig{width:100px;height:100px}.doll .fig canvas{width:96px;height:96px}.minfo{min-height:0}}
+.macoes{display:flex;flex:0 0 auto} .macoes[hidden]{display:none}
+.macoes .cta{min-height:48px;min-width:84px;padding:8px 12px;font-size:14px}
+#moTot{color:var(--bone)}
+@media (min-height:741px) and (min-width:380px){.mochila{--c:50px;--g:4px;top:150px}}
+@media (max-width:330px){.mochila{--c:40px}}
 @media (prefers-reduced-motion:reduce){.clock.warn strong{animation:none}.ln{animation-duration:8s}.mwin{animation:none}}
 .inicio{gap:16px;padding-top:28px}
 .inicio h1{text-align:center;font-size:44px;letter-spacing:.04em}
@@ -452,14 +454,13 @@ h2.lost{color:var(--hp)}
 
   <section class="mochila" id="mochila" role="dialog" aria-label="Mochila" hidden>
     <div class="mwin stone">
-      <div class="mbar"><span id="moEye">Mochila</span><button class="mx" id="moX" type="button" aria-label="Fechar a mochila">✕</button></div>
-      <div class="doll"><div class="tib" id="moDoll"></div><button class="fig" id="moFig" type="button" aria-label="Girar o personagem para ver o que ele veste"><canvas width="256" height="256"></canvas><b></b></button></div>
-      <p class="eqtot" id="moTot"></p>
-      <p class="minfo" id="moInfo" role="status"></p>
-      <div class="macoes" id="moAcoes" hidden></div>
-      <div class="mtit"><span id="moTit">Saco</span> <span id="moVal"></span></div>
+      <div class="mbar"><span class="mtit"><span id="moTit">Mochila</span> <span id="moVal"></span></span><button class="mx" id="moX" type="button" aria-label="Fechar a mochila">✕</button></div>
       <p class="risco" id="moRisco"></p>
-      <div class="grade" id="moGrade"></div>
+      <div class="mcorpo">
+        <div class="corpo" id="moDoll" role="group" aria-label="O que o personagem veste"></div>
+        <div class="grade" id="moGrade" role="group" aria-label="Espaços da mochila"></div>
+      </div>
+      <div class="mdet"><p class="minfo" id="moInfo" role="status"></p><div class="macoes" id="moAcoes" hidden></div></div>
     </div>
   </section>
 
@@ -727,7 +728,7 @@ h2.lost{color:var(--hp)}
 </div>
 
 <!-- o código do jogo mora em src/ (módulos ES, sem build); src/sim/ é a regra sem DOM -->
-<script type="module" src="src/main.js?v=0.52.0"></script>
+<script type="module" src="src/main.js?v=0.53.0"></script>
 
 </body>
 </html>

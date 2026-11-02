@@ -1,17 +1,17 @@
 /* ---------- mensagens e HUD ----------
    log() e banner() são o lado de tela de saida.log e saida.banner. */
-import {T,RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.52.0';
-import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES,HUNTS} from './sim/dados.js?v=0.52.0';
-import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.52.0';
-import {G,nComida,reabreEm,saidasAbertas} from './sim/incursao.js?v=0.52.0';
-import {vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.52.0';
-import {persist} from './salvar.js?v=0.52.0';
-import {C} from './sim/cidade.js?v=0.52.0';
-import {ART,icone} from './arte.js?v=0.52.0';
-import {retrato} from './desenho.js?v=0.52.0';
-import {rede} from './rede.js?v=0.52.0';
-import {VOZ} from './voz.js?v=0.52.0';
-import {$,app} from './dom.js?v=0.52.0';
+import {T,RUN,PORTAL_AT,clamp,fmt} from './sim/base.js?v=0.53.0';
+import {SPELLS,CITY,ITEMS,SLOTS_EQ,SLOT_NOME,fmtItem,fmtBonus,CLASSES,HUNTS} from './sim/dados.js?v=0.53.0';
+import {save,ch,KL,xpNeed,nSlots,stats,eqBonus,sealPct,ehMat,ocupa,nEspacos,valMochila,cabe,vesteDaMochila,tiraPraMochila} from './sim/progresso.js?v=0.53.0';
+import {G,nComida,reabreEm,saidasAbertas} from './sim/incursao.js?v=0.53.0';
+import {vesteDoSaco,tiraProSaco} from './sim/combate.js?v=0.53.0';
+import {persist} from './salvar.js?v=0.53.0';
+import {C} from './sim/cidade.js?v=0.53.0';
+import {ART,icone} from './arte.js?v=0.53.0';
+import {retrato} from './desenho.js?v=0.53.0';
+import {rede} from './rede.js?v=0.53.0';
+import {VOZ} from './voz.js?v=0.53.0';
+import {$,app} from './dom.js?v=0.53.0';
 
 export const logEl=$('#log'),bannerEl=$('#banner');
 export function log(msg,cls='loot'){
@@ -121,10 +121,11 @@ export const zeraCidade=()=>{pertoAntes=null;EC.falar.hidden=true};
 /* ---------- mochila ----------
    O corpo (o que o personagem veste) e a mochila (o que ele carrega entre as
    caçadas e perde se morrer), numa janela sobre o jogo: a incursão não pausa, e o toque fora
-   dela continua sendo joystick. Só mostra — vestir e vender é no Banco, na
-   cidade. Nada de arrastar nem de passar o mouse (pilar 3): tocar numa peça
-   diz o que ela é. */
-const MO={el:$('#mochila'),bt:$('#bMochila'),val:-1,sel:null,dir:2};
+   dela continua sendo joystick. Feita para abrir no meio da caçada: o valor, os
+   espaços e o risco no alto; o corpo e a grade lado a lado, sem rolar; a peça
+   tocada e o botão de vestir numa faixa fixa embaixo, que não empurra nada.
+   Nada de arrastar nem de passar o mouse: tocar numa peça diz o que ela é. */
+const MO={el:$('#mochila'),bt:$('#bMochila'),val:-1,sel:null,dir:2,fig:null};
 /* o bônus somado do que está vestido, em texto; o Banco usa o mesmo */
 export function vestido(c=ch()){
   const st=stats(c),tot=[eqBonus('dano',c)&&`+${Math.round(eqBonus('dano',c)*100)}% de dano`,eqBonus('red',c)&&`−${Math.round(eqBonus('red',c)*100)}% de dano sofrido`,
@@ -141,57 +142,58 @@ function cel(k,q,rot){
   else{const i=document.createElement('i');i.textContent=it.nome.slice(0,2);b.appendChild(i)}
   if(q>1){const n=document.createElement('q');n.textContent=q;b.appendChild(n)}
   b.setAttribute('aria-label',(rot?rot+': ':'')+fmtItem([k,q])+(it.slot?', '+fmtBonus(it):''));
-  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila();if(MO.sel)$('#moInfo').scrollIntoView({block:'nearest'})});
+  b.addEventListener('click',()=>{MO.sel=MO.sel===b.dataset.k?null:b.dataset.k;desenhaMochila()});
   return b;
 }
-function info(k,q,vestida){
+/* a faixa de baixo: o nome da peça e, curto, o que acontece com ela. A peça
+   de vestir compara com a vestida; na caçada, sem o Banco, para caber */
+function info(k,q,vestida,caca){
   const el=$('#moInfo');el.textContent='';
-  if(!k){el.textContent=naCaca()?'Toque numa peça para ver o que é, vestir ou tirar. O jogo continua correndo.':'Toque numa peça para ver o que é, vestir ou tirar. Guardar e vender é no Banco.';return}
+  if(!k){const t=document.createElement('span');t.id='moTot';t.textContent=vestido()+'.';
+    el.append(t,caca?' Toque numa peça para ver, vestir ou tirar. O jogo não pausa.':' Toque numa peça para ver, vestir ou tirar. Guardar e vender é no Banco.');return}
   const it=ITEMS[k],b=document.createElement('b');b.className='r'+it.rar;b.textContent=fmtItem([k,q]);
   const bo=it.slot?` · ${SLOT_NOME[it.slot]}, ${fmtBonus(it)}`:'';
-  el.append(b,vestida?`${bo}. Vestida: não cai na morte; tirada, vai para a mochila.`:(k==='ouro'?'.':` · vale ${it.val*q} de ouro${bo}.`)+' Na mochila, cai na morte. '+
-    (it.slot?'Guardada no Banco, vai para o cofre.':ehMat(k)?'Guardado no Banco, fica no cofre e o Gordon vê na Forja.':k==='ouro'?'Guardado no Banco, vai para o cofre.':'Guardado no Banco, fica no cofre; o Banco compra.'));
+  if(vestida){el.append(b,`${bo}. Vestida: não cai na morte.`);return}
+  const at=it.slot&&ch().equip[it.slot];
+  el.append(b,(k==='ouro'?'':` · vale ${it.val*q} de ouro`)+bo+'.'+(at?` Vestida agora: ${fmtBonus(ITEMS[at])}.`:'')+' Cai na morte.'+(caca&&it.slot?'':' '+
+    (it.slot?'Guardada no Banco, vai para o cofre.':ehMat(k)?'Guardado no Banco, fica no cofre e o Gordon vê na Forja.':k==='ouro'?'Guardado no Banco, vai para o cofre.':'Guardado no Banco, fica no cofre; o Banco compra.')));
 }
 export function desenhaMochila(){
   const c=ch(),K=KL(),caca=naCaca(),p=caca?G.p:null,bag=p?p.bag:c.mochila,val=p?p.bagVal:valMochila(bag);
   MO.val=caca?val:-1;
-  setT($('#moEye'),`Mochila · ${K.nome} · Nv ${c.lvl}`);
-  /* corpo: a janela de inventário do Tibia, em três colunas, cada peça no
-     lugar em que se usa (amuleto no pescoço, arma na mão, a mochila onde o
-     Tibia a põe). As casas que o jogo não tem ficam apagadas, sem toque */
+  /* o corpo: uma coluna com as três casas que o jogo tem, de cima para baixo
+     como no corpo (pescoço, peito, mão), e o boneco vestido; tocar nele gira */
   const d=$('#moDoll');d.textContent='';let selInfo=null;
   const eq=sl=>{const k=c.equip[sl],b=cel(k,1,SLOT_NOME[sl]);if(!k)b.setAttribute('aria-label',SLOT_NOME[sl]+' vazio');
     b.classList.add('s-'+sl);b.dataset.k='eq:'+sl;if(MO.sel==='eq:'+sl){b.classList.add('on');selInfo=[k,1,true]}return b};
-  const trava=s=>{const t=document.createElement('span');t.className='trava s-'+s;t.setAttribute('aria-hidden','true');return t};
-  const col=(...a)=>{const w=document.createElement('div');w.append(...a);return w};
-  const sc=document.createElement('button');sc.type='button';sc.className='cel s-saco'+(val?' cheia':'');sc.disabled=true;
-  const si=document.createElement('span');si.className='ico';si.setAttribute('aria-hidden','true');if(icone(si,'saco2'))sc.appendChild(si);
-  sc.setAttribute('aria-label',`Mochila: ${val} de ouro`);
-  d.append(col(eq('amuleto'),eq('arma'),trava('anel')),col(trava('elmo'),eq('armadura'),trava('calca'),trava('botas')),col(sc,trava('escudo'),trava('municao')));
-  /* ao lado, o boneco vestido como anda no mapa; tocar gira */
-  const fg=$('#moFig'),tem=retrato(fg.firstElementChild,save.classe,c.equip,MO.dir,4);
+  if(!MO.fig){MO.fig=document.createElement('button');MO.fig.type='button';MO.fig.className='fig';MO.fig.id='moFig';
+    MO.fig.setAttribute('aria-label','Girar o personagem para ver o que ele veste');
+    const cv=document.createElement('canvas');cv.width=cv.height=256;MO.fig.append(cv,document.createElement('b'));
+    MO.fig.addEventListener('click',()=>{MO.dir=(MO.dir+1)%4;desenhaMochila()})}
+  const fg=MO.fig,tem=retrato(fg.firstElementChild,save.classe,c.equip,MO.dir,4);
   fg.firstElementChild.hidden=!tem;fg.lastElementChild.textContent=tem?'':K.nome[0];
-  setT($('#moTot'),vestido(c));
+  d.append(eq('amuleto'),eq('armadura'),eq('arma'),fg);
   /* a mochila: o mais valioso primeiro, uma casa por peça de equipamento e
      uma por pilha do resto; as casas livres completam a grade, como um
      container do Tibia. É a mesma na cidade e na caçada */
-  const sela=Math.round(val*sealPct(p?p.up:save.up)),n=ocupa(bag),cap=nEspacos(),perde=`perde ${val-sela} de ouro em loot`+(sela?` (o selo guarda ${sela})`:'');
+  const sela=Math.round(val*sealPct(p?p.up:save.up)),n=ocupa(bag),cap=nEspacos(),perde=`perde ${val-sela} de ouro`+(sela?` (o selo guarda ${sela})`:'');
   setT($('#moTit'),'Mochila');
   const mv=$('#moVal');mv.textContent='';const vb=document.createElement('b');vb.textContent=val;mv.append(vb,` ouro · ${n}/${cap}`);
+  mv.classList.toggle('cheia',n>=cap);
   setT($('#moRisco'),!val?'Vazia. O loot das caçadas vem para cá e fica até você guardar no Banco.'
-    :caca?`Se morrer, ${perde}. Saia pela porta e guarde no Banco.`+(n>=cap?' A mochila está cheia.':'')
-    :`Vai com você na próxima caçada: se morrer, ${perde}. Guarde no Banco o que não quer arriscar.`);
+    :caca?`Se morrer, ${perde}.`+(n>=cap?' Cheia: o resto fica no chão.':'')
+    :`Vai com você na próxima caçada: se morrer, ${perde}.`);
   const g=$('#moGrade');g.textContent='';
   const rows=Object.entries(bag).sort((a,b)=>ITEMS[b[0]].val*b[1]-ITEMS[a[0]].val*a[1]);
   for(const[k,q]of rows)for(let i=0;i<(ITEMS[k].slot?q:1);i++){const b=cel(k,ITEMS[k].slot?1:q);b.dataset.k=k;
-    if(MO.sel===k&&!selInfo){b.classList.add('on');selInfo=[k,q,false]}g.appendChild(b)}
+    if(MO.sel===k&&!selInfo){b.classList.add('on');selInfo=[k,ITEMS[k].slot?1:q,false]}g.appendChild(b)}
   for(let i=n;i<cap;i++)g.appendChild(cel(null));
   if(!selInfo)MO.sel=null;
-  info(...(selInfo||[]));
+  info(...(selInfo||[null,0,false]),caca);
   acoes(selInfo,caca,p);
 }
-/* vestir e tirar sem ir ao Banco: um toque na peça, um botão grande (pilar 3).
-   A troca é com a mochila, na cidade (vesteDaMochila) e na caçada
+/* vestir e tirar sem ir ao Banco: um toque na peça, um botão grande ao lado
+   do dedo. A troca é com a mochila, na cidade (vesteDaMochila) e na caçada
    (vesteDoSaco); a peça vestida passa a não cair na morte, e a tirada só sai
    se couber na mochila. O convidado da sala, não: quem
    calcula a ficha dele é o anfitrião */
@@ -202,8 +204,8 @@ function acoes(sel,caca,p){
   const [k,,vestida]=sel,it=ITEMS[k],sl=it.slot,atual=ch().equip[sl];
   const bt=(t,rot,fn)=>{const b=document.createElement('button');b.type='button';b.className='cta';b.textContent=t;b.setAttribute('aria-label',rot);
     b.addEventListener('click',()=>{if(fn()){if(!caca)persist();desenhaMochila()}});el.appendChild(b)};
-  if(vestida){bt('Tirar para a mochila',`Tirar ${it.nome} e pôr na mochila`,()=>{if(!(caca?tiraProSaco(p,sl):tiraPraMochila(sl)))return false;MO.sel=caca?k:null;return true});
-    if(!cabe(caca?p.bag:ch().mochila,k))el.lastChild.disabled=true}
+  if(vestida){bt('Tirar',`Tirar ${it.nome} e pôr na mochila`,()=>{if(!(caca?tiraProSaco(p,sl):tiraPraMochila(sl)))return false;MO.sel=caca?k:null;return true});
+    if(!cabe(caca?p.bag:ch().mochila,k)){el.lastChild.disabled=true;el.lastChild.textContent='Cheia'}}
   else bt(atual?'Trocar':'Vestir',`Vestir ${it.nome}`+(atual?` no lugar de ${ITEMS[atual].nome}`:''),
     ()=>{if(!(caca?vesteDoSaco(p,k):vesteDaMochila(k)))return false;MO.sel='eq:'+sl;return true});
 }
@@ -211,7 +213,6 @@ export function abreMochila(){MO.sel=null;MO.el.hidden=false;MO.bt.setAttribute(
 export function fechaMochila(){if(MO.el.hidden)return;MO.el.hidden=true;MO.bt.setAttribute('aria-expanded','false');MO.bt.setAttribute('aria-label','Abrir a mochila (B)')}
 const alterna=()=>MO.el.hidden?abreMochila():fechaMochila();
 MO.bt.addEventListener('click',alterna);
-$('#moFig').addEventListener('click',()=>{MO.dir=(MO.dir+1)%4;desenhaMochila()});
 $('#moX').addEventListener('click',fechaMochila);
 addEventListener('keydown',e=>{
   const pode=app.classList.contains('cidade')||(G&&G.active&&!G.over&&app.classList.contains('playing'));
